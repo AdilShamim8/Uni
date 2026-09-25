@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rewoo"
+version = "0.1.0"
+description = "ReWoo — an open-source Personal AI Agent OS: private memory, any AI model, radically simple."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+authors = [{ name = "Adil Shamim", email = "adilshamim696@gmail.com" }]
+requires-python = ">=3.9"
+keywords = ["ai", "agents", "personal-ai", "rag", "llm", "memory", "google-drive", "ollama"]
+classifiers = [
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3",
+  "Framework :: FastAPI",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "fastapi>=0.100,<1",
+  "uvicorn>=0.23",
+  "httpx>=0.25",
+  "pydantic>=1.10,<3",
+  "python-multipart>=0.0.6",
+  "pypdf>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.urls]
+Homepage = "https://github.com/AdilShamim8/rewoo"
+Author = "https://adilshamim.me"
+
+[project.scripts]
+rewoo = "rewoo.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["rewoo*"]
+
+[tool.setuptools.package-data]
+rewoo = ["web/*", "web/assets/*", "recipes/*.json", "harness/scenarios/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

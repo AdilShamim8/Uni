@@ -1,0 +1,14 @@
+{
+  "id": "gift-ideas",
+  "order": 10,
+  "emoji": "🎁",
+  "color": "#E4577B",
+  "title": "Gift ideas",
+  "description": "Ideas for someone, based on what you've told me about them.",
+  "helper": "woo",
+  "fields": [
+    {"name": "person", "label": "Who is it for?", "placeholder": "my sister"},
+    {"name": "budget", "label": "Budget", "placeholder": "3,000 BDT"}
+  ],
+  "prompt": "Suggest 5 gift ideas for {person} within {budget}. Check my memory for anything I've said about them first."
+}
