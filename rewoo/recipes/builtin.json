@@ -1,0 +1,53 @@
+[
+  {
+    "id": "brief-me", "order": 1, "emoji": "📚", "color": "#18B8A6",
+    "title": "Brief me on a topic",
+    "description": "Pull together everything your files and notes say about something.",
+    "helper": "scout",
+    "fields": [{"name": "topic", "label": "What topic?", "placeholder": "e.g. my apartment lease"}],
+    "prompt": "Brief me on {topic}. Search my memory thoroughly and give me a short, skimmable briefing: key facts first, then open questions. Cite sources."
+  },
+  {
+    "id": "plan-my-week", "order": 2, "emoji": "🗓️", "color": "#F5B400",
+    "title": "Plan my week",
+    "description": "Turn your goals into a realistic to-do list.",
+    "helper": "tally",
+    "fields": [{"name": "goals", "label": "What do you want to get done?", "placeholder": "finish report, call mom, gym 3x", "multiline": true}],
+    "prompt": "Help me plan my week. My goals: {goals}. Check the date, look at my existing to-dos, then add the most important new to-dos (at most 5) and give me a simple day-by-day plan."
+  },
+  {
+    "id": "draft-reply", "order": 3, "emoji": "✉️", "color": "#FF7A59",
+    "title": "Draft a reply",
+    "description": "Write an email draft using what's in your notes. Nothing is sent.",
+    "helper": "quill",
+    "fields": [
+      {"name": "to", "label": "Who is it for?", "placeholder": "e.g. my landlord"},
+      {"name": "about", "label": "What should it say?", "placeholder": "ask to fix the heater before Friday", "multiline": true}
+    ],
+    "prompt": "Draft an email to {to} about: {about}. Check my notes for relevant facts and my usual tone first, then save it as a draft."
+  },
+  {
+    "id": "explain-simply", "order": 4, "emoji": "🧸", "color": "#7C5CFF",
+    "title": "Explain it simply",
+    "description": "Find a document in your memory and explain it like you're 12.",
+    "helper": "scout",
+    "fields": [{"name": "doc", "label": "Which document or topic?", "placeholder": "e.g. my insurance policy"}],
+    "prompt": "Find what my memory has about {doc}, read the most relevant document, and explain it in plain language a 12-year-old would understand. List anything important I should watch out for."
+  },
+  {
+    "id": "read-this-page", "order": 5, "emoji": "🌐", "color": "#4A6CF7",
+    "title": "Summarize a web page",
+    "description": "Paste a link and get the gist in 5 bullets.",
+    "helper": "scout",
+    "fields": [{"name": "url", "label": "Link", "placeholder": "https://..."}],
+    "prompt": "Read {url} and summarize it in 5 short bullets. Then tell me if it relates to anything in my memory."
+  },
+  {
+    "id": "remember", "order": 6, "emoji": "💡", "color": "#E4577B",
+    "title": "Remember something",
+    "description": "Tell ReWoo a fact about you. It asks before saving.",
+    "helper": "woo",
+    "fields": [{"name": "fact", "label": "What should I remember?", "placeholder": "I'm allergic to peanuts"}],
+    "prompt": "Remember that {fact}"
+  }
+]

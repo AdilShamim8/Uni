@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ReWoo — your personal AI helper</title>
+  <meta name="description" content="ReWoo is an open-source personal AI agent OS: private memory, any AI model, radically simple." />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="rail">
+      <a class="brand" href="#/"><span id="brand-woo"></span><b>Re<span>Woo</span></b></a>
+      <nav class="nav" id="nav">
+        <a href="#/" data-r="home"><span class="ico">🏠</span><span>Home</span></a>
+        <a href="#/memory" data-r="memory"><span class="ico">🧠</span><span>Memory</span></a>
+        <a href="#/helpers" data-r="helpers"><span class="ico">🤝</span><span>Helpers</span></a>
+        <a href="#/library" data-r="library"><span class="ico">📚</span><span>Library</span></a>
+        <a href="#/settings" data-r="settings"><span class="ico">⚙️</span><span>Settings</span></a>
+      </nav>
+      <div class="spacer"></div>
+      <a class="brain-chip" id="brain-chip" href="#/settings"></a>
+    </aside>
+    <main id="view" aria-live="polite"></main>
+  </div>
+  <div class="toasts" id="toasts"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
