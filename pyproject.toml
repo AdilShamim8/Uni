@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rewoo"
-version = "0.1.0"
-description = "ReWoo — an open-source Personal AI Agent OS: private memory, any AI model, radically simple."
+version = "0.2.0"
+description = "ReWoo — open-source AI teammates with private memory. Merges Paperclip, Hermes Agent and OpenClaw into one simple app."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Adil Shamim", email = "adilshamim696@gmail.com" }]
@@ -40,7 +40,7 @@ rewoo = "rewoo.__main__:main"
 include = ["rewoo*"]
 
 [tool.setuptools.package-data]
-rewoo = ["web/*", "web/assets/*", "recipes/*.json", "harness/scenarios/*.json"]
+rewoo = ["web/dist/*", "web/dist/assets/*", "recipes/*.json", "harness/scenarios/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -60,6 +60,43 @@ def _is_public_url(url: str) -> bool:
         return False
 
 
+class FetchBlocked(Exception):
+    pass
+
+
+MAX_FETCH_BYTES = 2 * 1024 * 1024
+UA = {"User-Agent": "ReWoo/0.2 (+https://github.com/AdilShamim8/rewoo)"}
+
+
+async def fetch_public(url: str, transport=None, max_redirects: int = 5):
+    """GET a public web page safely.
+
+    Redirects are followed manually so that *every* hop is re-validated against
+    the SSRF guard (no redirect into localhost / private networks / cloud
+    metadata). The body is capped at 2 MB.
+    """
+    current = url
+    async with httpx.AsyncClient(timeout=20, follow_redirects=False, transport=transport) as c:
+        for _ in range(max_redirects + 1):
+            if not _is_public_url(current):
+                raise FetchBlocked("that address (or a redirect) isn't a public web page.")
+            async with c.stream("GET", current, headers=UA) as r:
+                if 300 <= r.status_code < 400 and "location" in r.headers:
+                    current = str(r.url.join(r.headers["location"]))
+                    continue
+                chunks, size = [], 0
+                async for chunk in r.aiter_bytes():
+                    size += len(chunk)
+                    chunks.append(chunk)
+                    if size > MAX_FETCH_BYTES:
+                        break
+                raw = b"".join(chunks)[:MAX_FETCH_BYTES]
+                body = raw.decode(r.encoding or "utf-8", "ignore")
+                text = html_to_text(body) if "html" in r.headers.get("content-type", "") else body
+                return text, current
+    raise FetchBlocked("too many redirects.")
+
+
 def register_builtin_tools(reg: ToolRegistry) -> ToolRegistry:
     @reg.tool("search_memory", "Search the user's personal memory (files, Google Drive, notes, past conversations).",
               {"query": "what to look for"}, label="Searching your memory", emoji="🔎")
@@ -109,15 +146,13 @@ def register_builtin_tools(reg: ToolRegistry) -> ToolRegistry:
     @reg.tool("web_fetch", "Read the text of a public web page.", {"url": "https://..."}, risk="external",
               label="Reading a web page", emoji="🌐")
     async def web_fetch(ctx, url: str = "", **_: Any) -> ToolResult:
-        if not _is_public_url(url):
-            return ToolResult("web_fetch: that address isn't a public web page.", ok=False)
         try:
-            async with httpx.AsyncClient(timeout=20, follow_redirects=True, transport=ctx.http_transport) as c:
-                r = await c.get(url, headers={"User-Agent": "ReWoo/0.1 (+https://github.com/AdilShamim8/rewoo)"})
-            text = html_to_text(r.text) if "html" in r.headers.get("content-type", "") else r.text
+            text, final_url = await fetch_public(url, transport=ctx.http_transport)
+        except FetchBlocked as exc:
+            return ToolResult(f"web_fetch: {exc}", ok=False)
         except Exception as exc:  # noqa: BLE001
             return ToolResult(f"web_fetch: couldn't open the page ({exc})", ok=False)
-        return ToolResult(f"web_fetch {url}\n{text[:6000]}", {"url": url, "chars": len(text)})
+        return ToolResult(f"web_fetch {final_url}\n{text[:6000]}", {"url": final_url, "chars": len(text)})
 
     @reg.tool("save_note", "Save a note for the user (it also becomes searchable memory).",
               {"title": "short title", "content": "the note"}, label="Saving a note", emoji="📝")

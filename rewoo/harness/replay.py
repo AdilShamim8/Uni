@@ -46,6 +46,12 @@ def trace_lines(events: List[Dict[str, Any]]) -> List[str]:
 
 
 def print_trace(rw, task_id: str) -> int:
+    import sys
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+        except Exception:  # noqa: BLE001
+            pass
     task = rw.store.get("tasks", task_id)
     if not task:
         print(f"No task {task_id}")

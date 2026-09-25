@@ -2,6 +2,19 @@ ReWoo
 Copyright 2026 Adil Shamim
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
-ReWoo is an independent implementation. Ideas from studied open-source projects
-are acknowledged in ATTRIBUTION.md; no third-party source code, assets or UI were copied.
-Fonts "Fredoka" and "Nunito" are loaded from Google Fonts under the SIL Open Font License 1.1.
+
+It includes, under engines/, the source code of third-party projects licensed under the MIT License:
+  - Paperclip      Copyright (c) 2025 Paperclip AI
+  - Hermes Agent   Copyright (c) 2025 Nous Research
+  - OpenClaw       Copyright (c) 2026 OpenClaw Foundation
+Their license texts are reproduced in THIRD_PARTY_NOTICES.md. Nested license and notice files inside
+engines/ apply to the files they cover. Modifications made to the vendored copies are listed in
+engines/README.md.
+
+The prebuilt web app (rewoo/web/dist) bundles MIT/ISC/0BSD-licensed npm packages. Their full license
+texts are in rewoo/web/dist/THIRD_PARTY_LICENSES.txt.
+
+Fonts "Geist", "Geist Mono" and "Fredoka" (SIL Open Font License 1.1) are loaded from Google Fonts at
+runtime and are not redistributed.
+
+Trademarks: see TRADEMARKS.md.

@@ -1,0 +1,30 @@
+{
+  "name": "rewoo-web",
+  "private": true,
+  "version": "0.2.0",
+  "type": "module",
+  "description": "ReWoo web app (React + TypeScript + Vite). Built output goes to ../rewoo/web/dist.",
+  "scripts": {
+    "dev": "vite",
+    "build": "node scripts/collect-licenses.mjs && tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "licenses": "node scripts/collect-licenses.mjs"
+  },
+  "dependencies": {
+    "framer-motion": "^11.11.17",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^2.1.5"
+  },
+  "license": "Apache-2.0"
+}

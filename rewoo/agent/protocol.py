@@ -100,3 +100,75 @@ def parse_action(text: str) -> Action:
 
 def cited_numbers(answer: str) -> List[int]:
     return sorted({int(n) for n in re.findall(r"\[(\d{1,3})\]", answer or "")})
+
+
+class AnswerStream:
+    """Incrementally extract the `"answer"` string from a streaming JSON reply.
+
+    Feed raw model deltas with `feed()`; it returns newly decoded answer text
+    (possibly empty). Handles JSON escapes split across chunks. If the model
+    ignores the protocol and replies in plain prose, `plain` becomes True after
+    enough text without a `{` and the prose itself is streamed.
+    """
+
+    _KEY = re.compile(r'"(?:answer|final)"\s*:\s*"')
+
+    def __init__(self) -> None:
+        self.raw = ""
+        self.start: Optional[int] = None
+        self.emitted = 0
+        self.done = False
+        self.plain = False
+
+    def feed(self, delta: str) -> str:
+        self.raw += delta
+        if self.done:
+            return ""
+        if self.start is None:
+            if not self.plain and len(self.raw) > 40 and "{" not in self.raw:
+                self.plain = True
+            if self.plain:
+                out = self.raw[self.emitted:]
+                self.emitted = len(self.raw)
+                return out
+            m = self._KEY.search(self.raw)
+            if not m:
+                return ""
+            self.start = m.end()
+        text, complete = _decode_partial(self.raw[self.start:])
+        if complete:
+            self.done = True
+        out = text[self.emitted:]
+        self.emitted = len(text)
+        return out
+
+
+_ESC = {'"': '"', "\\": "\\", "/": "/", "b": "\b", "f": "\f", "n": "\n", "r": "\r", "t": "\t"}
+
+
+def _decode_partial(s: str) -> "tuple[str, bool]":
+    out: List[str] = []
+    i = 0
+    while i < len(s):
+        ch = s[i]
+        if ch == '"':
+            return "".join(out), True
+        if ch == "\\":
+            if i + 1 >= len(s):
+                break  # escape split across chunks: wait for more
+            nxt = s[i + 1]
+            if nxt == "u":
+                if i + 6 > len(s):
+                    break
+                try:
+                    out.append(chr(int(s[i + 2:i + 6], 16)))
+                except ValueError:
+                    pass
+                i += 6
+                continue
+            out.append(_ESC.get(nxt, nxt))
+            i += 2
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out), False

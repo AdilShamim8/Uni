@@ -8,7 +8,17 @@ import sys
 import webbrowser
 
 
+def _utf8_console() -> None:
+    """Windows consoles default to legacy code pages; never crash on emoji output."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[attr-defined]
+        except Exception:  # noqa: BLE001
+            pass
+
+
 def main(argv=None) -> int:
+    _utf8_console()
     parser = argparse.ArgumentParser(prog="rewoo", description="ReWoo — your personal AI agent OS")
     sub = parser.add_subparsers(dest="cmd")
     s = sub.add_parser("serve", help="Start the ReWoo app (default)")
@@ -55,7 +65,7 @@ def main(argv=None) -> int:
 
         async def terminal_approver():
             q = rw.bus.subscribe("*")
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             while True:
                 ev = await q.get()
                 if ev["type"] == "approval_requested":
@@ -65,7 +75,7 @@ def main(argv=None) -> int:
 
         async def go():
             approver = asyncio.ensure_future(terminal_approver())
-            await asyncio.sleep(0)  # let the approver subscribe before the task starts
+            await asyncio.sleep(0)
             task = await rw.ask(args.prompt, args.helper)
             approver.cancel()
             return task

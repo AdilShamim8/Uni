@@ -9,11 +9,17 @@ Four layers, each with a different job:
 Retrieval is hybrid: SQLite FTS5 (BM25 keyword ranking) fused with vector
 similarity (local hashing embedder by default, or a real embedding model) using
 Reciprocal Rank Fusion. Only *enabled* sources are ever searched.
+
+Vectors are stored as compact float32 BLOBs and kept in an in-process cache
+(invalidated on every add/remove), so a query never re-parses embeddings.
 """
 from __future__ import annotations
 
 import json
+import math
 import re
+import threading
+from array import array
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -48,6 +54,8 @@ class Hit:
 class Memory:
     def __init__(self, store: Store):
         self.store = store
+        self._vec_lock = threading.Lock()
+        self._vec_cache: Optional[Dict[str, tuple]] = None  # chunk_id -> (source_id, embedder, array('f'), norm)
         for s in BUILTIN_SOURCES:
             if not store.get("sources", s["id"]):
                 store.insert("sources", {**s, "enabled": 1, "private": 0, "config": {}})
@@ -106,17 +114,51 @@ class Memory:
             cid = new_id("chk_")
             emb = embeddings[i] if embeddings and i < len(embeddings) else local_embed(f"{title}\n{piece}")
             embedder = "provider" if embeddings else "local"
-            rows.append([cid, doc["id"], sid, i, piece, max(1, len(piece) // 4), embedder, json.dumps(emb)])
+            vec = array("f", emb)
+            rows.append([cid, doc["id"], sid, i, piece, max(1, len(piece) // 4), embedder, vec.tobytes()])
             fts.append([cid, title, piece])
-        self.store.executemany("INSERT INTO chunks (id, doc_id, source_id, position, text, tokens, embedder, embedding) VALUES (?,?,?,?,?,?,?,?)", rows)
+            self._cache_put(cid, sid, embedder, vec)
+        self.store.executemany("INSERT INTO chunks (id, doc_id, source_id, position, text, tokens, embedder, vec) VALUES (?,?,?,?,?,?,?,?)", rows)
         self.store.executemany("INSERT INTO chunks_fts (chunk_id, title, text) VALUES (?,?,?)", fts)
         return doc
+
+    # ------------------------------------------------------------ vector cache
+    def _load_vectors(self) -> Dict[str, tuple]:
+        with self._vec_lock:
+            if self._vec_cache is None:
+                cache: Dict[str, tuple] = {}
+                for r in self.store.query("SELECT id, source_id, embedder, vec, embedding FROM chunks"):
+                    vec = None
+                    if r["vec"]:
+                        vec = array("f")
+                        vec.frombytes(r["vec"])
+                    elif r["embedding"]:  # legacy v0.1 JSON embeddings
+                        try:
+                            vec = array("f", json.loads(r["embedding"]))
+                        except ValueError:
+                            vec = None
+                    if vec is not None:
+                        cache[r["id"]] = (r["source_id"], r["embedder"], vec, math.sqrt(sum(x * x for x in vec)) or 1.0)
+                self._vec_cache = cache
+            return self._vec_cache
+
+    def _cache_put(self, cid: str, sid: str, embedder: str, vec: array) -> None:
+        with self._vec_lock:
+            if self._vec_cache is not None:
+                self._vec_cache[cid] = (sid, embedder, vec, math.sqrt(sum(x * x for x in vec)) or 1.0)
+
+    def _cache_drop(self, ids: List[str]) -> None:
+        with self._vec_lock:
+            if self._vec_cache is not None:
+                for cid in ids:
+                    self._vec_cache.pop(cid, None)
 
     def remove_document(self, doc_id: str) -> None:
         ids = [r["id"] for r in self.store.query("SELECT id FROM chunks WHERE doc_id = ?", [doc_id])]
         for cid in ids:
             self.store.execute("DELETE FROM chunks_fts WHERE chunk_id = ?", [cid])
         self.store.execute("DELETE FROM chunks WHERE doc_id = ?", [doc_id])
+        self._cache_drop(ids)
         self.store.delete("documents", doc_id)
 
     def read_document(self, doc_id: str, max_chars: int = 6000) -> Optional[Dict[str, Any]]:
@@ -130,18 +172,23 @@ class Memory:
         return {**doc, "text": text[:max_chars], "truncated": len(text) > max_chars, "private": bool(src["private"])}
 
     # ----------------------------------------------------------------- facts
-    def facts(self) -> List[Dict[str, Any]]:
-        rows = self.store.query("SELECT * FROM facts ORDER BY pinned DESC, created_at DESC")
+    def facts(self, bot_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Shared facts, plus (when bot_id is given) the facts that bot learned itself."""
+        if bot_id:
+            rows = self.store.query("SELECT * FROM facts WHERE bot_id IS NULL OR bot_id = ? ORDER BY pinned DESC, created_at DESC", [bot_id])
+        else:
+            rows = self.store.query("SELECT * FROM facts ORDER BY pinned DESC, created_at DESC")
         for r in rows:
             r["pinned"] = bool(r["pinned"])
         return rows
 
-    def add_fact(self, text: str, source_task: str = "", pinned: bool = False) -> Dict:
+    def add_fact(self, text: str, source_task: str = "", pinned: bool = False, bot_id: Optional[str] = None) -> Dict:
         text = text.strip()
         for f in self.facts():  # avoid exact duplicates
             if f["text"].lower() == text.lower():
                 return f
-        return self.store.insert("facts", {"id": new_id("fact_"), "text": text, "pinned": int(pinned), "source_task": source_task})
+        return self.store.insert("facts", {"id": new_id("fact_"), "text": text, "pinned": int(pinned),
+                                           "source_task": source_task, "bot_id": bot_id})
 
     def update_fact(self, fid: str, **changes: Any) -> None:
         self.store.update("facts", fid, {k: int(v) if isinstance(v, bool) else v for k, v in changes.items() if k in ("text", "pinned")})
@@ -176,16 +223,21 @@ class Memory:
             kw_rank = {r["chunk_id"]: i for i, r in enumerate(rows)}
         # 2) vector similarity (brute force — fine for personal-scale corpora)
         qvec_local = local_embed(query)
+        qn_local = math.sqrt(sum(x * x for x in qvec_local)) or 1.0
+        qn_prov = math.sqrt(sum(x * x for x in query_embedding)) or 1.0 if query_embedding else 1.0
         vec_scores = []
-        for r in self.store.query(f"SELECT id, embedder, embedding FROM chunks WHERE source_id IN ({placeholders})", list(sources)):
-            try:
-                emb = json.loads(r["embedding"]) if r["embedding"] else []
-            except ValueError:
+        for cid, (sid, embedder, vec, norm) in self._load_vectors().items():
+            if sid not in sources:
                 continue
-            q = query_embedding if (r["embedder"] == "provider" and query_embedding) else qvec_local
-            if r["embedder"] == "provider" and not query_embedding:
-                continue
-            vec_scores.append((cosine(q, emb), r["id"]))
+            if embedder == "provider":
+                if not query_embedding or len(query_embedding) != len(vec):
+                    continue
+                q, qn = query_embedding, qn_prov
+            else:
+                if len(vec) != len(qvec_local):
+                    continue
+                q, qn = qvec_local, qn_local
+            vec_scores.append((sum(a * b for a, b in zip(q, vec)) / (qn * norm), cid))
         vec_scores.sort(reverse=True)
         vec_rank = {cid: i for i, (s, cid) in enumerate(vec_scores[:40]) if s > 0.12}
         # 3) reciprocal rank fusion
@@ -215,8 +267,8 @@ class Memory:
                 break
         return hits
 
-    def relevant_facts(self, query: str, k: int = 6) -> List[Dict[str, Any]]:
-        facts = self.facts()
+    def relevant_facts(self, query: str, k: int = 6, bot_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        facts = self.facts(bot_id)
         qt = set(tokenize(query))
         qv = local_embed(query)
         scored = []

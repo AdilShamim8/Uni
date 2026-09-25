@@ -20,6 +20,33 @@ repo consulted is listed with the license found at the time of research.
 Mascot ("Woo"), helper names (Woo, Scout, Quill, Tally, Hush), UI copy, and
 all code under `rewoo/` are original to this project.
 
+## v0.2: code included from three projects
+
+In v0.2, at the author's request, ReWoo **includes the complete source trees** of three MIT-licensed
+projects under `engines/` (see `engines/README.md` for pinned snapshots and the only modifications:
+4 symlinks resolved) and integrates with them through their public interfaces:
+
+| Project | License | What ReWoo uses |
+|---|---|---|
+| [Paperclip](https://github.com/paperclipai/paperclip) | MIT © 2025 Paperclip AI | Full source vendored. ReWoo implements the receiving end of Paperclip's `http` adapter and calls its REST API. The Bots-as-team and heartbeat concepts inspired ReWoo's Bots and Routines (independently implemented in Python). |
+| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | MIT © 2025 Nous Research | Full source vendored. ReWoo reads and writes the same `SKILL.md` format, imports the bundled skills at runtime, and runs Hermes via its CLI or API server. The closed learning loop inspired ReWoo's (consent-gated) skill proposals. |
+| [OpenClaw](https://github.com/openclaw/openclaw) | MIT © 2026 OpenClaw Foundation | Full source vendored. ReWoo calls the gateway's OpenAI-compatible endpoint and documents OpenClaw's custom-provider config. DM pairing inspired ReWoo's Telegram pairing codes. |
+
+The license texts are reproduced in `THIRD_PARTY_NOTICES.md`, and every nested license and notice file
+remains in place. ReWoo's own code outside `engines/` is original.
+
+**Interaction ideas vs. expression.** Some general product ideas in v0.2, such as "AI teammates", several
+agents working in parallel, "teach a task once", and asking before acting, are common patterns in today's
+agent products, including commercial ones. Ideas and interaction patterns aren't protected by copyright.
+ReWoo uses **none** of any product's names, logos, imagery, text, code, fonts or visual design. Its UI, the
+Woo mascot family, copy and styles were written from scratch for ReWoo.
+
+**Removed from the vendored copies (copyright hygiene).** Three kinds of third-party material bundled
+upstream without a redistribution license were removed from `engines/` and replaced with READMEs:
+commercial web fonts in `hermes-agent/web/public/fonts` (Blaze Type, Pangram Pangram), conference LaTeX
+style kits in a Hermes research skill (AAAI, ACL, COLM, ICLR, ICML, NeurIPS), and a human voice sample in
+`hermes-agent/tools/neutts_samples`. See `engines/README.md`.
+
 ## Studied Repositories (36)
 
 License as found at `HEAD` via `raw.githubusercontent.com` during research

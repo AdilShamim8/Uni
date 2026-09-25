@@ -24,16 +24,29 @@ from ..core import ReWoo
 DEFAULT_SUITE = Path(__file__).parent / "scenarios"
 
 
-async def auto_approver(rw: ReWoo, approve: bool = True) -> None:
+def auto_approver(rw: ReWoo, approve: bool = True):
+    """Answer every approval request automatically (harness / CLI / tests).
+
+    The bus subscription happens *synchronously when this function is called*
+    (not when the returned coroutine first runs), so no `approval_requested`
+    event can slip past — regardless of Python version or scheduling order.
+    Approvals that were already pending are answered too.
+    """
     q = rw.bus.subscribe("*")
-    try:
-        while True:
-            ev = await q.get()
-            if ev["type"] == "approval_requested":
-                await asyncio.sleep(0)
-                rw.runtime.decide(ev["data"]["id"], approve)
-    finally:
-        rw.bus.unsubscribe("*", q)
+
+    async def _run() -> None:
+        try:
+            for row in rw.store.query("SELECT id FROM approvals WHERE status = 'pending'"):
+                rw.runtime.decide(row["id"], approve)
+            while True:
+                ev = await q.get()
+                if ev["type"] == "approval_requested":
+                    await asyncio.sleep(0)  # let the runtime register its future first
+                    rw.runtime.decide(ev["data"]["id"], approve)
+        finally:
+            rw.bus.unsubscribe("*", q)
+
+    return _run()
 
 
 def load_scenarios(path: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -64,17 +77,20 @@ def _setup(rw: ReWoo, setup: Dict[str, Any]) -> None:
 async def run_scenario(sc: Dict[str, Any], brain: Optional[str] = None) -> Dict[str, Any]:
     with tempfile.TemporaryDirectory() as tmp:
         rw = ReWoo(Config(data_dir=Path(tmp)), db_path=str(Path(tmp) / "eval.db"), bootstrap_env=brain is not None)
+        rw.store.set_setting("demo_typing_delay", 0)
         if brain:
             rw.store.set_setting("default_provider", brain)
-        _setup(rw, sc.get("setup", {}))
-        approver = asyncio.ensure_future(auto_approver(rw, sc.get("approve", True)))
-        await asyncio.sleep(0)  # subscribe before the task starts emitting events
         try:
-            task = await asyncio.wait_for(rw.ask(sc["prompt"], sc.get("helper", "woo"), sc.get("profile")), timeout=120)
+            _setup(rw, sc.get("setup", {}))
+            approver = asyncio.ensure_future(auto_approver(rw, sc.get("approve", True)))
+            try:
+                task = await asyncio.wait_for(rw.ask(sc["prompt"], sc.get("helper", "woo"), sc.get("profile")), timeout=120)
+            finally:
+                approver.cancel()
+            events = rw.bus.history(task["id"])
+            return grade(sc, task, events, rw)
         finally:
-            approver.cancel()
-        events = rw.bus.history(task["id"])
-        return grade(sc, task, events, rw)
+            rw.close()  # release SQLite file locks before the temp dir is deleted (Windows)
 
 
 def grade(sc: Dict[str, Any], task: Dict[str, Any], events: List[Dict[str, Any]], rw: ReWoo) -> Dict[str, Any]:

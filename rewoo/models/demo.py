@@ -58,6 +58,20 @@ class DemoProvider(ModelProvider):
         tin = estimate_tokens(system + "".join(m.content for m in messages))
         return Completion(text, self.id, self.spec.model or "demo-1", tin, estimate_tokens(text), 0.0)
 
+    async def stream(self, messages, on_delta, system="", model=None, temperature=0.2, max_tokens=1200) -> Completion:
+        """Simulated streaming so the offline demo feels alive (chunked, small delay)."""
+        import asyncio
+
+        out = await self.complete(messages, system=system)
+        delay = float(self.spec.extra.get("typing_delay", 0.0)) if self.spec.extra else 0.0
+        text = out.text
+        step = 12
+        for i in range(0, len(text), step):
+            on_delta(text[i:i + step])
+            if delay:
+                await asyncio.sleep(delay)
+        return out
+
     async def health(self):
         return {"ok": True, "detail": "Demo brain is always available (offline, rule-based).", "model": "demo-1"}
 

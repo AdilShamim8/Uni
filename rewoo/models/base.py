@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import abc
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import httpx
 
@@ -100,6 +100,23 @@ class ModelProvider(abc.ABC):
         max_tokens: int = 1200,
     ) -> Completion:
         ...
+
+    async def stream(
+        self,
+        messages: List[Message],
+        on_delta: Callable[[str], None],
+        system: str = "",
+        model: Optional[str] = None,
+        temperature: float = 0.2,
+        max_tokens: int = 1200,
+    ) -> Completion:
+        """Stream raw text deltas to `on_delta`, then return the full Completion.
+
+        Default: no native streaming — one delta with the whole text.
+        """
+        out = await self.complete(messages, system=system, model=model, temperature=temperature, max_tokens=max_tokens)
+        on_delta(out.text)
+        return out
 
     async def embed(self, texts: List[str]) -> Optional[List[List[float]]]:
         """Return embeddings or None if the provider can't embed."""

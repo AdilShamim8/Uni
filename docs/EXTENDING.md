@@ -79,12 +79,12 @@ rw.memory.remove_document(doc_id)                              # when it disappe
 
 Re-adding the same `external_id` with unchanged text is a no-op. Changed text replaces the old chunks. Sources automatically get the *enabled* and *private* toggles in the UI and are respected by retrieval. `connectors/gdrive.py` is a complete example: OAuth, token refresh, folder scoping and incremental sync.
 
-## Add a helper
+## Add a Bot
 
-Settings-free: Helpers → *Make a helper*. Or via the API:
+Team → *New Bot*. Or via the API:
 
 ```bash
-curl -X POST localhost:8787/api/helpers -H 'content-type: application/json' \
+curl -X POST localhost:8787/api/bots -H 'content-type: application/json' \
   -d '{"name":"Chef","emoji":"🍳","tagline":"Meal ideas","instructions":"Cheap, quick recipes.","tools":["search_memory","save_note"]}'
 ```
 
@@ -107,7 +107,18 @@ Run `python -m rewoo eval`. Keys are documented at the top of `rewoo/harness/run
 
 | Method | Path | Purpose |
 |---|---|---|
-| POST | `/api/tasks` | start a task `{prompt, helper_id}` |
+| GET | `/api/board` | every Bot + what it's doing right now |
+| GET/POST/PUT/DELETE | `/api/bots…` | manage Bots (`engine`: rewoo · hermes · openclaw) |
+| POST | `/api/threads` | new conversation `{message, bot_id}` |
+| POST | `/api/threads/{id}/messages` | follow-up in a conversation |
+| GET | `/api/stream` | global live events (SSE) |
+| GET/POST/PATCH/DELETE | `/api/skills…` | skills; `POST /api/skills/import-hermes` |
+| GET/POST/PATCH/DELETE | `/api/routines…` | routines; `POST /{id}/run`; `POST /api/routines/from-task/{task}` (teach) |
+| GET/POST/PATCH | `/api/channels…` | Telegram channel |
+| GET/PUT | `/api/engines…` | engine status + config + copy-paste snippets |
+| POST | `/api/paperclip/heartbeat` | Paperclip `http` adapter target |
+| GET/POST | `/v1/models`, `/v1/chat/completions` | OpenAI-compatible (Bearer ReWoo API key) |
+| POST | `/api/tasks` | start a task `{prompt, helper_id, thread_id?}` |
 | GET | `/api/tasks/{id}` | task + full event log |
 | GET | `/api/tasks/{id}/stream` | live events (SSE) |
 | POST | `/api/approvals/{id}` | `{approve: true/false}` |

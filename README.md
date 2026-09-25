@@ -1,71 +1,63 @@
 <div align="center">
 
-<img src="rewoo/web/assets/favicon.svg" width="96" alt="Woo, the ReWoo mascot" />
+<img src="rewoo/web/dist/favicon.svg" width="88" alt="ReWoo" />
 
 # ReWoo
 
-### Your personal AI helper that actually knows *your* stuff, and shows you exactly what it's doing.
+### AI teammates that finish the work, and only ever use the parts of your life you allow.
 
-**Private memory · Any AI model · Radically simple**
+**Private memory · Any AI model · Routines · Skills that grow · Works in your chat apps**
 
-[Quick start](#-quick-start-3-minutes) · [How it works](#-how-it-works-in-plain-words) · [Use it](#-using-rewoo) · [Extend it](#-extending-rewoo) · [Architecture](docs/ARCHITECTURE.md) · [Research](RESEARCH.md)
+ReWoo merges three of the most important open-source agent projects into **one simple app**:
+<br/>**[Paperclip](https://github.com/paperclipai/paperclip)** (the team) · **[Hermes Agent](https://github.com/NousResearch/hermes-agent)** (the learning) · **[OpenClaw](https://github.com/openclaw/openclaw)** (works where you work)
+<br/>and adds the layer they all miss: **private personal memory, consent and a UI anyone can use.**
 
-`Apache-2.0` · `Python 3.9+` · `No Node, no Docker, no cloud account required`
+[Quick start](#-quick-start-3-minutes) · [Tour](#-a-2-minute-tour) · [How it works](#-how-it-works) · [Engines](#-the-three-engines) · [Privacy](#-privacy-promises) · [Develop](#-for-developers) · [Docs](docs/)
+
+`Apache-2.0` · `Python 3.9–3.14` · `Windows · macOS · Linux` · `No Node needed to run`
 
 </div>
 
 ---
 
-![ReWoo home screen](docs/screenshots/02-home.png)
+![ReWoo home](docs/screenshots/02-home.png)
 
 ## 🟣 What is ReWoo?
 
-ReWoo is an **open-source Personal AI Agent OS**. In everyday words, it's an AI helper that runs on your own computer and:
+ReWoo gives you a **team of AI Bots** you message like colleagues:
 
-- **answers from your own files**, like your notes, documents and Google Drive, and tells you which file each fact came from;
-- **remembers what matters to you**, but only after asking you first;
-- **does small jobs**: to-do lists, email drafts (never sent without you), notes, math, reading web pages;
-- **works with any AI model**: OpenAI, Claude, Gemini, OpenRouter, Groq, or a **free, private model on your own computer** (Ollama or LM Studio);
-- **shows its work live**: what it's thinking, which tool it's using, and *exactly* which pieces of your data it's looking at.
+| Bot | Job | Good at |
+|---|---|---|
+| 🟣 **Woo** | Chief of Staff | A bit of everything; hands work to the right teammate |
+| 🔭 **Scout** | Research | Finds things in your files and on the web, with sources |
+| ✍️ **Quill** | Writing & Outreach | Drafts emails and notes in your voice (never sends) |
+| 🧮 **Tally** | Planner & Money | Exact math, budgets, plans, to-dos |
+| 🔒 **Hush** | Private matters | Only thinks with AI running on *your* computer |
 
-> **Technically serious underneath. Ridiculously simple on top.**
+…plus any Bot you create. Each one can run on ReWoo's own engine, on **Hermes Agent**, or on **OpenClaw**.
 
-## 🤔 Why does it exist?
-
-Open-source AI agents have become very powerful. There are "AI companies" with CEO and engineer agents, autonomous coders, agent runtimes and harnesses. We studied 36 of these projects ([RESEARCH.md](RESEARCH.md)) and found the same gap everywhere:
-
-| What exists | What normal people still don't have |
-|---|---|
-| Powerful orchestration, org charts, swarms | A way to **see** what the agent is doing, in plain words |
-| Memory as a roadmap item or a developer API | **Private personal memory** you can inspect, limit and erase |
-| One favourite model provider | **Model freedom**, including local models for sensitive data |
-| Terminals, YAML, Docker, `.env` files | A **friendly app** a non-technical person can use in 3 minutes |
-| "Trust me" automation | **Consent**: it asks before remembering things or taking risky actions |
-
-ReWoo is that missing layer: **agent infrastructure + private memory + context engineering + model freedom + a radically simple human experience.**
+- **It knows your stuff.** Upload files or connect **Google Drive**. Bots answer from *your* documents and show exactly which ones.
+- **You watch it work.** Every step, every tool and every piece of memory used is shown live on the Bot's "Computer" panel.
+- **It asks first.** Remembering something about you, going online, anything risky: you get **Allow / Not now**.
+- **It learns.** After real work, a Bot proposes a reusable **skill**, and you decide whether it keeps it. You can also import 200+ skills from Hermes Agent.
+- **It runs on a schedule.** Press **Save as routine** under any answer and it repeats every morning, or whenever you like.
+- **It works where you are.** Use the app, **Telegram** (built in), or WhatsApp, Slack, Discord and 20+ more through OpenClaw.
+- **Any brain.** OpenAI, Claude, Gemini, OpenRouter, Groq, or **free and private** local models (Ollama, LM Studio). An offline Demo brain means it works the moment you install it.
 
 ## 🚀 Quick start (3 minutes)
 
-You need **Python 3.9 or newer** ([download](https://www.python.org/downloads/)). That's it.
+You need **Python 3.9 or newer** ([download](https://www.python.org/downloads/)). That's all. The web app ships prebuilt.
 
 ```bash
-# 1. Get the code
 git clone https://github.com/AdilShamim8/rewoo.git
 cd rewoo
-
-# 2. Install (one time)
 python3 -m pip install -r requirements.txt
-
-# 3. Start ReWoo
 python3 -m rewoo
 ```
 
-Your browser opens **http://localhost:8787**. Woo says hi and walks you through setup.
+Your browser opens **http://localhost:8787** and a short intro introduces your team.
 
-<details>
-<summary><b>Windows users</b></summary>
-
-Use `py` instead of `python3`:
+<details><summary><b>Windows</b></summary>
 
 ```powershell
 py -m pip install -r requirements.txt
@@ -73,144 +65,128 @@ py -m rewoo
 ```
 </details>
 
-<details>
-<summary><b>Prefer Docker?</b></summary>
+<details><summary><b>Docker</b></summary>
 
 ```bash
-docker compose up --build     # then open http://localhost:8787
+docker compose up                      # ReWoo
+docker compose --profile engines up    # ReWoo + Paperclip + Hermes Agent
 ```
 </details>
 
-**No API key? No problem.** ReWoo starts with an offline **Demo brain**, so you can try every screen straight away. Connect a real AI in **Settings → Brains** when you're ready:
+**Connect a real brain** in **Settings → Brains** (paste an API key, or pick *Ollama* for free, private AI on your computer). Until then the offline **Demo brain** lets you try every feature.
 
-| Brain | Cost | Privacy | How |
-|---|---|---|---|
-| **Ollama** (Llama, Qwen, Gemma…) | Free | 🔒 Stays on your computer | Install [ollama.com](https://ollama.com), run `ollama pull llama3.2`, then add "Ollama" in Settings |
-| **OpenAI / Claude / Gemini** | Pay per use | Sent to the provider | Paste your API key in Settings |
-| **OpenRouter / Groq / any OpenAI-compatible server** | Varies | Varies | Paste the key and server address |
+## 🎬 A 2-minute tour
 
-## 🧠 How it works (in plain words)
-
-```
-   Your stuff                     ReWoo                                  You
-┌──────────────┐   pick only   ┌────────────────────────────┐   live   ┌──────────────────┐
-│ Files        │──the relevant▶│ 1. Find what's relevant     │──────────▶│ See every step   │
-│ Google Drive │    pieces     │ 2. Hide secrets, respect 🔒 │           │ See what it used │
-│ Notes        │               │ 3. Think with your chosen AI│◀──────────│ Say yes / no     │
-│ Past chats   │◀──remember────│ 4. Use tools, ask if risky  │  approve  │ Get the answer   │
-│ Facts you OK │  (with OK)    │ 5. Answer with sources      │           │ with sources     │
-└──────────────┘               └────────────────────────────┘           └──────────────────┘
-```
-
-1. **You ask** something, like *"Are pets allowed in my apartment?"*
-2. **ReWoo searches your memory** and picks just the few most relevant pieces. It never dumps everything into the AI.
-3. **It protects you.** Passwords and API keys are hidden before anything leaves your computer. Sources you've marked **Private 🔒** are only ever shown to AI models running on your own machine.
-4. **It thinks and acts.** Your chosen AI decides what to do next: search more, read a document, do math, add a to-do. Anything that changes your memory (or anything risky) **waits for your OK**.
-5. **It answers with sources** like **[1]**. Click one to see exactly where the answer came from.
-6. **It learns.** Finished conversations become memory, so next time it knows your context.
-
-The panel on the right of every task, **"What I'm using"**, is a *context receipt*. It lists every piece of your data the AI was shown, plus what was **left out and why**, and how many secrets were hidden.
-
-![A task in progress](docs/screenshots/04-task-answer.png)
-
-## 🧭 Using ReWoo
-
-| Screen | What you do there |
+| | |
 |---|---|
-| **🏠 Home** | Ask anything. Pick a helper. One-click **Recipes** like "Brief me on a topic", "Plan my week" and "Draft a reply". |
-| **🧠 Memory** | Upload files, connect **Google Drive**, choose what ReWoo may use, mark sources **Private 🔒**, see and forget facts, pause all memory, and **Peek** at what ReWoo would see for any question. |
-| **🤝 Helpers** | Meet the team: **Woo** (everyday), **Scout** (research), **Quill** (writing), **Tally** (numbers and plans), **Hush** (private, on-device only). You can make your own in 30 seconds. |
-| **📚 Library** | To-dos, notes and email drafts your helpers made. Drafts are **never sent**: copy them or open them in your email app. |
-| **⚙️ Settings** | Brains (AI models), backup brains, when to ask first (*Careful / Balanced / Autopilot*), and per-task limits for steps, tokens and cost. |
+| ![Chat](docs/screenshots/04-chat-context.png) **Chat with a Bot.** The answer streams in, with sources like **[1]**. Click one to see exactly what was used. | ![Approval](docs/screenshots/06-approval.png) **Consent built in.** "Remember that…" waits for your OK, and so does anything risky. |
+| ![Skill](docs/screenshots/07-skill-proposed.png) **Bots get smarter.** After multi-step work, a Bot proposes a skill. Save it, and next time it's faster. | ![Routines](docs/screenshots/09-routines.png) **Teach a task once.** *Save as routine* turns any answer into scheduled work. |
+| ![Engines](docs/screenshots/15-engines.png) **Three engines, one app.** Hermes, OpenClaw and Paperclip, all connected and verified live. | ![Memory](docs/screenshots/05-memory.png) **Your memory, your rules.** Toggle sources, mark them Private 🔒, forget anything. |
 
-**Try these:**
+<p align="center"><img src="docs/screenshots/16-day.png" width="49%" alt="Day theme" /> <img src="docs/screenshots/17-mobile.png" width="22%" alt="Mobile" /></p>
+<p align="center"><sub>Night & Day themes · works on phones</sub></p>
 
-- *"What do my notes say about the trip budget?"*
-- *"Remember that I'm allergic to peanuts"* (you'll be asked first)
-- *"Remind me to renew my passport"*
-- *"Draft an email to my landlord about the broken heater"*
-- *"Summarize https://example.com in 5 bullets"*
+## 🧠 How it works
 
-### Connecting Google Drive
+```
+ You ──► a Bot ──► 1. picks only the relevant bits of YOUR memory (files · Drive · notes · past chats · facts)
+                   2. hides passwords/keys; keeps Private 🔒 data on this computer
+                   3. thinks with the brain you chose, using skills it learned
+                   4. uses tools (search, math, notes, to-dos, drafts, web, teammates)
+                      └─ anything risky → "Can I…?"  Allow / Not now
+                   5. streams the answer with sources + a receipt of everything it used
+                   6. remembers the conversation; proposes a skill; can repeat it as a routine
+```
 
-Memory → Google Drive → follow the 4 on-screen steps (about 5 minutes, one time only). ReWoo uses **read-only** access and only reads the folders you tick. Full guide: [docs/GOOGLE_DRIVE.md](docs/GOOGLE_DRIVE.md).
+| Idea | Where it comes from | What ReWoo adds |
+|---|---|---|
+| A **team** of specialised agents with jobs, hand-offs, heartbeats | Paperclip's AI company | Friendly Bots instead of an org chart; routines instead of cron |
+| **Learning loop** that turns experience into `SKILL.md` skills | Hermes Agent | Consent: skills are *proposed*, you approve; same file format, so they interoperate |
+| **Gateway** to chat apps with DM pairing | OpenClaw | Native Telegram channel with pairing codes; OpenClaw for everything else |
+| **Private memory + context engineering** | ReWoo | Hybrid search, token-budgeted context, secret redaction, private-source routing, receipts |
 
-## 🔐 Privacy, in one table
+Architecture details: **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+
+## 🧩 The three engines
+
+ReWoo includes the **complete source** of all three projects in [`engines/`](engines/README.md) (MIT, with notices kept), wired in through their real interfaces. **Every integration below was run live**:
+
+| | Direction | What you get |
+|---|---|---|
+| **Hermes Agent** | Hermes → ReWoo | Hermes uses your ReWoo Bots (with memory and consent) as its model |
+| | ReWoo → Hermes | A ReWoo Bot runs on Hermes (API server or CLI) |
+| | Skills | Import Hermes' 200+ bundled skills in one click |
+| **OpenClaw** | OpenClaw → ReWoo | WhatsApp/Slack/Discord/Telegram… messages reach your ReWoo Bots |
+| | ReWoo → OpenClaw | A ReWoo Bot runs on an OpenClaw agent |
+| **Paperclip** | Paperclip → ReWoo | Hire a ReWoo Bot into your company. Assign it an issue, and it does the work, comments the result and closes the issue |
+| | ReWoo → Paperclip | See your company's agents and issues, create and assign issues, wake agents |
+
+Step-by-step setup, copy-paste configs and the verification log: **[docs/ENGINES.md](docs/ENGINES.md)**.
+
+## 🔐 Privacy promises
 
 | Promise | How it's enforced |
 |---|---|
-| Your data stays on your computer | One local SQLite file (`data/rewoo.db`). No ReWoo cloud exists. |
-| Only relevant bits go to the AI | Retrieval plus a token budget per task (`ContextBuilder`) |
-| Private sources never leave your machine | Router refuses remote brains when private data is in the prompt |
+| Your data stays on your computer | One local SQLite file (`data/rewoo.db`). There is no ReWoo cloud. |
+| Bots only see what's relevant | Hybrid retrieval plus a per-task token budget. You see a receipt every time. |
+| Private sources never leave your machine | Remote brains and engines are refused whenever private data is in the prompt |
 | Secrets are hidden | API keys, passwords, card-like numbers and private keys are redacted before remote calls |
-| Nothing is remembered without consent | `remember_fact` is an approval-gated tool |
-| Nothing is sent on your behalf | Email is draft-only. There is no "send" tool. |
-| You can always see and undo | Context receipts, per-source toggles, forget buttons, and a pause-all switch |
+| Nothing is remembered without consent | Saving to memory is approval-gated, and skills are proposed rather than auto-installed |
+| Nothing is sent on your behalf | Emails are drafts only. There is no "send" tool. |
+| Other apps need a key | `/v1` requires your ReWoo API key. `REWOO_ACCESS_TOKEN` can lock the whole app. |
 
-## 🧩 Extending ReWoo
+Security details and reporting: [SECURITY.md](SECURITY.md).
 
-ReWoo is small and readable on purpose. Common extensions take minutes:
-
-- **Add a tool**: one async function plus a decorator ([examples/custom_tool.py](examples/custom_tool.py))
-- **Add a recipe**: drop a JSON file into `data/recipes/` ([examples/custom_recipe.json](examples/custom_recipe.json))
-- **Add a brain**: any OpenAI-compatible server works from Settings. A new API type is one class with `complete()`.
-- **Add a memory source**: call `memory.add_document(...)`. See `connectors/gdrive.py` for a full connector.
-- **Script it**: everything is an HTTP API ([examples/api_quickstart.py](examples/api_quickstart.py)), plus a CLI: `python3 -m rewoo ask "…"`
-
-Full guide: [docs/EXTENDING.md](docs/EXTENDING.md).
-
-## 🧪 Tests and evaluation harness
+## 🛠️ For developers
 
 ```bash
 python3 -m pip install -r requirements-dev.txt
-python3 -m pytest -q          # unit + integration tests (no network, no API keys)
-python3 -m rewoo eval         # behaviour scenarios: grounding, honesty, consent, privacy, secrets, math, drafts
-python3 -m rewoo trace <id>   # replay any task step by step from its event log
+python3 -m pytest -q        # 131 backend tests (offline, no API keys)
+python3 -m rewoo eval       # behaviour scenarios: grounding, honesty, consent, privacy, secrets…
+python3 -m rewoo trace <id> # replay any task step by step
+make web-dev                # hot-reload UI (React + TypeScript + Vite) on :5173
+make web                    # rebuild the prebuilt UI into rewoo/web/dist
 ```
 
-The eval harness runs each scenario in a fresh, isolated ReWoo against the Demo brain, so results are reproducible in CI. Point it at a real brain to benchmark models on the same checks.
+**Use ReWoo from anything** that speaks the OpenAI API:
 
-## 🗂️ Project structure
-
-```
-rewoo/
-├── rewoo/
-│   ├── agent/        # runtime loop, JSON protocol, helpers (roles)
-│   ├── models/       # provider interface, adapters (OpenAI-compat, Anthropic, Gemini, Ollama, Demo), router
-│   ├── memory/       # sources → documents → chunks, hybrid search, context builder + receipts, redaction
-│   ├── connectors/   # Google Drive (read-only, incremental)
-│   ├── tools/        # tool registry + risk levels, built-in tools
-│   ├── recipes/      # one-click workflows (JSON)
-│   ├── harness/      # eval runner, scenarios, trace replay
-│   ├── api/          # FastAPI app + live event streaming (SSE)
-│   ├── web/          # the app UI (plain HTML/CSS/JS, no build step)
-│   ├── core.py       # wires everything together
-│   └── db.py         # SQLite store (+ FTS5 full-text index)
-├── tests/            # pytest suite
-├── examples/         # sample notes, custom tool/recipe, API quickstart
-├── docs/             # architecture, Google Drive, extending, screenshots
-├── RESEARCH.md       # what we learned from 36 agent projects
-└── ATTRIBUTION.md    # licenses and credits
+```bash
+curl http://localhost:8787/v1/chat/completions -H "Authorization: Bearer $REWOO_API_KEY" \
+  -H "Content-Type: application/json" -d '{"model":"rewoo/scout","messages":[{"role":"user","content":"Brief me on my lease"}]}'
 ```
 
-## 🗺️ Roadmap
+**Extend it:** add a tool (one function), a recipe (one JSON file), a brain (one class), a memory
+connector, a Bot or an eval scenario. See **[docs/EXTENDING.md](docs/EXTENDING.md)**.
 
-- Scheduled helpers ("every Monday, brief me on…"), with the same approvals
-- More connectors: Gmail (read-only), Notion, local folders watch, calendar
-- MCP tool import, so any MCP server becomes ReWoo tools with risk levels
-- "Lessons learned": turn repeated corrections into pinned facts, with your OK
-- Voice input and a mobile-friendly PWA
+```
+rewoo/                 Python package (FastAPI + SQLite)
+  agent/               runtime · protocol · bots · threads · skills · routines
+  models/              provider interface · OpenAI-compat · Anthropic · Gemini · Ollama · Demo · router
+  memory/              sources → chunks · hybrid search · context builder + receipts · redaction
+  engines/             Hermes / OpenClaw / Paperclip adapters
+  channels/            Telegram connector
+  connectors/          Google Drive (read-only, incremental)
+  api/                 REST · live SSE · OpenAI-compatible /v1
+  web/dist/            prebuilt web app
+web/                   web app source (React + TS + Vite + Framer Motion)
+engines/               full vendored source: hermes-agent · paperclip · openclaw
+tests/ · docs/ · examples/ · scripts/
+```
 
-## 🤝 Contributing
+## 📤 Publish this repo to GitHub
 
-Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). Please keep the two design rules in mind: **anything new must be explainable to a non-technical person**, and **anything that touches personal data must be visible in the context receipt.**
+The vendored engines keep their own `.gitignore` files, so use the helper. It force-adds `engines/` so nothing is dropped:
+
+```bash
+scripts/publish-to-github.sh https://github.com/<you>/rewoo.git        # macOS / Linux
+.\scripts\publish-to-github.ps1 https://github.com/<you>/rewoo.git     # Windows
+```
 
 ## 📜 License and credits
 
-ReWoo is licensed under the **Apache License 2.0**. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
-
-ReWoo is an independent implementation. It was informed by studying many open-source agent projects, but it contains no code, assets or UI copied from them. See [ATTRIBUTION.md](ATTRIBUTION.md).
+ReWoo is **Apache-2.0** ([LICENSE](LICENSE), [NOTICE](NOTICE)). The vendored engines are **MIT**, and their license texts are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and inside each folder. See [ATTRIBUTION.md](ATTRIBUTION.md) for how ideas and code from 36 studied projects were used.
+The ReWoo UI, mascot, name and visual design are original. No third-party UI, logos, fonts or branding are used in ReWoo itself. See [TRADEMARKS.md](TRADEMARKS.md).
 
 **Author:** [Adil Shamim](https://adilshamim.me) · [GitHub](https://github.com/AdilShamim8) · [LinkedIn](https://linkedin.com/in/adilshamim8)
 
-> ReWoo is an early-stage open-source project (v0.1). It is not yet audited for high-stakes use. Please don't rely on it for medical, legal or financial decisions.
+> ReWoo is an early open-source project (v0.2). It hasn't been audited for high-stakes use, so please don't rely on it for medical, legal or financial decisions.

@@ -80,6 +80,7 @@ class ContextBuilder:
         include_facts: bool = True,
         query_embedding: Optional[List[float]] = None,
         exclude_doc_ids: Optional[set] = None,
+        bot_id: Optional[str] = None,
     ) -> ContextPack:
         excluded: List[Dict[str, Any]] = []
         redactions: List[str] = []
@@ -89,7 +90,7 @@ class ContextBuilder:
 
         candidates: List[ContextItem] = []
         if include_facts:
-            for f in self.memory.relevant_facts(query):
+            for f in self.memory.relevant_facts(query, bot_id=bot_id):
                 candidates.append(ContextItem(0, "fact", "Something you told me", f["text"], "Things I remember", "facts",
                                               why=["pinned"] if f["pinned"] else ["related to your request"]))
         hits: List[Hit] = self.memory.search(query, k=k, include_private=True, query_embedding=query_embedding)

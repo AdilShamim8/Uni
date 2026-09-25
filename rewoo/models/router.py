@@ -79,7 +79,8 @@ class Router:
     def specs(self) -> List[ProviderSpec]:
         out = [ProviderSpec.from_dict(s) for s in self.store.get_setting("providers", [])]
         if not any(s.id == "demo" for s in out):
-            out.append(ProviderSpec(id="demo", type="demo", name="Demo brain (offline)", model="demo-1", local=True))
+            out.append(ProviderSpec(id="demo", type="demo", name="Demo brain (offline)", model="demo-1", local=True,
+                                    extra={"typing_delay": float(self.store.get_setting("demo_typing_delay", 0.012))}))
         return out
 
     def save_spec(self, data: Dict[str, Any]) -> ProviderSpec:
@@ -149,6 +150,40 @@ class Router:
                 return await provider.complete(messages, system=system, **kw)
             except ProviderError as exc:
                 errors.append(f"{provider.id}: {exc}")
+                nxt = chain[i + 1].id if i + 1 < len(chain) else ""
+                if on_switch and nxt:
+                    on_switch(provider.id, nxt, str(exc))
+                if not exc.retryable and not nxt:
+                    break
+        raise ProviderError("All brains failed. " + " | ".join(errors), retryable=False)
+
+    async def stream(
+        self,
+        messages: List[Message],
+        on_delta: Callable[[str], None],
+        system: str = "",
+        profile: str = "balanced",
+        local_only: bool = False,
+        on_switch: Optional[Callable[[str, str, str], None]] = None,
+        **kw: Any,
+    ) -> Completion:
+        """Like `complete`, but streams deltas. Falls back to the next brain only
+        if the failing one hasn't produced any text yet (never mixes two answers)."""
+        errors: List[str] = []
+        chain = self.chain(profile, local_only)
+        for i, provider in enumerate(chain):
+            produced = {"n": 0}
+
+            def relay(delta: str) -> None:
+                produced["n"] += len(delta)
+                on_delta(delta)
+
+            try:
+                return await provider.stream(messages, relay, system=system, **kw)
+            except ProviderError as exc:
+                errors.append(f"{provider.id}: {exc}")
+                if produced["n"]:
+                    raise
                 nxt = chain[i + 1].id if i + 1 < len(chain) else ""
                 if on_switch and nxt:
                     on_switch(provider.id, nxt, str(exc))

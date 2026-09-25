@@ -42,16 +42,37 @@ def html_to_text(html: str) -> str:
     return re.sub(r"\n\s*\n+", "\n\n", re.sub(r"[ \t]+", " ", text)).strip()
 
 
+def pdf_reader_class():
+    """Return a PdfReader class from pypdf, or PyPDF2 as a fallback (None if neither is installed)."""
+    try:
+        from pypdf import PdfReader  # type: ignore
+        return PdfReader
+    except ImportError:
+        try:
+            from PyPDF2 import PdfReader  # type: ignore
+            return PdfReader
+        except ImportError:
+            return None
+
+
+def extraction_hint(filename: str) -> str:
+    """Human explanation for why a file produced no text."""
+    if filename.lower().endswith(".pdf"):
+        if pdf_reader_class() is None:
+            return "PDF support needs the 'pypdf' package: pip install pypdf"
+        return "This PDF has no text layer (it may be a scan). Try an OCR'd copy."
+    return "I couldn't read text from this file type"
+
+
 def extract_text(data: bytes, filename: str = "", mime: str = "") -> str:
     """Best-effort text extraction for the file types normal people have."""
     name = filename.lower()
     try:
         if name.endswith(".pdf") or mime == "application/pdf":
-            try:
-                from pypdf import PdfReader  # optional dependency
-            except ImportError:
+            reader_cls = pdf_reader_class()
+            if reader_cls is None:
                 return ""
-            reader = PdfReader(io.BytesIO(data))
+            reader = reader_cls(io.BytesIO(data))
             return "\n\n".join((page.extract_text() or "") for page in reader.pages)
         if name.endswith(".docx") or "wordprocessingml" in mime:
             with zipfile.ZipFile(io.BytesIO(data)) as z:
@@ -147,7 +168,7 @@ SECRET_PATTERNS = [
     (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "AWS key"),
     (re.compile(r"\bgh[pousr]_[A-Za-z0-9]{30,}\b"), "GitHub token"),
     (re.compile(r"\bAIza[0-9A-Za-z_\-]{30,}\b"), "Google API key"),
-    (re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+?-----END [A-Z ]*PRIVATE KEY-----"), "private key"),
+    (re.compile(r"-{5}BEGIN(?: [A-Z0-9]+)* PRIVATE KEY-{5}.*?-{5}END(?: [A-Z0-9]+)* PRIVATE KEY-{5}", re.S), "private key"),
     (re.compile(r"\b(?:\d[ -]?){13,16}\b"), "card-like number"),
     (re.compile(r"(?i)\b(password|passcode|pin)\s*[:=]\s*\S+"), "password"),
 ]

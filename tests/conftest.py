@@ -24,7 +24,9 @@ def rw(tmp_path):
     config = Config(data_dir=tmp_path)
     config.upload_dir.mkdir(parents=True, exist_ok=True)
     app = ReWoo(config, db_path=str(tmp_path / "t.db"), bootstrap_env=False)
-    return app
+    app.store.set_setting("demo_typing_delay", 0)
+    yield app
+    app.close()  # release SQLite locks (Windows) before tmp_path cleanup
 
 
 @pytest.fixture

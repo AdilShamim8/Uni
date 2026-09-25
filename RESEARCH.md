@@ -422,3 +422,30 @@ Repo names, licenses, and quoted feature claims are drawn from
 `/agent/workspace/research/notes_A.md`, `notes_B.md`, and `notes_C.md`
 (36-repo README/LICENSE/issue survey, methodology described in Section 1 of
 each file).
+
+
+---
+
+## Addendum (v0.2): a code-level study of Paperclip, Hermes Agent and OpenClaw
+
+For v0.2 the three projects were studied at the source level, not just from their READMEs. This covered
+adapters, gateway HTTP surfaces, the skills format and SSRF guards. Their code is vendored in `engines/`.
+Findings that shaped the build:
+
+1. **They already interoperate.** Paperclip ships `hermes_local`, `hermes_gateway` and `openclaw_gateway`
+   adapters, which makes Paperclip the natural orchestration hub. ReWoo joins the same fabric through
+   Paperclip's generic `http` adapter, and it doesn't need a new Paperclip adapter to do so.
+2. **OpenAI-compatible HTTP is the lingua franca.** OpenClaw's gateway (`/v1/chat/completions`, `model` =
+   agent target) and Hermes' `api_server` (:8642) both speak it. ReWoo therefore exposes `/v1` too, so any
+   engine can use ReWoo Bots as a model and inherit ReWoo's private memory and consent.
+3. **Gateways wrap turns in machine context.** OpenClaw appends `<<<BEGIN_…_CONTEXT>>>` blocks and runtime
+   metadata as the last user message. A naive "last message = request" breaks. This was found during
+   live testing and fixed in `openai_api._clean()`.
+4. **Security defaults are strict, and correctly so.** Paperclip's `http` adapter refuses private and
+   loopback targets unless an exact origin is allowlisted
+   (`PAPERCLIP_HTTP_ADAPTER_PRIVATE_ENDPOINT_ALLOWLIST`). ReWoo documents this rather than working around it.
+5. **SKILL.md is the portable unit of learned behaviour.** Hermes' front-matter layout is simple enough
+   to read and write without a YAML dependency. ReWoo adds the one thing the loop lacked for personal use:
+   **consent before a skill is kept.**
+6. **Hermes' custom-provider config differs by section.** An `api:` key under `providers:` is read as the
+   base URL. The documented snippet in ReWoo is the exact one verified against Hermes 2026.

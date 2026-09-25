@@ -1,18 +1,49 @@
+# ReWoo alone:                     docker compose up
+# ReWoo + Paperclip + Hermes:      docker compose --profile engines up
 services:
   rewoo:
     build: .
-    ports:
-      - "8787:8787"
+    ports: ["8787:8787"]
     env_file:
       - path: .env
         required: false
     environment:
       REWOO_PUBLIC_URL: http://localhost:8787
-      # Reach Ollama running on your computer from inside Docker:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - rewoo-data:/data
+      PAPERCLIP_API_URL: http://paperclip:3100
+      HERMES_API_URL: http://hermes:8642/v1
+    extra_hosts: ["host.docker.internal:host-gateway"]
+    volumes: ["rewoo-data:/data"]
+
+  # Paperclip (MIT) — AI-company control plane. Hire ReWoo Bots via its "http" adapter.
+  paperclip:
+    profiles: ["engines"]
+    image: node:24-slim
+    working_dir: /srv
+    command: ["npx", "-y", "paperclipai@latest", "run"]
+    environment:
+      PORT: "3100"
+      # let Paperclip's http adapter call ReWoo inside the compose network
+      PAPERCLIP_HTTP_ADAPTER_PRIVATE_ENDPOINT_ALLOWLIST: http://rewoo:8787
+    ports: ["3100:3100"]
+    volumes: ["paperclip-data:/root/.paperclip"]
+
+  # Hermes Agent (MIT) — self-improving agent. ReWoo Bots can run on it (engine = hermes).
+  hermes:
+    profiles: ["engines"]
+    build:
+      context: ./engines/hermes-agent
+    command: ["hermes", "gateway", "run"]
+    environment:
+      API_SERVER_KEY: ${HERMES_API_SERVER_KEY:-change-me-to-a-long-random-value}
+    ports: ["8642:8642"]
+    volumes: ["hermes-data:/root/.hermes"]
+
+  # OpenClaw (MIT) needs Node 24.16+ and an interactive `openclaw onboard` for chat apps,
+  # so run it on your machine: npm i -g openclaw && openclaw onboard && openclaw gateway
+  # then set ReWoo → Connections → Engines → OpenClaw to http://host.docker.internal:18789/v1
+
 volumes:
   rewoo-data:
+  paperclip-data:
+  hermes-data:
