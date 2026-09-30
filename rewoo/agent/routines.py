@@ -193,7 +193,11 @@ class Scheduler:
 
     def start(self) -> None:
         if self._task is None or self._task.done():
-            self._task = asyncio.ensure_future(self._loop())
+            try:
+                loop = asyncio.get_running_loop()
+                self._task = loop.create_task(self._loop())
+            except RuntimeError:
+                self._task = asyncio.ensure_future(self._loop())
 
     async def stop(self) -> None:
         if self._task:

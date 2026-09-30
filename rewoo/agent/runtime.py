@@ -137,7 +137,11 @@ class AgentRuntime:
         return task
 
     def start(self, task_id: str) -> asyncio.Task:
-        t = asyncio.ensure_future(self.run(task_id))
+        try:
+            loop = asyncio.get_running_loop()
+            t = loop.create_task(self.run(task_id))
+        except RuntimeError:
+            t = asyncio.ensure_future(self.run(task_id))
         self._running[task_id] = t
         t.add_done_callback(lambda _t: self._running.pop(task_id, None))
         return t

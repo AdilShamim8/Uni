@@ -1,0 +1,22 @@
+title: ReWoo
+description: Your personal AI agent OS — AI teammates with private memory
+theme: jekyll-theme-primer
+
+# Exclude vendored sub-engines, python modules, tests, and web source
+# so that GitHub Pages Jekyll build finishes in seconds without scanning 70k+ files.
+exclude:
+  - engines
+  - rewoo
+  - tests
+  - web
+  - data
+  - scratch
+  - .github
+  - Gemfile
+  - Gemfile.lock
+  - package.json
+  - package-lock.json
+  - requirements.txt
+  - requirements-dev.txt
+  - Dockerfile
+  - BUGS_AND_ISSUES.md
