@@ -44,14 +44,8 @@ def test_demo_end_to_end_search_memory(rw):
 def test_approval_flow_approve(rw):
     async def go():
         approver = asyncio.ensure_future(auto_approver(rw, approve=True))
+        await asyncio.sleep(0)  # yield so auto_approver subscribes before ask() emits events
         try:
-            # NOTE: must wrap in wait_for (not a bare await), matching
-            # rewoo.harness.runner.run_scenario. The demo brain never truly
-            # suspends the event loop before emitting "approval_requested", so
-            # a bare `await rw.ask(...)` can race ahead of auto_approver's
-            # first `bus.subscribe()` call and lose the event forever.
-            # wait_for schedules ask() as its own Task and yields at least
-            # once, giving the approver task a chance to subscribe first.
             return await asyncio.wait_for(rw.ask("Remember that my sister's birthday is May 3"), timeout=10)
         finally:
             approver.cancel()
@@ -67,6 +61,7 @@ def test_approval_flow_approve(rw):
 def test_approval_flow_deny(rw):
     async def go():
         approver = asyncio.ensure_future(auto_approver(rw, approve=False))
+        await asyncio.sleep(0)  # yield so auto_approver subscribes before ask() emits events
         try:
             return await asyncio.wait_for(rw.ask("Remember that my favourite colour is teal"), timeout=10)
         finally:

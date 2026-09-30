@@ -99,10 +99,45 @@ def build(rw) -> APIRouter:
                 raise HTTPException(400, "Unknown approval mode")
             if k == "learning" and v not in ("ask", "off"):
                 raise HTTPException(400, "learning must be 'ask' or 'off'")
+            if k == "api_approval" and v not in ("ask", "off"):
+                raise HTTPException(400, "api_approval must be 'ask' or 'off'")
             if k == "theme" and v not in ("night", "day"):
                 raise HTTPException(400, "theme must be 'night' or 'day'")
             if k == "google_client_secret" and not v:
                 continue
+            if k == "context_tokens":
+                try:
+                    v = int(v)
+                    if not (100 <= v <= 8000):
+                        raise HTTPException(400, "context_tokens must be between 100 and 8000")
+                except (TypeError, ValueError):
+                    raise HTTPException(400, "context_tokens must be an integer")
+            if k == "budgets" and isinstance(v, dict):
+                allowed_budget_keys = {"max_steps", "max_tokens", "max_cost_usd"}
+                for bk, bv in v.items():
+                    if bk not in allowed_budget_keys:
+                        raise HTTPException(400, f"Unknown budget key: {bk}")
+                if "max_steps" in v:
+                    try:
+                        v["max_steps"] = int(v["max_steps"])
+                        if not (1 <= v["max_steps"] <= 50):
+                            raise HTTPException(400, "max_steps must be 1–50")
+                    except (TypeError, ValueError):
+                        raise HTTPException(400, "max_steps must be an integer")
+                if "max_tokens" in v:
+                    try:
+                        v["max_tokens"] = int(v["max_tokens"])
+                        if not (1000 <= v["max_tokens"] <= 200000):
+                            raise HTTPException(400, "max_tokens must be 1,000–200,000")
+                    except (TypeError, ValueError):
+                        raise HTTPException(400, "max_tokens must be an integer")
+                if "max_cost_usd" in v:
+                    try:
+                        v["max_cost_usd"] = float(v["max_cost_usd"])
+                        if not (0 <= v["max_cost_usd"] <= 100):
+                            raise HTTPException(400, "max_cost_usd must be 0–100")
+                    except (TypeError, ValueError):
+                        raise HTTPException(400, "max_cost_usd must be a number")
             rw.store.set_setting(k, v)
         return settings_view()
 

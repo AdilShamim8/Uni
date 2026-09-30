@@ -183,9 +183,13 @@ class Memory:
         return rows
 
     def add_fact(self, text: str, source_task: str = "", pinned: bool = False, bot_id: Optional[str] = None) -> Dict:
+        from .text import cosine, local_embed
         text = text.strip()
-        for f in self.facts():  # avoid exact duplicates
+        qvec = local_embed(text)
+        for f in self.facts():  # avoid exact and near-duplicate facts
             if f["text"].lower() == text.lower():
+                return f
+            if cosine(qvec, local_embed(f["text"])) > 0.92:
                 return f
         return self.store.insert("facts", {"id": new_id("fact_"), "text": text, "pinned": int(pinned),
                                            "source_task": source_task, "bot_id": bot_id})

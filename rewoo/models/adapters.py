@@ -116,7 +116,7 @@ class AnthropicProvider(ModelProvider):
     default_base = "https://api.anthropic.com/v1"
 
     async def complete(self, messages, system="", model=None, temperature=0.2, max_tokens=1200) -> Completion:
-        model = model or self.spec.model or "claude-sonnet-4-5"
+        model = model or self.spec.model or "claude-opus-4-5"
         if not self.spec.api_key:
             raise ProviderError("Anthropic API key missing", retryable=False)
         base = (self.spec.base_url or self.default_base).rstrip("/")
@@ -146,7 +146,7 @@ class AnthropicProvider(ModelProvider):
 
 
     async def stream(self, messages, on_delta: Callable[[str], None], system="", model=None, temperature=0.2, max_tokens=1200) -> Completion:
-        model = model or self.spec.model or "claude-sonnet-4-5"
+        model = model or self.spec.model or "claude-opus-4-5"
         if not self.spec.api_key:
             raise ProviderError("Anthropic API key missing", retryable=False)
         base = (self.spec.base_url or self.default_base).rstrip("/")

@@ -65,7 +65,7 @@ class FetchBlocked(Exception):
 
 
 MAX_FETCH_BYTES = 2 * 1024 * 1024
-UA = {"User-Agent": "ReWoo/0.2 (+https://github.com/AdilShamim8/rewoo)"}
+UA = {"User-Agent": "ReWoo/0.2 (+https://github.com/AdilShamim8/ReWoo)"}
 
 
 async def fetch_public(url: str, transport=None, max_redirects: int = 5):

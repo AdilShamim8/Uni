@@ -31,8 +31,8 @@ PROVIDER_TYPES = {
 # Friendly presets shown in Settings → "Add a brain".
 PRESETS: List[Dict[str, Any]] = [
     {"id": "openai", "type": "openai_compat", "name": "OpenAI", "base_url": "https://api.openai.com/v1", "model": "gpt-4o-mini", "embed_model": "text-embedding-3-small"},
-    {"id": "anthropic", "type": "anthropic", "name": "Anthropic Claude", "model": "claude-sonnet-4-5"},
-    {"id": "gemini", "type": "gemini", "name": "Google Gemini", "model": "gemini-2.5-flash", "embed_model": "text-embedding-004"},
+    {"id": "anthropic", "type": "anthropic", "name": "Anthropic Claude", "model": "claude-opus-4-5"},
+    {"id": "gemini", "type": "gemini", "name": "Google Gemini", "model": "gemini-2.5-flash-002", "embed_model": "text-embedding-004"},
     {"id": "openrouter", "type": "openai_compat", "name": "OpenRouter (many models)", "base_url": "https://openrouter.ai/api/v1", "model": "meta-llama/llama-3.3-70b-instruct"},
     {"id": "groq", "type": "openai_compat", "name": "Groq", "base_url": "https://api.groq.com/openai/v1", "model": "llama-3.3-70b-versatile"},
     {"id": "ollama", "type": "ollama", "name": "Ollama (on this computer)", "base_url": "http://localhost:11434", "model": "llama3.2", "local": True},

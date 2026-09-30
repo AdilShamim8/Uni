@@ -225,7 +225,7 @@ class AgentRuntime:
             self._set(task_id, status="failed", error=msg, usage=state.usage)
             self.bus.emit(task_id, "error", {"message": msg, "agent": helper["id"]})
         except Exception as exc:  # noqa: BLE001 - never leave a task hanging
-            msg = f"Something went wrong: {exc}"
+            msg = f"Something went wrong ({type(exc).__name__}): {exc}"
             self._set(task_id, status="failed", error=msg, usage=state.usage)
             self.bus.emit(task_id, "error", {"message": msg, "agent": helper["id"]})
         finally:

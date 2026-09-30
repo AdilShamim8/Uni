@@ -31,9 +31,10 @@ function modal(html, onMount) {
   const bg = document.createElement("div");
   bg.className = "modal-bg";
   bg.innerHTML = `<div class="card modal" role="dialog" aria-modal="true">${html}</div>`;
-  const close = () => bg.remove();
+  function onKey(e) { if (e.key === "Escape") close(); }
+  const close = () => { document.removeEventListener("keydown", onKey); bg.remove(); };
   bg.addEventListener("click", (e) => { if (e.target === bg) close(); });
-  document.addEventListener("keydown", function k(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", k); } });
+  document.addEventListener("keydown", onKey);
   document.body.appendChild(bg);
   onMount && onMount($(".modal", bg), close);
   return close;
