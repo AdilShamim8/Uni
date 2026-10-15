@@ -19,6 +19,10 @@ Live register. Mirrors the audit register (D1–D14 in docs/engineering/CURRENT_
 | D13 | Medium (hygiene) | Committed prebuilt dist | Accepted trade-off, documented |
 | D14 | Low | Historic commit message quality | Guidance adopted going forward |
 
-## YOU app known limitations (updated as built)
+## YOU app known limitations (updated 2026-10-15)
 
-- To be populated as the application lands. Nothing shipped yet.
+- Live-model streaming not yet exercised with a real provider key from this environment (provider blocked the sandbox region with a truthful 403). Adapters implemented; allowed-region integration test pending (TASKS.md T14).
+- No automated test suite for `you/` yet — verification so far is browser-driven E2E (recorded in TEST_RESULTS.md) + clean lint/typecheck.
+- Master key management is env-based (`YOU_MASTER_KEY`); dev fallback auto-generates a warned local key file.
+- Token accounting is per-message only; aggregates/spending controls not built yet.
+- Custom base URLs are not validated against SSRF-style internal targets yet (self-hosted trust model documented; hardening tracked for Milestone 7).

@@ -1,7 +1,8 @@
 # NEXT STEPS
 
-1. **Milestone 1 (foundation):** scaffold `you/` (Next.js + TS + Tailwind + Prisma), land auth (accounts/sessions), design system, marketing homepage, workspace shell. Small sequential commits on the feature branch.
-2. **Milestone 2 (chat):** encrypted BYOK vault → model gateway with SSE streaming → chat UI with persistence → labeled demo mode.
-3. **Verification:** lint/typecheck must pass; every user-visible flow must be browser-verified before its commit message claims it.
-4. **Python track:** regression tests for D2/D3; CI run to confirm D5 closure.
-5. **Owner decision needed:** engines extraction plan (D4/ADR-007) — options memo to be prepared after Milestone 2.
+1. **Review & merge:** `feat/you-workspace` PR — Phase Zero audit docs + the `you/` application (Milestones 1–2).
+2. **CI:** land the `you/` workflow (install → lint → typecheck → build) and a Python test matrix (Linux + Windows, 3.9–3.14) to close the D5 verification gap.
+3. **Live-key verification:** run the streaming integration test from an allowed region (T14) to convert "adapters implemented" into "verified against live providers."
+4. **Automated tests for `you/`:** auth flows, vault round-trip, adapter fixtures, two-user isolation regression (T16).
+5. **Milestone 3 scoping:** durable agent runs — task state machine, tool permissions, execution timeline, approval gates; define the HTTP contract with the Python engine for long-horizon delegation.
+6. **Owner decision needed:** engines extraction plan (D4/ADR-007) — options memo after Milestone 3.
