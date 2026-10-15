@@ -1,0 +1,42 @@
+name: YOU CI
+
+on:
+  push:
+    paths:
+      - "you/**"
+      - ".github/workflows/you-ci.yml"
+  pull_request:
+    paths:
+      - "you/**"
+      - ".github/workflows/you-ci.yml"
+
+defaults:
+  run:
+    working-directory: you
+
+jobs:
+  you:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: file:./db/you.db
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: bunx prisma generate
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build
+        run: bun run build
