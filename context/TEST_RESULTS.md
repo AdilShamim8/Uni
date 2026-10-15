@@ -6,6 +6,7 @@ Honest record. "Not run" is a valid and expected status.
 |---|---|---|---|
 | 2026-10-15 | Phase Zero audit (docs) | N/A — documentation only | docs/engineering/CURRENT_STATE_AUDIT.md |
 | 2026-10-15 | `you/` app — ESLint | **Pass** (0 errors, 0 warnings) | `eslint .` in the you/ app workspace |
+| 2026-10-15 | Rebrand increment `feat/rewoo-rebrand` — lint / typecheck / build / browser E2E | **Pass** | `eslint .` 0 errors; `tsc --noEmit` clean; `next build` green (14 routes); see matrix below |
 | 2026-10-15 | `you/` app — browser E2E (manual, automated driver) | **Pass** — see matrix below | Automated browser session against the running dev server |
 
 ## YOU application — browser-verified flows (2026-10-15)
@@ -46,3 +47,21 @@ Honest record. "Not run" is a valid and expected status.
 The pre-existing CI passing on the full matrix closes audit item **D5** (three previously-failing tests): the suite is green on all six platform/Python combinations.
 
 Note: the first YOU CI run (31b4d9225) failed on install — the hand-written package.json declared a nonexistent package version (`@radix-ui/react-dropdown-menu ^2.2.4`); fixed in f38ef3057 by using the exact dependency set the lockfile was generated from.
+
+## Rebrand increment — verified flows (2026-10-15, `feat/rewoo-rebrand`, production `next start` @ :3010)
+
+| Check | Result | Notes |
+|---|---|---|
+| DOM scan for "YOU" product branding | Pass | `document.body.innerText` scan on landing/auth/workspace/settings/mobile: zero hits (only pronoun "you" in copy) |
+| Page metadata | Pass | `<title>ReWoo — Open-source AI workspace</title>`; OpenGraph/keywords rebranded |
+| Vault backward compatibility | Pass | Scripted round-trip: ciphertext encrypted under legacy `YOU_MASTER_KEY` decrypts under `REWOO_MASTER_KEY` and vice versa; legacy `.you-master-key` file auto-migrates to `.rewoo-master-key` (old file removed, warning logged); KDF unchanged |
+| Health endpoint | Pass | `{"ok":true,"service":"rewoo-workspace","db":true}` |
+| Sign-up → workspace → demo-brain chat → streaming → persistence → reload → conversation reopen | Pass | Re-ran full flow post-rename of libs/stores/components |
+| Settings → About | Pass | "ReWoo — open-source AI workspace" |
+| Mobile 390×844 | Pass | Drawer navigation, composer usable, no horizontal overflow |
+| VLM screenshot review (landing, chat, settings, mobile) | Pass | Wordmark correct; no visual defects; "Demo" model selector labeled |
+| Console / page errors | None | `agent-browser errors` clean |
+| `bun install` lockfile integrity | Pass | `bun.lock` unchanged after rename (frozen-lockfile CI safe) |
+| Secret leakage in diff | Pass | `git diff` reviewed — no tokens/keys; token used only for git remote |
+
+**Environment note:** the sandbox exports its own `DATABASE_URL`, which Next.js prefers over `.env` — a shell artifact, not an app defect (documented in you/README self-hosting notes and DEFECT_REGISTER D19).

@@ -1,6 +1,6 @@
 # NEXT STEPS
 
-1. **Review & merge:** `feat/you-workspace` PR — Phase Zero audit docs + the `you/` application (Milestones 1–2).
+1. ~~Review & merge `feat/you-workspace`~~ **Merged** (PR #2). Then review & merge `feat/rewoo-rebrand` (product identity + Phase Zero docs completion).
 2. **CI:** land the `you/` workflow (install → lint → typecheck → build) and a Python test matrix (Linux + Windows, 3.9–3.14) to close the D5 verification gap.
 3. **Live-key verification:** run the streaming integration test from an allowed region (T14) to convert "adapters implemented" into "verified against live providers."
 4. **Automated tests for `you/`:** auth flows, vault round-trip, adapter fixtures, two-user isolation regression (T16).

@@ -9,5 +9,5 @@ export async function GET() {
   } catch {
     dbOk = false;
   }
-  return NextResponse.json({ ok: true, service: "you", db: dbOk, time: new Date().toISOString() });
+  return NextResponse.json({ ok: true, service: "rewoo-workspace", db: dbOk, time: new Date().toISOString() });
 }

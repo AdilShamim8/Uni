@@ -15,8 +15,8 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { api, type CredentialInfo, type SessionUser } from "@/lib/you-client";
-import { useYou } from "@/lib/you-store";
+import { api, type CredentialInfo, type SessionUser } from "@/lib/rewoo-client";
+import { useReWoo } from "@/lib/rewoo-store";
 
 const PROVIDER_OPTIONS = [
   { id: "openai", name: "OpenAI", hint: "platform.openai.com → API keys" },
@@ -36,7 +36,7 @@ export function SettingsView({
   onCredentialsChanged: () => void;
   onSignedOut: () => void;
 }) {
-  const { setSelection } = useYou();
+  const { setSelection } = useReWoo();
   const [tab, setTab] = useState<"providers" | "profile" | "about">("providers");
 
   const [addOpen, setAddOpen] = useState(false);
@@ -75,7 +75,7 @@ export function SettingsView({
   async function removeCredential(id: string, label: string) {
     if (!confirm(`Delete credential “${label}”? Conversations stay; new messages need another provider.`)) return;
     await api.deleteProvider(id);
-    const { selectedCredentialId } = useYou.getState();
+    const { selectedCredentialId } = useReWoo.getState();
     if (selectedCredentialId === id) setSelection(null, null);
     onCredentialsChanged();
   }
@@ -92,7 +92,7 @@ export function SettingsView({
   }
 
   return (
-    <div className="you-scroll h-full overflow-y-auto">
+    <div className="rewoo-scroll h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
         <header className="mb-6">
           <h1 className="text-xl font-semibold tracking-tight">Settings</h1>
@@ -205,14 +205,14 @@ export function SettingsView({
         {tab === "about" && (
           <section aria-label="About" className="space-y-3 text-sm leading-relaxed text-muted-foreground">
             <div className="rounded-xl border border-border bg-card p-5">
-              <h2 className="font-semibold text-foreground">YOU — open-source AI workspace</h2>
+              <h2 className="font-semibold text-foreground">ReWoo — open-source AI workspace</h2>
               <p className="mt-1.5">
                 Foundation milestone: multi-user accounts, BYOK provider vault, live model discovery,
                 streaming chat with persistence, and the offline demo brain.
               </p>
               <ul className="mt-3 space-y-1.5">
                 <li>· Agent orchestration, research, knowledge, skills, automations: later milestones (honestly labeled in the sidebar).</li>
-                <li>· Provider usage is billed by your chosen providers at their rates — YOU adds no markup.</li>
+                <li>· Provider usage is billed by your chosen providers at their rates — ReWoo adds no markup.</li>
                 <li>· Core code: Apache-2.0. Self-hosting and architecture docs live in the repository.</li>
               </ul>
             </div>

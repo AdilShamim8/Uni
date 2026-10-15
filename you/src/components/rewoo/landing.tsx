@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { YouWordmark } from "./logo";
+import { ReWooWordmark } from "./logo";
 
 const PROVIDER_TAGS = ["OpenAI", "Anthropic", "Google Gemini", "OpenRouter", "Groq", "Mistral", "Ollama", "LM Studio", "Any OpenAI-compatible endpoint"];
 
@@ -44,7 +44,7 @@ export function Landing({ onStart, onSignIn }: { onStart: () => void; onSignIn: 
       {/* Nav */}
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <YouWordmark />
+          <ReWooWordmark />
           <nav className="hidden items-center gap-7 text-sm text-muted-foreground md:flex" aria-label="Sections">
             <a href="#why" className="transition-colors hover:text-foreground">Why</a>
             <a href="#capabilities" className="transition-colors hover:text-foreground">Capabilities</a>
@@ -76,7 +76,7 @@ export function Landing({ onStart, onSignIn }: { onStart: () => void; onSignIn: 
             <span className="text-primary">you</span>, not a subscription.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
-            YOU brings premium AI capabilities — chat, agents, research, automations — into one
+            ReWoo brings premium AI capabilities — chat, agents, research, automations — into one
             open-source workspace. Connect your own providers, choose any model, and keep full
             control of your keys, data, and budget.
           </p>
@@ -212,7 +212,7 @@ export function Landing({ onStart, onSignIn }: { onStart: () => void; onSignIn: 
             </a>
           </div>
           <p className="mt-14 text-xs text-muted-foreground">
-            YOU · open-source AI workspace · Apache-2.0 · provider usage costs are billed by your chosen providers at their rates
+            ReWoo · open-source AI workspace · Apache-2.0 · provider usage costs are billed by your chosen providers at their rates
           </p>
         </div>
       </footer>

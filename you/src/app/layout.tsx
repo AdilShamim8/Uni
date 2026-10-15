@@ -14,15 +14,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "YOU — Open-source AI workspace",
+  title: "ReWoo — Open-source AI workspace",
   description:
     "Premium AI capabilities in an open-source workspace: bring your own keys, choose any model, chat with streaming persistence, and keep full control of your data.",
-  keywords: ["YOU", "AI workspace", "open source", "BYOK", "AI chat", "agents", "Next.js"],
-  authors: [{ name: "YOU contributors" }],
+  keywords: ["ReWoo", "AI workspace", "open source", "BYOK", "AI chat", "agents", "Next.js"],
+  authors: [{ name: "ReWoo contributors" }],
   openGraph: {
-    title: "YOU — Open-source AI workspace",
+    title: "ReWoo — Open-source AI workspace",
     description: "Your keys, your models, your workspace. Open source under Apache-2.0.",
-    siteName: "YOU",
+    siteName: "ReWoo",
     type: "website",
   },
 };

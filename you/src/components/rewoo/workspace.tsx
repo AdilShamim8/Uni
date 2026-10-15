@@ -9,14 +9,14 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   api, type ConversationInfo, type CredentialInfo, type SessionUser,
-} from "@/lib/you-client";
-import { useYou, type WorkspaceView } from "@/lib/you-store";
+} from "@/lib/rewoo-client";
+import { useReWoo, type WorkspaceView } from "@/lib/rewoo-store";
 import { cn } from "@/lib/utils";
 import { ChatView } from "./chat-view";
 import { ModelsView } from "./models-view";
 import { SettingsView } from "./settings-view";
 import { PlannedView } from "./planned-view";
-import { YouWordmark } from "./logo";
+import { ReWooWordmark } from "./logo";
 
 interface NavItem {
   id: WorkspaceView;
@@ -45,7 +45,7 @@ export function Workspace({ user, onSignedOut }: { user: SessionUser; onSignedOu
   const {
     view, setView, sidebarOpen, setSidebarOpen, activeConversationId,
     setActiveConversation,
-  } = useYou();
+  } = useReWoo();
 
   const [credentials, setCredentials] = useState<CredentialInfo[]>([]);
   const [conversations, setConversations] = useState<ConversationInfo[]>([]);
@@ -95,7 +95,7 @@ export function Workspace({ user, onSignedOut }: { user: SessionUser; onSignedOu
             aria-label="Workspace navigation"
           >
             <div className="flex h-14 items-center justify-between px-4">
-              <YouWordmark size={20} />
+              <ReWooWordmark size={20} />
               <Button
                 variant="ghost" size="icon" className="size-7 rounded-md text-muted-foreground"
                 onClick={() => setSidebarOpen(false)} title="Collapse sidebar" aria-label="Collapse sidebar"
@@ -114,7 +114,7 @@ export function Workspace({ user, onSignedOut }: { user: SessionUser; onSignedOu
               </Button>
             </div>
 
-            <nav className="you-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2" aria-label="Sections">
+            <nav className="rewoo-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2" aria-label="Sections">
               <NavGroup items={NAV_MAIN} view={view} setView={setView} />
               <p className="mb-1.5 mt-5 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">
                 On the roadmap
@@ -177,7 +177,7 @@ export function Workspace({ user, onSignedOut }: { user: SessionUser; onSignedOu
           <Button variant="ghost" size="icon" className="size-9" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle menu">
             <PanelLeft className="size-4.5" aria-hidden="true" />
           </Button>
-          <YouWordmark size={18} />
+          <ReWooWordmark size={18} />
           <span className="flex-1" />
           {isChat && (
             <Button variant="secondary" size="sm" className="rounded-lg text-xs" onClick={() => setMobileChatList(true)}>
@@ -211,7 +211,7 @@ export function Workspace({ user, onSignedOut }: { user: SessionUser; onSignedOu
               aria-label="Navigation"
             >
               <div className="flex h-14 items-center justify-between px-4">
-                <YouWordmark size={20} />
+                <ReWooWordmark size={20} />
                 <Button variant="ghost" size="icon" className="size-7" onClick={() => setSidebarOpen(false)} aria-label="Close menu">
                   <X className="size-4" aria-hidden="true" />
                 </Button>
@@ -221,7 +221,7 @@ export function Workspace({ user, onSignedOut }: { user: SessionUser; onSignedOu
                   <Plus className="size-4" aria-hidden="true" /> New conversation
                 </Button>
               </div>
-              <nav className="you-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2">
+              <nav className="rewoo-scroll min-h-0 flex-1 overflow-y-auto px-3 pb-4 pt-2">
                 <NavGroup items={NAV_MAIN} view={view} setView={setView} onNavigate={() => setSidebarOpen(false)} />
                 <p className="mb-1.5 mt-5 px-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground/70">On the roadmap</p>
                 <NavGroup items={NAV_PLANNED} view={view} setView={setView} onNavigate={() => setSidebarOpen(false)} />
@@ -317,7 +317,7 @@ export function Workspace({ user, onSignedOut }: { user: SessionUser; onSignedOu
                   <X className="size-4" aria-hidden="true" />
                 </Button>
               </div>
-              <div className="you-scroll max-h-[52vh] overflow-y-auto">
+              <div className="rewoo-scroll max-h-[52vh] overflow-y-auto">
                 <Button variant="secondary" className="mb-2 w-full justify-start gap-2 rounded-xl text-sm" onClick={newConversation}>
                   <Plus className="size-4" aria-hidden="true" /> New conversation
                 </Button>

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 
 /**
- * YOU authentication — first-party credentials + opaque sessions.
+ * ReWoo authentication — first-party credentials + opaque sessions.
  *
  * - Passwords: scrypt with per-user random salt (node:crypto, no external dep).
  * - Sessions: 32-byte random token in an httpOnly cookie; only its SHA-256

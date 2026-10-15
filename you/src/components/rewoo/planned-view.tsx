@@ -117,7 +117,7 @@ export function PlannedView({ sectionId }: { sectionId: string }) {
   const section = PLANNED_SECTIONS.find((s) => s.id === sectionId) ?? PLANNED_SECTIONS[0];
   const Icon = section.icon;
   return (
-    <div className="you-scroll h-full overflow-y-auto">
+    <div className="rewoo-scroll h-full overflow-y-auto">
       <div className="mx-auto max-w-xl px-6 py-16">
         <div className="rounded-2xl border border-border bg-card p-7 shadow-sm">
           <div className="flex items-center justify-between gap-3">

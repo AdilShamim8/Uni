@@ -1,5 +1,5 @@
 /**
- * YOU model gateway — provider registry, model discovery, and streaming chat
+ * ReWoo model gateway — provider registry, model discovery, and streaming chat
  * adapters. Server-side only: provider API keys are decrypted here and never
  * leave this layer.
  *
@@ -254,7 +254,7 @@ async function* streamOpenAICompatible(o: Required<Pick<StreamOptions, "provider
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${o.apiKey}`,
-      ...(o.provider === "openrouter" ? { "HTTP-Referer": "https://you.local", "X-Title": "YOU Workspace" } : {}),
+      ...(o.provider === "openrouter" ? { "HTTP-Referer": "https://rewoo.tech", "X-Title": "ReWoo Workspace" } : {}),
     },
     body: JSON.stringify({
       model: o.model,

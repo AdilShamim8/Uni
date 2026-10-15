@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased · 2026-10-15 · "One name: ReWoo"
+
+### Changed
+- **Single product identity.** The multi-user workspace app is now branded **ReWoo** everywhere users can see it: page titles and metadata, wordmark, landing page, Settings, chat system prompt, provider attribution headers, health service label, package name, README, and CI naming. The "YOU" placeholder is retired (ADR-009).
+- Internal renames with zero functional change: `you-client`/`you-store` libs, `components/you/`, `useYou` store hook, `you-*` CSS utilities and a11y ids → `rewoo-*` equivalents.
+
+### Compatibility (self-hosters)
+- `REWOO_MASTER_KEY` replaces `YOU_MASTER_KEY` — the old name still works, and a legacy `.you-master-key` dev file is migrated automatically. Vault KDF parameters are unchanged, so stored provider credentials keep decrypting.
+- Dev database default in `.env.example` is now `./db/rewoo.db`; existing local `.env` files are unaffected.
+
+### Added
+- Phase Zero documentation completed: `docs/engineering/DEFECT_REGISTER.md`, `docs/engineering/REPOSITORY_CLEANUP_PLAN.md`, `docs/research/OPEN_SOURCE_REUSE_REGISTER.md` (license-verified reuse gate: LibreChat MIT and OpenMausBot Apache-2.0 approved; open-dot, open-dots, open-webui, lobehub barred from code reuse).
+- ADR-009 (product identity) and ADR-010 (open-source reuse gate).
+
 ## 0.2.0 — 2026-09-25 · "AI teammates"
 
 ReWoo becomes an *AI teammates* product, merging Paperclip, Hermes Agent and OpenClaw.

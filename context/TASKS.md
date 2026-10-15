@@ -19,8 +19,11 @@ Live task list. Items move here only when actively being worked; completed items
 
 ## Next (queue)
 
+- [x] T21: Product-identity rebrand YOU → ReWoo (delivered 2026-10-15, `feat/rewoo-rebrand`) — ADR-009
+- [x] T22: Phase Zero docs completed — DEFECT_REGISTER / REPOSITORY_CLEANUP_PLAN / OPEN_SOURCE_REUSE_REGISTER (ADR-010 reuse gate)
+
 - [ ] T14: Live-key streaming integration test from an allowed region (blocked in current env — provider 403 on region)
-- [ ] T15: CI workflow for `you/` (install → lint → typecheck → build) + Python suite matrix
+- [x] T15: CI workflow for the workspace (install → lint → typecheck → build) — landed as `rewoo-workspace-ci.yml` (renamed from `you-ci.yml`; content unchanged apart from name/paths)
 - [ ] T16: Automated test suite for `you/` (auth flows, vault round-trip, gateway adapter unit tests with recorded fixtures, two-user isolation regression)
 - [ ] T17: Token/cost accounting aggregates per provider + spending display
 - [ ] T18: Message editing + branching

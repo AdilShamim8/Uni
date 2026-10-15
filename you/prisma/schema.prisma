@@ -8,7 +8,7 @@ datasource db {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// YOU — open-source AI workspace data model
+// ReWoo — open-source AI workspace data model
 // Written PostgreSQL-portably: no SQLite-specific column types.
 // Every user-scoped row carries userId; all queries filter by it (tenant
 // isolation is enforced at the API layer via the session user).

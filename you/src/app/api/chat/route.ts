@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
                 {
                   role: "system",
                   content:
-                    "You are an assistant inside YOU, an open-source AI workspace. Be helpful, precise, and concise. Use Markdown when it aids clarity.",
+                    "You are an assistant inside ReWoo, an open-source AI workspace. Be helpful, precise, and concise. Use Markdown when it aids clarity.",
                 },
                 ...priorMessages,
               ],

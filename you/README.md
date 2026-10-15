@@ -1,6 +1,8 @@
-# YOU — the workspace app
+# ReWoo Workspace
 
-The multi-user, TypeScript-first AI workspace of the [ReWoo](../README.md) project. Open source under Apache-2.0 (see the repository root license).
+The multi-user, TypeScript-first AI workspace of the [ReWoo](../README.md) project — the product's primary web surface. Open source under Apache-2.0 (see the repository root license).
+
+> **Directory note:** this app lives in `you/` for historical reasons (the pre-rebrand scaffold name). The product identity is **ReWoo** everywhere users can see it; the directory rename to `app/` is tracked in `../docs/engineering/REPOSITORY_CLEANUP_PLAN.md`.
 
 **Status: Milestones 1–2 (foundation + multi-model chat).** Verified working: multi-user accounts, encrypted BYOK provider vault, live model discovery, streaming chat with persistence, and an offline demo brain. Agents, research, knowledge, skills, and automations are on the roadmap (see `../context/IMPLEMENTATION_ROADMAP.md`) and are honestly labeled as such in the UI — no fake features.
 
@@ -53,10 +55,10 @@ Full context: `../context/TARGET_ARCHITECTURE.md` and `../docs/engineering/CURRE
 
 ## Self-hosting notes
 
-- Set `YOU_MASTER_KEY` (64 hex chars, `openssl rand -hex 32`) before exposing the app beyond localhost — otherwise a development key file is auto-generated and flagged in the console.
+- Set `REWOO_MASTER_KEY` (64 hex chars, `openssl rand -hex 32`) before exposing the app beyond localhost — otherwise a development key file is auto-generated and flagged in the console. (The pre-rebrand `YOU_MASTER_KEY` variable is still honored, and a legacy `.you-master-key` dev file is migrated automatically.)
 - For PostgreSQL, change the `datasource` in `prisma/schema.prisma` and set `DATABASE_URL` accordingly.
-- Provider usage costs are billed by your chosen providers at their rates; YOU adds no markup.
+- Provider usage costs are billed by your chosen providers at their rates; ReWoo adds no markup.
 
 ## Relationship to the Python app
 
-The existing Python application (`../rewoo/`) is preserved untouched and remains the self-hosted single-user engine. `you/` is additive; see `../context/DECISIONS.md` (ADR-001, ADR-002) for the migration strategy.
+The existing Python application (`../rewoo/`) is preserved untouched and remains the self-hosted single-user engine. This workspace is additive; see `../context/DECISIONS.md` (ADR-001, ADR-002) for the migration strategy.

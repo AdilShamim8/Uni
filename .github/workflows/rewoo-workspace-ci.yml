@@ -1,24 +1,24 @@
-name: YOU CI
+name: ReWoo Workspace CI
 
 on:
   push:
     paths:
       - "you/**"
-      - ".github/workflows/you-ci.yml"
+      - ".github/workflows/rewoo-workspace-ci.yml"
   pull_request:
     paths:
       - "you/**"
-      - ".github/workflows/you-ci.yml"
+      - ".github/workflows/rewoo-workspace-ci.yml"
 
 defaults:
   run:
     working-directory: you
 
 jobs:
-  you:
+  rewoo-workspace:
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: file:./db/you.db
+      DATABASE_URL: file:./db/rewoo.db
     steps:
       - uses: actions/checkout@v4
 

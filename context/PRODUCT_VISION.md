@@ -1,10 +1,10 @@
-# PRODUCT VISION — YOU
+# PRODUCT VISION — ReWoo Workspace
 
 **Status: Active vision document. Not a claim of shipped functionality.**
 
-## What YOU is
+## What the ReWoo Workspace is
 
-YOU is an open-source AI workspace: one browser product where a person configures their own AI providers (bring-your-own-key), picks models, and gets real work done — chat, research, artifacts, delegated agent work, automations — with premium interaction design and no artificial feature paywalls in the open-source core.
+The ReWoo Workspace is an open-source AI workspace: one browser product where a person configures their own AI providers (bring-your-own-key), picks models, and gets real work done — chat, research, artifacts, delegated agent work, automations — with premium interaction design and no artificial feature paywalls in the open-source core.
 
 ## Product shape
 
