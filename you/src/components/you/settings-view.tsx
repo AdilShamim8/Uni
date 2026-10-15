@@ -75,8 +75,8 @@ export function SettingsView({
   async function removeCredential(id: string, label: string) {
     if (!confirm(`Delete credential “${label}”? Conversations stay; new messages need another provider.`)) return;
     await api.deleteProvider(id);
-    const { selection } = useYou.getState();
-    if (selection === id) setSelection(null, null);
+    const { selectedCredentialId } = useYou.getState();
+    if (selectedCredentialId === id) setSelection(null, null);
     onCredentialsChanged();
   }
 
