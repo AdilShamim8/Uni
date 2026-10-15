@@ -1,0 +1,26 @@
+# YOU app — Next.js build artifacts
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Environment & secrets (never commit)
+.env
+.env.*
+!.env.example
+.you-master-key
+
+# Local databases (dev SQLite)
+db/
+*.db
+*.db-wal
+*.db-shm
+
+# Logs & OS
+*.log
+.DS_Store
+
+# Next.js generated
+next-env.d.ts
+.vercel
