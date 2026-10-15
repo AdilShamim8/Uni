@@ -6,8 +6,8 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, type SessionUser } from "@/lib/you-client";
-import { YouWordmark } from "./logo";
+import { api, type SessionUser } from "@/lib/rewoo-client";
+import { ReWooWordmark } from "./logo";
 
 type Mode = "signin" | "signup";
 
@@ -52,7 +52,7 @@ export function AuthView({
         className="w-full max-w-sm"
       >
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <YouWordmark size={30} />
+          <ReWooWordmark size={30} />
           <p className="text-sm text-muted-foreground">
             {mode === "signin" ? "Welcome back." : "Create your workspace."}
           </p>
@@ -66,9 +66,9 @@ export function AuthView({
           <div className="space-y-4">
             {mode === "signup" && (
               <div className="space-y-1.5">
-                <Label htmlFor="you-name">Name (optional)</Label>
+                <Label htmlFor="rewoo-name">Name (optional)</Label>
                 <Input
-                  id="you-name"
+                  id="rewoo-name"
                   autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -78,9 +78,9 @@ export function AuthView({
               </div>
             )}
             <div className="space-y-1.5">
-              <Label htmlFor="you-email">Email</Label>
+              <Label htmlFor="rewoo-email">Email</Label>
               <Input
-                id="you-email"
+                id="rewoo-email"
                 type="email"
                 autoComplete="email"
                 required
@@ -90,9 +90,9 @@ export function AuthView({
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="you-password">Password</Label>
+              <Label htmlFor="rewoo-password">Password</Label>
               <Input
-                id="you-password"
+                id="rewoo-password"
                 type="password"
                 autoComplete={mode === "signin" ? "current-password" : "new-password"}
                 required

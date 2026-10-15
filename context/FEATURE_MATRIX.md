@@ -2,7 +2,7 @@
 
 Status legend: **✅ Verified** (works, evidence exists) · **🟡 Partial** (exists, known gaps) · **⛔ Missing** (not built) · **🔌 Integration** (via third-party) · **🗓 Planned** (on roadmap)
 
-## YOU application (`you/`, delivered 2026-10-15 on feat/you-workspace)
+## ReWoo Workspace (`you/`, delivered 2026-10-15 on feat/you-workspace; rebranded to ReWoo identity on feat/rewoo-rebrand)
 
 | Capability | Status | Notes |
 |---|---|---|
@@ -40,8 +40,8 @@ Status legend: **✅ Verified** (works, evidence exists) · **🟡 Partial** (ex
 | OpenAI-compatible API `/v1` | ✅ Verified | `rewoo/api/openai_api.py` |
 | Telegram channel | ✅ Verified | `rewoo/channels/` |
 | Google Drive connector | 🟡 Partial | OAuth state leak (D7) |
-| Web UI (Vite) | 🟡 Partial | 9 pages; superseded later by YOU |
-| Multi-user auth | ⛔ Missing | Single token only (D1) — solved in YOU layer |
+| Web UI (Vite) | 🟡 Partial | 9 pages; superseded later by the ReWoo Workspace |
+| Multi-user auth | ⛔ Missing | Single token only (D1) — solved in the workspace layer |
 | Engine integrations (Paperclip/Hermes/OpenClaw) | 🟡 Partial | Vendored; integration depth unverified live |
 
 *This file is updated when verification evidence changes, not when code is merely written.*

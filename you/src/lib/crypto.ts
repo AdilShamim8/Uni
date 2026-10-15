@@ -2,20 +2,26 @@ import crypto from "crypto";
 import fs from "node:fs";
 
 /**
- * YOU credential vault — AES-256-GCM encryption for provider API keys.
+ * ReWoo credential vault — AES-256-GCM encryption for provider API keys.
  *
  * Master key resolution order:
- *   1. YOU_MASTER_KEY env var (hex or passphrase; recommended for production/self-host)
- *   2. Auto-generated dev key persisted to `.you-master-key` (gitignored) with a warning.
+ *   1. REWOO_MASTER_KEY env var (hex or passphrase; recommended for production/self-host)
+ *      — the legacy YOU_MASTER_KEY name is still honored for pre-rebrand deployments
+ *   2. Auto-generated dev key persisted to `.rewoo-master-key` (gitignored) with a warning
+ *      — a legacy `.you-master-key` file is read and migrated if present
  *
  * Keys are encrypted at rest and decrypted only inside the server-side gateway
  * process. No API ever returns key material — only a masked preview.
+ *
+ * KDF parameters (scrypt salt, ephemeral fallback) are deliberately unchanged from
+ * the pre-rebrand implementation so existing ciphertexts continue to decrypt.
  */
 
-const DEV_KEY_PATH = ".you-master-key";
+const DEV_KEY_PATH = ".rewoo-master-key";
+const LEGACY_DEV_KEY_PATH = ".you-master-key";
 
 function getMasterKey(): Buffer {
-  const env = process.env.YOU_MASTER_KEY;
+  const env = process.env.REWOO_MASTER_KEY ?? process.env.YOU_MASTER_KEY;
   if (env && env.length >= 16) {
     // Treat as hex key if it looks like one, otherwise derive deterministically.
     if (/^[0-9a-fA-F]{64}$/.test(env)) return Buffer.from(env, "hex");
@@ -23,6 +29,19 @@ function getMasterKey(): Buffer {
   }
   // Dev fallback: auto-generate + persist a local key file.
   try {
+    // Migrate a legacy key file if present so stored credentials keep working.
+    if (!fs.existsSync(DEV_KEY_PATH) && fs.existsSync(LEGACY_DEV_KEY_PATH)) {
+      const legacy = fs.readFileSync(LEGACY_DEV_KEY_PATH, "utf8").trim();
+      if (/^[0-9a-fA-F]{64}$/.test(legacy)) {
+        fs.writeFileSync(DEV_KEY_PATH, legacy + "\n", { mode: 0o600 });
+        try {
+          fs.rmSync(LEGACY_DEV_KEY_PATH);
+          console.warn("[rewoo] Migrated legacy .you-master-key to .rewoo-master-key.");
+        } catch {
+          /* best-effort cleanup; the legacy file is gitignored and harmless */
+        }
+      }
+    }
     if (fs.existsSync(DEV_KEY_PATH)) {
       const hex = fs.readFileSync(DEV_KEY_PATH, "utf8").trim();
       if (/^[0-9a-fA-F]{64}$/.test(hex)) return Buffer.from(hex, "hex");
@@ -30,13 +49,13 @@ function getMasterKey(): Buffer {
     const key = crypto.randomBytes(32);
     fs.writeFileSync(DEV_KEY_PATH, key.toString("hex") + "\n", { mode: 0o600 });
     console.warn(
-      "[you] WARNING: using an auto-generated development master key (.you-master-key). " +
-        "Set YOU_MASTER_KEY for production or persistent self-hosted deployments."
+      "[rewoo] WARNING: using an auto-generated development master key (.rewoo-master-key). " +
+        "Set REWOO_MASTER_KEY for production or persistent self-hosted deployments."
     );
     return key;
   } catch {
     // Ephemeral fallback (keys will not survive restart) — last resort only.
-    console.warn("[you] WARNING: ephemeral master key in use. Set YOU_MASTER_KEY.");
+    console.warn("[rewoo] WARNING: ephemeral master key in use. Set REWOO_MASTER_KEY.");
     return crypto.scryptSync("you-dev-ephemeral", "salt", 32);
   }
 }

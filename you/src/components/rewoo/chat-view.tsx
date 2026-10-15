@@ -15,11 +15,11 @@ import { Badge } from "@/components/ui/badge";
 import {
   api, streamChatTurn, type ChatEvent, type ConversationInfo,
   type CredentialInfo, type MessageInfo, type ModelInfo,
-} from "@/lib/you-client";
-import { useYou } from "@/lib/you-store";
+} from "@/lib/rewoo-client";
+import { useReWoo } from "@/lib/rewoo-store";
 import { cn } from "@/lib/utils";
 import { Markdown, StreamingDots } from "./markdown";
-import { YouMark } from "./logo";
+import { ReWooMark } from "./logo";
 
 interface ChatProps {
   credentials: CredentialInfo[];
@@ -34,7 +34,7 @@ export function ChatView({
   credentials, conversations, activeId, onConversationsChanged,
   onSelectConversation, onOpenSettings,
 }: ChatProps) {
-  const { selectedCredentialId, selectedModel, setSelection } = useYou();
+  const { selectedCredentialId, selectedModel, setSelection } = useReWoo();
   const [messages, setMessages] = useState<MessageInfo[]>([]);
   const [streaming, setStreaming] = useState(false);
   const [streamText, setStreamText] = useState("");
@@ -329,7 +329,7 @@ export function ChatView({
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="you-scroll min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+      <div ref={scrollRef} className="rewoo-scroll min-h-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6">
         <div className="mx-auto max-w-3xl space-y-7">
           <AnimatePresence initial={false}>
             {messages.map((m) => (
@@ -440,7 +440,7 @@ function MessageAvatar({ role, demo }: { role: string; demo?: boolean }) {
   }
   return (
     <div className={cn("flex size-7 shrink-0 items-center justify-center rounded-full", demo ? "bg-muted" : "bg-primary text-primary-foreground")} aria-hidden="true">
-      <YouMark size={28} className={demo ? "bg-transparent text-muted-foreground" : ""} />
+      <ReWooMark size={28} className={demo ? "bg-transparent text-muted-foreground" : ""} />
     </div>
   );
 }
@@ -471,7 +471,7 @@ function Composer({
         rows={1}
         placeholder="Message the workspace… (Shift+Enter for a new line)"
         aria-label="Message"
-        className="you-scroll max-h-44 min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-[0.94rem] leading-relaxed outline-none placeholder:text-muted-foreground"
+        className="rewoo-scroll max-h-44 min-h-9 flex-1 resize-none bg-transparent px-2 py-1.5 text-[0.94rem] leading-relaxed outline-none placeholder:text-muted-foreground"
         style={{ height: Math.min(Math.max(input.split("\n").length * 24 + 12, 36), 176) }}
       />
       {streaming ? (
@@ -520,7 +520,7 @@ function ModelPickerButton({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-80 rounded-xl p-0" side="top">
-        <div className="you-scroll max-h-96 overflow-y-auto p-1.5">
+        <div className="rewoo-scroll max-h-96 overflow-y-auto p-1.5">
           <button
             type="button"
             onClick={() => onPick(null, null)}
@@ -570,7 +570,7 @@ function ModelPickerButton({
                             Live list unavailable — showing fallback catalog.
                           </p>
                         )}
-                        <div className="you-scroll max-h-52 overflow-y-auto">
+                        <div className="rewoo-scroll max-h-52 overflow-y-auto">
                           {filteredModels.map((m) => (
                             <button
                               key={m.id}
@@ -634,10 +634,10 @@ function EmptyChatState({
     "Help me plan a research workflow with citations",
   ];
   return (
-    <div className="you-scroll h-full overflow-y-auto">
+    <div className="rewoo-scroll h-full overflow-y-auto">
       <div className="mx-auto flex min-h-full max-w-3xl flex-col justify-center px-5 py-10">
         <div className="mb-8 text-center">
-          <YouMark size={44} className="mx-auto rounded-xl" />
+          <ReWooMark size={44} className="mx-auto rounded-xl" />
           <h1 className="mt-5 text-2xl font-semibold tracking-tight">How can I help you today?</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {credentials.length === 0

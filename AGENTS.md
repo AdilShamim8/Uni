@@ -7,7 +7,7 @@ Welcome, agent or human contributor. Read this before touching the repository.
 Two products, one repo:
 
 1. **ReWoo (Python, existing, working)** — single-user personal AI agent app: FastAPI + SQLite + agent runtime. Lives in `rewoo/`, `web/` (Vite UI), `engines/` (vendored MIT engine trees), `tests/`.
-2. **YOU (TypeScript, new)** — multi-user open-source AI workspace (Next.js). Lives in `you/`. Currently being built; see `context/PROGRESS.md` for what actually works today.
+2. **ReWoo Workspace (TypeScript, new)** — the multi-user open-source AI workspace (Next.js), and the product's primary web surface. Lives in `you/` (historical directory name; product identity is ReWoo everywhere user-facing — ADR-009). See `context/PROGRESS.md` for what actually works today.
 
 ## Ground rules (non-negotiable)
 
@@ -27,7 +27,7 @@ Two products, one repo:
 | `rewoo/` | Python application (core, agent, api, models, memory, tools, channels, connectors) |
 | `web/` | Vite React UI for the Python app (prebuilt → `rewoo/web/dist`) |
 | `engines/` | Vendored engines — do not modify casually; upstream sync scripts only |
-| `you/` | New YOU Next.js workspace (see its own README when present) |
+| `you/` | ReWoo Workspace Next.js app (see its own README) |
 | `context/` | Durable engineering context (vision, architecture, decisions, tasks, progress) |
 | `docs/` | Deep documentation (engineering audits, research) |
 | `tests/` | Python test suite |

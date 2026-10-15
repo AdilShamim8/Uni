@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * YOU client API layer — typed fetch helpers + SSE stream reader.
+ * ReWoo client API layer — typed fetch helpers + SSE stream reader.
  * All requests use relative paths (same-origin).
  */
 

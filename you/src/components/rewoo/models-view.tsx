@@ -5,9 +5,9 @@ import { Box, ChevronDown, Loader2, RefreshCw, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { api, type CredentialInfo, type ModelInfo } from "@/lib/you-client";
+import { api, type CredentialInfo, type ModelInfo } from "@/lib/rewoo-client";
 import { cn } from "@/lib/utils";
-import { useYou } from "@/lib/you-store";
+import { useReWoo } from "@/lib/rewoo-store";
 
 interface ModelsRow {
   credentialId: string;
@@ -18,7 +18,7 @@ interface ModelsRow {
 }
 
 export function ModelsView({ credentials, onOpenSettings }: { credentials: CredentialInfo[]; onOpenSettings: () => void }) {
-  const { selectedCredentialId, selectedModel, setSelection } = useYou();
+  const { selectedCredentialId, selectedModel, setSelection } = useReWoo();
   const [rows, setRows] = useState<Record<string, ModelsRow>>({});
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(selectedCredentialId ?? credentials[0]?.id ?? null);
@@ -46,7 +46,7 @@ export function ModelsView({ credentials, onOpenSettings }: { credentials: Crede
 
   if (credentials.length === 0) {
     return (
-      <div className="you-scroll h-full overflow-y-auto">
+      <div className="rewoo-scroll h-full overflow-y-auto">
         <div className="mx-auto max-w-2xl px-6 py-16 text-center">
           <Box className="mx-auto size-10 text-muted-foreground" aria-hidden="true" />
           <h1 className="mt-5 text-xl font-semibold">No providers connected</h1>
@@ -63,7 +63,7 @@ export function ModelsView({ credentials, onOpenSettings }: { credentials: Crede
   const q = query.toLowerCase();
 
   return (
-    <div className="you-scroll h-full overflow-y-auto">
+    <div className="rewoo-scroll h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-5 py-8 sm:px-8">
         <header className="mb-6">
           <h1 className="text-xl font-semibold tracking-tight">Models</h1>

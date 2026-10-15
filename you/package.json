@@ -1,8 +1,8 @@
 {
-  "name": "you-workspace",
+  "name": "rewoo-workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "YOU \u2014 open-source AI workspace (Next.js + TypeScript). Multi-user accounts, BYOK provider vault, live model discovery, streaming chat.",
+  "description": "ReWoo — open-source AI workspace (Next.js + TypeScript). Multi-user accounts, BYOK provider vault, live model discovery, streaming chat.",
   "license": "Apache-2.0",
   "scripts": {
     "dev": "next dev",

@@ -1,4 +1,4 @@
-# YOU app — Next.js build artifacts
+# ReWoo workspace app — Next.js build artifacts
 node_modules/
 .next/
 out/
@@ -9,6 +9,7 @@ dist/
 .env
 .env.*
 !.env.example
+.rewoo-master-key
 .you-master-key
 
 # Local databases (dev SQLite)
@@ -24,3 +25,4 @@ db/
 # Next.js generated
 next-env.d.ts
 .vercel
+*.tsbuildinfo

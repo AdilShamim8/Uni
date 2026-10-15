@@ -1,12 +1,12 @@
-# TARGET ARCHITECTURE — YOU
+# TARGET ARCHITECTURE — ReWoo Workspace
 
 **Status: Target design. Delivery status is tracked in PROGRESS.md / TASKS.md.**
 
 ## Strategy: "Strangler at the edge, preserve the core"
 
-The proven Python agent core (`rewoo/`) is preserved and remains the self-hosted engine. The YOU product is a new TypeScript application added at `you/`, owning everything user-facing and multi-user.
+The proven Python agent core (`rewoo/`) is preserved and remains the self-hosted engine. The ReWoo Workspace is a TypeScript application added at `you/`, owning everything user-facing and multi-user.
 
-## YOU application (TypeScript)
+## ReWoo Workspace application (TypeScript)
 
 - **Framework:** Next.js (App Router) + TypeScript + Tailwind CSS + shadcn/ui-style component system.
 - **Data:** Prisma ORM. SQLite for local/self-host; schema written PostgreSQL-portably (no SQLite-only types in models that target hosted).
@@ -18,7 +18,7 @@ The proven Python agent core (`rewoo/`) is preserved and remains the self-hosted
 
 ## Boundaries
 
-- YOU → Python engine: documented HTTP contract (later phase); not required for chat milestones.
+- Workspace → Python engine: documented HTTP contract (later phase); not required for chat milestones.
 - No user-generated code executes on the app server.
 - Every agent/tool action carries permissions, budget, cancellation, and audit records (later milestones; not claimed before built).
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { SessionUser } from "@/lib/you-client";
+import type { SessionUser } from "@/lib/rewoo-client";
 
 export type WorkspaceView =
   | "chat"
@@ -16,7 +16,7 @@ export type WorkspaceView =
   | "integrations"
   | "activity";
 
-interface YouState {
+interface ReWooState {
   user: SessionUser | null;
   view: WorkspaceView;
   sidebarOpen: boolean;
@@ -31,7 +31,7 @@ interface YouState {
   setSelection: (credentialId: string | null, model: string | null) => void;
 }
 
-export const useYou = create<YouState>((set) => ({
+export const useReWoo = create<ReWooState>((set) => ({
   user: null,
   view: "chat",
   sidebarOpen: false,
