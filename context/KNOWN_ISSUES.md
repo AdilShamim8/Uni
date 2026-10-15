@@ -8,7 +8,7 @@ Live register. Mirrors the audit register (D1–D14 in docs/engineering/CURRENT_
 | D2 | High | SSRF via redirect chain in `web_fetch` | Fix claimed in 3a1ee423; regression test pending |
 | D3 | High | Static path traversal | Guard present; Windows-path test pending |
 | D4 | High (repo health) | 73.5k vendored files / ~292 MB under `engines/` | Open — owner decision required (ADR-007) |
-| D5 | High | 3 failing tests (Windows/Py3.11+) | Partially addressed in 6076fb50; CI verify pending |
+| D5 | High | 3 failing tests (Windows/Py3.11+) | CLOSED — verified in CI 2026-10-15: pytest + eval passed on ubuntu/windows/macos × Python 3.9/3.12 (f38ef3057) |
 | D6 | Medium | EventBus thread-safety | Fix claimed; race test pending |
 | D7 | Medium | OAuth state map growth | Open |
 | D8 | Medium | SSE disconnect detection | Open |

@@ -35,3 +35,14 @@ Honest record. "Not run" is a valid and expected status.
 ## Python suite
 
 **Status: not executed in this environment.** The suite must run in CI (Linux + Windows, Python 3.9–3.14) — tracked in TASKS.md Python track items. Historical failures are documented in BUGS_AND_ISSUES.md (D5).
+
+## CI results (GitHub Actions, 2026-10-15)
+
+| Workflow | Commit | Result | Scope |
+|---|---|---|---|
+| YOU CI | f38ef3057 | **Success** | bun install (frozen lockfile) → prisma generate → eslint → tsc --noEmit → next build |
+| CI (pre-existing) | f38ef3057 | **Success** | Python matrix: ubuntu/windows/macos × Python 3.9/3.12 — `pip install requirements-dev`, `pytest -q`, `rewoo eval`; plus web/ typecheck |
+
+The pre-existing CI passing on the full matrix closes audit item **D5** (three previously-failing tests): the suite is green on all six platform/Python combinations.
+
+Note: the first YOU CI run (31b4d9225) failed on install — the hand-written package.json declared a nonexistent package version (`@radix-ui/react-dropdown-menu ^2.2.4`); fixed in f38ef3057 by using the exact dependency set the lockfile was generated from.

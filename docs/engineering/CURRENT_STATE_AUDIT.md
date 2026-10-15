@@ -56,7 +56,7 @@ Sources: `BUGS_AND_ISSUES.md` (self-reported, 2026-09-25) plus this audit's find
 | D2 | High (security) | SSRF bypass via open HTTP redirects in `web_fetch` | `rewoo/tools/builtin.py` | Claimed fixed in 3a1ee423 — re-verify with redirect-following test | Add regression test |
 | D3 | High (security) | Arbitrary static file exposure via path traversal | `rewoo/api/app.py` | Guard present (`resolve()` + parents check) — re-verify on Windows/UNC paths | Add regression test |
 | D4 | High (repo health) | 292 MB / 73.5k vendored files under `engines/` | `engines/` | Open | Kills clone/CI performance; complicates attribution scanning. All MIT, so legal — but should be submodules or fetched deps |
-| D5 | High (quality) | 3 failing tests (SQLite Windows lock, asyncio wait_for deadlock, console UnicodeEncodeError) | `tests/test_harness.py` et al. | Partially addressed (6076fb50 touched asyncio task creation) — verify in CI | Windows + Py3.11+ matrix needed |
+| D5 | High (quality) | 3 failing tests (SQLite Windows lock, asyncio wait_for deadlock, console UnicodeEncodeError) | `tests/test_harness.py` et al. | CLOSED — CI verified 2026-10-15 (pytest + eval green on ubuntu/windows/macos × Py 3.9/3.12, f38ef3057) | Regression coverage for the trio still worth adding |
 | D6 | Medium | Non-atomic EventBus sequence + cross-thread `Queue.put_nowait` | `rewoo/events.py` | Claimed fixed in 3a1ee423 — verify | Race tests needed |
 | D7 | Medium | OAuth state map unbounded growth | `rewoo/connectors/gdrive.py` | Open (per register) | Add TTL/expiry sweep |
 | D8 | Medium | SSE disconnection detection blocked | `rewoo/api/routes_core.py` | Open (per register) | Heartbeat/timeout needed |
