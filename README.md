@@ -148,6 +148,14 @@ make web-dev                # hot-reload UI (React + TypeScript + Vite) on :5173
 make web                    # rebuild the prebuilt UI into rewoo/web/dist
 ```
 
+### 🌱 YOU — the new multi-user TypeScript workspace (in development)
+
+Alongside this app, a **Next.js + TypeScript workspace** is being built in [`you/`](you/):
+multi-user accounts, an encrypted BYOK provider vault (OpenAI, Anthropic, Gemini, OpenRouter,
+Groq, Mistral, or any OpenAI-compatible endpoint), live model discovery, and streaming chat —
+open source, no fake features. See [`you/README.md`](you/README.md) and
+[`context/`](context/) for what's delivered versus planned.
+
 **Use ReWoo from anything** that speaks the OpenAI API:
 
 ```bash
