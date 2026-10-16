@@ -1,30 +1,48 @@
 # Contributing to ReWoo
 
-Thanks for helping! ReWoo aims to be the friendliest open-source personal AI helper, and also one of the most readable codebases in the space.
+Thanks for helping! ReWoo aims to be a premium, lightweight, honest open-source AI workspace — and one of the most readable codebases in the space.
 
 ## Setup
 
 ```bash
-python3 -m pip install -r requirements-dev.txt
-python3 -m rewoo              # app on http://localhost:8787
-python3 -m pytest -q          # tests (offline)
-python3 -m rewoo eval         # behaviour scenarios
+git clone https://github.com/AdilShamim8/ReWoo.git && cd ReWoo
+bun install            # or: npm install
+cp .env.example .env   # defaults work for local development
+bun run db:push        # create the SQLite schema
+bun run dev            # http://localhost:3000
 ```
 
-The web app is plain HTML/CSS/JS in `rewoo/web/`. Edit and refresh, with no build step.
+Before opening a PR, run the full gate locally — CI runs exactly these:
 
-## Design rules
+```bash
+bun run lint           # ESLint
+bun run typecheck      # TypeScript
+bun test               # automated suite (vault, auth, rate limits, tenant isolation)
+bun run build          # production build
+```
 
-1. **Explainable to a non-technical person.** If a feature needs AI jargon to use, redesign it.
-2. **Personal data is always visible.** Anything that puts user data in a prompt must appear in the context receipt.
-3. **Consent before consequence.** New tools must declare an honest risk level.
-4. **Model-agnostic.** No feature may depend on one vendor's special API. Use the JSON protocol.
-5. **Readable over clever.** Small modules, docstrings that explain *why*.
+## Where things live
 
-## Pull requests
+| Path | Contents |
+|---|---|
+| `src/app/` | Routes: pages + API handlers (auth, providers, models, chat, conversations, health) |
+| `src/components/rewoo/` | Product UI (landing, auth, workspace, chat, models, settings) |
+| `src/components/ui/` | The minimal shadcn/ui set actually used (9 components) |
+| `src/lib/` | Core: auth (scrypt + sessions), crypto (AES-256-GCM vault), db (Prisma), providers (model gateway), rate-limit |
+| `prisma/` | Dual schemas: `schema.prisma` (PostgreSQL) + `schema.sqlite.prisma` (SQLite dev) — keep both in sync |
+| `tests/` | Test harness (preload provisions a throwaway DB) |
+| `docs/` | Architecture, deployment, decision records, engineering history |
 
-- Add or adjust tests, and an eval scenario if you change agent behaviour.
-- Keep dependencies minimal. Every new dependency needs a reason.
-- Don't copy code, assets or UI from other projects. Independent implementations of ideas are welcome, so credit them in `ATTRIBUTION.md`.
+## Ground rules
+
+1. **Read before writing:** `docs/DECISIONS.md` explains why the codebase is shaped the way it is.
+2. **Never claim untested work.** "Not run" is acceptable; fabricated results are not.
+3. **One model layer.** Features build on `src/lib/providers.ts` — no parallel engines, no client-side key handling.
+4. **Keep it light.** Every new dependency needs a reason. Prefer platform APIs (node:crypto, fetch, AbortSignal).
+5. **Honest UI.** Roadmap features stay labeled *soon*; demo behavior stays labeled *demo*.
+6. **Tenant isolation is non-negotiable.** Every new query must be scoped by the session user, and ship with a test if the pattern is new.
+7. **Schema changes touch both Prisma files** and any migration notes in docs/DEPLOYMENT.md.
+8. **Conventional commits**, one focused change per commit, feature branches → PRs, no force-push.
+9. **Licenses:** Apache-2.0 core. Don't import code from unlicensed or custom-licensed projects (see docs/research/OPEN_SOURCE_REUSE_REGISTER.md).
 
 By contributing, you agree your contributions are licensed under Apache-2.0.

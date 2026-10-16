@@ -1,3 +1,5 @@
+> **Note (v0.3):** the vendored `engines/` trees referenced below were removed from mainline in the v0.3 restructure (ADR-010). Their MIT license texts are preserved here for the historical releases (v0.1–v0.2) that shipped them. The current codebase depends on permissively-licensed npm packages only.
+
 # Third-party notices
 
 ReWoo (Apache-2.0) includes, unmodified except as noted in `engines/README.md`, the complete source

@@ -1,3 +1,5 @@
+> **Historical survey (pre-restructure).** The 36-repo study that informed the original Python app. Preserved for context; the current workspace is the product of record.
+
 # ReWoo Research: How 36 Open-Source Agent Projects Shaped This Design
 
 This document explains where ReWoo's architecture came from. It is a

@@ -1,3 +1,5 @@
+> **Status note (v0.3):** the reuse gate remains in force for future milestones (M3+). No third-party code was vendored into the current codebase; the workspace is an original implementation using permissively-licensed libraries (Next.js, React, Prisma, Radix UI/shadcn, Tailwind).
+
 # Open-Source Reuse Register — ReWoo
 
 **Every piece of third-party open-source code considered for, or integrated into, ReWoo — with license, attribution obligations, integration strategy, and risks.** This register is the compliance record required by the master engineering prompt §6 and AGENTS.md ground rule 6.
