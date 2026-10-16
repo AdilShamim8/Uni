@@ -6,6 +6,8 @@
 
 ### The open-source AI workspace — your keys, your models, your data.
 
+**New in v0.4 — Local Mode:** the workspace now runs with zero configuration. No database? Chat, keys, and history live entirely in your browser. Add a Postgres URL later to unlock accounts and sync.
+
 **Multi-user accounts · Encrypted BYOK provider vault · Live model discovery · Streaming chat with full persistence**
 
 `Apache-2.0` · `Next.js 16` · `TypeScript` · `Deployable to Vercel in minutes`

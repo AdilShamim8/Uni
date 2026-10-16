@@ -40,10 +40,13 @@ export default function Home() {
       return;
     }
     // No database configured: guests use Local Mode; signed-in sessions are
-    // impossible here (auth requires the DB), so always land.
+    // impossible here (auth requires the DB). Returning local users (with
+    // existing browser data) go straight back to their workspace.
     setUser(null);
     setMode("local");
-    setStage("landing");
+    const hasLocalData =
+      typeof window !== "undefined" && !!window.localStorage.getItem("rewoo.local.v1");
+    setStage(hasLocalData ? "workspace" : "landing");
   }, [setUser, setMode, setSetupInfo]);
 
   useEffect(() => {

@@ -50,11 +50,18 @@ function nodeToText(node: ReactNode): string {
 
 /** Code block with a header bar: language label + copy button. */
 function CodeBlock({ className, children, ...rest }: React.HTMLAttributes<HTMLElement> & { children?: ReactNode }) {
-  const lang = /language-(\w+)/.exec(className ?? "")?.[1] ?? "text";
   const codeEl = Array.isArray(children) ? children[0] : children;
+  // rehype-highlight puts language-xxx on the <code> child; react-markdown
+  // sometimes mirrors it on the <pre>. Check both.
+  const childClassName =
+    (codeEl as { props?: { className?: string } } | undefined)?.props?.className ?? "";
+  const lang =
+    /language-(\w+)/.exec(className ?? "")?.[1] ??
+    /language-(\w+)/.exec(childClassName)?.[1] ??
+    "text";
   const raw = nodeToText(children);
   return (
-    <div className="code-block group/code my-3 overflow-hidden rounded-xl border border-border bg-[--code-bg]">
+    <div className="code-block group/code my-3 overflow-hidden rounded-xl border border-border bg-[var(--code-bg)]">
       <div className="flex items-center justify-between border-b border-border/70 px-3 py-1.5">
         <span className="font-mono text-[11px] uppercase tracking-wide text-muted-foreground">{lang}</span>
         <CopyButton getText={() => raw} className="size-6 opacity-0 transition-opacity group-hover/code:opacity-100 focus-visible:opacity-100" />

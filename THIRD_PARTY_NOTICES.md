@@ -13,6 +13,22 @@ adapted from these projects (see `ATTRIBUTION.md` and `RESEARCH.md`); where ReWo
 *interface* (Hermes-compatible `SKILL.md`, Paperclip's `http` adapter payload, OpenClaw's gateway API),
 it does so to interoperate.
 
+
+## Runtime npm dependencies (notices)
+
+The following permissively-licensed npm packages are used unmodified via the npm registry:
+
+| Package | License | Use |
+| --- | --- | --- |
+| [remark-gfm](https://github.com/remarkjs/remark-gfm) | MIT | GitHub-flavored markdown (tables, strikethrough, task lists) in chat rendering |
+| [rehype-highlight](https://github.com/remarkjs/rehype-highlight) | MIT | syntax highlighting for code blocks (rehype pipeline) |
+| [highlight.js](https://github.com/highlightjs/highlight.js) | BSD-3-Clause | tokenizer/language grammars used by rehype-highlight |
+| [next-themes](https://github.com/pacocoursey/next-themes) | MIT | light/dark/system theme switching |
+| react, next, prisma, radix-ui, tailwindcss, zustand, framer-motion, lucide-react, react-markdown | MIT / Apache-2.0 / BSD-3 | framework and UI foundations (see `package.json`) |
+
+Full license texts for these packages are distributed in the npm registry artifacts and reproduced in
+generated dependency metadata at install time.
+
 ---
 
 ## Hermes Agent — `engines/hermes-agent/`

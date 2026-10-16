@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.4.0 · 2026-10-16 · "Local Mode + a workspace that feels finished"
+
+### Added
+- **Local Mode — the app now works on any deployment, configured or not.** When `/api/health` reports `setupRequired`, the landing page offers "Start chatting — no signup": the full workspace runs with conversations, provider keys, and settings persisted in the browser (`localStorage`, capped at 200 conversations, cross-tab synced). Returning local users go straight back to their workspace on reload. The setup guide remains one click away (landing link, sidebar banner, Settings).
+  - `POST /api/chat/direct` — stateless streaming chat proxy with a per-request key: no database, no session, key never persisted/logged/echoed, IP rate-limited (20/min), strict input validation (≤60 messages, 32k/message, 200k total).
+  - `POST /api/models/direct` — live model discovery with a per-request key (10/min IP-limited).
+  - Client-side demo brain streams through the same SSE event protocol, so the UI code path is identical in both modes.
+- **Chat UX overhaul** (interaction patterns from Open WebUI / LibreChat / LobeChat, reimplemented in React):
+  - Markdown: GFM tables/strikethrough/task lists; code blocks with language label, one-click copy, and syntax highlighting (`rehype-highlight` + custom light/dark token themes).
+  - Message actions: copy (user + assistant), regenerate with **single persistence** (new `DELETE /api/messages/[id]` removes the replaced turn instead of stacking duplicates), timestamps, model + token meta, demo badge.
+  - Empty state with four suggestion cards; auto-scroll with detach detection and a scroll-to-bottom pill; auto-growing composer (Enter to send, Shift+Enter for newline) with a Stop button while streaming.
+  - Sidebar: conversation search, date groups (Pinned / Today / Yesterday / Previous 7 days / Previous 30 days / Older), inline rename, pin, and delete with hover actions.
+  - Model picker popover: provider sections, lazy live discovery, search, clearly-labeled offline fallback lists, demo-brain entry.
+- **Theme system**: light / dark / system via `next-themes`; toggle in the sidebar and Appearance tab in Settings.
+- **Keyboard shortcuts**: `⌘/Ctrl+K` new conversation, `⌘/Ctrl+B` toggle sidebar.
+- **Original brand identity**: new ReWoo mark (gradient badge, geometric workflow-stroke "R", concentric reasoning orbit + agent node) replacing the placeholder logo; favicon.ico (16/32/48), app icon, apple-touch-icon, and a 1200×630 social card; full OpenGraph/Twitter metadata.
+- `DELETE /api/messages/[id]` (cloud mode) — tenant-scoped single-message deletion.
+
+### Changed
+- Boot flow: a `setupRequired` deployment no longer walls the app behind the setup screen; the landing page adapts (local-mode CTA, setup link preserved). The setup screen gains a "Back to ReWoo" affordance when reachable from the app.
+- Landing page rebuilt: gradient hero, feature grid, product mock, local-mode-aware CTAs, credits footer.
+- Demo brain response now showcases the full rendering pipeline (table + syntax-highlighted code block) in both server and local variants.
+
+### Fixed
+- Code-block background emitted invalid CSS under Tailwind v4 (`bg-[--code-bg]` → `background-color:--code-bg`); now `bg-[var(--code-bg)]` (verified in the compiled bundle).
+- Language label on code blocks always showed "text" — the `language-xxx` class lives on the `<code>` child (set by rehype-highlight), not on `<pre>`; both are now checked.
+- `react-hooks` v6 rule violations (`set-state-in-effect`, `immutability`): viewport detection and the mounted check now use `useSyncExternalStore`; `streamMeta` is mirrored to a ref on event arrival instead of in an effect.
+
+### Verified (production build, headless browser, both modes)
+- Cloud: signup → demo-brain chat → persistence + auto-title → reload → regenerate (exactly one assistant row) → dark/light screenshots (VLM QA 8–9/10).
+- Local (setupRequired server): landing CTA → workspace → demo chat → localStorage persistence (conversation + 2 messages) → reload returns to workspace → key add with real provider validation → model picker offline fallback → provider error surfacing (403) → sidebar search + date groups.
+- Gates: `eslint` clean, `tsc --noEmit` clean, `bun test` 40/40, `next build` clean.
+
+---
+
 ## 0.3.1 · 2026-10-16 · "Fail loudly, guide precisely"
 
 ### Fixed

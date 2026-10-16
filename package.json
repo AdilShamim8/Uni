@@ -1,8 +1,8 @@
 {
   "name": "rewoo",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": false,
-  "description": "ReWoo — open-source AI workspace. Multi-user accounts, encrypted BYOK provider vault, live model discovery, streaming chat. Deployable to Vercel.",
+  "description": "ReWoo \u2014 open-source AI workspace. Multi-user accounts, encrypted BYOK provider vault, live model discovery, streaming chat. Deployable to Vercel.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
