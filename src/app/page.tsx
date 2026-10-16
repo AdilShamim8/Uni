@@ -7,6 +7,7 @@ import { Landing } from "@/components/rewoo/landing";
 import { AuthView } from "@/components/rewoo/auth-view";
 import { Workspace } from "@/components/rewoo/workspace";
 import { SetupRequiredView } from "@/components/rewoo/setup-view";
+import { ReWooMark } from "@/components/rewoo/logo";
 
 type Stage = "loading" | "landing" | "auth" | "workspace" | "setup";
 
@@ -45,9 +46,7 @@ export default function Home() {
       return (
         <div className="flex min-h-screen items-center justify-center bg-background" role="status" aria-label="Loading">
           <div className="flex flex-col items-center gap-3">
-            <span className="flex size-10 items-center justify-center rounded-xl bg-primary text-lg font-semibold text-primary-foreground" aria-hidden="true">
-              R
-            </span>
+            <ReWooMark size={44} className="animate-pulse" />
             <span className="text-xs text-muted-foreground">Loading ReWoo…</span>
           </div>
         </div>
