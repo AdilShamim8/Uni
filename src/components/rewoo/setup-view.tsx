@@ -145,9 +145,11 @@ function CopyChip({ text, label }: { text: string; label: string }) {
 export function SetupRequiredView({
   status,
   onRetry,
+  onBack,
 }: {
   status: HealthInfo | null;
   onRetry: () => void;
+  onBack?: () => void;
 }) {
   const steps = useMemo(() => buildSteps(status), [status]);
 
@@ -156,14 +158,21 @@ export function SetupRequiredView({
       <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
           <ReWooWordmark />
-          <a
-            href={DOCS_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            Deployment guide <ExternalLink className="size-3.5" aria-hidden="true" />
-          </a>
+          <div className="flex items-center gap-3">
+            {onBack && (
+              <Button variant="ghost" className="rounded-lg" onClick={onBack}>
+                ← Back to ReWoo
+              </Button>
+            )}
+            <a
+              href={DOCS_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Deployment guide <ExternalLink className="size-3.5" aria-hidden="true" />
+            </a>
+          </div>
         </div>
       </header>
 

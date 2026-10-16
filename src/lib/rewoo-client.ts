@@ -158,7 +158,74 @@ export const api = {
     }),
   deleteConversation: (id: string) =>
     jsonFetch<{ ok: boolean }>(`/api/conversations/${id}`, { method: "DELETE" }),
+  deleteMessage: (id: string) =>
+    jsonFetch<{ ok: boolean }>(`/api/messages/${id}`, { method: "DELETE" }),
 };
+
+// ── Direct (Local Mode) endpoints — key supplied per request, never stored ───
+
+/** Live model discovery with a per-request key (Local Mode). */
+export async function listDirectModels(
+  input: { provider: string; apiKey: string; baseUrl?: string }
+): Promise<{ provider: string; providerName: string; models: ModelInfo[]; source: "live" | "fallback"; error: string | null }> {
+  return jsonFetch<{ provider: string; providerName: string; models: ModelInfo[]; source: "live" | "fallback"; error: string | null }>(
+    "/api/models/direct",
+    { method: "POST", body: JSON.stringify(input) }
+  );
+}
+
+/**
+ * Streams a Local-Mode chat turn via /api/chat/direct. Same SSE event
+ * protocol as streamChatTurn; the assistant message is NOT persisted
+ * server-side — the caller owns the conversation state.
+ */
+export function streamDirectChat(
+  input: {
+    provider: string;
+    apiKey: string;
+    baseUrl?: string | null;
+    model: string;
+    messages: Array<{ role: "system" | "user" | "assistant"; content: string }>;
+    temperature?: number;
+  },
+  onEvent: (ev: ChatEvent) => void
+): StreamHandle {
+  const controller = new AbortController();
+  const done = (async () => {
+    const res = await fetch("/api/chat/direct", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    });
+    if (!res.ok || !res.body) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      onEvent({ type: "error", message: data.error ?? `Chat failed (${res.status}).` });
+      onEvent({ type: "done", userMessage: null, assistantMessage: null });
+      return;
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    while (true) {
+      const { done: rdone, value } = await reader.read();
+      if (rdone) break;
+      buffer += decoder.decode(value, { stream: true });
+      const parts = buffer.split("\n\n");
+      buffer = parts.pop() ?? "";
+      for (const part of parts) {
+        const line = part.trim();
+        if (!line.startsWith("data:")) continue;
+        try {
+          onEvent(JSON.parse(line.slice(5).trim()) as ChatEvent);
+        } catch {
+          // ignore malformed frame
+        }
+      }
+    }
+  })();
+  return { cancel: () => controller.abort(), done };
+}
 
 // ── SSE chat streaming ───────────────────────────────────────────────────────
 

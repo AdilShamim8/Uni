@@ -5,9 +5,10 @@ import { Box, ChevronDown, Loader2, RefreshCw, Search, Sparkles, Zap } from "luc
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { api, type CredentialInfo, type ModelInfo } from "@/lib/rewoo-client";
+import { api, listDirectModels, type CredentialInfo, type ModelInfo } from "@/lib/rewoo-client";
+import { localFallbackModels, type LocalCredential } from "@/lib/local-store";
 import { cn } from "@/lib/utils";
-import { useReWoo } from "@/lib/rewoo-store";
+import { useReWoo, type WorkspaceMode } from "@/lib/rewoo-store";
 
 /** Light mirror of the server-side tier heuristic (src/lib/providers.ts). */
 function tierOf(id: string): "fast" | "powerful" | null {
@@ -26,34 +27,65 @@ interface ModelsRow {
   models: ModelInfo[];
 }
 
-export function ModelsView({ credentials, onOpenSettings }: { credentials: CredentialInfo[]; onOpenSettings: () => void }) {
+export function ModelsView({
+  mode, credentials, localKeys, onOpenSettings,
+}: {
+  mode: WorkspaceMode;
+  credentials: CredentialInfo[];
+  localKeys: LocalCredential[];
+  onOpenSettings: () => void;
+}) {
   const { selectedCredentialId, selectedModel, setSelection } = useReWoo();
   const [rows, setRows] = useState<Record<string, ModelsRow>>({});
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState<string | null>(selectedCredentialId ?? credentials[0]?.id ?? null);
 
-  async function load(cred: CredentialInfo, force = false) {
-    if (!force && rows[cred.id]?.models.length) return;
-    setRows((r) => ({ ...r, [cred.id]: { credentialId: cred.id, loading: true, error: null, source: "live", models: r[cred.id]?.models ?? [] } }));
+  // Unified entry list: server credentials (cloud) or local keys (local mode).
+  const entries = (mode === "local" ? localKeys : credentials).map((c) => ({
+    id: c.id,
+    provider: c.provider,
+    label: c.label,
+    key: "apiKey" in c ? c.apiKey : undefined,
+    baseUrl: c.baseUrl,
+  }));
+  const [expanded, setExpanded] = useState<string | null>(selectedCredentialId ?? entries[0]?.id ?? null);
+
+  async function load(entry: { id: string; provider: string; label: string; key?: string; baseUrl: string | null }, force = false) {
+    if (!force && rows[entry.id]?.models.length) return;
+    setRows((r) => ({ ...r, [entry.id]: { credentialId: entry.id, loading: true, error: null, source: "live", models: r[entry.id]?.models ?? [] } }));
     try {
-      const res = await api.listModels(cred.id);
-      setRows((r) => ({
-        ...r,
-        [cred.id]: { credentialId: cred.id, loading: false, error: res.error, source: res.source, models: res.models },
-      }));
+      if (mode === "local" && entry.key) {
+        const res = await listDirectModels({ provider: entry.provider, apiKey: entry.key, baseUrl: entry.baseUrl ?? undefined });
+        setRows((r) => ({
+          ...r,
+          [entry.id]: {
+            credentialId: entry.id,
+            loading: false,
+            error: res.error,
+            source: res.models.length ? "live" : "fallback",
+            models: res.models.length ? res.models : localFallbackModels(entry.provider),
+          },
+        }));
+      } else {
+        const res = await api.listModels(entry.id);
+        setRows((r) => ({
+          ...r,
+          [entry.id]: { credentialId: entry.id, loading: false, error: res.error, source: res.source, models: res.models },
+        }));
+      }
     } catch (err) {
       setRows((r) => ({
         ...r,
-        [cred.id]: { credentialId: cred.id, loading: false, error: err instanceof Error ? err.message : "Failed", source: "fallback", models: [] },
+        [entry.id]: { credentialId: entry.id, loading: false, error: err instanceof Error ? err.message : "Failed", source: "fallback", models: localFallbackModels(entry.provider) },
       }));
     }
   }
 
   useEffect(() => {
-    for (const cred of credentials) load(cred);
-  }, [credentials.length]);
+    for (const entry of entries) load(entry);
+     
+  }, [entries.map((e) => e.id).join(",")]);
 
-  if (credentials.length === 0) {
+  if (entries.length === 0) {
     return (
       <div className="rewoo-scroll h-full overflow-y-auto">
         <div className="mx-auto max-w-2xl px-6 py-16 text-center">
@@ -94,25 +126,25 @@ export function ModelsView({ credentials, onOpenSettings }: { credentials: Crede
         </div>
 
         <div className="space-y-3">
-          {credentials.map((cred) => {
-            const row = rows[cred.id];
-            const isOpen = expanded === cred.id;
+          {entries.map((entry) => {
+            const row = rows[entry.id];
+            const isOpen = expanded === entry.id;
             const models = (row?.models ?? []).filter(
               (m) => !q || m.id.toLowerCase().includes(q) || m.label.toLowerCase().includes(q)
             );
             return (
-              <section key={cred.id} className="overflow-hidden rounded-xl border border-border bg-card">
+              <section key={entry.id} className="overflow-hidden rounded-xl border border-border bg-card">
                 <button
                   type="button"
                   onClick={() => {
-                    setExpanded(isOpen ? null : cred.id);
-                    load(cred);
+                    setExpanded(isOpen ? null : entry.id);
+                    load(entry);
                   }}
                   className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-accent/50"
                   aria-expanded={isOpen}
                 >
-                  <span className="size-2.5 rounded-[4px]" style={{ background: accentFor(cred.provider) }} aria-hidden="true" />
-                  <span className="flex-1 font-medium">{cred.label}</span>
+                  <span className="size-2.5 rounded-[4px]" style={{ background: accentFor(entry.provider) }} aria-hidden="true" />
+                  <span className="flex-1 font-medium">{entry.label}</span>
                   {row?.source === "fallback" && (
                     <Badge variant="outline" className="text-[10px] text-muted-foreground">fallback</Badge>
                   )}
@@ -125,25 +157,25 @@ export function ModelsView({ credentials, onOpenSettings }: { credentials: Crede
                   <div className="border-t border-border/70">
                     {row?.loading ? (
                       <div className="flex items-center justify-center py-8 text-muted-foreground">
-                        <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" /> Fetching models from {cred.label}…
+                        <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" /> Fetching models from {entry.label}…
                       </div>
                     ) : row?.error && models.length === 0 ? (
                       <div className="px-4 py-5 text-sm text-muted-foreground">
                         <p className="text-destructive">{row.error}</p>
-                        <Button variant="outline" size="sm" className="mt-3 rounded-lg" onClick={() => load(cred, true)}>
+                        <Button variant="outline" size="sm" className="mt-3 rounded-lg" onClick={() => load(entry, true)}>
                           <RefreshCw className="mr-1.5 size-3.5" aria-hidden="true" /> Retry
                         </Button>
                       </div>
                     ) : (
                       <ul className="divide-y divide-border/60">
                         {models.map((m) => {
-                          const selected = selectedCredentialId === cred.id && selectedModel === m.id;
+                          const selected = selectedCredentialId === entry.id && selectedModel === m.id;
                           const tier = tierOf(m.id);
                           return (
                             <li key={m.id}>
                               <button
                                 type="button"
-                                onClick={() => setSelection(cred.id, m.id)}
+                                onClick={() => setSelection(entry.id, m.id)}
                                 className={cn(
                                   "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-accent/50",
                                   selected && "bg-accent"

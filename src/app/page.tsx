@@ -14,12 +14,13 @@ type Stage = "loading" | "landing" | "auth" | "workspace" | "setup";
 export default function Home() {
   const [stage, setStage] = useState<Stage>("loading");
   const [setupStatus, setSetupStatus] = useState<HealthInfo | null>(null);
-  const { setUser } = useReWoo();
+  const { setUser, setMode, setSetupInfo, setSelection } = useReWoo();
 
   /**
    * Boot sequence: check deployment health and session in parallel.
-   * A misconfigured deployment (no/invalid DATABASE_URL, missing master key)
-   * renders the setup screen instead of a workspace that fails opaquely.
+   * A misconfigured deployment (no DATABASE_URL / master key) no longer
+   * blocks the app — the workspace runs in Local Mode (browser-only
+   * persistence) and the setup guide stays one click away.
    */
   const boot = useCallback(async () => {
     setStage("loading");
@@ -27,19 +28,47 @@ export default function Home() {
       api.me().catch(() => ({ user: null as SessionUser | null })),
       api.health(),
     ]);
-    if (health?.setupRequired) {
-      setSetupStatus(health);
-      setStage("setup");
+    const setupRequired = !!health?.setupRequired;
+    setSetupStatus(health);
+    setSetupInfo(setupRequired ? health : null);
+
+    if (!setupRequired) {
+      const user = meRes.user;
+      setUser(user);
+      setMode("cloud");
+      setStage(user ? "workspace" : "landing");
       return;
     }
-    const user = meRes.user;
-    setUser(user);
-    setStage(user ? "workspace" : "landing");
-  }, [setUser]);
+    // No database configured: guests use Local Mode; signed-in sessions are
+    // impossible here (auth requires the DB), so always land.
+    setUser(null);
+    setMode("local");
+    setStage("landing");
+  }, [setUser, setMode, setSetupInfo]);
 
   useEffect(() => {
     void boot();
   }, [boot]);
+
+  /** Enter the workspace in Local Mode (browser-only, no account). */
+  const startLocal = useCallback(() => {
+    setUser(null);
+    setMode("local");
+    setStage("workspace");
+  }, [setUser, setMode]);
+
+  /** Enter the workspace with a cloud account (DB configured). */
+  const enterCloud = useCallback((user: SessionUser) => {
+    setUser(user);
+    setMode("cloud");
+    setStage("workspace");
+  }, [setUser, setMode]);
+
+  /** Leave the workspace back to the landing page. */
+  const exitWorkspace = useCallback(async () => {
+    setSelection(null, null);
+    await boot();
+  }, [boot, setSelection]);
 
   switch (stage) {
     case "loading":
@@ -52,38 +81,45 @@ export default function Home() {
         </div>
       );
     case "setup":
-      return <SetupRequiredView status={setupStatus} onRetry={() => void boot()} />;
+      return (
+        <SetupRequiredView
+          status={setupStatus}
+          onRetry={() => void boot()}
+          onBack={() => setStage("landing")}
+        />
+      );
     case "landing":
       return (
         <Landing
-          onStart={() => setStage("auth")}
+          setupRequired={!!setupStatus?.setupRequired}
+          onStart={() => {
+            if (setupStatus?.setupRequired) startLocal();
+            else setStage("auth");
+          }}
           onSignIn={() => setStage("auth")}
+          onOpenSetup={() => setStage("setup")}
         />
       );
     case "auth":
       return (
         <AuthView
-          onDone={(user) => {
-            setUser(user);
-            setStage("workspace");
-          }}
+          onDone={enterCloud}
           onBack={() => setStage("landing")}
           onSetupRequired={() => void boot()}
         />
       );
     case "workspace": {
-      const user = useReWoo.getState().user;
-      if (!user) {
-        setStage("landing");
-        return null;
+      const { user, mode } = useReWoo.getState();
+      if (mode === "cloud" && !user) {
+        // Session vanished (e.g. after sign-out) — fall back to landing.
+        return <Landing setupRequired={false} onStart={() => setStage("auth")} onSignIn={() => setStage("auth")} onOpenSetup={() => void boot()} />;
       }
       return (
         <Workspace
-          user={user}
-          onSignedOut={() => {
-            setUser(null);
-            setStage("landing");
-          }}
+          user={mode === "cloud" ? user : null}
+          mode={mode}
+          onSignedOut={exitWorkspace}
+          onOpenSetup={() => setStage("setup")}
         />
       );
     }
