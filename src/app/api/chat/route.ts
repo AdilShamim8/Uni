@@ -4,6 +4,7 @@ import { requireUser, Unauthorized } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 import { isProviderId, streamChat, type ChatMessage } from "@/lib/providers";
 import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { setupErrorBody } from "@/lib/setup";
 
 export const dynamic = "force-dynamic";
 // Vercel: allow long streaming responses (Hobby plan max).
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
         let full = "";
         let usage: { promptTokens: number; completionTokens: number } | undefined;
+        let assistantPersisted = false;
 
         try {
           send({ type: "meta", demo, provider, model });
@@ -160,6 +162,7 @@ export async function POST(req: NextRequest) {
               completionTokens: usage?.completionTokens ?? null,
             },
           });
+          assistantPersisted = true;
 
           // Auto-title from the first exchange.
           if (conversation.title === "New conversation") {
@@ -179,8 +182,11 @@ export async function POST(req: NextRequest) {
           send({ type: "done", userMessage, assistantMessage });
         } catch (err) {
           const message = err instanceof Error ? err.message : "Streaming failed.";
-          // Persist whatever streamed before the failure, so nothing is lost.
-          if (full.trim()) {
+          // Persist whatever streamed before the failure, so nothing is lost —
+          // but never duplicate a message that was already saved above (the
+          // classic trigger: the client disconnects/presses Stop right as the
+          // turn completes, so the final enqueue throws after the save).
+          if (full.trim() && !assistantPersisted) {
             await db.message.create({
               data: {
                 conversationId: conversation.id,
@@ -209,6 +215,11 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof Unauthorized) {
       return Response.json({ error: err.message }, { status: err.status });
+    }
+    const setup = setupErrorBody(err);
+    if (setup) {
+      console.error("[chat] setup required:", setup.issue);
+      return Response.json(setup, { status: 503 });
     }
     console.error("[chat]", err instanceof Error ? err.message : err);
     return Response.json({ error: "Chat failed." }, { status: 500 });
