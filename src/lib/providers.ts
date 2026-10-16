@@ -80,28 +80,46 @@ export interface ModelInfo {
   source: "live" | "fallback";
 }
 
+/**
+ * Rough capability tier inferred from the model ID — informational only,
+ * used to sort and badge models in the UI (fast / balanced / powerful).
+ */
+export type ModelTier = "fast" | "balanced" | "powerful" | "other";
+
+export function modelTier(id: string): ModelTier {
+  const m = id.toLowerCase();
+  // Fast / small: flash, mini, haiku, instant, 8b, small…
+  if (/(flash|mini|haiku|instant|nano|small|lite|8b|3\.5-turbo)/.test(m)) return "fast";
+  // Powerful / large frontier models
+  if (/(^|\/)(gpt-5|gpt-4\.1|gpt-4o|o[1-4]|opus|pro|ultra|max|large|70b|405b|ultrathink)/.test(m) ||
+      /claude-(sonnet|opus)-[4-9]/.test(m) || /gemini-(2\.[5-9]|[3-9])\.[0-9]*/.test(m)) return "powerful";
+  // Mid-tier default workhorses
+  if (/(sonnet|turbo|air|flash-lite|mistral-small)/.test(m)) return "balanced";
+  return "other";
+}
+
 /** Small offline fallback catalogs — clearly labeled `source: "fallback"`. */
 const FALLBACK_MODELS: Partial<Record<ProviderId, ModelInfo[]>> = {
   openai: [
-    { id: "gpt-4o", label: "GPT-4o", contextWindow: 128000, source: "fallback" },
-    { id: "gpt-4o-mini", label: "GPT-4o mini", contextWindow: 128000, source: "fallback" },
+    { id: "gpt-4o-mini", label: "GPT-4o mini — fast & affordable", contextWindow: 128000, source: "fallback" },
+    { id: "gpt-4o", label: "GPT-4o — flagship", contextWindow: 128000, source: "fallback" },
   ],
   anthropic: [
-    { id: "claude-sonnet-4-20250514", label: "Claude Sonnet 4", contextWindow: 200000, source: "fallback" },
-    { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku", contextWindow: 200000, source: "fallback" },
+    { id: "claude-3-5-haiku-20241022", label: "Claude 3.5 Haiku — fast & affordable", contextWindow: 200000, source: "fallback" },
+    { id: "claude-sonnet-4-20250514", label: "Claude Sonnet 4 — flagship", contextWindow: 200000, source: "fallback" },
   ],
   gemini: [
-    { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash", contextWindow: 1000000, source: "fallback" },
-    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro", contextWindow: 1000000, source: "fallback" },
+    { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash — fast & affordable", contextWindow: 1000000, source: "fallback" },
+    { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro — flagship", contextWindow: 1000000, source: "fallback" },
   ],
   groq: [
-    { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B", contextWindow: 128000, source: "fallback" },
+    { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B — fast & affordable", contextWindow: 128000, source: "fallback" },
   ],
   mistral: [
-    { id: "mistral-large-latest", label: "Mistral Large", contextWindow: 128000, source: "fallback" },
+    { id: "mistral-small-latest", label: "Mistral Small — fast & affordable", contextWindow: 128000, source: "fallback" },
   ],
   openrouter: [
-    { id: "openai/gpt-4o", label: "GPT-4o (via OpenRouter)", contextWindow: 128000, source: "fallback" },
+    { id: "openai/gpt-4o-mini", label: "GPT-4o mini — fast & affordable", contextWindow: 128000, source: "fallback" },
   ],
 };
 
@@ -126,13 +144,14 @@ export async function fetchModels(
     } else {
       headers["Authorization"] = `Bearer ${apiKey}`;
     }
-    const res = await fetch(url, { headers, signal: AbortSignal.timeout(15000) });
+    const res = await fetchWithRetry(url, { headers }, `list models (${PROVIDERS[provider].name})`);
     if (!res.ok) {
       const body = await res.text().catch(() => "");
       return { models: [], error: `Provider returned ${res.status}. ${body.slice(0, 140)}` };
     }
     const json = (await res.json()) as Record<string, unknown>;
     const raw = (json.data ?? json.models ?? []) as Array<Record<string, unknown>>;
+    const tierOrder: Record<ModelTier, number> = { powerful: 0, balanced: 1, fast: 2, other: 3 };
     const models: ModelInfo[] = raw
       .map((m) => {
         const id = String(m.name ?? m.id ?? "").replace(/^models\//, "");
@@ -144,6 +163,7 @@ export async function fetchModels(
         };
       })
       .filter((m) => m.id && !m.id.includes("embedding") && !m.id.includes("tts") && !m.id.includes("whisper"))
+      .sort((a, b) => tierOrder[modelTier(a.id)] - tierOrder[modelTier(b.id)])
       .slice(0, 200);
     if (models.length === 0) return { models: [], error: "Provider returned no models." };
     return { models };
@@ -185,6 +205,54 @@ export interface GatewayChunk {
   done?: boolean;
   usage?: { promptTokens: number; completionTokens: number };
   error?: string;
+}
+
+// ── Resilient fetch ──────────────────────────────────────────────────────────
+
+const CONNECT_TIMEOUT_MS = 20_000; // time to first byte / headers
+const RETRYABLE_STATUS = new Set([408, 409, 429, 500, 502, 503, 504]);
+const RETRY_DELAYS_MS = [500, 1_500]; // two retries, gentle backoff
+
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  if (!signal) return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    signal.addEventListener("abort", () => { clearTimeout(t); reject(signal.reason ?? new Error("Aborted")); }, { once: true });
+  });
+}
+
+/**
+ * fetch with connect timeout + bounded retries on transient failures
+ * (network errors, 408/409/429/5xx). Non-retryable statuses and
+ * authentication errors surface immediately with readable hints.
+ * Streaming responses are NOT retried once the body has started — a retry
+ * would duplicate partial output — so retries apply to connection setup only.
+ */
+async function fetchWithRetry(
+  url: string,
+  init: RequestInit,
+  what: string,
+  opts: { retries?: number; timeoutMs?: number } = {}
+): Promise<Response> {
+  const { retries = RETRY_DELAYS_MS.length, timeoutMs = CONNECT_TIMEOUT_MS } = opts;
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    // Combine the caller's abort signal (user pressed Stop) with the timeout.
+    const timeout = AbortSignal.timeout(timeoutMs);
+    const signal = init.signal ? AbortSignal.any([init.signal, timeout]) : timeout;
+    try {
+      const res = await fetch(url, { ...init, signal: signal ?? undefined });
+      if (res.ok || !RETRYABLE_STATUS.has(res.status)) return res;
+      lastError = new Error(`${what}: provider responded ${res.status}`);
+      if (attempt === retries) break;
+    } catch (err) {
+      if (init.signal?.aborted) throw err; // user cancellation — never retry
+      lastError = err;
+      if (attempt === retries) break;
+    }
+    await sleep(RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)], init.signal ?? undefined);
+  }
+  throw lastError instanceof Error ? lastError : new Error(`${what}: network error`);
 }
 
 /**
@@ -249,7 +317,7 @@ async function assertOk(res: Response, provider: string): Promise<void> {
 // — OpenAI-compatible family ————————————————————————————————————————————————
 async function* streamOpenAICompatible(o: Required<Pick<StreamOptions, "provider" | "model" | "messages">> &
   StreamOptions & { base: string }): AsyncGenerator<GatewayChunk> {
-  const res = await fetch(`${o.base}/chat/completions`, {
+  const res = await fetchWithRetry(`${o.base}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -265,7 +333,7 @@ async function* streamOpenAICompatible(o: Required<Pick<StreamOptions, "provider
       max_tokens: o.maxTokens,
     }),
     signal: o.signal,
-  });
+  }, `chat (${PROVIDERS[o.provider].name})`, { retries: 1 });
   await assertOk(res, PROVIDERS[o.provider].name);
   for await (const data of readSSE(res)) {
     if (data === "[DONE]") { yield { done: true }; return; }
@@ -291,7 +359,7 @@ async function* streamAnthropic(o: Required<Pick<StreamOptions, "provider" | "mo
   StreamOptions & { base: string }): AsyncGenerator<GatewayChunk> {
   const system = o.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const rest = o.messages.filter((m) => m.role !== "system");
-  const res = await fetch(`${o.base}/v1/messages`, {
+  const res = await fetchWithRetry(`${o.base}/v1/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -307,7 +375,7 @@ async function* streamAnthropic(o: Required<Pick<StreamOptions, "provider" | "mo
       temperature: o.temperature ?? 0.7,
     }),
     signal: o.signal,
-  });
+  }, "chat (Anthropic)", { retries: 1 });
   await assertOk(res, "Anthropic");
   let usage: { promptTokens: number; completionTokens: number } | undefined;
   for await (const data of readSSE(res)) {
@@ -343,7 +411,7 @@ async function* streamGemini(o: Required<Pick<StreamOptions, "provider" | "model
   const system = o.messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const rest = o.messages.filter((m) => m.role !== "system");
   const url = `${o.base}/v1beta/models/${encodeURIComponent(o.model)}:streamGenerateContent?alt=sse&key=${encodeURIComponent(o.apiKey)}`;
-  const res = await fetch(url, {
+  const res = await fetchWithRetry(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -358,7 +426,7 @@ async function* streamGemini(o: Required<Pick<StreamOptions, "provider" | "model
       },
     }),
     signal: o.signal,
-  });
+  }, "chat (Gemini)", { retries: 1 });
   await assertOk(res, "Gemini");
   for await (const data of readSSE(res)) {
     try {

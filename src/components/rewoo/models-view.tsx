@@ -1,13 +1,22 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, ChevronDown, Loader2, RefreshCw, Search } from "lucide-react";
+import { Box, ChevronDown, Loader2, RefreshCw, Search, Sparkles, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { api, type CredentialInfo, type ModelInfo } from "@/lib/rewoo-client";
 import { cn } from "@/lib/utils";
 import { useReWoo } from "@/lib/rewoo-store";
+
+/** Light mirror of the server-side tier heuristic (src/lib/providers.ts). */
+function tierOf(id: string): "fast" | "powerful" | null {
+  const m = id.toLowerCase();
+  if (/(flash|mini|haiku|instant|nano|small|lite|8b)/.test(m)) return "fast";
+  if (/(^|\/)(gpt-5|gpt-4\.1|gpt-4o|o[1-4]|opus|pro|ultra|max|large|70b|405b)/.test(m) ||
+      /claude-(sonnet|opus)-[4-9]/.test(m) || /gemini-(2\.[5-9]|[3-9])\./.test(m)) return "powerful";
+  return null;
+}
 
 interface ModelsRow {
   credentialId: string;
@@ -129,6 +138,7 @@ export function ModelsView({ credentials, onOpenSettings }: { credentials: Crede
                       <ul className="divide-y divide-border/60">
                         {models.map((m) => {
                           const selected = selectedCredentialId === cred.id && selectedModel === m.id;
+                          const tier = tierOf(m.id);
                           return (
                             <li key={m.id}>
                               <button
@@ -140,6 +150,16 @@ export function ModelsView({ credentials, onOpenSettings }: { credentials: Crede
                                 )}
                               >
                                 <span className="min-w-0 flex-1 truncate font-mono text-sm">{m.id}</span>
+                                {tier === "fast" && (
+                                  <Badge variant="outline" className="shrink-0 gap-1 text-[10px] text-muted-foreground">
+                                    <Zap className="size-2.5" aria-hidden="true" /> fast &amp; affordable
+                                  </Badge>
+                                )}
+                                {tier === "powerful" && (
+                                  <Badge variant="outline" className="shrink-0 gap-1 text-[10px] text-primary">
+                                    <Sparkles className="size-2.5" aria-hidden="true" /> flagship
+                                  </Badge>
+                                )}
                                 {m.contextWindow ? (
                                   <span className="shrink-0 text-xs text-muted-foreground">{(m.contextWindow / 1000).toFixed(0)}k ctx</span>
                                 ) : null}
