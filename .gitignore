@@ -1,19 +1,28 @@
-# ReWoo's own ignores are anchored to the repo root (/…) so they never hide
-# source files inside the vendored engines/ (which carry their own .gitignore).
-__pycache__/
-*.py[cod]
-.pytest_cache/
-/*.egg-info/
-/build/
-/dist/
-/.venv/
-/venv/
-/.env
-/data/
-/*.db
-/*.db-wal
-/*.db-shm
+# ReWoo workspace app — Next.js build artifacts
+node_modules/
+.next/
+out/
+build/
+dist/
+
+# Environment & secrets (never commit)
+.env
+.env.*
+!.env.example
+.rewoo-master-key
+.you-master-key
+
+# Local databases (dev SQLite)
+db/
+*.db
+*.db-wal
+*.db-shm
+
+# Logs & OS
+*.log
 .DS_Store
-/.idea/
-/.vscode/
-/web/node_modules/
+
+# Next.js generated
+next-env.d.ts
+.vercel
+*.tsbuildinfo
