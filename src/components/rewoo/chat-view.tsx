@@ -193,12 +193,19 @@ export function ChatView({
             });
           }
           finish();
-          // Cloud mode: reload persisted messages (done event carries them, but
-          // a full reload also picks up auto-titles and usage columns).
-          if (mode === "cloud" && activeId === conversationId) {
-            api.getConversation(conversationId)
-              .then(({ conversation }) => setMessages(conversation.messages))
-              .catch(() => {});
+          // Reload the conversation so the persisted turn replaces the
+          // optimistic/streaming view. Reads the LIVE store (the closure's
+          // activeId is stale when the conversation was auto-created on this
+          // send), and skips when the user switched away mid-stream.
+          if (useReWoo.getState().activeConversationId === conversationId) {
+            if (mode === "local") {
+              const conv = localConversations.get(conversationId);
+              if (conv) setMessages(conv.messages);
+            } else {
+              api.getConversation(conversationId)
+                .then(({ conversation }) => setMessages(conversation.messages))
+                .catch(() => {});
+            }
           }
         }
       };
