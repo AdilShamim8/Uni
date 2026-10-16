@@ -76,7 +76,37 @@ No other variables are required. No third-party services are called except the A
 
 ## Verifying a deployment
 
-- `GET /api/health` → `{"ok":true,"service":"rewoo-workspace","db":true}` (check `db: true`).
+- `GET /api/health` → `{"ok":true,"service":"rewoo-workspace","db":true,"dbIssue":null,"masterKey":"env","setupRequired":false}` (HTTP 200). The endpoint returns **HTTP 503 with a precise reason** when something is misconfigured — see below.
 - Sign up, add a provider credential, and confirm it shows **verified**.
+
+---
+
+## Troubleshooting — the "Setup required" screen
+
+If a deployment is misconfigured, the app does not fail with cryptic errors. It
+boots into a dedicated **Setup required** screen that names the exact problem
+and the copy-paste commands to fix it, powered by `/api/health`:
+
+| `dbIssue` | Meaning | Fix |
+|---|---|---|
+| `not-configured` | `DATABASE_URL` missing, or it disagrees with the Prisma client generated at build time | Set `DATABASE_URL` to a PostgreSQL URL and **redeploy** so the right client is generated |
+| `serverless-sqlite` | SQLite cannot run on the read-only serverless filesystem | Create a PostgreSQL database and set `DATABASE_URL` |
+| `unreachable` | Host, credentials, or network wrong (or the database is paused) | Fix the connection string |
+| `schema-missing` | Database reachable but tables were never created | `DATABASE_URL="postgresql://…" bun run db:push` once |
+
+If `masterKey` reports `ephemeral`, `REWOO_MASTER_KEY` is not set — provider
+keys would not survive restarts, so the screen asks for it too
+(`openssl rand -hex 32`).
+
+The same diagnostics warn **at build time**: during a Vercel build,
+`scripts/prisma.mjs` prints explicit warnings for a missing/SQLite
+`DATABASE_URL` or a missing `REWOO_MASTER_KEY`.
+
+API routes that need the database return `503 {"code":"setup_required",…}`
+instead of a generic 500, so scripts and monitors can distinguish
+"infrastructure not configured" from real application errors.
+
+Then verify the happy path end to end:
+
 - Send a chat message and confirm streaming output plus token usage.
 - The Models view should list live models with *flagship / fast & affordable* badges.

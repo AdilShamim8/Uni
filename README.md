@@ -33,11 +33,14 @@ Requires **Node.js 20+** (or **Bun 1.1+**).
 ```bash
 git clone https://github.com/AdilShamim8/ReWoo.git
 cd ReWoo
-bun install            # or: npm install
-cp .env.example .env   # defaults work for local development
-bun run db:push        # create the SQLite schema
-bun run dev            # http://localhost:3000
+bun install            # or: npm install — also creates the local SQLite database
+bun run dev            # http://localhost:3000 — no .env copy needed
 ```
+
+That's the whole setup: `bun install` auto-provisions a local SQLite database
+(with schema) at `prisma/db/rewoo.db`, and a development master key is
+generated on first run. To customize (PostgreSQL, persistent vault key), copy
+`.env.example` to `.env` — see [Deploy to Vercel](#-deploy-to-vercel).
 
 Sign up with any email/password (stored locally), then either:
 
@@ -49,8 +52,8 @@ Sign up with any email/password (stored locally), then either:
 | `bun run dev` | Development server |
 | `bun run build` / `bun start` | Production build / serve |
 | `bun run lint` / `bun run typecheck` | ESLint / TypeScript checks |
-| `bun test` | Automated test suite (vault, auth, rate limits, tenant isolation…) |
-| `bun run db:push` | Apply the Prisma schema (SQLite locally, PostgreSQL in production) |
+| `bun test` | Automated test suite (vault, auth, rate limits, tenant isolation, setup diagnostics…) |
+| `bun run db:push` | Apply the Prisma schema (automatic for local SQLite; run once for PostgreSQL) |
 
 ## ▲ Deploy to Vercel
 
@@ -74,6 +77,11 @@ ReWoo is built for Vercel: serverless-safe, PostgreSQL-ready, no background work
    ```bash
    DATABASE_URL="postgresql://…" bun run db:push
    ```
+
+**Deployed without the env vars?** The app won't fail with cryptic errors — it
+boots into a **Setup required** screen that names exactly what is missing and
+the copy-paste commands to fix it (`/api/health` powers it and returns precise
+diagnostics). See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) → Troubleshooting.
 
 Full guide with screenshots, Docker/self-host alternative, and troubleshooting: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 

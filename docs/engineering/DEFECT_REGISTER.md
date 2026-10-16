@@ -2,7 +2,7 @@
 
 **Source of truth for known defects and their resolution state.** Ranked by severity. Entries marked CLOSED/RESOLVED are kept for history. Pre-restructure items about the retired Python app are preserved verbatim below the line.
 
-> **2026-10-16 restructure update:** D4 (engines weight), D16 (`you/` name), D17 (lockfile name), and D18 (no test suite) are **RESOLVED** by the v0.3 restructure. New: D20 (tier heuristic) found and fixed by the new test suite. See `docs/DECISIONS.md` ADR-010…013.
+> **2026-10-16 v0.3.1 update:** D22 (silent serverless misconfiguration), D23 (duplicated assistant message on abort), and D24 (guards rethrowing non-auth errors as HTML 500s) found during post-deploy verification of re-woo-two.vercel.app and **FIXED-VERIFIED** — see the current register below.
 
 Legend — Status: **OPEN** (unverified or unfixed) · **FIXED-VERIFIED** (fix observed running in CI or browser evidence) · **FIXED-CLAIMED** (fix committed, regression test missing) · **CLOSED** (verified with test evidence).
 
@@ -12,8 +12,9 @@ Legend — Status: **OPEN** (unverified or unfixed) · **FIXED-VERIFIED** (fix o
 
 | ID | Severity | Defect | Location | Status | Evidence / next action |
 |----|----------|--------|----------|--------|------------------------|
-| D18 | Medium (quality) | No automated test suite for the workspace | `src/lib/__tests__/` | **RESOLVED (v0.3)** | 31 bun:test cases (vault, auth, rate-limit, providers, tenant isolation) wired into CI |
-| D20 | Low | `modelTier('gemini-*')` matched 'mini' inside 'geMINI' → all Gemini models classified 'fast' | `src/lib/providers.ts` | **CLOSED (v0.3)** | Found by the new suite; boundary-aware regexes + regression test |
+| D22 | High (deployment) | A Vercel deploy without `DATABASE_URL` (or with SQLite) failed every DB call on the read-only filesystem — auth returned opaque `500 "Try again"`, health lied `ok:true, db:false`, and nothing told the operator what to do (observed live on re-woo-two.vercel.app, 2026-10-16) | `src/lib/setup.ts`, `src/app/api/*`, `src/components/rewoo/setup-view.tsx` | **FIXED-VERIFIED (v0.3.1)** | Health returns 503 + classified `dbIssue`; all DB routes return `503 setup_required`; client boots into a Setup required screen with exact fix commands; build-time warnings on Vercel. Verified locally across 4 failure scenarios (read-only FS, unreachable Postgres, client/URL mismatch, empty schema) + headless-browser screenshots (light/dark) |
+| D23 | Medium (correctness) | Pressing Stop / client disconnect as a turn completed persisted the assistant message **twice** (normal save + interrupt save) | `src/app/api/chat/route.ts` | **FIXED-VERIFIED (v0.3.1)** | `assistantPersisted` guard; reproduced the abort with a truncating stream reader pre-fix (2 assistant rows), re-ran post-fix (1 row, `NO DUPLICATES`) |
+| D24 | Low (API hygiene) | `guard()` in six API routes rethrew non-Unauthorized errors → unhandled → Next.js HTML 500 pages instead of JSON; clients could only show "Request failed (500)" | `src/app/api/**/route.ts` | **FIXED-VERIFIED (v0.3.1)** | All guards return structured JSON (503 setup / 500 app) with route-tagged logs |
 | D21 | Low (observability) | In-memory rate limiting is per-instance on serverless | `src/lib/rate-limit.ts` | OPEN (documented) | Acceptable for bursts; strict global quotas need Vercel WAF / Upstash in front — documented in DEPLOYMENT.md |
 
 ---

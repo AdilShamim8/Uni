@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.1 · 2026-10-16 · "Fail loudly, guide precisely"
+
+### Fixed
+- **(D22, High) Silent misconfiguration mode on hosted deployments.** A Vercel deploy without `DATABASE_URL` generated the SQLite client and then failed every database call on the read-only serverless filesystem — sign-up/sign-in returned opaque `500 "Try again"` with nothing telling the operator what to do. Now:
+  - `/api/health` probes a real table and returns precise, safe diagnostics (`dbIssue`: `not-configured` / `serverless-sqlite` / `unreachable` / `schema-missing`, plus `masterKey: env|file|ephemeral`), with HTTP 503 when setup is required.
+  - Every database-backed API route returns `503 {"code":"setup_required", issue, error}` for infrastructure failures instead of a generic 500 — application errors keep their existing handling.
+  - The client boots into a dedicated **Setup required** screen: what is missing, why it matters, copy-paste commands, provider links, and a "Check again" button. Verified in light/dark via headless browser + VLM review.
+  - `scripts/prisma.mjs` prints explicit build-time warnings on Vercel for a missing/SQLite `DATABASE_URL` or a missing `REWOO_MASTER_KEY`.
+- **(D23, Medium) Duplicated assistant message when the client disconnects mid-stream.** Pressing Stop (or any disconnect) right as a turn completed caused the response to be persisted twice — once by the normal flow and once by the interrupt handler. Verified fixed with an aborting-stream regression check.
+- **(D24, Low) API error handlers rethrew non-auth errors**, producing Next.js HTML 500 pages instead of JSON — the client could only show "Request failed (500)". All `guard()`s now return structured JSON and log with route tags.
+
+### Added
+- **Setup diagnostics module** (`src/lib/setup.ts`) — pure, unit-tested error classification (9 new bun:test cases; suite now 40) shared by health, routes, and the client.
+- **True zero-setup local development.** No `.env` copy and no manual `db:push`: `bun install` auto-provisions `prisma/db/rewoo.db` (fresh clones only; existing databases are never touched), and the runtime defaults to the same absolute SQLite path so CLI and client always agree.
+- `crypto.masterKeySource()` reporting where the vault key was resolved from (`env` / `file` / `ephemeral`) — used by health, never exposes key material.
+- `ApiError` in the client layer carrying HTTP status + machine-readable `code`.
+- Deployment troubleshooting table mapping every `dbIssue` to its fix (docs/DEPLOYMENT.md).
+
 ## 0.3.0 · 2026-10-16 · "One product, production layout"
 
 The repository becomes the ReWoo workspace: the legacy Python app and vendored
