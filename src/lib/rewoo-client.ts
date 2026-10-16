@@ -52,19 +52,51 @@ export interface MessageInfo {
   createdAt: string;
 }
 
+/** Fetch error carrying HTTP status and a machine-readable code (e.g. setup_required). */
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  constructor(message: string, status: number, code?: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.code = code;
+  }
+}
+
 async function jsonFetch<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   });
-  const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error(data.error ?? `Request failed (${res.status})`);
+  const data = (await res.json().catch(() => ({}))) as T & { error?: string; code?: string };
+  if (!res.ok) throw new ApiError(data.error ?? `Request failed (${res.status})`, res.status, data.code);
   return data;
 }
 
 // ── Auth ─────────────────────────────────────────────────────────────────────
 
+export interface HealthInfo {
+  ok: boolean;
+  service: string;
+  db: boolean;
+  dbIssue: "not-configured" | "serverless-sqlite" | "unreachable" | "schema-missing" | null;
+  dbMessage: string | null;
+  masterKey: "env" | "file" | "ephemeral";
+  setupRequired: boolean;
+  time: string;
+}
+
 export const api = {
+  /** Deployment diagnostics. 503 is a valid outcome — never throws for it. */
+  health: async (): Promise<HealthInfo | null> => {
+    try {
+      const res = await fetch("/api/health", { cache: "no-store" });
+      return (await res.json().catch(() => null)) as HealthInfo | null;
+    } catch {
+      return null;
+    }
+  },
   me: () => jsonFetch<{ user: SessionUser | null }>("/api/auth/me"),
   signup: (email: string, password: string, name?: string) =>
     jsonFetch<{ user: SessionUser }>("/api/auth/signup", {

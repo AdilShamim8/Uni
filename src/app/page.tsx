@@ -1,34 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { api, type SessionUser } from "@/lib/rewoo-client";
+import { useCallback, useEffect, useState } from "react";
+import { api, type HealthInfo, type SessionUser } from "@/lib/rewoo-client";
 import { useReWoo } from "@/lib/rewoo-store";
 import { Landing } from "@/components/rewoo/landing";
 import { AuthView } from "@/components/rewoo/auth-view";
 import { Workspace } from "@/components/rewoo/workspace";
+import { SetupRequiredView } from "@/components/rewoo/setup-view";
 
-type Stage = "loading" | "landing" | "auth" | "workspace";
+type Stage = "loading" | "landing" | "auth" | "workspace" | "setup";
 
 export default function Home() {
   const [stage, setStage] = useState<Stage>("loading");
+  const [setupStatus, setSetupStatus] = useState<HealthInfo | null>(null);
   const { setUser } = useReWoo();
 
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .me()
-      .then(({ user }) => {
-        if (cancelled) return;
-        setUser(user);
-        setStage(user ? "workspace" : "landing");
-      })
-      .catch(() => {
-        if (!cancelled) setStage("landing");
-      });
-    return () => {
-      cancelled = true;
-    };
+  /**
+   * Boot sequence: check deployment health and session in parallel.
+   * A misconfigured deployment (no/invalid DATABASE_URL, missing master key)
+   * renders the setup screen instead of a workspace that fails opaquely.
+   */
+  const boot = useCallback(async () => {
+    setStage("loading");
+    const [meRes, health] = await Promise.all([
+      api.me().catch(() => ({ user: null as SessionUser | null })),
+      api.health(),
+    ]);
+    if (health?.setupRequired) {
+      setSetupStatus(health);
+      setStage("setup");
+      return;
+    }
+    const user = meRes.user;
+    setUser(user);
+    setStage(user ? "workspace" : "landing");
   }, [setUser]);
+
+  useEffect(() => {
+    void boot();
+  }, [boot]);
 
   switch (stage) {
     case "loading":
@@ -42,6 +52,8 @@ export default function Home() {
           </div>
         </div>
       );
+    case "setup":
+      return <SetupRequiredView status={setupStatus} onRetry={() => void boot()} />;
     case "landing":
       return (
         <Landing
@@ -57,6 +69,7 @@ export default function Home() {
             setStage("workspace");
           }}
           onBack={() => setStage("landing")}
+          onSetupRequired={() => void boot()}
         />
       );
     case "workspace": {

@@ -20,9 +20,14 @@ import fs from "node:fs";
 const DEV_KEY_PATH = ".rewoo-master-key";
 const LEGACY_DEV_KEY_PATH = ".you-master-key";
 
+/** Where the master key came from — reported by /api/health (never the key itself). */
+export type MasterKeySource = "env" | "file" | "ephemeral";
+let cachedSource: MasterKeySource | null = null;
+
 function getMasterKey(): Buffer {
   const env = process.env.REWOO_MASTER_KEY ?? process.env.YOU_MASTER_KEY;
   if (env && env.length >= 16) {
+    cachedSource = "env";
     // Treat as hex key if it looks like one, otherwise derive deterministically.
     if (/^[0-9a-fA-F]{64}$/.test(env)) return Buffer.from(env, "hex");
     return crypto.scryptSync(env, "you-master-key-salt", 32);
@@ -44,10 +49,14 @@ function getMasterKey(): Buffer {
     }
     if (fs.existsSync(DEV_KEY_PATH)) {
       const hex = fs.readFileSync(DEV_KEY_PATH, "utf8").trim();
-      if (/^[0-9a-fA-F]{64}$/.test(hex)) return Buffer.from(hex, "hex");
+      if (/^[0-9a-fA-F]{64}$/.test(hex)) {
+        cachedSource = "file";
+        return Buffer.from(hex, "hex");
+      }
     }
     const key = crypto.randomBytes(32);
     fs.writeFileSync(DEV_KEY_PATH, key.toString("hex") + "\n", { mode: 0o600 });
+    cachedSource = "file";
     console.warn(
       "[rewoo] WARNING: using an auto-generated development master key (.rewoo-master-key). " +
         "Set REWOO_MASTER_KEY for production or persistent self-hosted deployments."
@@ -62,6 +71,7 @@ function getMasterKey(): Buffer {
         "Falling back to an ephemeral key — stored provider keys will NOT decrypt after a restart. " +
         "Set REWOO_MASTER_KEY (openssl rand -hex 32) for production or hosted deployments."
     );
+    cachedSource = "ephemeral";
     return crypto.scryptSync("you-dev-ephemeral", "salt", 32);
   }
 }
@@ -70,6 +80,12 @@ let cachedKey: Buffer | null = null;
 function masterKey(): Buffer {
   if (!cachedKey) cachedKey = getMasterKey();
   return cachedKey;
+}
+
+/** Reports where the master key was resolved from ("env" | "file" | "ephemeral"). */
+export function masterKeySource(): MasterKeySource {
+  if (!cachedKey) masterKey();
+  return cachedSource ?? "ephemeral";
 }
 
 export function encryptSecret(plaintext: string): string {

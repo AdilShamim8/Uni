@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Unauthorized, requireUser } from "@/lib/auth";
+import { setupErrorBody } from "@/lib/setup";
 import { decryptSecret, encryptSecret, maskKey } from "@/lib/crypto";
 import { isProviderId, PROVIDERS, validateCredential } from "@/lib/providers";
 import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
@@ -11,7 +12,13 @@ function guard(err: unknown) {
   if (err instanceof Unauthorized) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
-  throw err;
+  const setup = setupErrorBody(err);
+  if (setup) {
+    console.error("[providers] setup required:", setup.issue);
+    return NextResponse.json(setup, { status: 503 });
+  }
+  console.error("[providers]", err instanceof Error ? err.message : err);
+  return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500 });
 }
 
 /** List the signed-in user's provider credentials (keys masked, never returned). */

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Unauthorized, requireUser } from "@/lib/auth";
+import { setupErrorBody } from "@/lib/setup";
 import { decryptSecret, encryptSecret, maskKey } from "@/lib/crypto";
 import { validateCredential } from "@/lib/providers";
 
@@ -8,7 +9,13 @@ function guard(err: unknown) {
   if (err instanceof Unauthorized) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
-  throw err;
+  const setup = setupErrorBody(err);
+  if (setup) {
+    console.error("[provider] setup required:", setup.issue);
+    return NextResponse.json(setup, { status: 503 });
+  }
+  console.error("[provider]", err instanceof Error ? err.message : err);
+  return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500 });
 }
 
 type Params = { params: Promise<{ id: string }> };

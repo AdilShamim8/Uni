@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Unauthorized, requireUser } from "@/lib/auth";
+import { setupErrorBody } from "@/lib/setup";
 import { decryptSecret } from "@/lib/crypto";
 import { fallbackModels, fetchModels, isProviderId, PROVIDERS, type ProviderId } from "@/lib/providers";
 
@@ -10,7 +11,13 @@ function guard(err: unknown) {
   if (err instanceof Unauthorized) {
     return NextResponse.json({ error: err.message }, { status: err.status });
   }
-  throw err;
+  const setup = setupErrorBody(err);
+  if (setup) {
+    console.error("[models] setup required:", setup.issue);
+    return NextResponse.json(setup, { status: 503 });
+  }
+  console.error("[models]", err instanceof Error ? err.message : err);
+  return NextResponse.json({ error: "Something went wrong. Try again." }, { status: 500 });
 }
 
 /**

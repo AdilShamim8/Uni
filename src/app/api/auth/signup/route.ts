@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSession, hashPassword, validateEmail, validatePassword } from "@/lib/auth";
 import { clientIp, rateLimit, tooManyRequests } from "@/lib/rate-limit";
+import { setupErrorBody } from "@/lib/setup";
 
 export async function POST(req: NextRequest) {
   try {
@@ -34,6 +35,11 @@ export async function POST(req: NextRequest) {
     await createSession(user.id);
     return NextResponse.json({ user });
   } catch (err) {
+    const setup = setupErrorBody(err);
+    if (setup) {
+      console.error("[signup] setup required:", setup.issue);
+      return NextResponse.json(setup, { status: 503 });
+    }
     console.error("[signup]", err instanceof Error ? err.message : err);
     return NextResponse.json({ error: "Could not create the account. Try again." }, { status: 500 });
   }

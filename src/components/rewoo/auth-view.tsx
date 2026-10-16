@@ -6,7 +6,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { api, type SessionUser } from "@/lib/rewoo-client";
+import { api, ApiError, type SessionUser } from "@/lib/rewoo-client";
 import { ReWooWordmark } from "./logo";
 
 type Mode = "signin" | "signup";
@@ -14,9 +14,12 @@ type Mode = "signin" | "signup";
 export function AuthView({
   onDone,
   onBack,
+  onSetupRequired,
 }: {
   onDone: (user: SessionUser) => void;
   onBack: () => void;
+  /** Invoked when the deployment is misconfigured (503 setup_required). */
+  onSetupRequired?: () => void;
 }) {
   const [mode, setMode] = useState<Mode>("signin");
   const [name, setName] = useState("");
@@ -37,6 +40,10 @@ export function AuthView({
           : await api.signin(email.trim(), password);
       onDone(user);
     } catch (err) {
+      if (err instanceof ApiError && err.code === "setup_required") {
+        onSetupRequired?.();
+        return;
+      }
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
       setBusy(false);
