@@ -12,9 +12,9 @@ import { useReWoo } from "@/lib/rewoo-store";
 /** Light mirror of the server-side tier heuristic (src/lib/providers.ts). */
 function tierOf(id: string): "fast" | "powerful" | null {
   const m = id.toLowerCase();
-  if (/(flash|mini|haiku|instant|nano|small|lite|8b)/.test(m)) return "fast";
-  if (/(^|\/)(gpt-5|gpt-4\.1|gpt-4o|o[1-4]|opus|pro|ultra|max|large|70b|405b)/.test(m) ||
-      /claude-(sonnet|opus)-[4-9]/.test(m) || /gemini-(2\.[5-9]|[3-9])\./.test(m)) return "powerful";
+  if (/(?<![a-z0-9])(mini|flash|haiku|instant|nano|small|lite|8b)(?![a-z0-9])/.test(m)) return "fast";
+  if (/(?<![a-z0-9])(gpt-5|gpt-4\.1|gpt-4o|o[1-4](?!\d)|opus|ultra|max|large|70b|405b)(?![a-z0-9])/.test(m) ||
+      /claude-(sonnet|opus)-[4-9]/.test(m) || /gemini-[2-9]\.[5-9]/.test(m)) return "powerful";
   return null;
 }
 

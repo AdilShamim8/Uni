@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { Unauthorized, requireUser } from "@/lib/auth";
 import { decryptSecret, encryptSecret, maskKey } from "@/lib/crypto";
 import { isProviderId, PROVIDERS, validateCredential } from "@/lib/providers";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 export const maxDuration = 30;
 
@@ -42,6 +43,11 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
+
+    // Outbound-call guard: 10 credential additions per minute per user.
+    const rl = rateLimit(`providers-add:${user.id}`, 10, 60_000);
+    if (!rl.ok) return tooManyRequests(rl.retryAfterSec);
+
     const body = (await req.json()) as {
       provider?: string;
       label?: string;

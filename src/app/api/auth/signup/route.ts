@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { createSession, hashPassword, validateEmail, validatePassword } from "@/lib/auth";
+import { clientIp, rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    // Creation guard: 5 sign-ups per minute per IP.
+    const rl = rateLimit(`signup:${clientIp(req)}`, 5, 60_000);
+    if (!rl.ok) return tooManyRequests(rl.retryAfterSec, "Too many sign-up attempts. Try again shortly.");
+
     const body = (await req.json()) as { email?: string; password?: string; name?: string };
     const email = (body.email ?? "").trim().toLowerCase();
     const password = body.password ?? "";

@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { requireUser, Unauthorized } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 import { isProviderId, streamChat, type ChatMessage } from "@/lib/providers";
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 // Vercel: allow long streaming responses (Hobby plan max).
@@ -24,6 +25,11 @@ export const maxDuration = 60;
 export async function POST(req: NextRequest) {
   try {
     const user = await requireUser();
+
+    // Per-user burst guard: 30 chat turns per minute.
+    const rl = rateLimit(`chat:${user.id}`, 30, 60_000);
+    if (!rl.ok) return tooManyRequests(rl.retryAfterSec);
+
     const body = (await req.json()) as {
       conversationId?: string;
       credentialId?: string | null;

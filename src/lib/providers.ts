@@ -89,12 +89,13 @@ export type ModelTier = "fast" | "balanced" | "powerful" | "other";
 export function modelTier(id: string): ModelTier {
   const m = id.toLowerCase();
   // Fast / small: flash, mini, haiku, instant, 8b, small…
-  if (/(flash|mini|haiku|instant|nano|small|lite|8b|3\.5-turbo)/.test(m)) return "fast";
+  // (lookarounds keep "mini" from matching inside "gemini", "ministral", etc.)
+  if (/(?<![a-z0-9])(mini|flash|haiku|instant|nano|small|lite|8b)(?![a-z0-9])/.test(m) || /3\.5-turbo/.test(m)) return "fast";
   // Powerful / large frontier models
-  if (/(^|\/)(gpt-5|gpt-4\.1|gpt-4o|o[1-4]|opus|pro|ultra|max|large|70b|405b|ultrathink)/.test(m) ||
-      /claude-(sonnet|opus)-[4-9]/.test(m) || /gemini-(2\.[5-9]|[3-9])\.[0-9]*/.test(m)) return "powerful";
+  if (/(?<![a-z0-9])(gpt-5|gpt-4\.1|gpt-4o|o[1-4](?!\d)|opus|ultra|max|large|70b|405b)(?![a-z0-9])/.test(m) ||
+      /claude-(sonnet|opus)-[4-9]/.test(m) || /gemini-[2-9]\.[5-9]/.test(m)) return "powerful";
   // Mid-tier default workhorses
-  if (/(sonnet|turbo|air|flash-lite|mistral-small)/.test(m)) return "balanced";
+  if (/(?<![a-z0-9])(sonnet|turbo|air)(?![a-z0-9])/.test(m)) return "balanced";
   return "other";
 }
 
