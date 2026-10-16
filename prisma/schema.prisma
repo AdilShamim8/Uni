@@ -1,15 +1,25 @@
+// ReWoo — PostgreSQL schema (production default: Vercel, Neon, Supabase, Railway, RDS…)
+//
+// ⚠️ KEEP IN SYNC with prisma/schema.sqlite.prisma (local zero-setup dev).
+//    Only the `datasource` block differs. The models are deliberately
+//    written portably (no provider-specific column types).
+//
+// The active schema is selected automatically by scripts/prisma.mjs based on
+// the DATABASE_URL protocol: postgres://… → this file, file://… → the SQLite one.
+
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // rhel-openssl-3.0.x covers Vercel's Node.js lambda runtime (Amazon Linux 2023).
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ReWoo — open-source AI workspace data model
-// Written PostgreSQL-portably: no SQLite-specific column types.
 // Every user-scoped row carries userId; all queries filter by it (tenant
 // isolation is enforced at the API layer via the session user).
 // ─────────────────────────────────────────────────────────────────────────────
@@ -22,8 +32,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  sessions    Session[]
-  providers   ProviderCredential[]
+  sessions      Session[]
+  providers     ProviderCredential[]
   conversations Conversation[]
 }
 
@@ -82,7 +92,7 @@ model Message {
   demo           Boolean  @default(false) // true when produced by the offline demo brain
   promptTokens     Int?
   completionTokens Int?
-  createdAt       DateTime @default(now())
+  createdAt        DateTime @default(now())
 
   @@index([conversationId, createdAt])
 }

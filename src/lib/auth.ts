@@ -11,7 +11,7 @@ import { db } from "@/lib/db";
  * - 30-day sliding expiry. Sign-out deletes the row.
  */
 
-export const SESSION_COOKIE = "you_session";
+export const SESSION_COOKIE = "rewoo_session";
 const SESSION_DAYS = 30;
 
 // ── Password hashing ─────────────────────────────────────────────────────────

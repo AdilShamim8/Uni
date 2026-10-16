@@ -5,6 +5,8 @@ import { decryptSecret } from "@/lib/crypto";
 import { isProviderId, streamChat, type ChatMessage } from "@/lib/providers";
 
 export const dynamic = "force-dynamic";
+// Vercel: allow long streaming responses (Hobby plan max).
+export const maxDuration = 60;
 
 /**
  * POST /api/chat — streaming chat via the server-side model gateway.

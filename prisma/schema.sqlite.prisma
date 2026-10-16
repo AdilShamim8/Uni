@@ -1,0 +1,96 @@
+// ReWoo — SQLite schema (local zero-setup development).
+//
+// ⚠️ KEEP IN SYNC with prisma/schema.prisma (PostgreSQL production default).
+//    Only the `datasource` block differs.
+//
+// Selected automatically by scripts/prisma.mjs when DATABASE_URL starts with
+// `file:` (or is unset). For hosted deployments (Vercel, Docker with Postgres…)
+// set a postgres:// DATABASE_URL instead — no schema edit needed.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ReWoo — open-source AI workspace data model
+// Every user-scoped row carries userId; all queries filter by it (tenant
+// isolation is enforced at the API layer via the session user).
+// ─────────────────────────────────────────────────────────────────────────────
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions      Session[]
+  providers     ProviderCredential[]
+  conversations Conversation[]
+}
+
+model Session {
+  id        String   @id // SHA-256 hash of the raw cookie token
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ProviderCredential {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider        String // openai | anthropic | gemini | openrouter | groq | mistral | custom
+  label           String
+  encryptedKey    String // AES-256-GCM ciphertext (never returned by APIs)
+  baseUrl         String? // required for custom; optional override for others
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  lastValidatedAt DateTime?
+  lastError       String?
+
+  @@index([userId])
+  @@unique([userId, provider, label])
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   @default("New conversation")
+  provider  String? // snapshot of provider used (may change mid-conversation)
+  model     String? // snapshot of model used
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+
+  @@index([userId, updatedAt])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String // user | assistant | system
+  content        String
+  provider       String?
+  model          String?
+  demo           Boolean  @default(false) // true when produced by the offline demo brain
+  promptTokens     Int?
+  completionTokens Int?
+  createdAt        DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+}

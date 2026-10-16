@@ -4,6 +4,8 @@ import { Unauthorized, requireUser } from "@/lib/auth";
 import { decryptSecret } from "@/lib/crypto";
 import { fallbackModels, fetchModels, isProviderId, PROVIDERS, type ProviderId } from "@/lib/providers";
 
+export const maxDuration = 30;
+
 function guard(err: unknown) {
   if (err instanceof Unauthorized) {
     return NextResponse.json({ error: err.message }, { status: err.status });

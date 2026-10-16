@@ -55,7 +55,13 @@ function getMasterKey(): Buffer {
     return key;
   } catch {
     // Ephemeral fallback (keys will not survive restart) — last resort only.
-    console.warn("[rewoo] WARNING: ephemeral master key in use. Set REWOO_MASTER_KEY.");
+    // Typical on serverless platforms (Vercel) where the filesystem is
+    // read-only: set the REWOO_MASTER_KEY environment variable there.
+    console.warn(
+      "[rewoo] WARNING: could not persist a development master key (read-only filesystem?). " +
+        "Falling back to an ephemeral key — stored provider keys will NOT decrypt after a restart. " +
+        "Set REWOO_MASTER_KEY (openssl rand -hex 32) for production or hosted deployments."
+    );
     return crypto.scryptSync("you-dev-ephemeral", "salt", 32);
   }
 }
