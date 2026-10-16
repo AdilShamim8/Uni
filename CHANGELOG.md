@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.3.0 · 2026-10-16 · "One product, production layout"
+
+The repository becomes the ReWoo workspace: the legacy Python app and vendored
+engines are retired from mainline, the Next.js app is promoted to the root,
+and the deployment story is Vercel-first. All changes owner-authorized and
+recorded in `docs/DECISIONS.md` (ADR-010…013).
+
+### Removed
+- **`engines/`** — 73,538 vendored files (~1.1 GB: openclaw, hermes-agent, paperclip). Not imported by the workspace; 99.6% of repository files (D4). Recoverable from git history.
+- **Legacy Python application** — `rewoo/`, `web/`, `tests/`, `examples/`, `scripts/`, and Python packaging configs. Its model layer duplicated the workspace BYOK gateway (ADR-001 superseded). Remains in history for self-hosters.
+- **~40 unused dependencies and 39 of 46 vendored UI components** — clean install drops 827 → 524 packages (D17).
+
+### Changed
+- **Single-app repository at the root** (formerly `you/`) — the layout production Next.js products use; Vercel import works with zero configuration (D16).
+- **Session cookie renamed** `you_session` → `rewoo_session` (completes ADR-009; one-time sign-out for existing sessions).
+- One CI workflow: install → generate → lint → typecheck → test → build.
+
+### Added
+- **Vercel-ready data layer** — dual Prisma schemas (PostgreSQL production default with the `rhel-openssl-3.0.x` binary target; SQLite zero-setup dev), auto-selected by `DATABASE_URL` protocol via `scripts/prisma.mjs` (wired into `postinstall` and `db:*` scripts).
+- **Streaming-safe route limits** — `maxDuration` 60s (chat) / 30s (model discovery, credential validation).
+- **Resilient model gateway** — connect timeout + bounded retries with backoff on transient failures (408/409/429/5xx); user cancels are never retried; started streams are never retried.
+- **Model tier guidance** — live catalogs sorted flagship-first; *fast & affordable* vs *flagship* badges in the Models view; refreshed fallback catalogs.
+- **Rate limiting** — sign-in 10/min/IP, sign-up 5/min/IP, chat 30/min/user, credential creation 10/min/user (429 + `Retry-After`).
+- **Automated test suite (D18)** — 31 bun:test cases: AES-256-GCM vault round-trips and tamper detection, scrypt auth, rate-limit windows, provider registry and tier heuristic, and two-user tenant isolation against a real throwaway database.
+- **Documentation for the new shape** — rewritten README, ARCHITECTURE, DEPLOYMENT (Vercel + self-host), SECURITY, CONTRIBUTING; consolidated decision records.
+
+### Fixed
+- **Model tier classification bug** (found by the new test suite): every Gemini model was classified *fast* because `geMINI` contains `mini` — now boundary-aware in both the gateway and the UI mirror.
+
 ## Unreleased · 2026-10-15 · "One name: ReWoo"
 
 ### Changed

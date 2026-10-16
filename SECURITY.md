@@ -1,34 +1,36 @@
 # Security
 
-## Threat model (v0.2)
+## Threat model (v0.3)
 
-ReWoo is a **single-user app that runs on your own computer**. By default it listens on
-`127.0.0.1` only. It is not multi-tenant, and it is not meant to be exposed to the internet
-without an authenticating reverse proxy.
+ReWoo is a **multi-user, self-hostable web application** (or your own Vercel deployment). Anyone who
+can reach the deployment can attempt to create an account, so the app assumes an untrusted network
+by default and treats provider API keys as high-value secrets.
 
 ## Built-in protections
 
 | Area | Protection |
 |---|---|
-| Web app / `/api` | Optional `REWOO_ACCESS_TOKEN` (bearer header or httpOnly cookie). Security headers (`nosniff`, `same-origin` referrer). |
-| OpenAI-compatible `/v1` | Always requires the ReWoo API key (constant-time compare). Rotate it in Connections → API. |
-| Paperclip webhook | Disabled until you set a secret. `X-ReWoo-Secret` is checked with a constant-time compare. |
-| Telegram | Only **paired** chats are answered (`/start <code>`). Codes can be rotated and chats unpaired. |
-| `web_fetch` tool | SSRF guard on **every redirect hop** (no localhost, private, link-local or reserved IPs). 2 MB body cap. Approval-gated in *Careful* mode. |
-| Static files | Served only from inside `rewoo/web/dist` (resolved-path check, no traversal). |
-| Google OAuth | `drive.readonly` scope. `state` values are single-use, expire after 10 minutes, and at most 50 can be pending. |
-| Secrets in prompts | API keys, tokens, passwords, private keys and card-like numbers are redacted before any remote model or engine call. |
-| Private data | Sources marked Private are only ever sent to on-device brains. A task that has included private data can't fall back to a remote brain. |
-| Tools | Risk levels (safe / external / memory / irreversible) with approval modes. No tool can send email or messages on your behalf. |
-| Calculator | AST-restricted arithmetic (no `eval`, no names, bounded exponents). |
-| Stored credentials | API keys live in your local SQLite file and are never returned by the API (only a hint like `…abcd`). |
+| Passwords | scrypt with per-user random salt (node:crypto, no external dependency); constant-time verification. |
+| Sessions | 32-byte random tokens in httpOnly, SameSite=Lax cookies; only the SHA-256 hash is stored, so a database leak does not yield usable tokens; 30-day sliding expiry. |
+| Sign-in / sign-up | Sliding-window rate limits per IP (10/min sign-in, 5/min sign-up) with `Retry-After` responses; constant-shape errors that don't reveal whether an email exists. |
+| Provider keys | Encrypted at rest with AES-256-GCM (`REWOO_MASTER_KEY`); decrypted only inside server-side routes; APIs return masked previews only (`sk-a•••wxyz`). |
+| Tenant isolation | Every database query is scoped by the session user; enforced by automated two-user isolation tests. |
+| Chat / model calls | Per-user rate limit (30 turns/min); provider errors are normalized (no key material in error messages); streaming preserves partial output on failure. |
+| Input validation | Email/password policy; message length caps; credential labels and API keys length-capped; provider IDs validated against a whitelist. |
+| Secrets in git | `.env` is gitignored; `.env.example` documents every variable; no secrets in client code (the model gateway is server-side only). |
 
-## Engines
+### Serverless caveat (Vercel)
 
-The OpenClaw gateway token and the Hermes `API_SERVER_KEY` grant operator-level access to those
-systems. Keep them on localhost or a private network. Paperclip's `http` adapter refuses private
-URLs unless you allowlist ReWoo's exact origin (`PAPERCLIP_HTTP_ADAPTER_PRIVATE_ENDPOINT_ALLOWLIST`),
-so only allowlist the one origin you need.
+The built-in rate limiter is in-memory, so on serverless each function instance enforces its own
+counters. It stops bursts but is not a global quota. For strict quotas, front the deployment with
+Vercel WAF or a shared-store limiter (e.g. Upstash Ratelimit).
+
+## Self-hosting checklist
+
+1. Set `REWOO_MASTER_KEY` (`openssl rand -hex 32`) **before** the first user stores a credential.
+2. Use PostgreSQL in production (see docs/DEPLOYMENT.md).
+3. Serve over TLS (Vercel does this automatically; otherwise terminate TLS at your proxy).
+4. Keep your deployment's database backed up — provider credentials cannot be recovered without the master key.
 
 ## Reporting a vulnerability
 

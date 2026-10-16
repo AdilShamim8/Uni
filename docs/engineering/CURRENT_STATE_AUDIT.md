@@ -1,3 +1,5 @@
+> **Historical record (pre-restructure).** This audit describes the repository before the v0.3 restructure (Python app + vendored engines). Current architecture: docs/ARCHITECTURE.md. Decisions: docs/DECISIONS.md.
+
 # ReWoo / YOU — Current State Audit (Phase Zero)
 
 **Audit date:** 2026-10-15

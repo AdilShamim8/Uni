@@ -1,18 +1,30 @@
 # Defect Register — ReWoo
 
-**Source of truth for known defects and their resolution state.** Derived from `BUGS_AND_ISSUES.md` (v0.2 survey), `docs/engineering/CURRENT_STATE_AUDIT.md` (Phase Zero audit, 2026-10-15), CI evidence on `main`, and the 2026-10-15 rebrand verification session. Ranked by severity. Each entry carries a decision: **preserve / refactor / replace / remove** for the affected subsystem.
+**Source of truth for known defects and their resolution state.** Ranked by severity. Entries marked CLOSED/RESOLVED are kept for history. Pre-restructure items about the retired Python app are preserved verbatim below the line.
+
+> **2026-10-16 restructure update:** D4 (engines weight), D16 (`you/` name), D17 (lockfile name), and D18 (no test suite) are **RESOLVED** by the v0.3 restructure. New: D20 (tier heuristic) found and fixed by the new test suite. See `docs/DECISIONS.md` ADR-010…013.
 
 Legend — Status: **OPEN** (unverified or unfixed) · **FIXED-VERIFIED** (fix observed running in CI or browser evidence) · **FIXED-CLAIMED** (fix committed, regression test missing) · **CLOSED** (verified with test evidence).
 
 ---
 
-## Register
+## Register (current)
+
+| ID | Severity | Defect | Location | Status | Evidence / next action |
+|----|----------|--------|----------|--------|------------------------|
+| D18 | Medium (quality) | No automated test suite for the workspace | `src/lib/__tests__/` | **RESOLVED (v0.3)** | 31 bun:test cases (vault, auth, rate-limit, providers, tenant isolation) wired into CI |
+| D20 | Low | `modelTier('gemini-*')` matched 'mini' inside 'geMINI' → all Gemini models classified 'fast' | `src/lib/providers.ts` | **CLOSED (v0.3)** | Found by the new suite; boundary-aware regexes + regression test |
+| D21 | Low (observability) | In-memory rate limiting is per-instance on serverless | `src/lib/rate-limit.ts` | OPEN (documented) | Acceptable for bursts; strict global quotas need Vercel WAF / Upstash in front — documented in DEPLOYMENT.md |
+
+---
+
+## Historical register (pre-restructure, retired app)
 
 | ID | Severity | Defect | Location | Status | Evidence / next action |
 |----|----------|--------|----------|--------|------------------------|
 | D2 | High (security) | SSRF bypass via open HTTP redirects in `web_fetch` | `rewoo/tools/builtin.py` | FIXED-CLAIMED | Fix in 3a1ee423; needs redirect-following regression test |
 | D3 | High (security) | Arbitrary static file exposure via path traversal | `rewoo/api/app.py` | FIXED-CLAIMED | Guard present (`resolve()` + parents check); needs Windows/UNC regression test |
-| D4 | High (repo health) | ~292 MB / 73.5k vendored files under `engines/` | `engines/` | OPEN | Clone/CI cost severe. All MIT (legal). Extraction requires owner sign-off (ADR-007) — see REPOSITORY_CLEANUP_PLAN |
+| D4 | High (repo health) | ~292 MB / 73.5k vendored files under `engines/` | `engines/` | **RESOLVED (v0.3)** | Owner-authorized removal (ADR-010); ~99% repository size reduction |
 | D6 | Medium | Non-atomic EventBus sequence + cross-thread `Queue.put_nowait` | `rewoo/events.py` | FIXED-CLAIMED | Fix in 3a1ee423; needs race-condition tests |
 | D7 | Medium | OAuth state map unbounded growth | `rewoo/connectors/gdrive.py` | OPEN | Add TTL/expiry sweep |
 | D8 | Medium | SSE disconnection detection blocked | `rewoo/api/routes_core.py` | OPEN | Add heartbeat/timeout |
@@ -23,8 +35,8 @@ Legend — Status: **OPEN** (unverified or unfixed) · **FIXED-VERIFIED** (fix o
 | D13 | Low (hygiene) | Prebuilt `rewoo/web/dist` committed to tree | `rewoo/web/dist` | OPEN-BY-DESIGN | Supports "Python only, no Node" install promise; documented trade-off |
 | D14 | Low (hygiene) | Non-descriptive commit messages in history | git history | CLOSED | Conventional commits adopted since c270e574d; rule in AGENTS.md |
 | D15 | Medium (product) | **Placeholder "YOU" branding** across the workspace app: page metadata, wordmark, landing copy, system prompt, OpenRouter referer headers, env var `YOU_MASTER_KEY`, internal module names (`you-client`, `you-store`, `components/you/`), CSS utilities (`you-scroll`, `you-prose`), CI workflow name, health `service` label | `you/` (workspace app) | **FIXED-VERIFIED (2026-10-15, this branch)** | Master-prompt requirement. Verified: `grep` for `YOU` in `you/src` returns only intentional KDF-compat constants; browser + VLM screenshot evidence across landing/auth/workspace/settings/mobile shows "ReWoo" wordmark and zero "YOU" product branding; lint/typecheck/build green. Env var renamed with backward-compatible fallback (`REWOO_MASTER_KEY` ?? `YOU_MASTER_KEY`); dev key file `.you-master-key` auto-migrates to `.rewoo-master-key`; KDF salts unchanged so existing ciphertexts still decrypt |
-| D16 | Low (hygiene) | Workspace directory still named `you/` (historical scaffold name) | repo root | OPEN — planned | Not product-facing; rename to `apps/workspace` scheduled in REPOSITORY_CLEANUP_PLAN C-3 with ADR amendment |
-| D17 | Low (tooling) | `bun.lock` workspace `name` field says `nextjs_tailwind_shadcn_ts` (stale scaffold name) | `you/bun.lock` | OPEN — cosmetic | Bun validates dependency resolution, not the name; rename happens naturally on the next `bun install` regenerating the lockfile |
+| D16 | Low (hygiene) | Workspace directory still named `you/` (historical scaffold name) | repo root | **RESOLVED (v0.3)** | Promoted to repo root (ADR-011) |
+| D17 | Low (tooling) | `bun.lock` workspace `name` field says `nextjs_tailwind_shadcn_ts` (stale scaffold name) | `you/bun.lock` | **RESOLVED (v0.3)** | Lockfile regenerated with the dependency diet (ADR-013) |
 | D18 | Medium (quality) | No automated test suite for the workspace app (auth flows, vault round-trip, adapter fixtures, two-user isolation) | `you/` | OPEN | Tracked as T16 in `context/TASKS.md`; highest-value next quality increment |
 | D19 | Low (observability) | Health endpoint exposed `db:false` while DB reachable when an inherited `DATABASE_URL` env overrides the app `.env` | environment behavior, not code | CLOSED (not a code defect) | Root-caused during verification: shell-exported `DATABASE_URL` takes precedence over `.env` (standard Next.js behavior). Documented in you/README self-hosting notes |
 

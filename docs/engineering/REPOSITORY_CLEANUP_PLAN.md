@@ -1,3 +1,5 @@
+> **Historical record.** This plan was executed (and superseded) by the v0.3 restructure: engines extracted, legacy app retired, workspace promoted to root — see docs/DECISIONS.md ADR-010…013.
+
 # Repository Cleanup Plan — ReWoo
 
 **Scope:** safe, incremental cleanup of the ReWoo monorepo. Every step is reversible, evidence-based, and preserves working software and Git history. No step deletes user data, credentials, or vendored license notices.

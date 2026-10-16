@@ -1,3 +1,5 @@
+> **Note (v0.3):** this file records the ideas studied during early development of the pre-restructure Python app. The current codebase (Next.js workspace) is an original implementation; the vendored engine trees it references were removed from mainline in v0.3 (ADR-010) and live on in git history.
+
 # Attribution
 
 ## Statement
