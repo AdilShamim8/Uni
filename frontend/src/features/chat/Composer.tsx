@@ -34,6 +34,25 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
   const stopGeneration = useAppStore((state) => state.stopGeneration)
   const activeModel = useAppStore(selectActiveModel)
 
+  // Honest status line: reflects whether this turn goes to a real endpoint
+  // or the local demo adapter, and whether the chat is temporary.
+  const isLive = useAppStore((state) => {
+    const credential = state.activeProviderId
+      ? state.credentials[state.activeProviderId]
+      : undefined
+    return (
+      !!state.activeModelId &&
+      credential?.status === 'connected' &&
+      !!credential.apiKey
+    )
+  })
+  const isTemporary = useAppStore((state) => {
+    const conversation = state.activeConversationId
+      ? state.conversations[state.activeConversationId]
+      : null
+    return conversation?.temporary ?? false
+  })
+
   const isStreaming = useAppStore((state) => {
     const conversation = state.activeConversationId
       ? state.conversations[state.activeConversationId]
@@ -306,9 +325,30 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
         </div>
       </div>
 
-      <p className="mt-2 text-center text-[11px] leading-relaxed text-ink-faint">
-        Local demo — responses are simulated on this device and no provider is
-        contacted. Configure your own in Settings.
+      <p
+        className="mt-2 text-center text-[11px] leading-relaxed text-ink-faint"
+        aria-live="polite"
+      >
+        {isTemporary && (
+          <>
+            Temporary chat — not saved to your history.
+            {isLive && activeModel && (
+              <> Chatting live with {activeModel.model.label}.</>
+            )}
+          </>
+        )}
+        {!isTemporary && isLive && activeModel && (
+          <>
+            Chatting live with <span className="font-medium text-ink-soft">{activeModel.model.label}</span>{' '}
+            via {activeModel.provider.label} — your API key stays in this browser.
+          </>
+        )}
+        {!isTemporary && !isLive && (
+          <>
+            Local demo — responses are simulated on this device and no provider is
+            contacted. Configure your own in Settings.
+          </>
+        )}
       </p>
     </div>
   )
