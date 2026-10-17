@@ -35,6 +35,9 @@ function messagesUrl(profile: ProviderProfile): string {
 
 function buildSystemPrompt(request: ChatRequest): string | undefined {
   const parts: string[] = ['You are Universe, a helpful assistant.']
+  if (request.system?.trim()) {
+    parts.push(`The user is chatting with a saved agent. Follow these instructions: ${request.system.trim()}`)
+  }
   if (request.nickname.trim()) {
     parts.push(`Address the user as ${request.nickname.trim()}.`)
   }

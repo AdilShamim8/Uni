@@ -1,9 +1,43 @@
 import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { createMockAdapter } from '@/services/mock/mockChatAdapter'
+import type { ChatAdapter } from '@/domain/chatAdapter'
 import { setChatAdapter } from '@/state/store'
 import { renderApp, setupAppTest } from './helpers'
+
+/**
+ * A controllable adapter: the test decides when the stream finishes, so
+ * "typed during streaming" is deterministic — no timer races on CI.
+ */
+function createControlledAdapter() {
+  let release: (() => void) | null = null
+  const adapter: ChatAdapter = {
+    id: 'controlled-test-adapter',
+    label: 'Controlled test adapter',
+    stream(_request, handlers, signal) {
+      return new Promise<void>((resolve) => {
+        release = () => {
+          release = null
+          handlers.onDone('complete')
+          resolve()
+        }
+        signal.addEventListener('abort', () => {
+          release = null
+          handlers.onDone('stopped')
+          resolve()
+        })
+      })
+    },
+  }
+  return {
+    adapter,
+    finishStream: () => new Promise<void>((resolve) => {
+      const done = () => resolve()
+      ;(release ?? done)()
+      resolve()
+    }),
+  }
+}
 
 /**
  * Audit D2 — the composer used to clear `text` in a `finally` block after
@@ -18,29 +52,29 @@ describe('composer draft ownership (audit D2)', () => {
   setupAppTest()
 
   it('preserves text typed while a reply streams', async () => {
-    // Slow adapter: the stream stays open long enough to type mid-flight.
-    setChatAdapter(createMockAdapter({ chunkDelay: 10, firstTokenDelay: 60 }))
+    const controlled = createControlledAdapter()
+    setChatAdapter(controlled.adapter)
     renderApp('/')
 
     const input = screen.getByLabelText('Message Universe')
-    await userEvent.type(input, 'Tell me about planets')
+    await userEvent.type(input, 'First message')
     await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
 
-    // Composer cleared immediately at submit time.
+    // Composer cleared immediately at submit time, and the turn is
+    // streaming (stop button visible).
     await waitFor(() => expect(input).toHaveValue(''))
+    expect(screen.getByRole('button', { name: 'Stop generating' })).toBeTruthy()
 
     // Type a new draft while the assistant is still streaming.
-    await userEvent.type(input, 'second question draft')
+    await userEvent.type(input, 'draft typed mid-stream')
 
-    // Wait until the turn completes (stop button replaced by send).
-    await waitFor(
-      () => expect(screen.getByRole('button', { name: 'Send message' })).toBeTruthy(),
-      { timeout: 6000 },
+    // Finish the turn — the draft must survive it (audit D2).
+    await controlled.finishStream()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Send message' })).toBeTruthy(),
     )
-
-    // The draft typed mid-stream must still be there.
-    expect(input).toHaveValue('second question draft')
-  }, 15000)
+    expect(input).toHaveValue('draft typed mid-stream')
+  })
 
   it('scopes drafts per conversation and restores them on switch', async () => {
     renderApp('/')

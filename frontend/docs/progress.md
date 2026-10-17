@@ -67,3 +67,50 @@ Details and honest limits (screen-reader pass, axe audit, real-IME, real devices
 ## Next concrete task (for the continuing agent)
 
 Week 2 of `roadmap.md`: accessibility pass with real assistive technology, performance pass on long conversations, research/canvas preview upgrades, and the cross-browser matrix. Start by reading `reference-audit.md` (evidence rules), `conversation-model.md` (invariants that must not regress), and this file.
+
+---
+
+# Milestone 03 — Work, Agents, Library, reliability
+
+## Current state (Milestone 3)
+
+- **Milestone:** Prompt 03 — Chat + Work + Agents workspace with premium
+  iOS-inspired design. **COMPLETE.**
+- **Branch:** `feat/universe-work-agents-ui` (14 commits, each committed
+  and pushed individually per user instruction).
+- **Audit:** `milestone-03-audit.md` — three reproduced defects (D1 menu
+  viewport shift, D2 composer draft loss, D3 drawer semantics), one ARIA
+  risk (R1), three product gaps (G1–G4), status-accuracy findings (S1/S2).
+  All reproduced defects fixed with regression tests and browser evidence.
+
+## Stage tracker (Milestone 3)
+
+| # | Stage | Status |
+| --- | --- | --- |
+| 1 | Audit, evidence, design decisions | done — `milestone-03-audit.md` |
+| 2 | Reliability fixes (D1/D2/D3/R1) + workspace foundation + routes | done |
+| 3 | Work: templates, filters, state machine, review, download | done |
+| 4 | Agents: directory, builder, personal assistant, chat wiring | done |
+| 5 | Library: artifacts, projects, save-from-Work, polish | done |
+| 6 | Regressions, responsive/a11y verification, docs | done |
+
+## Key architecture decisions
+
+- Workspace state lives in three new zustand stores (agents/work/library),
+  each persisted under its own versioned key (`universe:agents:v1`,
+  `universe:work:v1`, `universe:library:v1`). Schema-v1 chat data
+  (`universe:data`) is never rewritten — zero migration risk to history.
+- Work execution is a deterministic local runner with per-run ids; timer
+  and abort handles are module-scoped and never persisted. Reload demotes
+  running tasks to paused+interrupted.
+- Agent conversations reuse the chat store with an `agentId` scope;
+  instructions flow as `system` through both the mock and live adapters
+  (OpenAI system message / Anthropic system field).
+- `openAgentConversation(agentId)` guarantees one ongoing thread per agent.
+
+## Next concrete tasks (for a future milestone)
+
+- Real agent execution backend (schedules stay drafts until one exists).
+- Artifact versioning and richer previews (PDF export needs a real renderer).
+- Screen-reader pass with NVDA/VoiceOver on real devices; axe audit.
+- Optional: project detail views linking tasks + artifacts.

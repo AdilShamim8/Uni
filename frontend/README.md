@@ -1,11 +1,12 @@
-# Universe — Chat Frontend (Milestone 1)
+# Universe — Frontend (Milestone 3)
 
-An independent, open-source AI workspace. This milestone delivers the chat
-interface, shared application shell, and settings UI as a **local-first
-prototype**: everything runs in your browser. Out of the box responses come
-from a deterministic mock adapter — and you can **connect your own API key**
-(any OpenAI-compatible or Anthropic endpoint) in Settings → Providers to chat
-live, with no backend or account in between.
+An independent, open-source AI workspace with four destinations: **Chat**,
+**Work**, **Agents**, and a shared **Library** — all running locally in your
+browser. Out of the box, chat responses come from a deterministic mock
+adapter and Work execution is a clearly-labeled local simulation — and you
+can **connect your own API key** (any supported OpenAI-compatible or
+Anthropic endpoint) in Settings → Providers to chat live, with no backend
+or account in between.
 
 ## Quick start
 
@@ -35,19 +36,28 @@ src/
   components/     # ui/ primitives (dialog, menu, fields, toast…) + layout shell
   features/
     chat/         # sidebar, top bar, composer, messages, search, export
+    work/          # Work home, task brief, workspace, templates
+    agents/        # directory, builder, personal assistant view
+    library/       # artifact collection, viewer, projects
     settings/     # appearance, chat prefs, data tools, provider profiles
-    previews/     # research, images, voice, canvas, data, presets, coming-soon
-  domain/         # conversation tree, types, adapter contract, grouping
+    previews/     # research, images, voice, canvas, data, coming-soon
+  domain/         # conversation tree, workspace types, task machine, adapters
   services/
     connection/   # real provider connection testing + model discovery
     live/         # live streaming adapter (OpenAI-compat + Anthropic SSE)
     mock/         # deterministic chat adapter + all fixtures
-    storage/      # versioned localStorage + private credential store
-  state/          # zustand store (actions, persistence wiring, selectors)
+    storage/      # versioned localStorage slices + private credential store
+  state/          # zustand stores: chat, agents, work, library
   styles/         # design tokens + base styles
 tests/            # interaction and unit tests
-docs/             # audit, tokens, model, roadmap, verification, status
+docs/             # audit, architecture, tokens, verification, status
 ```
+
+Each destination has its own routed pages but shares one domain layer:
+Work tasks reference agents by id, agent conversations live in the chat
+store with an `agentId` scope, and Library artifacts link back to their
+source task. See [`docs/architecture.md`](docs/architecture.md) for the
+full map including the Work execution model and its safety guarantees.
 
 Key decisions (full rationale in `docs/`):
 

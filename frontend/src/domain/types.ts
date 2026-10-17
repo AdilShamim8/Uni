@@ -58,6 +58,8 @@ export interface Conversation {
   archived: boolean
   /** In-memory only; never persisted. */
   temporary: boolean
+  /** Saved agent whose instructions scope this conversation. */
+  agentId?: string | null
   nodes: Record<string, MessageNode>
   activeLeafId: string | null
 }

@@ -22,6 +22,8 @@ export interface ChatRequest {
   attachments: AttachmentMeta[]
   nickname: string
   traits: string
+  /** Agent instructions active for this conversation, when any. */
+  system?: string
 }
 
 /** Metadata delivered before the first streamed token. */

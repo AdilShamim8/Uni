@@ -1,13 +1,19 @@
 import { useEffect } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { AppShell } from '@/components/layout/AppShell'
 import { ToastHost } from '@/components/ui/Toast'
 import { useAppStore } from '@/state/store'
+import { useAgentsStore } from '@/state/agentsStore'
+import { useWorkStore } from '@/state/workStore'
+import { useLibraryStore } from '@/state/libraryStore'
 import { ChatPage } from '@/features/chat/ChatPage'
 import { SearchDialog } from '@/features/chat/SearchDialog'
 import { PreviewHost } from '@/features/previews/PreviewHost'
 import { SettingsDialog } from '@/features/settings/SettingsDialog'
+import { WorkPage } from '@/features/work/WorkPage'
+import { AgentsPage } from '@/features/agents/AgentsPage'
+import { LibraryPage } from '@/features/library/LibraryPage'
 
 export function App() {
   const initialize = useAppStore((state) => state.initialize)
@@ -15,9 +21,15 @@ export function App() {
   const density = useAppStore((state) => state.preferences.density)
   const textSize = useAppStore((state) => state.preferences.textSize)
   const reducedTransparency = useAppStore((state) => state.preferences.reducedTransparency)
+  const location = useLocation()
 
   useEffect(() => {
     initialize()
+    // Workspace slices hydrate independently; a corrupt slice re-seeds
+    // only itself and never touches chat data.
+    useAgentsStore.getState().initialize()
+    useWorkStore.getState().initialize()
+    useLibraryStore.getState().initialize()
   }, [initialize])
 
   // Apply display preferences to the document root.
@@ -65,9 +77,19 @@ export function App() {
   return (
     <ThemeProvider>
       <AppShell>
-        <Routes>
+        <Routes location={location}>
+          {/* Chat — existing routes preserved for compatibility */}
           <Route path="/" element={<ChatPage />} />
           <Route path="/c/:conversationId" element={<ChatPage />} />
+          {/* Work — task briefs, demo execution, review */}
+          <Route path="/work" element={<WorkPage />} />
+          <Route path="/work/:taskId" element={<WorkPage />} />
+          {/* Agents — reusable profiles and the personal assistant.
+              `/agents/new` is handled by the :agentId route (id === 'new'). */}
+          <Route path="/agents" element={<AgentsPage />} />
+          <Route path="/agents/:agentId" element={<AgentsPage />} />
+          {/* Library — shared local artifacts and projects */}
+          <Route path="/library" element={<LibraryPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
