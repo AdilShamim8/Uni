@@ -66,27 +66,36 @@ export function TopBar() {
   }
 
   function handleSharedLink() {
-    showToast('Shared links are unavailable in this local prototype — try “Export as Markdown” instead.')
+    showToast(
+      'Shared links are unavailable in this local prototype — try “Export as Markdown” instead.',
+    )
   }
 
   return (
-    <header className="flex h-14 shrink-0 items-center gap-2 border-b border-line bg-canvas px-2 sm:px-4">
+    <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
       <div className="lg:hidden">
         <IconButton label="Open navigation" onClick={() => setUi({ mobileSidebarOpen: true })}>
           <MenuIcon size={18} />
         </IconButton>
       </div>
 
-      {/* Provider / model picker */}
+      {/* Provider / model picker — shows selection, provider context, and status */}
       <Menu
-        width="w-64"
+        width="w-72"
         label="Select provider and model"
         trigger={
           <button
             type="button"
-            className="flex items-center gap-1.5 rounded-[10px] border border-line bg-raised px-2.5 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-subtle"
+            className="flex min-touch items-center gap-2 rounded-control px-2.5 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-[var(--c-hover-wash)]"
           >
-            <span className="max-w-[10rem] truncate">{activeModel?.model.label ?? 'Select model'}</span>
+            <span className="max-w-[9rem] truncate">
+              {activeModel?.model.label ?? 'Select model'}
+            </span>
+            {activeModel && (
+              <span className="hidden max-w-[8rem] truncate text-xs font-normal text-ink-faint sm:inline">
+                {activeModel.provider.label}
+              </span>
+            )}
             <ChevronDown size={14} className="shrink-0 text-ink-faint" />
           </button>
         }
@@ -98,8 +107,11 @@ export function TopBar() {
         )}
         {providers.map((provider) => (
           <div key={provider.id}>
-            <p className="px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
               {provider.label}
+              {provider.demo && (
+                <span className="font-medium normal-case tracking-normal">· demo</span>
+              )}
             </p>
             {provider.models.length === 0 && (
               <p className="px-2.5 py-1 text-xs text-ink-faint">No models</p>
@@ -119,12 +131,16 @@ export function TopBar() {
             })}
           </div>
         ))}
+        <div className="my-1 border-t border-line" />
+        <MenuItem onClick={() => setUi({ settingsOpen: true })} hint="Connect your own">
+          Manage providers…
+        </MenuItem>
       </Menu>
 
       {/* Title + state */}
       <div className="flex min-w-0 flex-1 items-center gap-2">
         <h1 className="min-w-0 truncate text-sm font-medium text-ink">
-          {conversation?.title ?? 'Universe'}
+          {conversation?.title ?? ''}
         </h1>
         {conversation?.temporary && (
           <Tooltip label="In-memory only — disappears on reload">
@@ -135,8 +151,10 @@ export function TopBar() {
         )}
       </div>
 
-      <Tooltip label="This build runs a local demo — no data leaves your browser" className="hidden sm:inline-flex">
-        <Badge tone="warning">Local demo</Badge>
+      <Tooltip label="Responses are simulated locally — no provider is contacted">
+        <Badge tone="warning" className="hidden sm:inline-flex">
+          Demo
+        </Badge>
       </Tooltip>
 
       <Tooltip

@@ -104,7 +104,7 @@ function CopyButton({ content }: { content: string }) {
 function ActionRow({ children, align = 'left' }: { children: React.ReactNode; align?: 'left' | 'right' }) {
   return (
     <div
-      className={`mt-1 flex items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 ${
+      className={`mt-1 flex items-center gap-0.5 opacity-0 transition-opacity duration-[var(--motion-fast)] focus-within:opacity-100 group-hover:opacity-100 [@media(hover:none)]:opacity-100 ${
         align === 'right' ? 'justify-end' : ''
       }`}
     >
@@ -130,7 +130,7 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
   if (editing) {
     return (
       <div className="flex flex-col items-end">
-        <div className="w-full max-w-[85%] rounded-2xl border border-accent bg-raised p-3">
+        <div className="w-full max-w-[85%] rounded-[18px] border border-accent bg-raised p-3 shadow-soft">
           <label className="sr-only" htmlFor={`edit-${node.id}`}>
             Edit message
           </label>
@@ -139,7 +139,7 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
             value={draft}
             onChange={(event) => setDraft(event.target.value)}
             rows={Math.min(8, Math.max(2, draft.split('\n').length))}
-            className="w-full resize-y bg-transparent text-[15px] leading-relaxed text-ink focus:outline-none"
+            className="w-full resize-y bg-transparent text-[16px] leading-relaxed text-ink focus:outline-none"
             autoFocus
           />
           <p className="mt-1 text-[11px] text-ink-faint">
@@ -169,7 +169,7 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
 
   return (
     <div className="group flex flex-col items-end">
-      <div className="max-w-[85%] rounded-2xl bg-subtle px-4 py-2.5">
+      <div className="max-w-[85%] rounded-[18px] bg-subtle px-4 py-2.5">
         {node.tools && node.tools.length > 0 && (
           <div className="mb-1.5 flex flex-wrap gap-1">
             {node.tools.map((tool) => {
@@ -200,7 +200,7 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
           </ul>
         )}
         {node.content && (
-          <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
+          <p className="whitespace-pre-wrap text-[16px] leading-relaxed text-ink">
             {node.content}
           </p>
         )}
@@ -258,7 +258,7 @@ function AssistantMessage({
 
   return (
     <div className="group flex gap-3">
-      <UniverseMark size={22} className="mt-1 shrink-0 text-ink" />
+      <UniverseMark size={22} className="mt-0.5 shrink-0 text-ink" />
       <div className="min-w-0 flex-1">
         {node.statusPrefix && (
           <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-faint">
