@@ -68,3 +68,29 @@ Contrast targets: body text and accent-on-light meet WCAG 2.2 AA (4.5:1); the li
 - `<html data-theme="light|dark">` drives every token; Tailwind `dark:` variant is bound to the same attribute.
 - Theme resolution order: stored preference (`light`/`dark`/`system`) → OS `prefers-color-scheme` when `system` → live re-sync on OS changes.
 - An inline boot snippet in `index.html` applies `data-theme` before React mounts to avoid a flash.
+
+---
+
+## Milestone 3 additions
+
+The token vocabulary is unchanged (surface, ink, accent, status, radius,
+spacing, motion); Milestone 3 extends its *application* rather than adding
+new tokens:
+
+- **Status pills** (`components/ui/StatusPill.tsx`) render every status in
+  the product from one component with five semantic tones (neutral, accent,
+  success, warning, danger) and an optional live dot. Task statuses map to
+  tones in `domain/taskMachine.ts` — a single status source drives the
+  Work shell, workspace header, sidebar, and assistant view.
+- **Navigation hierarchy:** the sidebar keeps its translucent material
+  (`--mat-sidebar`), while Work/Agents/Library content surfaces stay opaque
+  (`--c-raised` / `--c-panel`) for readable long-form work. Blur remains
+  limited to overlays and navigation, with the existing opaque fallback
+  under Reduce transparency.
+- **Menu collisions:** panels flip and scroll past `max-height: 360px`
+  using viewport math only — no new tokens; motion stays within
+  `--motion-fast`/`--motion-normal` (140–200 ms).
+- **Filter chips** reuse the pill radius (`--r-control` scale) and scroll
+  horizontally on narrow screens instead of wrapping unevenly.
+- **Touch targets** in the new destinations keep `min-touch` (≥ 44 px) on
+  all rows, tabs, chips, and form controls.

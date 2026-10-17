@@ -1,83 +1,79 @@
-# Feature Status Matrix — Milestone 1
+# Feature Status Matrix — Milestone 3
 
-Precise distinction between **working local UI**, **labeled simulation**, and
-**deferred integration**. "Working" means the feature operates on local data
-with real behavior; "simulated" means the workflow is demonstrated with
-fixtures and clear labeling; "deferred" means consciously not built here.
+Precise distinction between what **works locally**, what is a **labeled
+simulation**, what is **live through the user's own key**, what **requires
+integration we do not ship**, and what is **planned**. "Working" means the
+feature operates on local data with real behavior; "simulated" means the
+workflow is demonstrated with fixtures and honest labeling; "live" means a
+real request to a provider the user configured with their own API key.
 
-## Shell and navigation
-
-| Feature | Status | Notes |
-| --- | --- | --- |
-| Collapsible sidebar (264px / 64px rail) | Working | State persisted |
-| Mobile drawer navigation | Working | Scrim + tap-outside close |
-| New chat / new temporary chat | Working | Empty chats pruned on navigation |
-| Recent conversations grouped by date | Working | Pinned / Today / Yesterday / 7d / 30d / Older |
-| Archived view | Working | Toggle in sidebar footer of history |
-| Projects / Work / Email entries | Working (explanatory previews) | Subdued, open honest "later milestone" dialogs |
-| Provider/model picker in top bar | Working | Selection persisted; live providers marked with status dot + Live hint |
-| Temporary-chat indicator + toggle | Working | In-memory only |
-| Shared links | Unavailable (labeled) | Top-bar menu states it and points to Markdown export |
-
-## Conversations
+## Destinations and navigation
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Deterministic simulated streaming | Simulated (labeled) | Default when no key is connected; hash-seeded responses |
-| Live provider streaming (BYOK) | Working | Real SSE from any OpenAI-compatible or Anthropic endpoint the user connects |
-| Stop generation | Working | AbortSignal honored; stopped state shown |
-| Retry after error | Working | `/fail` prefix triggers a simulated failure |
-| Regenerate → variants | Working | Sibling creation, `1/2` switcher |
-| Edit earlier message → branch | Working | Original subtree preserved; auto-resend |
-| Markdown, tables, code + copy | Working | GFM; raw HTML disabled; safe links |
-| Simulated sources/citations | Simulated (labeled) | Reserved example domains, collapsible |
-| Message feedback | Working | Local only |
-| Local export (Markdown per chat, JSON all) | Working | Via item menu, top bar, Settings → Data |
-| Search over titles + content | Working | Highlighted snippets, keyboard selection |
-| Rename / pin / archive / delete | Working | Confirmations + undo toast for delete |
-| Auto-scroll + jump to latest | Working | Follows only near the bottom |
+| Chat, Work, Agents as primary destinations | Working | Route-based active state; one obvious treatment |
+| Library as shared secondary destination | Working | One collection, reachable from nav and Work |
+| Routes `/`, `/c/:id`, `/work(/:taskId)`, `/agents(/:agentId)`, `/library` | Working | Direct load, refresh, Back/Forward verified |
+| Unknown-id recovery | Working | Bad task/agent ids redirect to their home after hydration |
+| Route-specific history | Working | Recent tasks on Work routes; conversations elsewhere |
+| Mobile drawer as a modal | Working | Focus trap, Escape, inert background, focus return |
+| Collision-aware menus | Working | Auto-flip, max-height, preventScroll focus |
 
-## Composer
+## Work
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Multiline auto-growing input | Working | Enter/Shift+Enter, Ctrl/Cmd+Enter mode, IME guard |
-| Attachments (picker + drag/drop) | Working | Type/size/count validation, previews, removal, errors |
-| Attachment analysis | Deferred (labeled) | Explicitly "kept local, not analyzed" |
-| Tool picker (Search, Research, Images, Voice, Canvas) | Working + Simulated | Availability from capability registry; preview tools open labeled previews |
-| Demo indicator | Working | Top-bar badge + composer footnote |
+| Task list + filters (All/In progress/Needs input/Ready for review/Completed) | Working | Filters are view states, honest counts |
+| Starter templates (Research brief, Data review, Email draft) | Working | Local briefs with example context, clearly labeled |
+| Task brief (title, goal, deliverable, agent, project) | Working | Editable while draft; agent resolved by name in UI |
+| Demo execution state machine | Working | `draft → queued → running → needs_input / ready_for_review → completed`, with paused/cancelled/failed; guarded transitions — no completion straight from cancelled/failed |
+| Run ids + late-event rejection | Working | Cancelled runs cannot accept timer events |
+| Pause / resume / cancel / retry / reopen | Working | Deliberate paths only |
+| Reload interruption | Working | Running tasks demote to paused+interrupted with a Resume action; nothing pretends to have kept running |
+| Input requests during a run | Working | Question + options; answers persist across reload and reach the report |
+| Activity timeline | Working | Per-run events with kinds, timestamps, honest labels |
+| Review flow: edit → download → complete | Working | Download always matches the edited visible report |
+| Save report to Library | Working | Creates/updates one linked artifact, no duplicates |
+| Work execution itself | Simulated (labeled) | Deterministic local script; no provider is contacted for Work runs |
 
-## Settings
+## Agents
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Theme (light/dark/system) | Working | Pre-hydration boot; OS sync |
-| Density / text size | Working | Applied to document root |
-| Reduced transparency | Working | Toggle + live OS `prefers-reduced-transparency` tracking |
-| Send-key behavior | Working | Persisted |
-| Personalization fields | Working (local) | Travel in the system prompt for both demo and live turns |
-| Export all data / clear history / reset demo | Working | Confirmations for destructive actions |
-| Provider profile CRUD + models | Working | Any OpenAI-compatible or Anthropic endpoint; suggested base URLs per type |
-| API key entry + connect (BYOK) | Working | Masked input, reveal toggle, Enter-to-connect; stored only in this browser |
-| Connection test | Working (real) | Live endpoint check with latency, model discovery, honest 401/403/404/429/CORS diagnostics |
-| Disconnect / key hygiene | Working | Bad keys are never persisted; export never contains credentials |
-| Privacy & about | Working | Local persistence, independence, attributions |
+| Directory with search + categories | Working | Personal assistant + specialists |
+| Builder (name, description, instructions, provider/model, tools, starters) | Working | Validates empty name/instructions, dead provider refs, unknown models |
+| Duplicate / archive / delete | Working | Built-ins cannot be deleted; referenced profiles archive instead of orphaning tasks |
+| Chat with agent | Working | One scoped, reused conversation per agent; instructions sent as the system prompt |
+| Agent model preference | Working | Resolved explicitly and shown as the effective configuration |
+| Personal assistant view (Conversation / Assigned work / Memory / Schedules) | Working | Tabs over the same underlying data, no duplicate histories |
+| Memory notes | Working | Local add/edit/delete with scope + timestamps; user-authored only |
+| Schedule drafts | Working (drafts only) | "Saved locally — execution unavailable" — no runtime, never shown as Active |
+| Agent execution / notifications / background work | Requires integration | Not built; drafts record intent only |
 
-## Advanced previews
+## Library
 
-| Preview | Status | Notes |
+| Feature | Status | Notes |
 | --- | --- | --- |
-| Research | Simulated (labeled) | Brief → labeled progress → fixture report + example sources; copy/download |
-| Images | Simulated (labeled) | Original bundled SVG samples; no generation requests |
-| Voice | Simulated (labeled) | Call states + sample transcript; no microphone access |
-| Canvas | Working (session-only) | Editable document/code fixture; no execution |
-| Data analysis | Simulated (labeled) | Bundled sample CSV + precomputed chart |
-| Assistant presets | Working (local) | Instructions stored in preferences |
-| Tasks / connections / coding workspace | Deferred (explanatory) | Honest roadmap dialogs |
+| Shared artifact collection | Working | Kind filters, provenance labels, linked source tasks |
+| Artifact viewer + editor | Working | Markdown render, edit, download |
+| Rename / delete artifacts | Working | Confirmation on delete; task reports unaffected |
+| Projects (local context groups) | Working | Lightweight folders with honest task/artifact counts |
+| Cross-device sync | Planned | Local-only by design in this milestone |
 
-## Explicitly not in this milestone
+## Chat (carried forward, preserved)
 
-Backend, database, real authentication, provider SDK calls through a server,
-paid calls, analytics, external integrations, Work and Email products, code
-execution. (BYOK requests go browser → user's endpoint directly, with no
-Universe server in between.)
+| Feature | Status | Notes |
+| --- | --- | --- |
+| BYOK live streaming | Live | OpenAI-compatible + Anthropic endpoints, user's own key, stored privately |
+| Demo adapter | Simulated (labeled) | Default without a key; agent conversations surface instruction scoping |
+| Composer draft ownership | Working | Submitted snapshot cleared at submit; drafts scoped per conversation and preserved during streaming |
+| Timestamps, delete-with-undo, honest live/demo status | Working | Status derived from credentials, never hard-coded |
+| Search (Ctrl+K), settings (Ctrl+,), themes, reduced transparency | Working | Unchanged from earlier milestones |
+
+## Honesty rules maintained everywhere
+
+- No "any provider" claims — supported providers and compatible endpoints only.
+- No global "nothing leaves your browser" claim while a BYOK endpoint is live.
+- Storage failures surface a warning; nothing reports "saved" on a failed write.
+- Temporary chats are not saved locally, but a live request still reaches its provider.
+- Credentials never appear in exports, events, notes, schedules, or fixtures.
