@@ -6,6 +6,7 @@ import type {
   ModelInfo,
   Preferences,
   PreviewState,
+  ProviderCredential,
   ProviderProfile,
   ToolId,
   ToastState,
@@ -21,6 +22,7 @@ import {
 } from '@/domain/conversationTree'
 import type { ChatAdapter, ChatTurn } from '@/domain/chatAdapter'
 import { createMockAdapter } from '@/services/mock/mockChatAdapter'
+import { createLiveAdapter } from '@/services/live/liveChatAdapter'
 import {
   buildSeedConversations,
   buildSeedProviders,
@@ -31,6 +33,11 @@ import {
   loadPersisted,
   savePersisted,
 } from '@/services/storage/localStorage'
+import {
+  clearCredentials,
+  loadCredentials,
+  saveCredentials,
+} from '@/services/storage/credentials'
 import { makeId } from '@/domain/ids'
 
 interface UiState {
@@ -48,6 +55,8 @@ export interface AppStore {
   providers: ProviderProfile[]
   activeProviderId: string | null
   activeModelId: string | null
+  /** Provider credentials — kept OUT of the persisted/serialized app data. */
+  credentials: Record<string, ProviderCredential>
   ui: UiState
   toast: ToastState | null
 
@@ -80,6 +89,8 @@ export interface AppStore {
   updateProvider: (profile: ProviderProfile) => void
   removeProvider: (id: string) => void
   setActiveModel: (providerId: string, modelId: string) => void
+  setCredential: (providerId: string, credential: ProviderCredential) => void
+  clearCredential: (providerId: string) => void
 
   setUi: (patch: Partial<UiState>) => void
   openPreview: (preview: PreviewState) => void
@@ -100,6 +111,22 @@ export function setChatAdapter(adapter: ChatAdapter): void {
   activeAdapter = adapter
 }
 
+/**
+ * Pick the adapter for the next turn: when the active provider has a
+ * connected credential and a selected model, chat runs live against the
+ * user's own endpoint; otherwise fall back to the local demo adapter
+ * (or the adapter a test injected). Keys never leave this path.
+ */
+function resolveAdapter(): ChatAdapter {
+  const { providers, activeProviderId, activeModelId, credentials } = useAppStore.getState()
+  const provider = providers.find((p) => p.id === activeProviderId)
+  const credential = activeProviderId ? credentials[activeProviderId] : undefined
+  if (provider && activeModelId && credential?.status === 'connected' && credential.apiKey) {
+    return createLiveAdapter(provider, credential.apiKey, activeModelId)
+  }
+  return activeAdapter
+}
+
 /* ------------------------------------------------------------------ */
 /* Store                                                               */
 /* ------------------------------------------------------------------ */
@@ -112,12 +139,16 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   providers: [],
   activeProviderId: null,
   activeModelId: null,
+  credentials: {},
   ui: { searchOpen: false, settingsOpen: false, mobileSidebarOpen: false, preview: null },
   toast: null,
 
   initialize: () => {
     if (get().hydrated) return
     const loaded = loadPersisted()
+    // Credentials load from their own storage key, separate from app data,
+    // so they survive alongside profiles but never travel with exports.
+    const credentials = loadCredentials()
     if (loaded.state) {
       const conversations: Record<string, Conversation> = {}
       for (const conversation of loaded.state.conversations) {
@@ -131,6 +162,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         providers: loaded.state.providers,
         activeProviderId: loaded.state.activeProviderId,
         activeModelId: loaded.state.activeModelId,
+        credentials,
       })
     } else {
       get().resetDemoData()
@@ -149,6 +181,10 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       conversations[conversation.id] = conversation
     }
     clearPersisted()
+    // Seed profiles replace everything the user configured, so their
+    // credentials are orphaned — drop them to avoid connected keys pointing
+    // at endpoints that no longer exist.
+    clearCredentials()
     set({
       hydrated: true,
       conversations,
@@ -157,6 +193,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       providers,
       activeProviderId: providers[0]?.id ?? null,
       activeModelId: 'demo-pro',
+      credentials: {},
     })
   },
 
@@ -377,15 +414,39 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   },
 
   removeProvider: (id) => {
-    set((state) => ({
-      providers: state.providers.filter((p) => p.id !== id),
-      activeProviderId: state.activeProviderId === id ? null : state.activeProviderId,
-      activeModelId: state.activeProviderId === id ? null : state.activeModelId,
-    }))
+    set((state) => {
+      const credentials = { ...state.credentials }
+      delete credentials[id]
+      saveCredentials(credentials)
+      return {
+        providers: state.providers.filter((p) => p.id !== id),
+        activeProviderId: state.activeProviderId === id ? null : state.activeProviderId,
+        activeModelId: state.activeProviderId === id ? null : state.activeModelId,
+        credentials,
+      }
+    })
   },
 
   setActiveModel: (providerId, modelId) => {
     set({ activeProviderId: providerId, activeModelId: modelId })
+  },
+
+  setCredential: (providerId, credential) => {
+    set((state) => {
+      const credentials = { ...state.credentials, [providerId]: credential }
+      saveCredentials(credentials)
+      return { credentials }
+    })
+  },
+
+  clearCredential: (providerId) => {
+    set((state) => {
+      if (!state.credentials[providerId]) return state
+      const credentials = { ...state.credentials }
+      delete credentials[providerId]
+      saveCredentials(credentials)
+      return { credentials }
+    })
   },
 
   setUi: (patch) => {
@@ -465,7 +526,7 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
   activeAbort = controller
 
   try {
-    await activeAdapter.stream(
+    await resolveAdapter().stream(
       {
         prompt: userNode.content,
         history,
@@ -553,6 +614,7 @@ export function resetStoreForTests(options: { keepStorage?: boolean } = {}): voi
     toastTimer = undefined
   }
   activeAbort = null
+  clearCredentials()
   useAppStore.setState({
     hydrated: false,
     conversations: {},
@@ -561,6 +623,7 @@ export function resetStoreForTests(options: { keepStorage?: boolean } = {}): voi
     providers: [],
     activeProviderId: null,
     activeModelId: null,
+    credentials: {},
     ui: { searchOpen: false, settingsOpen: false, mobileSidebarOpen: false, preview: null },
     toast: null,
   })
