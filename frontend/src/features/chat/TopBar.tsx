@@ -14,6 +14,7 @@ import {
   PinOff,
   Trash2,
   Download,
+  Zap,
 } from 'lucide-react'
 import { useAppStore, selectActiveConversation, selectActiveModel } from '@/state/store'
 import { Button } from '@/components/ui/Button'
@@ -32,6 +33,13 @@ export function TopBar() {
   const providers = useAppStore((state) => state.providers)
   const activeProviderId = useAppStore((state) => state.activeProviderId)
   const activeModelId = useAppStore((state) => state.activeModelId)
+  const credentials = useAppStore((state) => state.credentials)
+  const liveProviderIds = new Set(
+    Object.entries(credentials)
+      .filter(([, credential]) => credential.status === 'connected')
+      .map(([id]) => id),
+  )
+  const liveActive = !!activeProviderId && liveProviderIds.has(activeProviderId)
   const setActiveModel = useAppStore((state) => state.setActiveModel)
   const setUi = useAppStore((state) => state.setUi)
   const setTemporary = useAppStore((state) => state.setTemporary)
@@ -105,32 +113,47 @@ export function TopBar() {
             No provider profiles configured yet.
           </p>
         )}
-        {providers.map((provider) => (
-          <div key={provider.id}>
-            <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-              {provider.label}
-              {provider.demo && (
-                <span className="font-medium normal-case tracking-normal">· demo</span>
+        {providers.map((provider) => {
+          const connected = liveProviderIds.has(provider.id)
+          return (
+            <div key={provider.id}>
+              <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                {connected && (
+                  <span
+                    aria-label="Connected"
+                    className="inline-block h-[7px] w-[7px] shrink-0 rounded-full bg-success"
+                  />
+                )}
+                {provider.label}
+                {connected ? (
+                  <span className="font-medium normal-case tracking-normal text-success">
+                    · live
+                  </span>
+                ) : (
+                  provider.demo && (
+                    <span className="font-medium normal-case tracking-normal">· demo</span>
+                  )
+                )}
+              </p>
+              {provider.models.length === 0 && (
+                <p className="px-2.5 py-1 text-xs text-ink-faint">No models</p>
               )}
-            </p>
-            {provider.models.length === 0 && (
-              <p className="px-2.5 py-1 text-xs text-ink-faint">No models</p>
-            )}
-            {provider.models.map((model) => {
-              const isActive = provider.id === activeProviderId && model.id === activeModelId
-              return (
-                <MenuItem
-                  key={model.id}
-                  icon={isActive ? <Check size={15} /> : undefined}
-                  hint={model.demo ? 'Demo' : undefined}
-                  onClick={() => setActiveModel(provider.id, model.id)}
-                >
-                  {model.label}
-                </MenuItem>
-              )
-            })}
-          </div>
-        ))}
+              {provider.models.map((model) => {
+                const isActive = provider.id === activeProviderId && model.id === activeModelId
+                return (
+                  <MenuItem
+                    key={model.id}
+                    icon={isActive ? <Check size={15} /> : undefined}
+                    hint={connected ? 'Live' : model.demo ? 'Demo' : undefined}
+                    onClick={() => setActiveModel(provider.id, model.id)}
+                  >
+                    {model.label}
+                  </MenuItem>
+                )
+              })}
+            </div>
+          )
+        })}
         <div className="my-1 border-t border-line" />
         <MenuItem onClick={() => setUi({ settingsOpen: true })} hint="Connect your own">
           Manage providers…
@@ -151,11 +174,21 @@ export function TopBar() {
         )}
       </div>
 
-      <Tooltip label="Responses are simulated locally — no provider is contacted">
-        <Badge tone="warning" className="hidden sm:inline-flex">
-          Demo
-        </Badge>
-      </Tooltip>
+      {liveActive ? (
+        <Tooltip
+          label={`Live — streaming from ${activeModel?.provider.label ?? 'your provider'} with your API key, straight from this browser`}
+        >
+          <Badge tone="success" className="hidden sm:inline-flex">
+            <Zap size={10} /> Live
+          </Badge>
+        </Tooltip>
+      ) : (
+        <Tooltip label="Responses are simulated locally — no provider is contacted">
+          <Badge tone="warning" className="hidden sm:inline-flex">
+            Demo
+          </Badge>
+        </Tooltip>
+      )}
 
       <Tooltip
         label={

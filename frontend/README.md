@@ -1,9 +1,11 @@
 # Universe — Chat Frontend (Milestone 1)
 
 An independent, open-source AI workspace. This milestone delivers the chat
-interface, shared application shell, and settings UI as a **local demo
-prototype**: everything runs in your browser, responses come from a
-deterministic mock adapter, and no provider, backend, or account is involved.
+interface, shared application shell, and settings UI as a **local-first
+prototype**: everything runs in your browser. Out of the box responses come
+from a deterministic mock adapter — and you can **connect your own API key**
+(any OpenAI-compatible or Anthropic endpoint) in Settings → Providers to chat
+live, with no backend or account in between.
 
 ## Quick start
 
@@ -37,8 +39,10 @@ src/
     previews/     # research, images, voice, canvas, data, presets, coming-soon
   domain/         # conversation tree, types, adapter contract, grouping
   services/
+    connection/   # real provider connection testing + model discovery
+    live/         # live streaming adapter (OpenAI-compat + Anthropic SSE)
     mock/         # deterministic chat adapter + all fixtures
-    storage/      # versioned localStorage with safe recovery
+    storage/      # versioned localStorage + private credential store
   state/          # zustand store (actions, persistence wiring, selectors)
   styles/         # design tokens + base styles
 tests/            # interaction and unit tests
@@ -55,20 +59,27 @@ Key decisions (full rationale in `docs/`):
   implementation is deterministic (hash-seeded) and supports a documented
   `/fail` prompt prefix to exercise error/retry states.
 - **Capability registry.** Tool chips in the composer are enabled by what the
-  selected demo model advertises — never by the presence of an API key.
+  selected model advertises — never by the presence of an API key.
+- **Bring your own key.** Settings → Providers connects any endpoint with a
+  real API key: connection test with latency, model discovery, live SSE
+  streaming, and honest failure diagnostics. Keys are stored only in your
+  browser (their own localStorage key, never in exports) and are sent only to
+  the endpoint you configure. With no key connected, the deterministic demo
+  adapter keeps everything fully offline.
 - **Versioned persistence.** One localStorage key, schema version 1, debounced
   writes, quarantine + fresh seed on malformed data. Temporary conversations
   are filtered from every write and vanish on reload by design.
 
 ## Prototype limits (honest labels)
 
-- Responses, sources, research progress, and connection tests are **simulated
-  and labeled** in the interface.
-- Attachments are validated and previewed locally; they are **not analyzed**.
-- The API-key field in Settings → Providers is a disabled placeholder; no
-  credentials are solicited, stored, logged, or transmitted.
-- Shared links are explicitly unavailable; local Markdown/JSON export works.
-- No backend, database, authentication, analytics, or outbound network calls.
+- Without a connected key: responses, sources, and research progress are
+  **simulated and labeled** in the interface.
+- With a connected key: chat is live, but tool previews stay local, and
+  multimodal content / tool-calling on the wire are not implemented.
+- Attachments are validated and previewed locally; only their **names** are
+  mentioned to a connected model — files are never uploaded.
+- Live endpoints depend on the provider allowing direct browser (CORS)
+  requests; failures surface honest diagnostics.
 
 ## Keyboard reference
 

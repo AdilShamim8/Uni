@@ -1,8 +1,21 @@
 import { useState } from 'react'
-import { Check, Lock, Pencil, Plus, Trash2, Zap } from 'lucide-react'
+import {
+  Check,
+  Eye,
+  EyeOff,
+  KeyRound,
+  Pencil,
+  Plus,
+  RefreshCw,
+  ShieldCheck,
+  Trash2,
+  Unplug,
+  Zap,
+} from 'lucide-react'
 import type { Capability, ModelInfo, ProviderKind, ProviderProfile } from '@/domain/types'
 import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
+import { testProviderConnection } from '@/services/connection/providerConnection'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
@@ -21,20 +34,35 @@ const CAPABILITIES: Capability[] = [
 ]
 
 const KIND_LABELS: Record<ProviderKind, string> = {
-  openai: 'OpenAI (concept)',
-  anthropic: 'Anthropic (concept)',
-  google: 'Google (concept)',
-  'openai-compatible': 'OpenAI-compatible endpoint',
-  local: 'Local endpoint',
+  openai: 'OpenAI',
+  anthropic: 'Anthropic',
+  google: 'Google — OpenAI-compatible endpoint',
+  'openai-compatible': 'OpenAI-compatible — Groq, OpenRouter, Together, Mistral, …',
+  local: 'Local server — LM Studio, Ollama, vLLM, …',
 }
 
-function hashString(value: string): number {
-  let hash = 2166136261
-  for (let i = 0; i < value.length; i += 1) {
-    hash ^= value.charCodeAt(i)
-    hash = Math.imul(hash, 16777619)
-  }
-  return hash >>> 0
+/** Suggested base URLs, used to prefill the form when the kind changes. */
+const KIND_ENDPOINTS: Record<ProviderKind, string> = {
+  openai: 'https://api.openai.com/v1',
+  anthropic: 'https://api.anthropic.com',
+  google: 'https://generativelanguage.googleapis.com/v1beta/openai',
+  'openai-compatible': 'https://api.groq.com/openai/v1',
+  local: 'http://localhost:1234/v1',
+}
+
+function maskKey(apiKey: string): string {
+  const trimmed = apiKey.trim()
+  if (trimmed.length <= 4) return '••••'
+  return `•••• ${trimmed.slice(-4)}`
+}
+
+function formatCheckedAt(timestamp: number | null): string {
+  if (timestamp === null) return ''
+  const seconds = Math.max(0, Math.round((Date.now() - timestamp) / 1000))
+  if (seconds < 45) return 'just now'
+  if (seconds < 3600) return `${Math.round(seconds / 60)} min ago`
+  if (seconds < 86400) return `${Math.round(seconds / 3600)} h ago`
+  return new Date(timestamp).toLocaleDateString()
 }
 
 /* ------------------------------------------------------------------ */
@@ -145,22 +173,35 @@ function ProviderForm({
     draft.endpointUrl.trim().length > 0 &&
     draft.models.every((model) => model.id.trim().length > 0 && model.label.trim().length > 0)
 
+  function changeKind(kind: ProviderKind) {
+    // Prefill the suggested base URL when the field is empty or still holds
+    // another kind's suggestion — never clobber a URL the user typed.
+    const previous = Object.values(KIND_ENDPOINTS)
+    const endpointIsSuggestion =
+      draft.endpointUrl.trim() === '' || previous.includes(draft.endpointUrl.trim())
+    setDraft({
+      ...draft,
+      kind,
+      endpointUrl: endpointIsSuggestion ? KIND_ENDPOINTS[kind] : draft.endpointUrl,
+    })
+  }
+
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-accent bg-raised p-4">
       <TextField
         label="Profile label"
         value={draft.label}
-        placeholder="e.g. My local setup"
+        placeholder="e.g. My OpenAI key"
         onChange={(event) => setDraft({ ...draft, label: event.target.value })}
       />
       <div>
         <label htmlFor={`kind-${draft.id}`} className="block text-sm font-medium text-ink">
-          Provider type (configuration concept)
+          Provider type
         </label>
         <select
           id={`kind-${draft.id}`}
           value={draft.kind}
-          onChange={(event) => setDraft({ ...draft, kind: event.target.value as ProviderKind })}
+          onChange={(event) => changeKind(event.target.value as ProviderKind)}
           className="mt-1.5 w-full rounded-[10px] border border-line bg-raised px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none"
         >
           {(Object.keys(KIND_LABELS) as ProviderKind[]).map((kind) => (
@@ -169,34 +210,26 @@ function ProviderForm({
             </option>
           ))}
         </select>
+        <p className="mt-1 text-xs leading-relaxed text-ink-faint">
+          Any OpenAI-compatible endpoint works (Groq, OpenRouter, Together, Mistral, LM Studio,
+          Ollama, …). Anthropic uses its native protocol. The type only decides headers and URL
+          paths — the key and endpoint stay yours.
+        </p>
       </div>
       <TextField
-        label="Endpoint URL"
+        label="Endpoint base URL"
         value={draft.endpointUrl}
         placeholder="https://your-endpoint.example/v1"
+        hint="Usually ends in /v1. Do not include /chat/completions — that path is added automatically."
         onChange={(event) => setDraft({ ...draft, endpointUrl: event.target.value })}
       />
 
       <div>
-        <p className="text-sm font-medium text-ink">
-          API key
-          <Lock size={12} className="ml-1.5 inline text-ink-faint" aria-hidden="true" />
+        <p className="mb-2 text-sm font-medium text-ink">Models (optional)</p>
+        <p className="mb-2 text-xs leading-relaxed text-ink-faint">
+          Leave empty — connecting with an API key below discovers the endpoint's model list
+          automatically and fills this in for you.
         </p>
-        <input
-          type="password"
-          disabled
-          placeholder="Secure credential entry arrives with the integration milestone"
-          aria-describedby={`keynote-${draft.id}`}
-          className="mt-1.5 w-full cursor-not-allowed rounded-[10px] border border-line bg-subtle px-3 py-2 text-sm text-ink-faint placeholder:text-ink-faint"
-        />
-        <p id={`keynote-${draft.id}`} className="mt-1 text-xs leading-relaxed text-ink-faint">
-          This UI-only milestone never solicits, stores, logs, or transmits
-          credentials. Everything you configure here stays in this browser.
-        </p>
-      </div>
-
-      <div>
-        <p className="mb-2 text-sm font-medium text-ink">Models</p>
         <div className="flex flex-col gap-2.5">
           {draft.models.map((model, index) => (
             <ModelEditor
@@ -247,6 +280,208 @@ function ProviderForm({
 }
 
 /* ------------------------------------------------------------------ */
+/* Connection block — the BYOK heart of this section                   */
+/* ------------------------------------------------------------------ */
+
+function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
+  const credential = useAppStore((state) => state.credentials[provider.id])
+  const setCredential = useAppStore((state) => state.setCredential)
+  const clearCredential = useAppStore((state) => state.clearCredential)
+  const updateProvider = useAppStore((state) => state.updateProvider)
+  const setActiveModel = useAppStore((state) => state.setActiveModel)
+  const showToast = useAppStore((state) => state.showToast)
+
+  const [keyDraft, setKeyDraft] = useState('')
+  const [reveal, setReveal] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+
+  async function connect(apiKey: string) {
+    setTesting(true)
+    setMessage(null)
+    const result = await testProviderConnection(provider, apiKey)
+    setTesting(false)
+
+    if (result.ok) {
+      setCredential(provider.id, {
+        providerId: provider.id,
+        apiKey: apiKey.trim(),
+        status: 'connected',
+        lastCheckedAt: Date.now(),
+        lastError: null,
+        discoveredModels: result.models ?? [],
+      })
+      setMessage({ ok: true, text: result.message })
+
+      // Adopt the endpoint's model list, and activate the first model when
+      // this provider is (or becomes) the natural place to chat from.
+      const discovered = result.models ?? []
+      const nextModels: ModelInfo[] =
+        discovered.length > 0
+          ? discovered.map((id) => ({ id, label: id, demo: false, capabilities: ['chat'] }))
+          : provider.models
+      updateProvider({ ...provider, demo: false, models: nextModels })
+      if (discovered.length > 0) {
+        const { activeProviderId, activeModelId } = useAppStore.getState()
+        if (activeProviderId === provider.id || activeProviderId === null || !activeModelId) {
+          setActiveModel(provider.id, discovered[0])
+        }
+      }
+      showToast(`Connected to ${provider.label}`)
+      setKeyDraft('')
+      setReveal(false)
+    } else {
+      // Remember the failure against a saved credential, or surface it inline
+      // for an unsaved attempt — never store a key that did not authenticate.
+      if (credential) {
+        setCredential(provider.id, {
+          ...credential,
+          status: 'error',
+          lastCheckedAt: Date.now(),
+          lastError: result.message,
+        })
+      }
+      setMessage({ ok: false, text: result.message })
+    }
+  }
+
+  /* --- Connected or errored credential: status + management actions --- */
+  if (credential) {
+    const connected = credential.status === 'connected'
+    return (
+      <div className="mt-3 border-t border-line pt-3">
+        <div
+          className={`flex flex-wrap items-center gap-2 rounded-[10px] px-3 py-2 ${
+            connected ? 'bg-success-soft' : 'bg-danger-soft'
+          }`}
+        >
+          {connected ? (
+            <ShieldCheck size={15} className="text-success" />
+          ) : (
+            <Unplug size={15} className="text-danger" />
+          )}
+          <span className={`text-xs font-semibold ${connected ? 'text-success' : 'text-danger'}`}>
+            {connected ? 'Connected' : 'Connection failed'}
+          </span>
+          <span className="text-xs text-ink-faint">
+            {maskKey(credential.apiKey)} · checked {formatCheckedAt(credential.lastCheckedAt)}
+          </span>
+          <span className="flex-1" />
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={testing}
+            onClick={() => connect(credential.apiKey)}
+          >
+            {testing ? <Spinner size={13} /> : <RefreshCw size={13} />}
+            Test again
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              clearCredential(provider.id)
+              setMessage(null)
+              setKeyDraft('')
+            }}
+          >
+            <Trash2 size={13} />
+            Disconnect
+          </Button>
+        </div>
+
+        {credential.lastError && (
+          <p className="mt-1.5 break-words text-xs leading-relaxed text-danger">
+            {credential.lastError}
+          </p>
+        )}
+        {connected && credential.discoveredModels.length > 0 && (
+          <p className="mt-1.5 text-xs text-ink-faint">
+            {credential.discoveredModels.length} model
+            {credential.discoveredModels.length === 1 ? '' : 's'} discovered on this endpoint
+          </p>
+        )}
+
+        <p aria-live="polite" className="mt-1.5 text-xs font-medium">
+          {testing && <span className="text-ink-soft">Testing connection…</span>}
+          {message && (
+            <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
+          )}
+        </p>
+      </div>
+    )
+  }
+
+  /* --- No credential yet: key entry + connect --- */
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <div className="flex flex-wrap items-start gap-2">
+        <div className="min-w-[12rem] flex-1">
+          <label
+            htmlFor={`key-${provider.id}`}
+            className="block text-sm font-medium text-ink"
+          >
+            API key
+          </label>
+          <div className="relative mt-1.5">
+            <KeyRound
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint"
+              aria-hidden="true"
+            />
+            <input
+              id={`key-${provider.id}`}
+              type={reveal ? 'text' : 'password'}
+              value={keyDraft}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="sk-…"
+              aria-describedby={`keynote-${provider.id}`}
+              onChange={(event) => setKeyDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && keyDraft.trim() && !testing) {
+                  event.preventDefault()
+                  void connect(keyDraft)
+                }
+              }}
+              className="w-full rounded-control border border-line bg-raised py-2 pl-9 pr-10 text-[16px] text-ink placeholder:text-ink-faint transition-[border-color,box-shadow] duration-[var(--motion-fast)] focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+            />
+            <button
+              type="button"
+              aria-label={reveal ? 'Hide API key' : 'Show API key'}
+              onClick={() => setReveal((previous) => !previous)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+            >
+              {reveal ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+          </div>
+          <p id={`keynote-${provider.id}`} className="mt-1 text-xs leading-relaxed text-ink-faint">
+            Stored only in this browser and sent only to{' '}
+            <span className="break-all">{provider.endpointUrl}</span> — never to anything else.
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          className="mt-6"
+          disabled={!keyDraft.trim() || testing}
+          onClick={() => void connect(keyDraft)}
+        >
+          {testing ? <Spinner size={13} /> : <Zap size={13} />}
+          Connect
+        </Button>
+      </div>
+      <p aria-live="polite" className="mt-1.5 text-xs font-medium">
+        {testing && <span className="text-ink-soft">Testing connection…</span>}
+        {message && (
+          <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
+        )}
+      </p>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /* Section                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -262,29 +497,15 @@ export function ProvidersSection() {
   const [editing, setEditing] = useState<{ id: string; draft: ProviderDraft } | null>(null)
   const [creating, setCreating] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ProviderProfile | null>(null)
-  const [testingId, setTestingId] = useState<string | null>(null)
-  const [results, setResults] = useState<Record<string, string>>({})
-
-  function simulateConnectionTest(provider: ProviderProfile) {
-    setTestingId(provider.id)
-    setTimeout(() => {
-      const latency = 18 + (hashString(provider.label) % 64)
-      setResults((previous) => ({
-        ...previous,
-        [provider.id]: `Demo result: reachable (simulated) · ${latency}ms`,
-      }))
-      setTestingId(null)
-    }, 700)
-  }
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h3 className="text-sm font-medium text-ink">Providers and models</h3>
         <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">
-          Local configuration concepts — nothing is contacted. Click a model to
-          make it active; tool availability in the composer follows the model's
-          advertised capabilities.
+          Bring your own key: add any provider profile, connect it with an API key, and chat live
+          with the models it offers. Keys stay in this browser and are sent only to the endpoint
+          you configure. Demo profiles keep working fully offline.
         </p>
       </div>
 
@@ -296,7 +517,7 @@ export function ProvidersSection() {
             label: '',
             kind: 'openai-compatible',
             endpointUrl: '',
-            models: [emptyModel()],
+            models: [],
           }}
           onCancel={() => setCreating(false)}
           onSave={(draft) => {
@@ -358,7 +579,9 @@ export function ProvidersSection() {
                   <p className="text-xs font-medium text-ink-soft">Models (click to activate)</p>
                   <ul className="mt-1.5 flex flex-wrap gap-1.5">
                     {provider.models.length === 0 && (
-                      <li className="text-xs text-ink-faint">No models configured</li>
+                      <li className="text-xs text-ink-faint">
+                        No models yet — connect with an API key to discover them
+                      </li>
                     )}
                     {provider.models.map((model) => {
                       const isActiveModel = isActiveProvider && model.id === activeModelId
@@ -384,16 +607,9 @@ export function ProvidersSection() {
                   </ul>
                 </div>
 
+                <ConnectionBlock provider={provider} />
+
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    disabled={testingId === provider.id}
-                    onClick={() => simulateConnectionTest(provider)}
-                  >
-                    {testingId === provider.id ? <Spinner size={13} /> : <Zap size={13} />}
-                    Simulate connection test
-                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -426,11 +642,6 @@ export function ProvidersSection() {
                     <Trash2 size={13} />
                     Delete
                   </Button>
-                  {results[provider.id] && (
-                    <span aria-live="polite" className="text-xs font-medium text-success">
-                      {results[provider.id]}
-                    </span>
-                  )}
                 </div>
               </>
             )}
@@ -449,7 +660,7 @@ export function ProvidersSection() {
         open={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         title="Delete provider profile?"
-        body={`“${deleteTarget?.label ?? ''}” will be removed from this browser. If it holds the active model, the selection clears.`}
+        body={`“${deleteTarget?.label ?? ''}” will be removed from this browser, together with its saved API key. If it holds the active model, the selection clears.`}
         confirmLabel="Delete"
         destructive
         onConfirm={() => {
