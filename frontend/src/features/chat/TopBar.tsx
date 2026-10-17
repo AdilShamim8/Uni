@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Archive,
   ArchiveRestore,
+  Bot,
   Check,
   ChevronDown,
   Ghost,
@@ -17,6 +18,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { useAppStore, selectActiveConversation, selectActiveModel } from '@/state/store'
+import { useAgentsStore } from '@/state/agentsStore'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { IconButton } from '@/components/ui/IconButton'
@@ -29,6 +31,13 @@ import { conversationToMarkdown, downloadText, slugifyTitle } from './exportUtil
 export function TopBar() {
   const navigate = useNavigate()
   const conversation = useAppStore(selectActiveConversation)
+  const conversationAgent = useAppStore((state) => {
+    const agentId = state.activeConversationId
+      ? state.conversations[state.activeConversationId]?.agentId
+      : null
+    if (!agentId) return null
+    return useAgentsStore.getState().agents[agentId] ?? null
+  })
   const activeModel = useAppStore(selectActiveModel)
   const providers = useAppStore((state) => state.providers)
   const activeProviderId = useAppStore((state) => state.activeProviderId)
@@ -167,6 +176,15 @@ export function TopBar() {
         <h1 className="min-w-0 truncate text-sm font-medium text-ink">
           {conversation?.title ?? ''}
         </h1>
+        {conversationAgent && (
+          <Tooltip
+            label={`Scoped to the “${conversationAgent.name}” agent — its instructions apply to this conversation`}
+          >
+            <Badge tone="accent">
+              <Bot size={10} /> {conversationAgent.name}
+            </Badge>
+          </Tooltip>
+        )}
         {conversation?.temporary && (
           <Tooltip label="In-memory only — disappears on reload">
             <Badge tone="accent">

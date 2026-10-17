@@ -286,6 +286,8 @@ function serialize(state: AgentsStore) {
   }
 }
 
+let agentsStorageWarned = false
+
 export function flushAgentsPersistence(): void {
   if (saveTimer) {
     clearTimeout(saveTimer)
@@ -293,7 +295,17 @@ export function flushAgentsPersistence(): void {
   }
   const state = useAgentsStore.getState()
   if (!state.hydrated) return
-  saveAgentsSlice(serialize(state))
+  const saved = saveAgentsSlice(serialize(state))
+  // Never claim persistence when the write actually failed (milestone 03
+  // reliability: report storage failures honestly, once per session).
+  if (!saved && !agentsStorageWarned) {
+    agentsStorageWarned = true
+    import('@/state/store').then(({ useAppStore }) => {
+      useAppStore.getState().showToast(
+        'Local storage is full or blocked — agent changes may not survive a reload.',
+      )
+    })
+  }
 }
 
 useAgentsStore.subscribe(() => {

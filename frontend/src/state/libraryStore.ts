@@ -142,6 +142,8 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => ({
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 
+let libraryStorageWarned = false
+
 export function flushLibraryPersistence(): void {
   if (saveTimer) {
     clearTimeout(saveTimer)
@@ -149,10 +151,18 @@ export function flushLibraryPersistence(): void {
   }
   const state = useLibraryStore.getState()
   if (!state.hydrated) return
-  saveLibrarySlice({
+  const saved = saveLibrarySlice({
     artifacts: Object.values(state.artifacts),
     projects: Object.values(state.projects),
   })
+  if (!saved && !libraryStorageWarned) {
+    libraryStorageWarned = true
+    import('@/state/store').then(({ useAppStore }) => {
+      useAppStore.getState().showToast(
+        'Local storage is full or blocked — library changes may not survive a reload.',
+      )
+    })
+  }
 }
 
 useLibraryStore.subscribe(() => {

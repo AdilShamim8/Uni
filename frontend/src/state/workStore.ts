@@ -734,6 +734,8 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
 
 let saveTimer: ReturnType<typeof setTimeout> | undefined
 
+let workStorageWarned = false
+
 export function flushWorkPersistence(): void {
   if (saveTimer) {
     clearTimeout(saveTimer)
@@ -741,7 +743,15 @@ export function flushWorkPersistence(): void {
   }
   const state = useWorkStore.getState()
   if (!state.hydrated) return
-  saveWorkSlice({ tasks: Object.values(state.tasks) })
+  const saved = saveWorkSlice({ tasks: Object.values(state.tasks) })
+  if (!saved && !workStorageWarned) {
+    workStorageWarned = true
+    import('@/state/store').then(({ useAppStore }) => {
+      useAppStore.getState().showToast(
+        'Local storage is full or blocked — task changes may not survive a reload.',
+      )
+    })
+  }
 }
 
 useWorkStore.subscribe(() => {
