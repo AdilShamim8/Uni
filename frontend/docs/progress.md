@@ -25,6 +25,16 @@ Living document. Updated per milestone stage so any agent can continue from here
 | 10 | Settings + provider configuration | done |
 | 11 | Interaction tests (44 passing) | done |
 | 12 | Verification, screenshots, README, CI, handover | done |
+| 13 | iOS-inspired premium UI polish (4 commits, branch `feat/premium-ios-ui`) | done |
+| 14 | Reduced-transparency preference (toggle + OS tracking) | done |
+| 15 | BYOK: credential types + private storage | done |
+| 16 | BYOK: connection testing + model discovery | done |
+| 17 | BYOK: live streaming adapter (OpenAI-compat + Anthropic) | done |
+| 18 | BYOK: store wiring + live routing | done |
+| 19 | BYOK: Settings connect UI | done |
+| 20 | BYOK: top-bar Live indicator | done |
+| 21 | BYOK: 18-test suite (65 total) | done |
+| 22 | BYOK: E2E verification vs real local endpoint + docs | done |
 
 ## Decisions log
 
@@ -34,15 +44,19 @@ Living document. Updated per milestone stage so any agent can continue from here
 - 2026-10-17 — Tool availability derives from a model capability registry, not API-key presence.
 - 2026-10-17 — Mock adapter is deterministic (hash-seeded); `/fail` prefix simulates errors for testing retry states.
 - 2026-10-17 — Tests surfaced and fixed a real bug: sending from the root route now renders the transcript (display falls back to the store's active conversation without breaking browser Back).
+- 2026-10-17 — BYOK keys live under their own storage key (`universe:credentials:v1`), never inside `universe:data`, so exports and shares cannot leak credentials. Keys are only sent to the endpoint the user configured, directly from the browser.
+- 2026-10-17 — A key that fails authentication is never persisted; failed tests against an existing credential downgrade it to `error` with the diagnostic.
+- 2026-10-17 — Adapter routing resolves per turn: connected credential + selected model → live adapter; otherwise the deterministic demo adapter. Provider “kind” only decides wire protocol (OpenAI-compatible vs Anthropic native).
+- 2026-10-17 — Successful connects adopt the endpoint's discovered model list and mark the profile live; first model auto-activates only when the user has no other active model.
 
 ## Checks (final, 2026-10-17)
 
 - `npm run lint` — pass (0 problems)
 - `npm run typecheck` — pass
-- `npm run build` — pass (chunked; ≈184 KB gzip total)
-- `npm test` — 44/44 passing (8 files)
-- Headless browser: no horizontal overflow at 375/768/1440px, no console errors, network log shows only same-origin asset requests (no outbound calls)
-- 12 screenshots captured and reviewed (vision-model QA: CLEAN) — see `verification.md`
+- `npm run build` — pass (chunked; ≈211 KB gzip total)
+- `npm test` — 65/65 passing (9 files)
+- Headless browser (BYOK pass): connect → discover models → live SSE chat → reload persistence → wrong-key 401 honesty; zero console/page errors; no overflow at 375/1440px; network log shows only same-origin assets + the user-configured endpoint
+- Vision QA: providers 9/10, live chat 9.5/10, dark mode 9.5/10 — all PASS
 
 Details and honest limits (screen-reader pass, axe audit, real-IME, real devices, cross-browser matrix): `verification.md`.
 

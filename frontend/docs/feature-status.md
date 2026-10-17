@@ -15,7 +15,7 @@ fixtures and clear labeling; "deferred" means consciously not built here.
 | Recent conversations grouped by date | Working | Pinned / Today / Yesterday / 7d / 30d / Older |
 | Archived view | Working | Toggle in sidebar footer of history |
 | Projects / Work / Email entries | Working (explanatory previews) | Subdued, open honest "later milestone" dialogs |
-| Provider/model picker in top bar | Working (local config) | Selection persisted; profiles are configuration concepts |
+| Provider/model picker in top bar | Working | Selection persisted; live providers marked with status dot + Live hint |
 | Temporary-chat indicator + toggle | Working | In-memory only |
 | Shared links | Unavailable (labeled) | Top-bar menu states it and points to Markdown export |
 
@@ -23,7 +23,8 @@ fixtures and clear labeling; "deferred" means consciously not built here.
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Deterministic simulated streaming | Simulated (labeled) | Hash-seeded responses; word-level chunks |
+| Deterministic simulated streaming | Simulated (labeled) | Default when no key is connected; hash-seeded responses |
+| Live provider streaming (BYOK) | Working | Real SSE from any OpenAI-compatible or Anthropic endpoint the user connects |
 | Stop generation | Working | AbortSignal honored; stopped state shown |
 | Retry after error | Working | `/fail` prefix triggers a simulated failure |
 | Regenerate → variants | Working | Sibling creation, `1/2` switcher |
@@ -52,12 +53,14 @@ fixtures and clear labeling; "deferred" means consciously not built here.
 | --- | --- | --- |
 | Theme (light/dark/system) | Working | Pre-hydration boot; OS sync |
 | Density / text size | Working | Applied to document root |
+| Reduced transparency | Working | Toggle + live OS `prefers-reduced-transparency` tracking |
 | Send-key behavior | Working | Persisted |
-| Personalization fields | Working (local) | Passed to the demo adapter only |
+| Personalization fields | Working (local) | Travel in the system prompt for both demo and live turns |
 | Export all data / clear history / reset demo | Working | Confirmations for destructive actions |
-| Provider profile CRUD + models | Working (local config) | Capability labels per model |
-| API key entry | Deferred (disabled placeholder) | Never solicited, stored, logged, or sent |
-| Connection test | Simulated (labeled) | Button reads "Simulate connection test" |
+| Provider profile CRUD + models | Working | Any OpenAI-compatible or Anthropic endpoint; suggested base URLs per type |
+| API key entry + connect (BYOK) | Working | Masked input, reveal toggle, Enter-to-connect; stored only in this browser |
+| Connection test | Working (real) | Live endpoint check with latency, model discovery, honest 401/403/404/429/CORS diagnostics |
+| Disconnect / key hygiene | Working | Bad keys are never persisted; export never contains credentials |
 | Privacy & about | Working | Local persistence, independence, attributions |
 
 ## Advanced previews
@@ -74,5 +77,7 @@ fixtures and clear labeling; "deferred" means consciously not built here.
 
 ## Explicitly not in this milestone
 
-Backend, database, real authentication, provider SDK calls, paid calls,
-analytics, external integrations, Work and Email products, code execution.
+Backend, database, real authentication, provider SDK calls through a server,
+paid calls, analytics, external integrations, Work and Email products, code
+execution. (BYOK requests go browser → user's endpoint directly, with no
+Universe server in between.)
