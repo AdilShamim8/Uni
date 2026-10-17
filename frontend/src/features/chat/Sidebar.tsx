@@ -341,6 +341,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
       <div className="p-2">
         <Menu
           align="start"
+          direction="up"
           width="w-60"
           label="Account menu"
           trigger={

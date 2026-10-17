@@ -61,10 +61,10 @@ export function ToolPicker({ selected, onToggle, capabilities }: ToolPickerProps
             key={tool.id}
             icon={tool.icon}
             description={tool.description}
+            selection="checkbox"
             selected={isSelected}
             disabled={!available}
             onClick={() => onToggle(tool.id)}
-            aria-checked={isSelected}
           >
             {tool.label}
           </MenuItem>

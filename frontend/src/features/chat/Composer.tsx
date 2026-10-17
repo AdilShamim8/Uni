@@ -28,6 +28,39 @@ export interface ComposerHandle {
   setText: (text: string) => void
 }
 
+/**
+ * Per-conversation draft storage (module scope, in-memory only).
+ *
+ * Drafts typed in one conversation must not leak into another, must
+ * survive switching conversations mid-thought, and must never be cleared
+ * by the completion of a turn that was submitted earlier (audit D2).
+ */
+interface DraftSnapshot {
+  text: string
+  tools: ToolId[]
+  pending: PendingAttachment[]
+}
+
+const drafts = new Map<string, DraftSnapshot>()
+
+function loadDraft(key: string): DraftSnapshot {
+  return drafts.get(key) ?? { text: '', tools: [], pending: [] }
+}
+
+/** Keep the draft map bounded; evicted entries release their object URLs. */
+const MAX_DRAFTS = 24
+
+function pruneDrafts(): void {
+  while (drafts.size > MAX_DRAFTS) {
+    const oldestKey = drafts.keys().next().value as string
+    const evicted = drafts.get(oldestKey)
+    drafts.delete(oldestKey)
+    for (const attachment of evicted?.pending ?? []) {
+      if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
+    }
+  }
+}
+
 export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref) {
   const sendKey = useAppStore((state) => state.preferences.sendKey)
   const sendMessage = useAppStore((state) => state.sendMessage)
@@ -70,17 +103,53 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pendingRef = useRef<PendingAttachment[]>([])
+  const toolsRef = useRef<ToolId[]>([])
+  const textRef = useRef('')
+
+  // Which conversation this composer is currently writing into. '/' shows
+  // the store's active conversation, so derive the key from whichever
+  // conversation is actually being displayed.
+  const draftKey = useAppStore((state) => state.activeConversationId ?? 'new')
+  const draftKeyRef = useRef(draftKey)
 
   useEffect(() => {
     pendingRef.current = pending
   }, [pending])
+  useEffect(() => {
+    toolsRef.current = tools
+  }, [tools])
+  useEffect(() => {
+    textRef.current = text
+  }, [text])
 
-  // Release object URLs when the composer unmounts.
+  // Save the outgoing draft when the target conversation changes, then
+  // load the incoming conversation's own draft. Drafts never mix.
+  useEffect(() => {
+    if (draftKeyRef.current === draftKey) return
+    drafts.set(draftKeyRef.current, {
+      text: textRef.current,
+      tools: toolsRef.current,
+      pending: pendingRef.current,
+    })
+    const next = loadDraft(draftKey)
+    draftKeyRef.current = draftKey
+    setText(next.text)
+    setTools(next.tools)
+    setPending(next.pending)
+    setErrors([])
+    pruneDrafts()
+  }, [draftKey])
+
+  // When the composer unmounts (e.g. navigating to Work), keep the draft
+  // alive so it comes back on return. Only pruned entries lose their URLs.
   useEffect(() => {
     return () => {
-      for (const attachment of pendingRef.current) {
-        if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
-      }
+      drafts.set(draftKeyRef.current, {
+        text: textRef.current,
+        tools: toolsRef.current,
+        pending: pendingRef.current,
+      })
+      pruneDrafts()
     }
   }, [])
 
@@ -140,16 +209,25 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
 
   async function handleSend() {
     if (!canSend) return
-    const attachments: AttachmentMeta[] = pending.map(toAttachmentMeta)
+    // Snapshot exactly what is being submitted, then clear the composer
+    // immediately. Clearing must never wait for the stream to finish —
+    // anything typed while the reply streams belongs to the NEXT message
+    // and must survive the turn's completion (audit D2).
+    const submittedText = text
+    const submittedPending = pending
+    const submittedTools = tools
+    const attachments: AttachmentMeta[] = submittedPending.map(toAttachmentMeta)
+    setText('')
+    setPending([])
+    setErrors([])
     try {
-      await sendMessage({ text, attachments, tools })
+      await sendMessage({ text: submittedText, attachments, tools: submittedTools })
     } finally {
-      for (const attachment of pending) {
+      // Revoke only the object URLs that belonged to the submitted
+      // payload — later drafts keep theirs.
+      for (const attachment of submittedPending) {
         if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
       }
-      setText('')
-      setPending([])
-      setErrors([])
     }
   }
 
