@@ -1,13 +1,18 @@
 /*
- * Universe design tokens.
+ * Universe design tokens — premium iOS-inspired system.
  * Specification and rationale: frontend/docs/design-tokens.md
+ *
  * Every color is semantic; components consume them through Tailwind
  * theme aliases (bg-canvas, text-ink, border-line, ...) — never raw hex.
+ *
+ * Material surfaces use controlled translucency. Every material has an
+ * opaque fallback that is used when backdrop-filter is unsupported or
+ * when the user enables Reduce transparency in Settings.
  */
 
 :root {
   /* Layout geometry */
-  --w-sidebar: 264px;
+  --w-sidebar: 268px;
   --w-rail: 64px;
   --w-column: 760px;
 
@@ -16,19 +21,26 @@
   --gap-chat: 28px;
   --pad-compose: 18px;
 
-  /* Typography */
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
-    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  /* Typography — system stack, never redistributed */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas,
     'Liberation Mono', monospace;
 
-  /* Shadows — low and diffuse */
-  --shadow-soft: 0 1px 2px rgba(38, 36, 31, 0.06), 0 4px 12px rgba(38, 36, 31, 0.07);
-  --shadow-raised: 0 4px 16px rgba(38, 36, 31, 0.1), 0 12px 40px rgba(38, 36, 31, 0.12);
+  /* Radii — controls 10–12, grouped surfaces 14–16, composer/overlays 22–24 */
+  --r-control: 12px;
+  --r-group: 16px;
+  --r-composer: 24px;
+  --r-overlay: 24px;
 
-  /* Motion */
-  --motion-fast: 120ms;
-  --motion-normal: 180ms;
+  /* Material blur (applied only where a real layer exists) */
+  --blur-material: saturate(180%) blur(24px);
+  --blur-material-soft: saturate(160%) blur(14px);
+
+  /* Motion — subtle, 140–220ms opacity/transform */
+  --motion-fast: 140ms;
+  --motion-normal: 200ms;
+  --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
 /* ---------- Light theme (default) ---------- */
@@ -37,41 +49,65 @@
 [data-theme='light'] {
   color-scheme: light;
 
-  --c-canvas: #ffffff;
-  --c-panel: #faf9f7;
-  --c-subtle: #f1efe9;
+  /* Base surfaces */
+  --c-canvas: #f5f5f7;
+  --c-panel: #ffffff;
+  --c-subtle: #ececef;
   --c-raised: #ffffff;
   --c-overlay: #ffffff;
-  --c-inverse: #26241f;
-  --c-line: #e7e4dc;
-  --c-line-strong: #d5d1c7;
+  --c-inverse: #1d1d1f;
+  --c-line: #e6e6eb;
+  --c-line-strong: #d8d8de;
 
-  --c-ink: #26241f;
-  --c-ink-soft: #5d5a52;
-  --c-ink-faint: #8b867a;
-  --c-ink-inverse: #f5f4f0;
+  /* Ink */
+  --c-ink: #1d1d1f;
+  --c-ink-soft: #606067;
+  --c-ink-faint: #8e8e96;
+  --c-ink-inverse: #ffffff;
 
-  --c-accent: #6d28d9;
-  --c-accent-strong: #5b21b6;
-  --c-accent-soft: #efeaf9;
+  /* Accent */
+  --c-accent: #6953d9;
+  --c-accent-strong: #5a46c6;
+  --c-accent-soft: #efecfb;
+  --c-accent-contrast: #ffffff;
 
-  --c-danger: #b3261e;
+  /* Status */
+  --c-danger: #c9352c;
   --c-danger-soft: #fdeeec;
-  --c-success: #1b7f4d;
-  --c-success-soft: #e9f5ee;
-  --c-warning: #92600a;
-  --c-warning-soft: #fdf3e2;
+  --c-success: #1d7f4e;
+  --c-success-soft: #e8f5ee;
+  --c-warning: #8a5a08;
+  --c-warning-soft: #fdf3e1;
 
-  --c-scrim: rgba(38, 36, 31, 0.42);
+  /* Interaction semantics */
+  --c-focus-ring: rgba(105, 83, 217, 0.35);
+  --c-selection: rgba(105, 83, 217, 0.18);
+  --c-hover-wash: rgba(29, 29, 31, 0.045);
+  --c-active-wash: rgba(29, 29, 31, 0.08);
+  --c-scrim: rgba(29, 29, 31, 0.4);
+  --c-disabled-fg: #b0b0b8;
 
-  --c-code-bg: #f6f4ef;
-  --c-code-base: #26241f;
-  --c-code-keyword: #6d28d9;
-  --c-code-string: #1b7f4d;
-  --c-code-comment: #8b867a;
-  --c-code-number: #b3261e;
+  /* Code */
+  --c-code-bg: #f6f6f9;
+  --c-code-base: #1d1d1f;
+  --c-code-keyword: #6953d9;
+  --c-code-string: #1d7f4e;
+  --c-code-comment: #8e8e96;
+  --c-code-number: #c9352c;
   --c-code-attr: #0e7490;
-  --c-code-title: #5b21b6;
+  --c-code-title: #5a46c6;
+
+  /* Shadows — low, diffuse, layered */
+  --shadow-soft: 0 1px 2px rgba(29, 27, 32, 0.04), 0 4px 16px rgba(29, 27, 32, 0.05);
+  --shadow-raised: 0 2px 8px rgba(29, 27, 32, 0.06), 0 12px 40px rgba(29, 27, 32, 0.12);
+  --shadow-composer: 0 1px 2px rgba(29, 27, 32, 0.03), 0 8px 28px rgba(29, 27, 32, 0.07);
+
+  /* Materials — opaque fallbacks (also used under Reduce transparency) */
+  --mat-sidebar: #f0f0f4;
+  --mat-header: rgba(245, 245, 247, 0.88);
+  --mat-menu: #ffffff;
+  --mat-overlay: #ffffff;
+  --mat-popover: #ffffff;
 }
 
 /* ---------- Dark theme ---------- */
@@ -79,41 +115,82 @@
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --c-canvas: #1c1c21;
-  --c-panel: #151519;
-  --c-subtle: #232329;
-  --c-raised: #232329;
-  --c-overlay: #2a2a31;
-  --c-inverse: #eceae6;
-  --c-line: #2e2e36;
-  --c-line-strong: #3c3c45;
+  --c-canvas: #111113;
+  --c-panel: #1c1c1f;
+  --c-subtle: #28282d;
+  --c-raised: #1c1c1f;
+  --c-overlay: #1c1c1f;
+  --c-inverse: #f5f5f7;
+  --c-line: #2a2a2f;
+  --c-line-strong: #3a3a41;
 
-  --c-ink: #eceae6;
-  --c-ink-soft: #a8a49b;
-  --c-ink-faint: #7c786f;
-  --c-ink-inverse: #1c1c21;
+  --c-ink: #f5f5f7;
+  --c-ink-soft: #b0b0b8;
+  --c-ink-faint: #85858e;
+  --c-ink-inverse: #141416;
 
-  --c-accent: #b39dfa;
-  --c-accent-strong: #c7b8fd;
-  --c-accent-soft: #2e2a40;
+  --c-accent: #b5a3ff;
+  --c-accent-strong: #c9baff;
+  --c-accent-soft: #2b2741;
+  --c-accent-contrast: #141416;
 
-  --c-danger: #f18a84;
+  --c-danger: #f08a80;
   --c-danger-soft: #3a2422;
-  --c-success: #6fcf97;
-  --c-success-soft: #1d2f26;
-  --c-warning: #e5b567;
-  --c-warning-soft: #382c1a;
+  --c-success: #74d09a;
+  --c-success-soft: #1c2f25;
+  --c-warning: #e3b565;
+  --c-warning-soft: #362a18;
 
-  --c-scrim: rgba(0, 0, 0, 0.55);
+  --c-focus-ring: rgba(181, 163, 255, 0.4);
+  --c-selection: rgba(181, 163, 255, 0.26);
+  --c-hover-wash: rgba(245, 245, 247, 0.06);
+  --c-active-wash: rgba(245, 245, 247, 0.1);
+  --c-scrim: rgba(0, 0, 0, 0.58);
+  --c-disabled-fg: #5a5a63;
 
-  --c-code-bg: #19191e;
-  --c-code-base: #eceae6;
-  --c-code-keyword: #b39dfa;
-  --c-code-string: #6fcf97;
-  --c-code-comment: #7c786f;
-  --c-code-number: #f18a84;
+  --c-code-bg: #19191d;
+  --c-code-base: #f5f5f7;
+  --c-code-keyword: #b5a3ff;
+  --c-code-string: #74d09a;
+  --c-code-comment: #85858e;
+  --c-code-number: #f08a80;
   --c-code-attr: #7ec8e3;
-  --c-code-title: #c7b8fd;
+  --c-code-title: #c9baff;
+
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.5), 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 28px rgba(0, 0, 0, 0.45);
+
+  --mat-sidebar: #161618;
+  --mat-header: rgba(17, 17, 19, 0.86);
+  --mat-menu: #242428;
+  --mat-overlay: #1f1f23;
+  --mat-popover: #242428;
+}
+
+/* ---------- Translucent materials ------------------------------------
+ * Applied only when backdrop-filter is supported AND the user has not
+ * requested reduced transparency. Values are verified against the
+ * composited canvas behind each layer.
+ * ------------------------------------------------------------------ */
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  :root:not([data-transparency='off']),
+  :root:not([data-transparency='off'])[data-theme='light'] {
+    --mat-sidebar: rgba(238, 238, 242, 0.78);
+    --mat-header: rgba(245, 245, 247, 0.72);
+    --mat-menu: rgba(255, 255, 255, 0.86);
+    --mat-overlay: rgba(255, 255, 255, 0.88);
+    --mat-popover: rgba(255, 255, 255, 0.92);
+  }
+
+  :root:not([data-transparency='off'])[data-theme='dark'] {
+    --mat-sidebar: rgba(21, 21, 24, 0.78);
+    --mat-header: rgba(17, 17, 19, 0.68);
+    --mat-menu: rgba(36, 36, 40, 0.88);
+    --mat-overlay: rgba(30, 30, 34, 0.9);
+    --mat-popover: rgba(36, 36, 40, 0.92);
+  }
 }
 
 /* ---------- Text size (application preference) ---------- */

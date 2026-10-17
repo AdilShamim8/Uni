@@ -25,13 +25,13 @@ export function Switch({ checked, onChange, label, description, className = '' }
         aria-checked={checked}
         aria-label={label}
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+        className={`min-touch relative h-[26px] w-[44px] shrink-0 rounded-full transition-colors duration-[var(--motion-fast)] ${
           checked ? 'bg-accent' : 'bg-line-strong'
         }`}
       >
         <span
-          className={`absolute top-[3px] h-[18px] w-[18px] rounded-full bg-white shadow transition-transform ${
-            checked ? 'translate-x-[22px]' : 'translate-x-[3px]'
+          className={`absolute top-[2px] h-[22px] w-[22px] rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.25),0_1px_1px_rgba(0,0,0,0.12)] transition-transform duration-[var(--motion-normal)] [transition-timing-function:var(--ease-spring)] ${
+            checked ? 'translate-x-[20px]' : 'translate-x-[2px]'
           }`}
         />
       </button>

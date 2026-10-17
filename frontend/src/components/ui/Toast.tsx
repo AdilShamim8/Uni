@@ -13,8 +13,8 @@ export function ToastHost() {
   if (!toast) return null
 
   return createPortal(
-    <div aria-live="polite" className="pointer-events-none fixed bottom-6 left-1/2 z-[70] -translate-x-1/2">
-      <div className="pointer-events-auto flex items-center gap-3 rounded-xl border border-line bg-overlay px-4 py-2.5 shadow-raised">
+    <div aria-live="polite" className="pointer-events-none fixed bottom-6 left-1/2 z-[70] -translate-x-1/2 safe-bottom">
+      <div className="pop-in material pointer-events-auto flex items-center gap-3 rounded-group border border-line bg-mat-popover px-4 py-2.5 shadow-raised">
         <p className="text-sm text-ink">{toast.message}</p>
         {toast.actionLabel && (
           <button
@@ -23,7 +23,7 @@ export function ToastHost() {
               toast.onAction?.()
               dismiss()
             }}
-            className="shrink-0 text-sm font-medium text-accent hover:text-accent-strong"
+            className="min-touch shrink-0 rounded-control px-1 text-sm font-semibold text-accent transition-colors hover:text-accent-strong"
           >
             {toast.actionLabel}
           </button>

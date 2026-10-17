@@ -35,6 +35,9 @@ interface TriggerWiring {
 /**
  * Lightweight dropdown menu: click or keyboard toggle, ArrowUp/Down
  * navigation, Escape closes and restores focus to the trigger.
+ *
+ * The panel uses the translucent menu material (opaque fallback built in)
+ * and closes itself when another surface (e.g. a dialog) opens on top.
  */
 export function Menu({ trigger, children, align = 'end', width = 'w-56', label }: MenuProps) {
   const [open, setOpen] = useState(false)
@@ -55,8 +58,16 @@ export function Menu({ trigger, children, align = 'end', width = 'w-56', label }
         triggerRef.current?.focus()
       }
     }
+    // Close when focus moves into a modal surface (e.g. a dialog opened
+    // from this menu) so interactive layers never stack visually.
+    const onFocusIn = (event: FocusEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
     document.addEventListener('mousedown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
+    document.addEventListener('focusin', onFocusIn)
     const first = menuRef.current?.querySelector<HTMLElement>(
       '[role="menuitem"]:not([disabled])',
     )
@@ -64,6 +75,7 @@ export function Menu({ trigger, children, align = 'end', width = 'w-56', label }
     return () => {
       document.removeEventListener('mousedown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
+      document.removeEventListener('focusin', onFocusIn)
     }
   }, [open])
 
@@ -102,7 +114,7 @@ export function Menu({ trigger, children, align = 'end', width = 'w-56', label }
           role="menu"
           aria-label={label}
           onKeyDown={handleMenuKeyDown}
-          className={`absolute top-[calc(100%+6px)] z-40 ${align === 'end' ? 'right-0' : 'left-0'} ${width} rounded-xl border border-line bg-overlay p-1.5 shadow-soft`}
+          className={`pop-in material absolute top-[calc(100%+6px)] z-40 ${align === 'end' ? 'right-0' : 'left-0'} ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
         >
           <MenuContext.Provider value={{ close }}>{children}</MenuContext.Provider>
         </div>
@@ -119,17 +131,25 @@ export interface MenuItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode
 }
 
-export function MenuItem({ icon, danger, hint, className = '', children, ...props }: MenuItemProps) {
+export function MenuItem({
+  icon,
+  danger,
+  hint,
+  className = '',
+  onClick,
+  children,
+  ...props
+}: MenuItemProps) {
   const context = useContext(MenuContext)
   return (
     <button
       type="button"
       role="menuitem"
-      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50 ${
+      className={`flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50 ${
         danger ? 'text-danger hover:bg-danger-soft' : 'text-ink hover:bg-subtle'
       } ${className}`}
       onClick={(event) => {
-        props.onClick?.(event)
+        onClick?.(event)
         if (!event.defaultPrevented) context?.close()
       }}
       {...props}

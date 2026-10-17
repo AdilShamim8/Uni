@@ -27,6 +27,7 @@ export default {
           DEFAULT: 'var(--c-accent)',
           strong: 'var(--c-accent-strong)',
           soft: 'var(--c-accent-soft)',
+          contrast: 'var(--c-accent-contrast)',
         },
         danger: {
           DEFAULT: 'var(--c-danger)',
@@ -40,6 +41,19 @@ export default {
           DEFAULT: 'var(--c-warning)',
           soft: 'var(--c-warning-soft)',
         },
+        mat: {
+          sidebar: 'var(--mat-sidebar)',
+          header: 'var(--mat-header)',
+          menu: 'var(--mat-menu)',
+          overlay: 'var(--mat-overlay)',
+          popover: 'var(--mat-popover)',
+        },
+      },
+      borderRadius: {
+        control: 'var(--r-control)',
+        group: 'var(--r-group)',
+        composer: 'var(--r-composer)',
+        overlay: 'var(--r-overlay)',
       },
       fontFamily: {
         sans: ['var(--font-sans)'],

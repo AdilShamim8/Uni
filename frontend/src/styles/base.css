@@ -17,20 +17,45 @@ body {
   font-family: var(--font-sans);
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
-/* Keyboard focus is always visible and token-driven. */
+/* Keyboard focus is always visible, token-driven, and never clipped
+ * by scroll containers (outline draws outside the element). */
 :focus-visible {
   outline: 2px solid var(--c-accent);
   outline-offset: 2px;
+  border-radius: inherit;
 }
 
 ::selection {
-  background: var(--c-accent-soft);
+  background: var(--c-selection);
 }
 
-/* Scrollbars */
+/* Material helper — applied to translucent navigation and overlays.
+ * The background color itself comes from the --mat-* variables, which
+ * already fall back to opaque values when translucency is unavailable. */
+.material {
+  -webkit-backdrop-filter: var(--blur-material);
+  backdrop-filter: var(--blur-material);
+}
+.material-soft {
+  -webkit-backdrop-filter: var(--blur-material-soft);
+  backdrop-filter: var(--blur-material-soft);
+}
+
+/* Touch targets: controls that matter on touch devices stay reachable
+ * even when their visual size is compact (hover-capable pointers get
+ * the precise desktop sizing). */
+@media (hover: none) {
+  .min-touch {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Scrollbars — quiet, overlay-friendly */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--c-line-strong) transparent;
@@ -45,6 +70,18 @@ body {
 }
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* Safe areas: mobile shells and the composer respect notches and home
+ * indicators without extra JavaScript. */
+.safe-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.safe-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Streaming caret (paused automatically under reduced motion) */
@@ -66,6 +103,22 @@ body {
   border-radius: 1px;
   background: var(--c-accent);
   animation: universe-caret-blink 1s step-end infinite;
+}
+
+/* Subtle entrance for menus and popovers (skipped under reduced motion) */
+@keyframes universe-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.pop-in {
+  transform-origin: top;
+  animation: universe-pop var(--motion-fast) var(--ease-spring) both;
 }
 
 /* Syntax highlighting tokens (used by rehype-highlight output) */
