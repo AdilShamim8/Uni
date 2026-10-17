@@ -14,6 +14,7 @@ export function App() {
   const setUi = useAppStore((state) => state.setUi)
   const density = useAppStore((state) => state.preferences.density)
   const textSize = useAppStore((state) => state.preferences.textSize)
+  const reducedTransparency = useAppStore((state) => state.preferences.reducedTransparency)
 
   useEffect(() => {
     initialize()
@@ -25,6 +26,23 @@ export function App() {
     root.setAttribute('data-density', density)
     root.setAttribute('data-textsize', textSize)
   }, [density, textSize])
+
+  // Translucent materials turn opaque when the user asks for it or when the
+  // OS reports a reduced-transparency preference. The OS setting is tracked
+  // live so the UI follows system changes without a reload.
+  useEffect(() => {
+    const root = document.documentElement
+    const query = window.matchMedia?.('(prefers-reduced-transparency: reduce)')
+    const apply = () => {
+      const off = reducedTransparency || (query?.matches ?? false)
+      root.setAttribute('data-transparency', off ? 'off' : 'on')
+    }
+    apply()
+    if (query) {
+      query.addEventListener('change', apply)
+      return () => query.removeEventListener('change', apply)
+    }
+  }, [reducedTransparency])
 
   // Global shortcut: Ctrl/Cmd+K opens conversation search.
   useEffect(() => {

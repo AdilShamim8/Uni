@@ -34,6 +34,13 @@ describe('settings', () => {
     expect(document.documentElement.getAttribute('data-textsize')).toBe('s')
   })
 
+  it('toggles reduced transparency on the document root', async () => {
+    const dialog = await openSettings()
+    await userEvent.setup().click(dialog.getByRole('switch', { name: 'Reduce transparency' }))
+
+    expect(document.documentElement.getAttribute('data-transparency')).toBe('off')
+  })
+
   it('changes the send-key behavior preference', async () => {
     const dialog = await openSettings()
     const user = userEvent.setup()

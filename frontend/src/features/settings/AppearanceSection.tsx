@@ -2,11 +2,13 @@ import { Monitor, Moon, Sun } from 'lucide-react'
 import { useAppStore } from '@/state/store'
 import { useTheme } from '@/app/ThemeProvider'
 import { Segmented } from '@/components/ui/Segmented'
+import { Switch } from '@/components/ui/Switch'
 
 export function AppearanceSection() {
   const { theme, setTheme } = useTheme()
   const density = useAppStore((state) => state.preferences.density)
   const textSize = useAppStore((state) => state.preferences.textSize)
+  const reducedTransparency = useAppStore((state) => state.preferences.reducedTransparency)
   const updatePreferences = useAppStore((state) => state.updatePreferences)
 
   return (
@@ -62,6 +64,15 @@ export function AppearanceSection() {
             { value: 'm', label: 'Default' },
             { value: 'l', label: 'Large' },
           ]}
+        />
+      </section>
+
+      <section aria-label="Transparency">
+        <Switch
+          checked={reducedTransparency}
+          onChange={(value) => updatePreferences({ reducedTransparency: value })}
+          label="Reduce transparency"
+          description="Swaps translucent, blurred surfaces for solid colors. Also follows your operating system's reduce-transparency setting automatically."
         />
       </section>
     </div>

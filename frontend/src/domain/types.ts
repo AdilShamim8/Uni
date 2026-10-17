@@ -98,6 +98,8 @@ export interface Preferences {
   traits: string
   assistantPresetId: string | null
   sidebarCollapsed: boolean
+  /** Opaque fallback for translucent materials (also respects the OS setting). */
+  reducedTransparency: boolean
 }
 
 export interface PersistedState {
