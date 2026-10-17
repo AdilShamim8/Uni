@@ -44,16 +44,16 @@ export function ConversationListItem({ conversation, active, onSelect }: Convers
 
   return (
     <div
-      className={`group relative flex items-center rounded-[10px] ${
-        active ? 'bg-accent-soft' : 'hover:bg-subtle'
+      className={`group relative flex items-center rounded-control transition-colors duration-[var(--motion-fast)] ${
+        active ? 'bg-accent-soft' : 'hover:bg-[var(--c-hover-wash)]'
       }`}
     >
       <button
         type="button"
         onClick={() => onSelect(conversation.id)}
         aria-current={active ? 'page' : undefined}
-        className={`flex min-w-0 flex-1 items-center gap-2 py-[var(--pad-list-item)] pl-3 pr-1 text-left text-sm transition-colors ${
-          active ? 'font-medium text-accent' : 'text-ink'
+        className={`min-touch flex min-w-0 flex-1 items-center gap-2 py-[var(--pad-list-item)] pl-3 pr-1 text-left text-sm ${
+          active ? 'font-medium text-ink' : 'text-ink'
         }`}
       >
         <span className="min-w-0 flex-1 truncate">{conversation.title}</span>

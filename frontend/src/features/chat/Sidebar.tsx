@@ -21,7 +21,7 @@ import {
 import { groupConversations } from '@/domain/grouping'
 import { useAppStore } from '@/state/store'
 import { UniverseMark } from '@/components/layout/UniverseMark'
-import { Badge } from '@/components/ui/Tooltip'
+import { Badge, Tooltip } from '@/components/ui/Tooltip'
 import { IconButton } from '@/components/ui/IconButton'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { Button } from '@/components/ui/Button'
@@ -31,6 +31,48 @@ export interface SidebarProps {
   /** Mobile drawer renders the sidebar always-expanded. */
   forceExpanded?: boolean
 }
+
+/** Small contextual dot marking a simulated/preview entry (replaces text badges). */
+function AvailabilityDot({ label }: { label: string }) {
+  return (
+    <Tooltip label={label}>
+      <span
+        aria-label={label}
+        role="img"
+        className="ml-auto mr-1 inline-block h-[5px] w-[5px] shrink-0 rounded-full bg-ink-faint"
+      />
+    </Tooltip>
+  )
+}
+
+interface ToolEntry {
+  kind: 'research' | 'images' | 'voice' | 'canvas' | 'data' | 'presets'
+  label: string
+  icon: React.ReactNode
+  note: string
+}
+
+const TOOLS: ToolEntry[] = [
+  { kind: 'research', label: 'Research', icon: <Telescope size={16} />, note: 'Simulated — labeled preview' },
+  { kind: 'images', label: 'Images', icon: <ImageIcon size={16} />, note: 'Sample gallery' },
+  { kind: 'voice', label: 'Voice', icon: <Mic size={16} />, note: 'Sample — no microphone access' },
+  { kind: 'canvas', label: 'Canvas', icon: <PenTool size={16} />, note: 'Local session panel' },
+  { kind: 'data', label: 'Data analysis', icon: <BarChart3 size={16} />, note: 'Fixture dataset' },
+  { kind: 'presets', label: 'Assistant presets', icon: <Sparkles size={16} />, note: 'Local presets' },
+]
+
+interface LaterEntry {
+  kind: 'projects' | 'work' | 'email'
+  label: string
+  icon: React.ReactNode
+  note: string
+}
+
+const LATER: LaterEntry[] = [
+  { kind: 'projects', label: 'Projects', icon: <FolderKanban size={16} />, note: 'Planned — preview' },
+  { kind: 'work', label: 'Work', icon: <Briefcase size={16} />, note: 'Planned — preview' },
+  { kind: 'email', label: 'Email', icon: <Mail size={16} />, note: 'Planned — preview' },
+]
 
 export function Sidebar({ forceExpanded = false }: SidebarProps) {
   const navigate = useNavigate()
@@ -45,6 +87,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
 
   const collapsed = forceExpanded ? false : collapsedPreference
   const [showArchived, setShowArchived] = useState(false)
+  const [toolsOpen, setToolsOpen] = useState(true)
 
   const visible = useMemo(
     () =>
@@ -71,7 +114,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
 
   if (collapsed) {
     return (
-      <div className="flex h-full w-rail flex-col items-center gap-1 border-r border-line bg-panel py-3">
+      <div className="material flex h-full w-rail flex-col items-center gap-1 border-r border-line bg-mat-sidebar py-3">
         <IconButton
           label="Expand sidebar"
           onClick={() => updatePreferences({ sidebarCollapsed: false })}
@@ -105,146 +148,116 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
   }
 
   return (
-    <div className="flex h-full w-sidebar flex-col border-r border-line bg-panel">
-      {/* Identity */}
-      <div className="flex items-center gap-2 px-3 pb-2 pt-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5 px-1">
+    <div className="material safe-left flex h-full w-sidebar flex-col bg-mat-sidebar">
+      {/* Identity — one persistent, understandable demo indicator */}
+      <div className="flex items-center gap-2 px-3 pb-1 pt-3">
+        <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
           <UniverseMark size={22} className="shrink-0 text-ink" />
           <span className="truncate text-[15px] font-semibold tracking-tight text-ink">
             Universe
           </span>
-          <Badge tone="warning">Demo</Badge>
+          <Tooltip label="Demo workspace — responses are simulated locally. Add a provider in Settings to connect a real model with your own API key.">
+            <Badge className="cursor-help">Demo</Badge>
+          </Tooltip>
         </div>
         {!forceExpanded && (
           <IconButton
             label="Collapse sidebar"
+            size="sm"
             onClick={() => updatePreferences({ sidebarCollapsed: true })}
           >
-            <PanelLeftClose size={18} />
+            <PanelLeftClose size={16} />
           </IconButton>
         )}
       </div>
 
       {/* Primary actions */}
-      <div className="flex flex-col gap-1 px-2 pt-1">
-        <Button variant="secondary" className="justify-start" onClick={() => handleNewChat(false)}>
+      <div className="flex flex-col gap-0.5 px-2 pt-2">
+        <Button variant="primary" className="justify-start" onClick={() => handleNewChat(false)}>
           <Plus size={16} />
           New chat
         </Button>
-        <Button variant="ghost" className="justify-start" onClick={() => handleNewChat(true)}>
-          <Ghost size={16} />
-          New temporary chat
-        </Button>
-        <Button
-          variant="ghost"
-          className="justify-start"
-          onClick={() => setUi({ searchOpen: true })}
-        >
-          <Search size={16} />
-          Search conversations
-          <span aria-hidden="true" className="ml-auto hidden text-[11px] text-ink-faint sm:inline">
-            Ctrl K
-          </span>
-        </Button>
+        <div className="flex items-center gap-0.5">
+          <Button
+            variant="ghost"
+            className="min-w-0 flex-1 justify-start"
+            aria-label="New temporary chat"
+            onClick={() => handleNewChat(true)}
+          >
+            <Ghost size={16} />
+            Temporary
+          </Button>
+          <Button
+            variant="ghost"
+            className="min-w-0 flex-1 justify-start"
+            aria-label="Search conversations"
+            onClick={() => setUi({ searchOpen: true })}
+          >
+            <Search size={16} />
+            Search
+            <span aria-hidden="true" className="ml-auto hidden text-[11px] text-ink-faint sm:inline">
+              ⌘K
+            </span>
+          </Button>
+        </div>
       </div>
 
-      {/* Advanced workflow previews — labeled, local, honest */}
-      <div className="mt-2 border-t border-line px-2 pt-2">
-        <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-          Previews
-        </p>
-        <Button
-          variant="ghost"
-          className="justify-start"
-          onClick={() => openPreview({ kind: 'research' })}
+      {/* Tools — one coherent, collapsible group */}
+      <div className="mt-4 px-2">
+        <button
+          type="button"
+          aria-expanded={toolsOpen}
+          onClick={() => setToolsOpen((value) => !value)}
+          className="flex w-full items-center gap-1.5 rounded-control px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint transition-colors hover:text-ink-soft"
         >
-          <Telescope size={16} />
-          Research
-          <Badge className="ml-auto">Simulated</Badge>
-        </Button>
-        <Button
-          variant="ghost"
-          className="justify-start"
-          onClick={() => openPreview({ kind: 'images' })}
-        >
-          <ImageIcon size={16} />
-          Images
-          <Badge className="ml-auto">Sample</Badge>
-        </Button>
-        <Button
-          variant="ghost"
-          className="justify-start"
-          onClick={() => openPreview({ kind: 'voice' })}
-        >
-          <Mic size={16} />
-          Voice
-          <Badge className="ml-auto">Sample</Badge>
-        </Button>
-        <Button
-          variant="ghost"
-          className="justify-start"
-          onClick={() => openPreview({ kind: 'canvas' })}
-        >
-          <PenTool size={16} />
-          Canvas
-          <Badge className="ml-auto">Local</Badge>
-        </Button>
-        <Button
-          variant="ghost"
-          className="justify-start"
-          onClick={() => openPreview({ kind: 'data' })}
-        >
-          <BarChart3 size={16} />
-          Data analysis
-          <Badge className="ml-auto">Fixture</Badge>
-        </Button>
-        <Button
-          variant="ghost"
-          className="justify-start"
-          onClick={() => openPreview({ kind: 'presets' })}
-        >
-          <Sparkles size={16} />
-          Assistant presets
-          <Badge className="ml-auto">Local</Badge>
-        </Button>
+          Tools
+          <ChevronDown
+            size={12}
+            className={`transition-transform duration-[var(--motion-fast)] ${toolsOpen ? '' : '-rotate-90'}`}
+            aria-hidden="true"
+          />
+        </button>
+        {toolsOpen && (
+          <div className="mt-0.5 flex flex-col gap-0.5">
+            {TOOLS.map((tool) => (
+              <Button
+                key={tool.kind}
+                variant="ghost"
+                className="justify-start"
+                onClick={() => openPreview({ kind: tool.kind })}
+              >
+                {tool.icon}
+                {tool.label}
+                <AvailabilityDot label={tool.note} />
+              </Button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Future products — subdued entries with explanatory previews */}
-      <div className="mt-3 border-t border-line px-2 pt-2">
-        <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-          Coming later
+      {/* Later — subdued, out of daily navigation */}
+      <div className="mt-3 px-2">
+        <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint/80">
+          Later
         </p>
-        <Button
-          variant="ghost"
-          className="justify-start opacity-70"
-          onClick={() => openPreview({ kind: 'projects' })}
-        >
-          <FolderKanban size={16} />
-          Projects
-          <Badge className="ml-auto">Preview</Badge>
-        </Button>
-        <Button
-          variant="ghost"
-          className="justify-start opacity-70"
-          onClick={() => openPreview({ kind: 'work' })}
-        >
-          <Briefcase size={16} />
-          Work
-          <Badge className="ml-auto">Later</Badge>
-        </Button>
-        <Button
-          variant="ghost"
-          className="justify-start opacity-70"
-          onClick={() => openPreview({ kind: 'email' })}
-        >
-          <Mail size={16} />
-          Email
-          <Badge className="ml-auto">Later</Badge>
-        </Button>
+        <div className="flex flex-col gap-0.5">
+          {LATER.map((entry) => (
+            <Button
+              key={entry.kind}
+              variant="ghost"
+              className="justify-start text-ink-faint hover:text-ink-soft"
+              onClick={() => openPreview({ kind: entry.kind })}
+            >
+              {entry.icon}
+              {entry.label}
+              <AvailabilityDot label={entry.note} />
+            </Button>
+          ))}
+        </div>
       </div>
 
       {/* Conversation history */}
-      <div className="mt-3 flex min-h-0 flex-1 flex-col border-t border-line px-2 pt-2">
+      <div className="mt-4 flex min-h-0 flex-1 flex-col px-2">
         <div className="flex items-center justify-between px-2 pb-1">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
             {showArchived ? 'Archived' : 'Recent'}
@@ -253,9 +266,9 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
             <button
               type="button"
               onClick={() => setShowArchived((value) => !value)}
-              className="text-[11px] font-medium text-accent hover:text-accent-strong"
+              className="rounded px-1 text-[11px] font-medium text-ink-faint transition-colors hover:text-accent"
             >
-              {showArchived ? 'Back to recent' : `Archived (${archivedCount})`}
+              {showArchived ? 'Recent' : `Archived (${archivedCount})`}
             </button>
           )}
         </div>
@@ -269,7 +282,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
           )}
           {groups.map((group) => (
             <section key={group.key} className="mb-2">
-              <p className="px-2 pb-1 pt-2 text-[11px] font-medium text-ink-faint">
+              <p className="px-2 pb-1 pt-2 text-[11px] font-medium text-ink-faint/90">
                 {group.label}
               </p>
               <div className="flex flex-col gap-0.5">
@@ -288,7 +301,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
       </div>
 
       {/* Profile / settings */}
-      <div className="border-t border-line p-2">
+      <div className="p-2">
         <Menu
           align="start"
           width="w-60"
@@ -296,7 +309,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
           trigger={
             <button
               type="button"
-              className="flex w-full items-center gap-2.5 rounded-[10px] px-2 py-2 text-left transition-colors hover:bg-subtle"
+              className="flex min-touch w-full items-center gap-2.5 rounded-control px-2 py-2 text-left transition-colors hover:bg-[var(--c-hover-wash)]"
             >
               <span
                 aria-hidden="true"
@@ -307,7 +320,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium text-ink">Demo user</span>
                 <span className="block truncate text-xs text-ink-faint">
-                  Local prototype — no account
+                  Local — no account
                 </span>
               </span>
               <ChevronDown size={15} className="shrink-0 text-ink-faint" />

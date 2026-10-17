@@ -130,7 +130,11 @@ describe('chat flow', () => {
     const user = userEvent.setup()
     renderApp('/')
     await user.click(screen.getByRole('button', { name: 'New temporary chat' }))
-    expect(await screen.findByText('Temporary')).toBeInTheDocument()
+    // The top-bar temporary toggle reflects the active conversation state.
+    expect(await screen.findByRole('button', { name: 'Toggle temporary chat' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
 
     await user.type(screen.getByLabelText('Message Universe'), 'ephemeral brainstorm ideas')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
