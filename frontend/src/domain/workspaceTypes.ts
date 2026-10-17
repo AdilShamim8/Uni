@@ -85,6 +85,10 @@ export interface WorkTask {
   events: TaskEvent[]
   /** Active run id; guards against late events from stale runs. */
   currentRunId: string | null
+  /** Index of the next plan step to execute (persisted for resume). */
+  planCursor: number
+  /** Answers given to this execution's input requests (persisted for resume). */
+  runAnswers: string[]
   /** True when a reload interrupted a running simulation. */
   interrupted: boolean
   report: TaskReport | null
