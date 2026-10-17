@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react'
+import { useEffect, useId, useRef, type ReactNode, type RefObject } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import { IconButton } from './IconButton'
@@ -11,6 +11,8 @@ export interface DialogProps {
   children: ReactNode
   footer?: ReactNode
   size?: 'sm' | 'md' | 'lg'
+  /** Element to focus when the dialog opens. Falls back to the first focusable element. */
+  initialFocusRef?: RefObject<HTMLElement | null>
 }
 
 const SIZE_CLASSES = {
@@ -40,6 +42,7 @@ export function Dialog({
   children,
   footer,
   size = 'md',
+  initialFocusRef,
 }: DialogProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const restoreRef = useRef<HTMLElement | null>(null)
@@ -58,7 +61,8 @@ export function Dialog({
 
     const panel = panelRef.current
     const focusables = getFocusable(panel)
-    ;(focusables[0] ?? panel)?.focus()
+    const initialTarget = initialFocusRef?.current ?? focusables[0] ?? panel
+    initialTarget?.focus()
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -88,7 +92,7 @@ export function Dialog({
       document.removeEventListener('keydown', onKeyDown, true)
       restoreRef.current?.focus?.()
     }
-  }, [open])
+  }, [open, initialFocusRef])
 
   if (!open) return null
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Ghost, Pin, Search } from 'lucide-react'
 import { useAppStore, searchConversations } from '@/state/store'
@@ -15,6 +15,7 @@ export function SearchDialog() {
 
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(0)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const hits = useMemo(() => searchConversations(conversations, query), [conversations, query])
 
@@ -55,10 +56,17 @@ export function SearchDialog() {
   }
 
   return (
-    <Dialog open={open} onClose={close} title="Search conversations" size="md">
+    <Dialog
+      open={open}
+      onClose={close}
+      title="Search conversations"
+      size="md"
+      initialFocusRef={inputRef}
+    >
       <div className="flex items-center gap-2 rounded-[10px] border border-line bg-raised px-3">
         <Search size={16} className="shrink-0 text-ink-faint" aria-hidden="true" />
         <input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
