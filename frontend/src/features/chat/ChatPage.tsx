@@ -1,32 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { activePath } from '@/domain/conversationTree'
-import type { MessageNode } from '@/domain/types'
 import { useAppStore } from '@/state/store'
 import { TopBar } from './TopBar'
 import { EmptyState } from './EmptyState'
+import { MessageList } from './MessageList'
 import { Composer, type ComposerHandle } from './Composer'
-
-/**
- * Plain-text transcript used while the rich message renderer lands in the
- * next commits. Replaced by the full MessageList.
- */
-function SimpleTranscript({ path }: { path: MessageNode[] }) {
-  return (
-    <div className="mx-auto w-full max-w-column px-4 py-6">
-      {path.map((node) => (
-        <div key={node.id} className="border-b border-line py-4 last:border-b-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-ink-faint">
-            {node.role === 'user' ? 'You' : 'Universe (demo)'}
-          </p>
-          <p className="mt-1.5 whitespace-pre-wrap leading-relaxed text-ink">
-            {node.content || (node.status === 'streaming' ? '…' : '')}
-          </p>
-        </div>
-      ))}
-    </div>
-  )
-}
 
 export function ChatPage() {
   const { conversationId } = useParams()
@@ -53,7 +31,10 @@ export function ChatPage() {
     // sidebar highlight survives; ChatPage simply renders the empty state.
   }, [conversationId, conversations, navigate, selectConversation])
 
-  const path = useMemo(() => (conversation ? activePath(conversation) : []), [conversation])
+  const hasMessages = useMemo(
+    () => !!conversation && Object.keys(conversation.nodes).length > 0,
+    [conversation],
+  )
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -79,17 +60,17 @@ export function ChatPage() {
           setDragging(false)
         }}
       >
-        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-          {path.length === 0 ? (
+        {hasMessages && conversation ? (
+          <MessageList conversation={conversation} />
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <EmptyState
               onSuggestion={(text) => {
                 composerRef.current?.setText(text)
               }}
             />
-          ) : (
-            <SimpleTranscript path={path} />
-          )}
-        </div>
+          </div>
+        )}
         <Composer ref={composerRef} />
 
         {dragging && (
