@@ -11,8 +11,16 @@ export function ChatPage() {
   const navigate = useNavigate()
   const conversations = useAppStore((state) => state.conversations)
   const selectConversation = useAppStore((state) => state.selectConversation)
+  const storeActiveConversation = useAppStore((state) =>
+    state.activeConversationId ? state.conversations[state.activeConversationId] : null,
+  )
 
-  const conversation = conversationId ? conversations[conversationId] : null
+  // Display priority: the routed conversation when one is selected;
+  // otherwise the store's active conversation (so sending from "/" shows
+  // the transcript without a URL change, and browser Back still works).
+  const conversation = conversationId
+    ? (conversations[conversationId] ?? null)
+    : storeActiveConversation
   const composerRef = useRef<ComposerHandle>(null)
   const [dragging, setDragging] = useState(false)
 
@@ -35,6 +43,8 @@ export function ChatPage() {
     () => !!conversation && Object.keys(conversation.nodes).length > 0,
     [conversation],
   )
+
+  const conversationKey = conversation?.id
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -61,7 +71,7 @@ export function ChatPage() {
         }}
       >
         {hasMessages && conversation ? (
-          <MessageList conversation={conversation} />
+          <MessageList key={conversationKey} conversation={conversation} />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
             <EmptyState

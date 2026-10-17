@@ -142,7 +142,9 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         >
           <Search size={16} />
           Search conversations
-          <span className="ml-auto hidden text-[11px] text-ink-faint sm:inline">Ctrl K</span>
+          <span aria-hidden="true" className="ml-auto hidden text-[11px] text-ink-faint sm:inline">
+            Ctrl K
+          </span>
         </Button>
       </div>
 

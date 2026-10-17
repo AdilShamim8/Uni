@@ -541,9 +541,9 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', flushPersistence)
 }
 
-/** Test-only helper: wipe state + storage so a fresh initialize() can run. */
-export function resetStoreForTests(): void {
-  clearPersisted()
+/** Test-only helper: wipe state (and optionally storage) for a fresh run. */
+export function resetStoreForTests(options: { keepStorage?: boolean } = {}): void {
+  if (!options.keepStorage) clearPersisted()
   if (saveTimer) {
     clearTimeout(saveTimer)
     saveTimer = undefined
