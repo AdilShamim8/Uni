@@ -120,6 +120,20 @@ body {
   transform-origin: top;
   animation: universe-pop var(--motion-fast) var(--ease-spring) both;
 }
+.pop-in-up {
+  transform-origin: bottom;
+  animation: universe-pop-up var(--motion-fast) var(--ease-spring) both;
+}
+@keyframes universe-pop-up {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
 /* Syntax highlighting tokens (used by rehype-highlight output) */
 .hljs {

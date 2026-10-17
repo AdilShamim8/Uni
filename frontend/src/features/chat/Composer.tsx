@@ -9,6 +9,7 @@ import { ArrowUp, FileText, Paperclip, Square, X } from 'lucide-react'
 import type { AttachmentMeta, ToolId } from '@/domain/types'
 import { selectActiveModel, useAppStore } from '@/state/store'
 import { IconButton } from '@/components/ui/IconButton'
+import { Tooltip } from '@/components/ui/Tooltip'
 import {
   humanSize,
   MAX_FILES,
@@ -19,6 +20,7 @@ import {
 } from './attachments'
 import { shouldSubmit } from './sendKey'
 import { ToolPicker } from './ToolPicker'
+import { TOOL_REGISTRY } from './toolRegistry'
 
 export interface ComposerHandle {
   addFiles: (files: File[]) => void
@@ -140,23 +142,23 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
   }
 
   return (
-    <div className="mx-auto w-full max-w-column px-3 pb-3 pt-1 sm:px-4 sm:pb-4">
+    <div className="mx-auto w-full max-w-column px-3 pb-[max(var(--pad-compose),env(safe-area-inset-bottom,0px))] pt-1 sm:px-4">
       {/* Attachment chips */}
       {pending.length > 0 && (
         <ul className="mb-2 flex flex-wrap gap-2" aria-label="Attachments">
           {pending.map((attachment) => (
             <li
               key={attachment.id}
-              className="relative flex items-center gap-2 rounded-xl border border-line bg-raised py-1.5 pl-1.5 pr-7"
+              className="relative flex items-center gap-2 rounded-group border border-line bg-raised py-1.5 pl-1.5 pr-7"
             >
               {attachment.previewUrl ? (
                 <img
                   src={attachment.previewUrl}
                   alt=""
-                  className="h-9 w-9 shrink-0 rounded-lg object-cover"
+                  className="h-9 w-9 shrink-0 rounded-[10px] object-cover"
                 />
               ) : (
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-subtle text-ink-faint">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-subtle text-ink-faint">
                   <FileText size={16} />
                 </span>
               )}
@@ -185,7 +187,7 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
       {errors.length > 0 && (
         <div
           role="alert"
-          className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-danger bg-danger-soft px-3 py-2"
+          className="mb-2 flex items-start justify-between gap-3 rounded-group border border-danger bg-danger-soft px-3 py-2"
         >
           <ul className="min-w-0">
             {errors.map((error) => (
@@ -205,8 +207,34 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
         </div>
       )}
 
-      {/* Input area */}
-      <div className="rounded-2xl border border-line bg-raised shadow-soft transition-colors focus-within:border-accent">
+      {/* Input surface — solid, high-legibility, gently elevated */}
+      <div className="rounded-composer border border-line bg-raised shadow-[var(--shadow-composer)] transition-[border-color,box-shadow] duration-[var(--motion-fast)] focus-within:border-accent focus-within:shadow-composer focus-within:ring-[3px] focus-within:ring-[var(--c-focus-ring)]">
+        {/* Selected tools */}
+        {tools.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 px-3.5 pb-1 pt-3">
+            {tools.map((tool) => {
+              const definition = TOOL_REGISTRY.find((entry) => entry.id === tool)
+              return (
+                <span
+                  key={tool}
+                  className="inline-flex items-center gap-1 rounded-full bg-accent-soft py-1 pl-2.5 pr-1 text-xs font-medium text-accent"
+                >
+                  {definition?.icon}
+                  {definition?.label ?? tool}
+                  <button
+                    type="button"
+                    aria-label={`Remove ${definition?.label ?? tool} tool`}
+                    onClick={() => toggleTool(tool)}
+                    className="rounded-full p-0.5 transition-colors hover:bg-accent/15"
+                  >
+                    <X size={11} />
+                  </button>
+                </span>
+              )
+            })}
+          </div>
+        )}
+
         <label htmlFor="composer-input" className="sr-only">
           Message Universe
         </label>
@@ -218,9 +246,11 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
           onChange={(event) => setText(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Message Universe…"
-          className="block max-h-[220px] w-full resize-none bg-transparent px-4 pb-1 pt-3.5 text-[15px] leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none"
+          className="block max-h-[220px] w-full resize-none bg-transparent px-4 pb-2 pt-3.5 text-[16px] leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none"
         />
-        <div className="flex items-center gap-1.5 px-2.5 pb-2.5 pt-1">
+
+        {/* Action row — visually distinct from the writing area */}
+        <div className="flex items-center gap-1 border-t border-line/60 px-2.5 pb-2.5 pt-2">
           <input
             ref={fileInputRef}
             type="file"
@@ -233,9 +263,11 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
               event.target.value = ''
             }}
           />
-          <IconButton label="Attach files" onClick={() => fileInputRef.current?.click()}>
-            <Paperclip size={17} />
-          </IconButton>
+          <Tooltip label="Attach images or files (kept local)">
+            <IconButton label="Attach files" onClick={() => fileInputRef.current?.click()}>
+              <Paperclip size={17} />
+            </IconButton>
+          </Tooltip>
 
           <ToolPicker
             selected={tools}
@@ -251,9 +283,9 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
               aria-label="Stop generating"
               title="Stop generating"
               onClick={stopGeneration}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] bg-inverse text-ink-inverse transition-opacity hover:opacity-90"
+              className="min-touch inline-flex h-9 w-9 items-center justify-center rounded-full bg-inverse text-ink-inverse transition-opacity hover:opacity-90"
             >
-              <Square size={13} fill="currentColor" />
+              <Square size={12} fill="currentColor" />
             </button>
           ) : (
             <button
@@ -262,9 +294,9 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
               title="Send message"
               disabled={!canSend}
               onClick={() => void handleSend()}
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-[10px] transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+              className={`min-touch inline-flex h-9 w-9 items-center justify-center rounded-full transition-[background-color,color,opacity,transform] duration-[var(--motion-fast)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 ${
                 canSend
-                  ? 'bg-accent text-ink-inverse hover:bg-accent-strong'
+                  ? 'bg-accent text-accent-contrast shadow-soft hover:bg-accent-strong'
                   : 'bg-subtle text-ink-faint'
               }`}
             >
@@ -275,8 +307,8 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
       </div>
 
       <p className="mt-2 text-center text-[11px] leading-relaxed text-ink-faint">
-        Local demo — responses are simulated on this device, attachments are not
-        analyzed, and no provider is contacted.
+        Local demo — responses are simulated on this device and no provider is
+        contacted. Configure your own in Settings.
       </p>
     </div>
   )

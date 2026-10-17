@@ -9,6 +9,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react'
+import { Check } from 'lucide-react'
 
 interface MenuContextValue {
   close: () => void
@@ -21,6 +22,8 @@ export interface MenuProps {
   trigger: ReactElement
   children: ReactNode
   align?: 'start' | 'end'
+  /** Preferred open direction relative to the trigger. */
+  direction?: 'down' | 'up'
   width?: string
   label?: string
 }
@@ -39,7 +42,14 @@ interface TriggerWiring {
  * The panel uses the translucent menu material (opaque fallback built in)
  * and closes itself when another surface (e.g. a dialog) opens on top.
  */
-export function Menu({ trigger, children, align = 'end', width = 'w-56', label }: MenuProps) {
+export function Menu({
+  trigger,
+  children,
+  align = 'end',
+  direction = 'down',
+  width = 'w-56',
+  label,
+}: MenuProps) {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -114,7 +124,7 @@ export function Menu({ trigger, children, align = 'end', width = 'w-56', label }
           role="menu"
           aria-label={label}
           onKeyDown={handleMenuKeyDown}
-          className={`pop-in material absolute top-[calc(100%+6px)] z-40 ${align === 'end' ? 'right-0' : 'left-0'} ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
+          className={`material pop-in ${direction === 'up' ? 'pop-in-up bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'} absolute z-40 ${align === 'end' ? 'right-0' : 'left-0'} ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
         >
           <MenuContext.Provider value={{ close }}>{children}</MenuContext.Provider>
         </div>
@@ -128,6 +138,10 @@ export interface MenuItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   danger?: boolean
   /** Right-aligned hint text (e.g. "Unavailable"). */
   hint?: string
+  /** Secondary line under the label (e.g. what a tool does). */
+  description?: string
+  /** Renders a selection check on the right (e.g. active tool). */
+  selected?: boolean
   children: ReactNode
 }
 
@@ -135,6 +149,8 @@ export function MenuItem({
   icon,
   danger,
   hint,
+  description,
+  selected,
   className = '',
   onClick,
   children,
@@ -145,7 +161,8 @@ export function MenuItem({
     <button
       type="button"
       role="menuitem"
-      className={`flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50 ${
+      aria-checked={selected}
+      className={`flex w-full items-center gap-2.5 rounded-[10px] px-2.5 ${description ? 'py-2' : 'py-2'} text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50 ${
         danger ? 'text-danger hover:bg-danger-soft' : 'text-ink hover:bg-subtle'
       } ${className}`}
       onClick={(event) => {
@@ -155,7 +172,15 @@ export function MenuItem({
       {...props}
     >
       {icon && <span className="shrink-0 opacity-70">{icon}</span>}
-      <span className="min-w-0 flex-1 truncate">{children}</span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate">{children}</span>
+        {description && (
+          <span className="mt-0.5 block truncate text-xs font-normal text-ink-faint">
+            {description}
+          </span>
+        )}
+      </span>
+      {selected && <Check size={14} className="shrink-0 text-accent" aria-hidden="true" />}
       {hint && <span className="shrink-0 text-xs text-ink-faint">{hint}</span>}
     </button>
   )
