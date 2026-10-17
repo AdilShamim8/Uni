@@ -126,3 +126,42 @@ describe('settings', () => {
     expect(screen.queryByRole('dialog', { name: 'Settings' })).not.toBeInTheDocument()
   })
 })
+
+describe('provider quick setup', () => {
+  it('deep-links the empty state button straight to Providers & models', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+
+    await user.click(
+      screen.getByRole('button', { name: /Connect your API key — bring any provider/i }),
+    )
+
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
+    // The Providers section is rendered immediately — no manual navigation.
+    expect(dialog.getByRole('heading', { name: 'Providers and models' })).toBeInTheDocument()
+  })
+
+  it('fills label, kind, and endpoint from a one-tap preset', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+
+    await user.click(
+      screen.getByRole('button', { name: /Connect your API key — bring any provider/i }),
+    )
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
+    await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))
+
+    await user.click(dialog.getByRole('button', { name: 'Groq' }))
+
+    expect(dialog.getByLabelText('Profile label')).toHaveValue('Groq')
+    expect(dialog.getByLabelText('Endpoint base URL')).toHaveValue(
+      'https://api.groq.com/openai/v1',
+    )
+    // Preset makes the form valid: the Add profile button is enabled.
+    expect(dialog.getByRole('button', { name: 'Add profile' })).toBeEnabled()
+
+    await user.click(dialog.getByRole('button', { name: 'Add profile' }))
+    // A Groq profile card now exists in the list.
+    expect(await dialog.findByRole('heading', { name: 'Groq' })).toBeInTheDocument()
+  })
+})

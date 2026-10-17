@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Cpu, Database, Info, MessageSquare, Palette } from 'lucide-react'
 import { useAppStore } from '@/state/store'
 import { Dialog } from '@/components/ui/Dialog'
@@ -18,10 +18,22 @@ const SECTIONS = [
 
 type SectionId = (typeof SECTIONS)[number]['id']
 
+const SECTION_IDS: readonly string[] = SECTIONS.map((entry) => entry.id)
+
 export function SettingsDialog() {
   const open = useAppStore((state) => state.ui.settingsOpen)
+  const requestedSection = useAppStore((state) => state.ui.settingsSection)
   const setUi = useAppStore((state) => state.setUi)
   const [section, setSection] = useState<SectionId>('appearance')
+
+  // When something asks for a specific section (e.g. "Connect API key"),
+  // open there once, then clear the request so manual navigation wins.
+  useEffect(() => {
+    if (open && requestedSection && SECTION_IDS.includes(requestedSection)) {
+      setSection(requestedSection as SectionId)
+      setUi({ settingsSection: null })
+    }
+  }, [open, requestedSection, setUi])
 
   return (
     <Dialog

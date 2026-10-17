@@ -1,4 +1,5 @@
-import { Coffee, Lightbulb, Mail, Sparkles } from 'lucide-react'
+import { Coffee, KeyRound, Lightbulb, Mail, Sparkles } from 'lucide-react'
+import { useAppStore } from '@/state/store'
 import { UniverseMark } from '@/components/layout/UniverseMark'
 
 const SUGGESTIONS = [
@@ -34,6 +35,11 @@ export interface EmptyStateProps {
 }
 
 export function EmptyState({ onSuggestion }: EmptyStateProps) {
+  const setUi = useAppStore((state) => state.setUi)
+  const hasLiveProvider = useAppStore((state) =>
+    Object.values(state.credentials).some((credential) => credential.status === 'connected'),
+  )
+
   return (
     <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-8 text-center sm:justify-start sm:pt-[max(8vh,3rem)]">
       <UniverseMark size={40} className="text-ink" />
@@ -84,6 +90,16 @@ export function EmptyState({ onSuggestion }: EmptyStateProps) {
           )
         })}
       </div>
+      {!hasLiveProvider && (
+        <button
+          type="button"
+          onClick={() => setUi({ settingsOpen: true, settingsSection: 'providers' })}
+          className="mt-6 inline-flex min-touch items-center gap-2 rounded-full border border-accent/40 bg-accent-soft px-4 py-2 text-[13px] font-medium text-accent transition-[background-color,border-color,transform] duration-[var(--motion-fast)] hover:border-accent hover:bg-accent-soft/70 active:scale-[0.98]"
+        >
+          <KeyRound size={14} />
+          Connect your API key — bring any provider
+        </button>
+      )}
     </div>
   )
 }

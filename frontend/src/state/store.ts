@@ -44,6 +44,8 @@ import { makeId } from '@/domain/ids'
 interface UiState {
   searchOpen: boolean
   settingsOpen: boolean
+  /** Section to focus when the settings dialog opens (e.g. 'providers'). */
+  settingsSection: string | null
   mobileSidebarOpen: boolean
   preview: PreviewState | null
 }
@@ -142,7 +144,13 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   activeProviderId: null,
   activeModelId: null,
   credentials: {},
-  ui: { searchOpen: false, settingsOpen: false, mobileSidebarOpen: false, preview: null },
+  ui: {
+    searchOpen: false,
+    settingsOpen: false,
+    settingsSection: null,
+    mobileSidebarOpen: false,
+    preview: null,
+  },
   toast: null,
 
   initialize: () => {
@@ -691,7 +699,13 @@ export function resetStoreForTests(options: { keepStorage?: boolean } = {}): voi
     activeProviderId: null,
     activeModelId: null,
     credentials: {},
-    ui: { searchOpen: false, settingsOpen: false, mobileSidebarOpen: false, preview: null },
+    ui: {
+    searchOpen: false,
+    settingsOpen: false,
+    settingsSection: null,
+    mobileSidebarOpen: false,
+    preview: null,
+  },
     toast: null,
   })
 }
