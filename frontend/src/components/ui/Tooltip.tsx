@@ -30,7 +30,7 @@ export function Tooltip({ label, children, side = 'top', className = '' }: Toolt
 
 export interface BadgeProps {
   children: ReactNode
-  tone?: 'neutral' | 'accent' | 'warning'
+  tone?: 'neutral' | 'accent' | 'warning' | 'success'
   className?: string
 }
 
@@ -40,7 +40,9 @@ export function Badge({ children, tone = 'neutral', className = '' }: BadgeProps
       ? 'bg-accent-soft text-accent'
       : tone === 'warning'
         ? 'bg-warning-soft text-warning'
-        : 'bg-subtle text-ink-soft'
+        : tone === 'success'
+          ? 'bg-success-soft text-success'
+          : 'bg-subtle text-ink-soft'
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${toneClass} ${className}`}
