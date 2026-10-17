@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ChatAdapter } from '@/domain/chatAdapter'
-import { setChatAdapter, useAppStore } from '@/state/store'
+import { setChatAdapter } from '@/state/store'
 import { renderApp, setupAppTest } from './helpers'
 
 /**
