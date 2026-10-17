@@ -105,7 +105,7 @@ export function LibraryPage() {
           </div>
 
           {/* Kind filters */}
-          <div className="mt-5 flex flex-wrap gap-1.5" role="tablist" aria-label="Filter artifacts">
+          <div className="mt-5 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Filter artifacts">
             {FILTERS.map((entry) => {
               const active = filter === entry.id
               return (
@@ -115,7 +115,7 @@ export function LibraryPage() {
                   role="tab"
                   aria-selected={active}
                   onClick={() => setFilter(entry.id)}
-                  className={`min-touch rounded-full border px-3 py-1 text-[13px] transition-colors ${
+                  className={`min-touch shrink-0 rounded-full border px-3 py-1 text-[13px] transition-colors ${
                     active
                       ? 'border-accent bg-accent-soft font-medium text-accent'
                       : 'border-line text-ink-soft hover:bg-subtle'
