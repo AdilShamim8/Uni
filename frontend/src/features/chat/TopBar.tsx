@@ -145,6 +145,8 @@ export function TopBar() {
                     key={model.id}
                     icon={isActive ? <Check size={15} /> : undefined}
                     hint={connected ? 'Live' : model.demo ? 'Demo' : undefined}
+                    selection="radio"
+                    selected={isActive}
                     onClick={() => setActiveModel(provider.id, model.id)}
                   >
                     {model.label}

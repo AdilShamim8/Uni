@@ -3,6 +3,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -39,6 +40,10 @@ interface TriggerWiring {
  * Lightweight dropdown menu: click or keyboard toggle, ArrowUp/Down
  * navigation, Escape closes and restores focus to the trigger.
  *
+ * Positioning is collision-aware: the preferred direction flips when the
+ * panel would overflow the viewport, and the panel scrolls internally past a
+ * max height, so opening a menu can never push content out of view.
+ *
  * The panel uses the translucent menu material (opaque fallback built in)
  * and closes itself when another surface (e.g. a dialog) opens on top.
  */
@@ -51,6 +56,8 @@ export function Menu({
   label,
 }: MenuProps) {
   const [open, setOpen] = useState(false)
+  // Effective direction may flip after measuring the rendered panel.
+  const [effectiveDirection, setEffectiveDirection] = useState(direction)
   const containerRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -78,10 +85,6 @@ export function Menu({
     document.addEventListener('mousedown', onPointerDown)
     document.addEventListener('keydown', onKeyDown)
     document.addEventListener('focusin', onFocusIn)
-    const first = menuRef.current?.querySelector<HTMLElement>(
-      '[role="menuitem"]:not([disabled])',
-    )
-    first?.focus()
     return () => {
       document.removeEventListener('mousedown', onPointerDown)
       document.removeEventListener('keydown', onKeyDown)
@@ -89,11 +92,52 @@ export function Menu({
     }
   }, [open])
 
+  // Collision handling: measure the freshly rendered panel and flip its
+  // direction when it would extend past the viewport edge. Runs before
+  // paint so the user never sees the overflow. Also caps the height so
+  // long menus scroll instead of leaving the screen.
+  useLayoutEffect(() => {
+    if (!open || !menuRef.current) return
+    const panel = menuRef.current
+    const rect = panel.getBoundingClientRect()
+    const viewport = window.innerHeight
+    // Environments without layout (jsdom) report all-zero rects — keep the
+    // preferred direction instead of "flipping" on fake geometry.
+    const hasLayout = rect.width > 0 || rect.height > 0 || rect.top !== 0 || rect.bottom !== 0
+    if (hasLayout) {
+      let next = direction
+      if (direction === 'down' && rect.bottom > viewport - 8) {
+        // Would overflow the bottom — flip when there is more room above.
+        if (viewport - rect.bottom > rect.height / 2 || rect.top > rect.height + 8) {
+          next = 'up'
+        }
+      } else if (direction === 'up' && rect.top < 8) {
+        next = 'down'
+      }
+      setEffectiveDirection(next)
+
+      const maxHeight = Math.min(360, viewport - 24)
+      if (rect.height > maxHeight) {
+        panel.style.maxHeight = `${maxHeight}px`
+        panel.style.overflowY = 'auto'
+      }
+    }
+
+    // Focus without scrolling: the panel is already placed inside the
+    // viewport, and a native scroll-into-view here could programmatically
+    // scroll an overflow-hidden ancestor (the D1 defect).
+    panel
+      .querySelector<HTMLElement>('[role^="menuitem"]:not([disabled])')
+      ?.focus({ preventScroll: true })
+  }, [open, direction])
+
   function handleMenuKeyDown(event: React.KeyboardEvent) {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
     event.preventDefault()
     const items = Array.from(
-      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [],
+      menuRef.current?.querySelectorAll<HTMLElement>(
+        '[role^="menuitem"]:not([disabled])',
+      ) ?? [],
     )
     if (items.length === 0) return
     const index = items.indexOf(document.activeElement as HTMLElement)
@@ -101,7 +145,7 @@ export function Menu({
       event.key === 'ArrowDown'
         ? (index + 1 + items.length) % items.length
         : (index - 1 + items.length) % items.length
-    items[next].focus()
+    items[next].focus({ preventScroll: true })
   }
 
   const close = () => setOpen(false)
@@ -124,7 +168,11 @@ export function Menu({
           role="menu"
           aria-label={label}
           onKeyDown={handleMenuKeyDown}
-          className={`material pop-in ${direction === 'up' ? 'pop-in-up bottom-[calc(100%+6px)]' : 'top-[calc(100%+6px)]'} absolute z-40 ${align === 'end' ? 'right-0' : 'left-0'} ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
+          className={`material pop-in ${
+            effectiveDirection === 'up'
+              ? 'pop-in-up bottom-[calc(100%+6px)]'
+              : 'top-[calc(100%+6px)]'
+          } absolute z-40 ${align === 'end' ? 'right-0' : 'left-0'} ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
         >
           <MenuContext.Provider value={{ close }}>{children}</MenuContext.Provider>
         </div>
@@ -142,7 +190,13 @@ export interface MenuItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   shortcut?: string
   /** Secondary line under the label (e.g. what a tool does). */
   description?: string
-  /** Renders a selection check on the right (e.g. active tool). */
+  /**
+   * Marks the item as selectable. `checkbox` fits multi-select toggles
+   * (tools); `radio` fits single-select groups (models). Renders the proper
+   * ARIA role instead of hanging aria-checked off a plain menuitem.
+   */
+  selection?: 'checkbox' | 'radio'
+  /** Checked state — only valid together with `selection`. */
   selected?: boolean
   children: ReactNode
 }
@@ -153,6 +207,7 @@ export function MenuItem({
   hint,
   shortcut,
   description,
+  selection,
   selected,
   className = '',
   onClick,
@@ -160,11 +215,12 @@ export function MenuItem({
   ...props
 }: MenuItemProps) {
   const context = useContext(MenuContext)
+  const role = selection ? `menuitem${selection}` : 'menuitem'
   return (
     <button
       type="button"
-      role="menuitem"
-      aria-checked={selected}
+      role={role}
+      aria-checked={selection ? (selected ?? false) : undefined}
       className={`flex w-full items-center gap-2.5 rounded-[10px] px-2.5 ${description ? 'py-2' : 'py-2'} text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50 ${
         danger ? 'text-danger hover:bg-danger-soft' : 'text-ink hover:bg-subtle'
       } ${className}`}
