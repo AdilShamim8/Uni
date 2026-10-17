@@ -112,6 +112,22 @@ export interface PersistedState {
   activeModelId: string | null
 }
 
+/* ------------------------------------------------------------------ */
+/* Provider credentials (stored separately from exported app data)     */
+/* ------------------------------------------------------------------ */
+
+export type ConnectionStatus = 'untested' | 'connected' | 'error'
+
+export interface ProviderCredential {
+  providerId: string
+  apiKey: string
+  status: ConnectionStatus
+  lastCheckedAt: number | null
+  lastError: string | null
+  /** Model ids discovered from the endpoint's model list, if any. */
+  discoveredModels: string[]
+}
+
 export type PreviewKind =
   | 'research'
   | 'images'

@@ -31,7 +31,7 @@ export interface AssistantDraft {
 }
 
 export interface ChatError {
-  code: 'mock_error' | 'aborted'
+  code: 'mock_error' | 'provider_error' | 'aborted'
   message: string
 }
 
