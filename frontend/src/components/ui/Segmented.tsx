@@ -14,6 +14,7 @@ export interface SegmentedProps<T extends string> {
   className?: string
 }
 
+/** iOS-style segmented control: recessed track, raised selected segment. */
 export function Segmented<T extends string>({
   value,
   options,
@@ -25,7 +26,7 @@ export function Segmented<T extends string>({
     <div
       role="radiogroup"
       aria-label={ariaLabel}
-      className={`inline-flex rounded-[10px] border border-line bg-raised p-0.5 ${className}`}
+      className={`inline-flex max-w-full overflow-x-auto rounded-control bg-subtle p-[3px] ${className}`}
     >
       {options.map((option) => {
         const selected = value === option.value
@@ -36,9 +37,9 @@ export function Segmented<T extends string>({
             role="radio"
             aria-checked={selected}
             onClick={() => onChange(option.value)}
-            className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
+            className={`min-touch inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-[9px] px-3 py-1 text-sm transition-[background-color,color,box-shadow] duration-[var(--motion-fast)] ${
               selected
-                ? 'bg-accent-soft font-medium text-accent'
+                ? 'bg-raised font-medium text-ink shadow-[0_1px_3px_rgba(29,27,32,0.12)]'
                 : 'text-ink-soft hover:text-ink'
             }`}
           >

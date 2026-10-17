@@ -10,8 +10,11 @@ describe('scaffold smoke test', () => {
         <App />
       </MemoryRouter>,
     )
+    // Empty state shows the welcome composition; the sidebar carries the
+    // Universe wordmark, so the top bar no longer duplicates it.
     expect(
-      screen.getByRole('heading', { name: /universe/i }),
+      screen.getByRole('heading', { name: /where should we begin/i }),
     ).toBeInTheDocument()
+    expect(screen.getByText('Universe')).toBeInTheDocument()
   })
 })

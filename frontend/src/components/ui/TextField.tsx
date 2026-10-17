@@ -22,7 +22,7 @@ export function TextField({ label, hint, className = '', id, ...props }: TextFie
       <input
         id={inputId}
         aria-describedby={hint ? hintId : undefined}
-        className={`mt-1.5 w-full rounded-[10px] border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent ${
+        className={`mt-1.5 w-full rounded-control border border-line bg-raised px-3 py-2 text-[16px] text-ink placeholder:text-ink-faint transition-[border-color,box-shadow] duration-[var(--motion-fast)] focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)] ${
           props.disabled ? 'cursor-not-allowed opacity-60' : ''
         }`}
         {...props}
@@ -53,7 +53,7 @@ export function TextArea({ label, hint, className = '', id, ...props }: TextArea
       <textarea
         id={areaId}
         aria-describedby={hint ? hintId : undefined}
-        className={`mt-1.5 w-full resize-y rounded-[10px] border border-line bg-raised px-3 py-2 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent ${
+        className={`mt-1.5 w-full resize-y rounded-control border border-line bg-raised px-3 py-2 text-[16px] leading-relaxed text-ink placeholder:text-ink-faint transition-[border-color,box-shadow] duration-[var(--motion-fast)] focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)] ${
           props.disabled ? 'cursor-not-allowed opacity-60' : ''
         }`}
         {...props}

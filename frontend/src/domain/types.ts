@@ -98,6 +98,8 @@ export interface Preferences {
   traits: string
   assistantPresetId: string | null
   sidebarCollapsed: boolean
+  /** Opaque fallback for translucent materials (also respects the OS setting). */
+  reducedTransparency: boolean
 }
 
 export interface PersistedState {
@@ -108,6 +110,22 @@ export interface PersistedState {
   providers: ProviderProfile[]
   activeProviderId: string | null
   activeModelId: string | null
+}
+
+/* ------------------------------------------------------------------ */
+/* Provider credentials (stored separately from exported app data)     */
+/* ------------------------------------------------------------------ */
+
+export type ConnectionStatus = 'untested' | 'connected' | 'error'
+
+export interface ProviderCredential {
+  providerId: string
+  apiKey: string
+  status: ConnectionStatus
+  lastCheckedAt: number | null
+  lastError: string | null
+  /** Model ids discovered from the endpoint's model list, if any. */
+  discoveredModels: string[]
 }
 
 export type PreviewKind =

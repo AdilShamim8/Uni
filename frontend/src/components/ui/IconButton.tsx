@@ -33,7 +33,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(functio
       aria-label={label}
       title={label}
       aria-pressed={active || undefined}
-      className={`inline-flex shrink-0 items-center justify-center rounded-[10px] transition-colors disabled:pointer-events-none disabled:opacity-50 ${SIZE_CLASSES[size]} ${toneClass} ${className}`}
+      className={`min-touch inline-flex shrink-0 items-center justify-center rounded-control transition-[background-color,color] duration-[var(--motion-fast)] disabled:pointer-events-none disabled:opacity-50 ${SIZE_CLASSES[size]} ${toneClass} ${className}`}
       {...props}
     >
       {children}

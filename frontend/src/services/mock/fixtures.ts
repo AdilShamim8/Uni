@@ -14,6 +14,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   traits: '',
   assistantPresetId: null,
   sidebarCollapsed: false,
+  reducedTransparency: false,
 }
 
 interface SeedTurn {

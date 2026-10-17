@@ -1,4 +1,11 @@
-import { memo, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from 'react'
+import {
+  memo,
+  useRef,
+  useState,
+  isValidElement,
+  type ComponentPropsWithoutRef,
+  type ReactNode,
+} from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -10,6 +17,15 @@ import { Check, Copy } from 'lucide-react'
  * horizontally scrollable code/tables. Raw HTML is not enabled — it is
  * stripped by react-markdown's default pipeline.
  */
+
+/** Extracts the fenced-code language from the child <code> element's class. */
+function getCodeLanguage(children: ReactNode): string | undefined {
+  const child = Array.isArray(children) ? children.find(isValidElement) : children
+  if (!isValidElement(child)) return undefined
+  const className = (child.props as { className?: string }).className ?? ''
+  const match = /language-([\w+#-]+)/.exec(className)
+  return match?.[1]
+}
 
 function CodePre({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
   const ref = useRef<HTMLPreElement>(null)
@@ -26,24 +42,34 @@ function CodePre({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
     }
   }
 
+  // Derive the language label from the highlighted code element.
+  const language = getCodeLanguage(children)
+
   return (
-    <div className="group relative my-3">
+    <figure className="group relative my-3">
+      <figcaption
+        className="flex items-center justify-between rounded-t-group border border-b-0 border-line bg-subtle px-3.5 py-1.5"
+      >
+        <span className="font-mono text-[11px] uppercase tracking-wide text-ink-faint">
+          {language ?? 'code'}
+        </span>
+        <button
+          type="button"
+          aria-label="Copy code"
+          onClick={() => void handleCopy()}
+          className="rounded-md p-1 text-ink-faint transition-colors hover:bg-raised hover:text-ink focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+        >
+          {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
+        </button>
+      </figcaption>
       <pre
         ref={ref}
-        className="overflow-x-auto rounded-xl bg-[var(--c-code-bg)] p-4 font-mono text-[13px] leading-relaxed text-ink"
+        className="overflow-x-auto rounded-b-group bg-[var(--c-code-bg)] p-4 font-mono text-[13px] leading-relaxed text-ink"
         {...props}
       >
         {children}
       </pre>
-      <button
-        type="button"
-        aria-label="Copy code"
-        onClick={() => void handleCopy()}
-        className="absolute right-2 top-2 rounded-lg border border-line bg-overlay p-1.5 text-ink-soft opacity-0 transition-opacity hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
-      >
-        {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
-      </button>
-    </div>
+    </figure>
   )
 }
 
@@ -85,7 +111,7 @@ const components = {
     )
   },
   table: ({ children }: { children?: ReactNode }) => (
-    <div className="my-3 overflow-x-auto rounded-xl border border-line">
+    <div className="my-3 overflow-x-auto rounded-group border border-line">
       <table className="w-full border-collapse text-sm">{children}</table>
     </div>
   ),
@@ -118,7 +144,7 @@ const components = {
     <h3 className="mb-1.5 mt-4 text-[15px] font-semibold text-ink first:mt-0">{children}</h3>
   ),
   blockquote: ({ children }: { children?: ReactNode }) => (
-    <blockquote className="my-3 border-l-2 border-line-strong pl-3 text-ink-soft">
+    <blockquote className="my-3 border-l-2 border-accent/50 pl-3.5 text-ink-soft">
       {children}
     </blockquote>
   ),
@@ -130,7 +156,7 @@ const components = {
 
 export const Markdown = memo(function Markdown({ content }: { content: string }) {
   return (
-    <div className="min-w-0 text-[15px] text-ink">
+    <div className="min-w-0 text-[16px] text-ink">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[[rehypeHighlight, { detect: true }]]}
