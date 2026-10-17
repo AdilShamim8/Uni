@@ -3,6 +3,7 @@ import { Download, RotateCcw, Trash2 } from 'lucide-react'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup'
 import { downloadText } from '@/features/chat/exportUtils'
 
 export function DataSection() {
@@ -18,43 +19,51 @@ export function DataSection() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <section aria-label="Export">
-        <h3 className="text-sm font-medium text-ink">Export chats and settings</h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">
-          Downloads a JSON snapshot of everything stored in this browser —
-          conversations, preferences, and provider profiles. Temporary chats are
-          excluded because they are never saved.
-        </p>
-        <Button className="mt-3" variant="secondary" onClick={handleExport}>
-          <Download size={14} />
-          Export local data (JSON)
-        </Button>
-      </section>
+    <div className="flex flex-col gap-5">
+      <SettingsGroup
+        title="Export"
+        footer="Downloads a JSON snapshot of everything stored in this browser — conversations, preferences, and provider profiles. Temporary chats are excluded because they are never saved. API keys are never included."
+      >
+        <SettingsRow
+          label="Export chats and settings"
+          description="One JSON file, generated locally."
+        >
+          <Button variant="secondary" size="sm" onClick={handleExport}>
+            <Download size={14} />
+            Export
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
 
-      <section aria-label="Clear history">
-        <h3 className="text-sm font-medium text-ink">Clear local history</h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">
-          Removes every saved conversation from this browser. Preferences and
-          provider profiles are kept. This cannot be undone.
-        </p>
-        <Button className="mt-3" variant="secondary" onClick={() => setConfirming('clear')}>
-          <Trash2 size={14} />
-          Clear all conversations
-        </Button>
-      </section>
+      <SettingsGroup
+        title="History"
+        footer="Removing conversations cannot be undone. Preferences and provider profiles are kept."
+      >
+        <SettingsRow
+          label="Clear local history"
+          description="Removes every saved conversation from this browser."
+        >
+          <Button variant="secondary" size="sm" onClick={() => setConfirming('clear')}>
+            <Trash2 size={14} />
+            Clear
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
 
-      <section aria-label="Reset demo data">
-        <h3 className="text-sm font-medium text-ink">Reset demo data</h3>
-        <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">
-          Restores the original demo conversations and provider profiles. Your
-          preferences are kept.
-        </p>
-        <Button className="mt-3" variant="secondary" onClick={() => setConfirming('reset')}>
-          <RotateCcw size={14} />
-          Reset demo data
-        </Button>
-      </section>
+      <SettingsGroup
+        title="Demo"
+        footer="Restores the original demo conversations and provider profiles. Your preferences are kept."
+      >
+        <SettingsRow
+          label="Reset demo data"
+          description="Bring the bundled sample content back."
+        >
+          <Button variant="secondary" size="sm" onClick={() => setConfirming('reset')}>
+            <RotateCcw size={14} />
+            Reset
+          </Button>
+        </SettingsRow>
+      </SettingsGroup>
 
       <ConfirmDialog
         open={confirming === 'clear'}
