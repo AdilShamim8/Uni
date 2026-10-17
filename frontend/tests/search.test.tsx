@@ -12,6 +12,19 @@ describe('conversation search', () => {
     expect(await screen.findByRole('dialog', { name: 'Search conversations' })).toBeInTheDocument()
   })
 
+  it('focuses the search input when opened so typing works immediately', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+    await user.click(screen.getByRole('button', { name: 'Search conversations' }))
+
+    const input = await screen.findByPlaceholderText(/Search titles and message content/)
+    expect(input).toHaveFocus()
+
+    // Typing without clicking the input first still filters results.
+    await user.keyboard('rainy')
+    expect(await screen.findByRole('option', { name: /Relaxed weekend ideas/ })).toBeInTheDocument()
+  })
+
   it('filters real local message content and opens the result by keyboard', async () => {
     const user = userEvent.setup()
     renderApp('/')
