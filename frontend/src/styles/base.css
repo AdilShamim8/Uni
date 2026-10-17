@@ -135,6 +135,49 @@ body {
   }
 }
 
+/* Dialog layers: scrim fades while the panel springs up from a slight
+ * scale — the iOS sheet feel. Both are neutralized by the global
+ * prefers-reduced-motion rule. */
+@keyframes universe-scrim-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.scrim-in {
+  animation: universe-scrim-in 200ms var(--ease-standard) both;
+}
+@keyframes universe-dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.dialog-in {
+  animation: universe-dialog-in 240ms var(--ease-spring) both;
+}
+
+/* New messages settle in with a short rise — quiet enough to read over. */
+@keyframes universe-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.message-in {
+  animation: universe-message-in 260ms var(--ease-standard) both;
+}
+
 /* Syntax highlighting tokens (used by rehype-highlight output) */
 .hljs {
   color: var(--c-code-base);
