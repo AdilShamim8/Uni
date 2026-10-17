@@ -317,6 +317,8 @@ export interface WorkStore {
   answerInput: (id: string, answer: string) => void
 
   updateReport: (id: string, markdown: string) => void
+  /** Link (or re-link) the library artifact produced from the report. */
+  attachArtifactToReport: (id: string, artifactId: string) => void
 
   /** Internal — called by the runner. Exposed on the store for testability. */
   appendEvent: (taskId: string, event: TaskEvent) => void
@@ -598,6 +600,23 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
           [id]: {
             ...task,
             report: { ...task.report, markdown },
+            updatedAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  attachArtifactToReport: (id, artifactId) => {
+    set((state) => {
+      const task = state.tasks[id]
+      if (!task?.report) return state
+      return {
+        tasks: {
+          ...state.tasks,
+          [id]: {
+            ...task,
+            report: { ...task.report, artifactId },
             updatedAt: Date.now(),
           },
         },

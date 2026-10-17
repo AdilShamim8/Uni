@@ -7,6 +7,7 @@ import {
   ClipboardList,
   Download,
   FileText,
+  FolderPlus,
   MessageSquareWarning,
   MoreHorizontal,
   PencilLine,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react'
 import { useWorkStore } from '@/state/workStore'
 import { useAgentsStore } from '@/state/agentsStore'
+import { useLibraryStore } from '@/state/libraryStore'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
@@ -830,8 +832,10 @@ function RunSection({ taskId }: { taskId: string }) {
 /* ------------------------------------------------------------------ */
 
 function ReportSection({ taskId }: { taskId: string }) {
+  const navigate = useNavigate()
   const task = useWorkStore((state) => state.tasks[taskId])
   const updateReport = useWorkStore((state) => state.updateReport)
+  const attachArtifactToReport = useWorkStore((state) => state.attachArtifactToReport)
   const completeTask = useWorkStore((state) => state.completeTask)
   const showToast = useAppStore((state) => state.showToast)
   const [editing, setEditing] = useState(false)
@@ -842,6 +846,32 @@ function ReportSection({ taskId }: { taskId: string }) {
     // The download always matches the CURRENT (possibly edited) report.
     downloadText(`universe-task-${slugifyTitle(task!.title)}.md`, task!.report!.markdown)
     showToast('Task report downloaded as Markdown')
+  }
+
+  /** Save the current report content into the shared Library. */
+  function handleSaveToLibrary() {
+    const report = task!.report!
+    const library = useLibraryStore.getState()
+    const kind =
+      report.template === 'email' ? 'email' : report.template === 'data' ? 'data' : 'report'
+    if (report.artifactId && library.artifacts[report.artifactId]) {
+      library.renameArtifact(report.artifactId, task!.title)
+      library.updateArtifact(report.artifactId, report.markdown)
+      showToast('Library copy updated')
+      return
+    }
+    const artifactId = library.addArtifact({
+      title: task!.title,
+      kind,
+      markdown: report.markdown,
+      taskId,
+      provenance: 'demo-simulation',
+    })
+    attachArtifactToReport(taskId, artifactId)
+    showToast('Saved to Library', {
+      actionLabel: 'Open',
+      onAction: () => navigate('/library'),
+    })
   }
 
   return (
@@ -895,6 +925,10 @@ function ReportSection({ taskId }: { taskId: string }) {
               <Button variant="ghost" size="sm" onClick={handleDownload}>
                 <Download size={14} />
                 Download
+              </Button>
+              <Button variant="ghost" size="sm" onClick={handleSaveToLibrary}>
+                <FolderPlus size={14} />
+                {task.report.artifactId ? 'Update library copy' : 'Save to Library'}
               </Button>
               {task.status === 'ready_for_review' && (
                 <Button variant="primary" size="sm" onClick={() => completeTask(taskId)}>
