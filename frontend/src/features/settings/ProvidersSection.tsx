@@ -50,6 +50,35 @@ const KIND_ENDPOINTS: Record<ProviderKind, string> = {
   local: 'http://localhost:1234/v1',
 }
 
+/** One-tap templates for popular providers — label, kind, and endpoint. */
+const PRESETS: { label: string; kind: ProviderKind; endpointUrl: string }[] = [
+  { label: 'OpenAI', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },
+  { label: 'Anthropic', kind: 'anthropic', endpointUrl: 'https://api.anthropic.com' },
+  {
+    label: 'Google AI Studio',
+    kind: 'google',
+    endpointUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+  },
+  { label: 'Groq', kind: 'openai-compatible', endpointUrl: 'https://api.groq.com/openai/v1' },
+  {
+    label: 'OpenRouter',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://openrouter.ai/api/v1',
+  },
+  {
+    label: 'Together',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://api.together.xyz/v1',
+  },
+  {
+    label: 'Mistral',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://api.mistral.ai/v1',
+  },
+  { label: 'Ollama (local)', kind: 'local', endpointUrl: 'http://localhost:11434/v1' },
+  { label: 'LM Studio (local)', kind: 'local', endpointUrl: 'http://localhost:1234/v1' },
+]
+
 function maskKey(apiKey: string): string {
   const trimmed = apiKey.trim()
   if (trimmed.length <= 4) return '••••'
@@ -188,6 +217,42 @@ function ProviderForm({
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-accent bg-raised p-4">
+      {isNew && (
+        <div>
+          <p className="text-sm font-medium text-ink">Start from a provider</p>
+          <p className="mt-0.5 text-xs leading-relaxed text-ink-faint">
+            One tap fills in the endpoint — you only add a name if you want your own.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {PRESETS.map((preset) => {
+              const selected =
+                draft.label === preset.label && draft.endpointUrl.trim() === preset.endpointUrl
+              return (
+                <button
+                  key={preset.label}
+                  type="button"
+                  aria-pressed={selected}
+                  onClick={() =>
+                    setDraft({
+                      ...draft,
+                      label: preset.label,
+                      kind: preset.kind,
+                      endpointUrl: preset.endpointUrl,
+                    })
+                  }
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                    selected
+                      ? 'border-accent bg-accent-soft text-accent'
+                      : 'border-line text-ink-soft hover:bg-subtle hover:text-ink'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
       <TextField
         label="Profile label"
         value={draft.label}

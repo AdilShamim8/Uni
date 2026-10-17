@@ -138,6 +138,8 @@ export interface MenuItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   danger?: boolean
   /** Right-aligned hint text (e.g. "Unavailable"). */
   hint?: string
+  /** Right-aligned keyboard shortcut, hidden from screen readers. */
+  shortcut?: string
   /** Secondary line under the label (e.g. what a tool does). */
   description?: string
   /** Renders a selection check on the right (e.g. active tool). */
@@ -149,6 +151,7 @@ export function MenuItem({
   icon,
   danger,
   hint,
+  shortcut,
   description,
   selected,
   className = '',
@@ -182,6 +185,11 @@ export function MenuItem({
       </span>
       {selected && <Check size={14} className="shrink-0 text-accent" aria-hidden="true" />}
       {hint && <span className="shrink-0 text-xs text-ink-faint">{hint}</span>}
+      {shortcut && (
+        <span aria-hidden="true" className="shrink-0 text-xs text-ink-faint">
+          {shortcut}
+        </span>
+      )}
     </button>
   )
 }

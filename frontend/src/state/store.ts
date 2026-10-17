@@ -16,6 +16,7 @@ import {
   activePath,
   attachNode,
   createNode,
+  deepestLeaf,
   deriveTitle,
   siblingsOf,
   switchToNode,
@@ -43,6 +44,8 @@ import { makeId } from '@/domain/ids'
 interface UiState {
   searchOpen: boolean
   settingsOpen: boolean
+  /** Section to focus when the settings dialog opens (e.g. 'providers'). */
+  settingsSection: string | null
   mobileSidebarOpen: boolean
   preview: PreviewState | null
 }
@@ -83,6 +86,7 @@ export interface AppStore {
   editUserMessage: (nodeId: string, newText: string) => Promise<void>
   switchSibling: (nodeId: string, direction: 1 | -1) => void
   setFeedback: (nodeId: string, feedback: 'up' | 'down' | null) => void
+  deleteMessage: (nodeId: string) => void
 
   updatePreferences: (patch: Partial<Preferences>) => void
   addProvider: (profile: ProviderProfile) => void
@@ -140,7 +144,13 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   activeProviderId: null,
   activeModelId: null,
   credentials: {},
-  ui: { searchOpen: false, settingsOpen: false, mobileSidebarOpen: false, preview: null },
+  ui: {
+    searchOpen: false,
+    settingsOpen: false,
+    settingsSection: null,
+    mobileSidebarOpen: false,
+    preview: null,
+  },
   toast: null,
 
   initialize: () => {
@@ -399,6 +409,71 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     updateNode(conversation.id, nodeId, { feedback: current === feedback ? null : feedback })
   },
 
+  deleteMessage: (nodeId) => {
+    const { conversations } = get()
+    const snapshot = Object.values(conversations).find((c) => c.nodes[nodeId])
+    if (!snapshot || !snapshot.nodes[nodeId]) return
+
+    // Collect the node and its whole subtree — deleting a message removes
+    // everything that depends on it in that branch.
+    const doomed = new Set<string>([nodeId])
+    const stack = [nodeId]
+    while (stack.length > 0) {
+      const current = stack.pop() as string
+      for (const node of Object.values(snapshot.nodes)) {
+        if (node.parentId === current && !doomed.has(node.id)) {
+          doomed.add(node.id)
+          stack.push(node.id)
+        }
+      }
+    }
+
+    set((state) => {
+      const previous = state.conversations[snapshot.id]
+      const nodes: Conversation['nodes'] = {}
+      for (const node of Object.values(previous.nodes)) {
+        if (!doomed.has(node.id)) nodes[node.id] = node
+      }
+
+      // Re-anchor the visible thread: if the active leaf was removed, fall
+      // back to the deleted node's parent (following its latest remaining
+      // continuation), then to the latest surviving root.
+      let activeLeafId = previous.activeLeafId
+      if (activeLeafId && doomed.has(activeLeafId)) {
+        const parentId = previous.nodes[nodeId].parentId
+        if (parentId && nodes[parentId]) {
+          activeLeafId = deepestLeaf({ ...previous, nodes }, parentId)
+        } else {
+          const roots = Object.values(nodes)
+            .filter((node) => node.parentId === null || !nodes[node.parentId])
+            .sort((a, b) => a.createdAt - b.createdAt)
+          activeLeafId = roots.length > 0 ? roots[roots.length - 1].id : null
+        }
+      }
+
+      return {
+        conversations: {
+          ...state.conversations,
+          [snapshot.id]: {
+            ...previous,
+            nodes,
+            activeLeafId,
+            updatedAt: Date.now(),
+          },
+        },
+      }
+    })
+
+    get().showToast('Message deleted', {
+      actionLabel: 'Undo',
+      onAction: () => {
+        set((state) => ({
+          conversations: { ...state.conversations, [snapshot.id]: snapshot },
+        }))
+      },
+    })
+  },
+
   updatePreferences: (patch) => {
     set((state) => ({ preferences: { ...state.preferences, ...patch } }))
   },
@@ -624,7 +699,13 @@ export function resetStoreForTests(options: { keepStorage?: boolean } = {}): voi
     activeProviderId: null,
     activeModelId: null,
     credentials: {},
-    ui: { searchOpen: false, settingsOpen: false, mobileSidebarOpen: false, preview: null },
+    ui: {
+    searchOpen: false,
+    settingsOpen: false,
+    settingsSection: null,
+    mobileSidebarOpen: false,
+    preview: null,
+  },
     toast: null,
   })
 }

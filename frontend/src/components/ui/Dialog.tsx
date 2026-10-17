@@ -109,7 +109,7 @@ export function Dialog({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       <div
-        className="absolute inset-0 bg-scrim"
+        className="scrim-in absolute inset-0 bg-scrim"
         onClick={() => onCloseRef.current()}
         aria-hidden="true"
       />
@@ -120,7 +120,7 @@ export function Dialog({
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
         tabIndex={-1}
-        className={`pop-in material relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-overlay border border-line bg-mat-overlay shadow-raised ${SIZE_CLASSES[size]}`}
+        className={`dialog-in material relative flex max-h-[85vh] w-full flex-col overflow-hidden rounded-overlay border border-line bg-mat-overlay shadow-raised ${SIZE_CLASSES[size]}`}
       >
         {!bare && (
           <header className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-5 py-4">

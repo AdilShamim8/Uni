@@ -44,12 +44,18 @@ export function App() {
     }
   }, [reducedTransparency])
 
-  // Global shortcut: Ctrl/Cmd+K opens conversation search.
+  // Global shortcuts: Ctrl/Cmd+K opens conversation search;
+  // Ctrl/Cmd+, opens Settings (the platform convention).
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+      if (!(event.metaKey || event.ctrlKey)) return
+      const key = event.key.toLowerCase()
+      if (key === 'k') {
         event.preventDefault()
         setUi({ searchOpen: true })
+      } else if (key === ',') {
+        event.preventDefault()
+        setUi({ settingsOpen: true })
       }
     }
     window.addEventListener('keydown', onKeyDown)

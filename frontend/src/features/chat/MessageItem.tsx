@@ -13,12 +13,15 @@ import {
   RotateCcw,
   ThumbsDown,
   ThumbsUp,
+  Trash2,
 } from 'lucide-react'
 import type { Conversation, MessageNode } from '@/domain/types'
 import { siblingsOf } from '@/domain/conversationTree'
+import { formatFullTimestamp } from '@/domain/timestamps'
 import { useAppStore } from '@/state/store'
 import { UniverseMark } from '@/components/layout/UniverseMark'
 import { Button } from '@/components/ui/Button'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
 import { Markdown } from './Markdown'
 import { TOOL_REGISTRY } from './toolRegistry'
@@ -120,7 +123,9 @@ function ActionRow({ children, align = 'left' }: { children: React.ReactNode; al
 function UserMessage({ node, conversation }: { node: MessageNode; conversation: Conversation }) {
   const editUserMessage = useAppStore((state) => state.editUserMessage)
   const switchSibling = useAppStore((state) => state.switchSibling)
+  const deleteMessage = useAppStore((state) => state.deleteMessage)
   const [editing, setEditing] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [draft, setDraft] = useState(node.content)
 
   const siblings = siblingsOf(conversation, node.id)
@@ -168,8 +173,11 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
   }
 
   return (
-    <div className="group flex flex-col items-end">
-      <div className="max-w-[85%] rounded-[18px] bg-subtle px-4 py-2.5">
+    <div className="message-in group flex flex-col items-end">
+      <div
+        className="max-w-[85%] rounded-[18px] bg-subtle px-4 py-2.5"
+        title={formatFullTimestamp(node.createdAt)}
+      >
         {node.tools && node.tools.length > 0 && (
           <div className="mb-1.5 flex flex-wrap gap-1">
             {node.tools.map((tool) => {
@@ -228,7 +236,29 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
         >
           <Pencil size={14} />
         </button>
+        <button
+          type="button"
+          aria-label="Delete message"
+          title="Delete message and its replies in this branch"
+          onClick={() => setConfirmingDelete(true)}
+          className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
+        >
+          <Trash2 size={14} />
+        </button>
       </ActionRow>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        onClose={() => setConfirmingDelete(false)}
+        title="Delete this message?"
+        body="This removes the message and everything that follows it in this branch. The rest of the conversation stays, and you can undo right after."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          setConfirmingDelete(false)
+          deleteMessage(node.id)
+        }}
+      />
     </div>
   )
 }
@@ -249,7 +279,9 @@ function AssistantMessage({
   const regenerate = useAppStore((state) => state.regenerate)
   const switchSibling = useAppStore((state) => state.switchSibling)
   const setFeedback = useAppStore((state) => state.setFeedback)
+  const deleteMessage = useAppStore((state) => state.deleteMessage)
   const [sourcesOpen, setSourcesOpen] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   const siblings = siblingsOf(conversation, node.id)
   const index = siblings.findIndex((sibling) => sibling.id === node.id)
@@ -257,7 +289,7 @@ function AssistantMessage({
   const streaming = node.status === 'streaming'
 
   return (
-    <div className="group flex gap-3">
+    <div className="message-in group flex gap-3" title={formatFullTimestamp(node.createdAt)}>
       <UniverseMark size={22} className="mt-0.5 shrink-0 text-ink" />
       <div className="min-w-0 flex-1">
         {node.statusPrefix && (
@@ -387,8 +419,32 @@ function AssistantMessage({
               <RotateCcw size={14} />
             </button>
           )}
+          {!streaming && (
+            <button
+              type="button"
+              aria-label="Delete response"
+              title="Delete response and its replies in this branch"
+              onClick={() => setConfirmingDelete(true)}
+              className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </ActionRow>
       </div>
+
+      <ConfirmDialog
+        open={confirmingDelete}
+        onClose={() => setConfirmingDelete(false)}
+        title="Delete this response?"
+        body="This removes the response and everything that follows it in this branch. The rest of the conversation stays, and you can undo right after."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          setConfirmingDelete(false)
+          deleteMessage(node.id)
+        }}
+      />
     </div>
   )
 }

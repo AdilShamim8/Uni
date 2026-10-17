@@ -45,6 +45,48 @@ function AvailabilityDot({ label }: { label: string }) {
   )
 }
 
+/**
+ * Row inside an inset grouped card — iOS sidebar style. The hover wash is
+ * full-bleed (no row radius); the card provides the rounding and the
+ * hairline separators between rows.
+ */
+function GroupedRow({
+  icon,
+  label,
+  note,
+  subdued = false,
+  onClick,
+}: {
+  icon: React.ReactNode
+  label: string
+  note: string
+  subdued?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex min-touch w-full items-center gap-2.5 px-3 py-[7px] text-left transition-colors duration-[var(--motion-fast)] hover:bg-[var(--c-hover-wash)] active:bg-[var(--c-active-wash)] ${
+        subdued ? 'text-ink-faint hover:text-ink-soft' : 'text-ink'
+      }`}
+    >
+      <span className="shrink-0 text-ink-faint">{icon}</span>
+      <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{label}</span>
+      <AvailabilityDot label={note} />
+    </button>
+  )
+}
+
+/** Inset grouped card container with hairline separators between rows. */
+function GroupedCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="divide-y divide-line/60 overflow-hidden rounded-[12px] border border-line/70 bg-raised/70">
+      {children}
+    </div>
+  )
+}
+
 interface ToolEntry {
   kind: 'research' | 'images' | 'voice' | 'canvas' | 'data' | 'presets'
   label: string
@@ -202,7 +244,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         </div>
       </div>
 
-      {/* Tools — one coherent, collapsible group */}
+      {/* Tools — one coherent, collapsible inset group */}
       <div className="mt-4 px-2">
         <button
           type="button"
@@ -218,20 +260,17 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
           />
         </button>
         {toolsOpen && (
-          <div className="mt-0.5 flex flex-col gap-0.5">
+          <GroupedCard>
             {TOOLS.map((tool) => (
-              <Button
+              <GroupedRow
                 key={tool.kind}
-                variant="ghost"
-                className="justify-start"
+                icon={tool.icon}
+                label={tool.label}
+                note={tool.note}
                 onClick={() => openPreview({ kind: tool.kind })}
-              >
-                {tool.icon}
-                {tool.label}
-                <AvailabilityDot label={tool.note} />
-              </Button>
+              />
             ))}
-          </div>
+          </GroupedCard>
         )}
       </div>
 
@@ -240,20 +279,18 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint/80">
           Later
         </p>
-        <div className="flex flex-col gap-0.5">
+        <GroupedCard>
           {LATER.map((entry) => (
-            <Button
+            <GroupedRow
               key={entry.kind}
-              variant="ghost"
-              className="justify-start text-ink-faint hover:text-ink-soft"
+              icon={entry.icon}
+              label={entry.label}
+              note={entry.note}
+              subdued
               onClick={() => openPreview({ kind: entry.kind })}
-            >
-              {entry.icon}
-              {entry.label}
-              <AvailabilityDot label={entry.note} />
-            </Button>
+            />
           ))}
-        </div>
+        </GroupedCard>
       </div>
 
       {/* Conversation history */}
@@ -327,7 +364,11 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
             </button>
           }
         >
-          <MenuItem icon={<SettingsIcon size={15} />} onClick={() => setUi({ settingsOpen: true })}>
+          <MenuItem
+            icon={<SettingsIcon size={15} />}
+            shortcut="⌘,"
+            onClick={() => setUi({ settingsOpen: true })}
+          >
             Settings
           </MenuItem>
           <MenuItem
