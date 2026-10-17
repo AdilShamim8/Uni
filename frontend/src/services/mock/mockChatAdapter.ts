@@ -146,6 +146,12 @@ function buildResponse(request: ChatRequest): string {
   const prompt = request.prompt.trim()
   const lower = prompt.toLowerCase()
 
+  // Agent instructions are surfaced honestly in demo replies so the user
+  // can see the conversation is actually scoped to the agent profile.
+  const agentNote = request.system?.trim()
+    ? `\n\n> Working from your agent instructions: “${request.system.trim().slice(0, 90)}${request.system.trim().length > 90 ? '…' : ''}”\n`
+    : ''
+
   if (request.tools.includes('research')) {
     return `I have opened the **Research preview** with your brief.
 
@@ -169,15 +175,15 @@ Canvas in this milestone is an editable local document with a code fixture — n
 
   const topic = summarizeTopic(prompt)
   if (/code|function|typescript|javascript|snippet|implement|bug|refactor|script/i.test(lower)) {
-    return CODE_RESPONSE(topic)
+    return agentNote + CODE_RESPONSE(topic)
   }
   if (/table|compare|versus|vs\.?\b|trade-?off/i.test(lower)) {
-    return TABLE_RESPONSE(topic)
+    return agentNote + TABLE_RESPONSE(topic)
   }
   if (/list|ideas|brainstorm|plan|steps|outline|checklist/i.test(lower)) {
-    return LIST_RESPONSE(topic)
+    return agentNote + LIST_RESPONSE(topic)
   }
-  return DEFAULT_RESPONSE(topic, hashString(prompt))
+  return agentNote + DEFAULT_RESPONSE(topic, hashString(prompt))
 }
 
 function sleep(ms: number, signal: AbortSignal): Promise<void> {

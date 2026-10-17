@@ -84,9 +84,9 @@ export function App() {
           {/* Work — task briefs, demo execution, review */}
           <Route path="/work" element={<WorkPage />} />
           <Route path="/work/:taskId" element={<WorkPage />} />
-          {/* Agents — reusable profiles and the personal assistant */}
+          {/* Agents — reusable profiles and the personal assistant.
+              `/agents/new` is handled by the :agentId route (id === 'new'). */}
           <Route path="/agents" element={<AgentsPage />} />
-          <Route path="/agents/new" element={<AgentsPage />} />
           <Route path="/agents/:agentId" element={<AgentsPage />} />
           {/* Library — shared local artifacts and projects */}
           <Route path="/library" element={<LibraryPage />} />

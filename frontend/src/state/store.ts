@@ -40,6 +40,7 @@ import {
   saveCredentials,
 } from '@/services/storage/credentials'
 import { makeId } from '@/domain/ids'
+import { useAgentsStore } from '@/state/agentsStore'
 
 interface UiState {
   searchOpen: boolean
@@ -68,7 +69,9 @@ export interface AppStore {
   clearHistory: () => void
   exportAllData: () => string
 
-  newConversation: (options?: { temporary?: boolean }) => string
+  newConversation: (options?: { temporary?: boolean; agentId?: string }) => string
+  /** Find (or create) the ongoing conversation for a saved agent. */
+  openAgentConversation: (agentId: string) => string
   selectConversation: (id: string) => void
   renameConversation: (id: string, title: string) => void
   togglePin: (id: string) => void
@@ -120,9 +123,26 @@ export function setChatAdapter(adapter: ChatAdapter): void {
  * connected credential and a selected model, chat runs live against the
  * user's own endpoint; otherwise fall back to the local demo adapter
  * (or the adapter a test injected). Keys never leave this path.
+ *
+ * An agent may pin a provider/model preference; it is used when that
+ * provider exists and the model is available (connected or demo).
  */
-function resolveAdapter(): ChatAdapter {
+function resolveAdapter(preference?: { providerId: string | null; modelId: string | null }): ChatAdapter {
   const { providers, activeProviderId, activeModelId, credentials } = useAppStore.getState()
+  const wanted = preference?.providerId
+  const wantedProvider = wanted ? providers.find((p) => p.id === wanted) : undefined
+  if (wantedProvider && preference?.modelId) {
+    const modelAvailable =
+      wantedProvider.models.some((m) => m.id === preference.modelId) ||
+      credentials[wantedProvider.id]?.discoveredModels.includes(preference.modelId)
+    const credential = credentials[wantedProvider.id]
+    const usable = wantedProvider.demo || credential?.status === 'connected'
+    if (modelAvailable && usable) {
+      return credential?.status === 'connected' && credential.apiKey
+        ? createLiveAdapter(wantedProvider, credential.apiKey, preference.modelId)
+        : activeAdapter
+    }
+  }
   const provider = providers.find((p) => p.id === activeProviderId)
   const credential = activeProviderId ? credentials[activeProviderId] : undefined
   if (provider && activeModelId && credential?.status === 'connected' && credential.apiKey) {
@@ -229,6 +249,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       pinned: false,
       archived: false,
       temporary: options?.temporary ?? false,
+      agentId: options?.agentId ?? null,
       nodes: {},
       activeLeafId: null,
     }
@@ -249,6 +270,41 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       }
     })
     return conversation.id
+  },
+
+  openAgentConversation: (agentId) => {
+    // Reuse the agent's most recent non-archived conversation with
+    // messages — one ongoing thread per agent, no duplicate histories.
+    const existing = Object.values(get().conversations)
+      .filter(
+        (conversation) =>
+          conversation.agentId === agentId &&
+          !conversation.archived &&
+          Object.keys(conversation.nodes).length > 0,
+      )
+      .sort((a, b) => b.updatedAt - a.updatedAt)[0]
+    if (existing) {
+      get().selectConversation(existing.id)
+      return existing.id
+    }
+    // Otherwise start (or take over the empty) agent conversation titled
+    // after the agent so the sidebar communicates the scope.
+    const agents = useAgentsStore.getState().agents
+    const agent = agents[agentId]
+    const empty = Object.values(get().conversations).find(
+      (conversation) =>
+        conversation.agentId === agentId &&
+        Object.keys(conversation.nodes).length === 0,
+    )
+    if (empty) {
+      get().selectConversation(empty.id)
+      return empty.id
+    }
+    const id = get().newConversation({ agentId })
+    updateConversation(id, (draft) => {
+      draft.title = agent ? `Chat with ${agent.name}` : 'Agent chat'
+    })
+    return id
   },
 
   selectConversation: (id) => {
@@ -593,6 +649,13 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
   const conversation = conversations[conversationId]
   if (!conversation) return
 
+  // Agent scoping: instructions become the system prompt, and the agent's
+  // provider/model preference is resolved explicitly for this turn.
+  const agent = conversation.agentId
+    ? useAgentsStore.getState().agents[conversation.agentId]
+    : null
+  const system = agent?.instructions.trim() ? agent.instructions.trim() : undefined
+
   const history: ChatTurn[] = activePath(conversation)
     .filter((node) => node.id !== assistant.id && node.id !== userNode.id)
     .map((node) => ({ role: node.role, content: node.content }))
@@ -601,7 +664,9 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
   activeAbort = controller
 
   try {
-    await resolveAdapter().stream(
+    await resolveAdapter(
+      agent ? { providerId: agent.providerId, modelId: agent.modelId } : undefined,
+    ).stream(
       {
         prompt: userNode.content,
         history,
@@ -609,6 +674,7 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
         attachments: userNode.attachments ?? [],
         nickname: preferences.nickname,
         traits: preferences.traits,
+        system,
       },
       {
         onStart: (draft) => {

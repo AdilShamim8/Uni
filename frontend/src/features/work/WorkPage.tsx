@@ -294,7 +294,11 @@ function NewTaskForm() {
       return TASK_TEMPLATES.some((t) => t.id === requested) ? (requested as TaskDeliverable) : 'research-report'
     },
   )
-  const [agentId, setAgentId] = useState<string | null>(null)
+  // Preselect an agent when arriving via “Assign task” on a profile.
+  const [agentId, setAgentId] = useState<string | null>(() => {
+    const requested = searchParams.get('agent')
+    return requested && useAgentsStore.getState().agents[requested] ? requested : null
+  })
   const [error, setError] = useState<string | null>(null)
 
   const activeAgents = useMemo(
@@ -434,13 +438,17 @@ type WorkspaceTab = 'overview' | 'activity' | 'outputs'
 function TaskWorkspace({ taskId }: { taskId: string }) {
   const navigate = useNavigate()
   const task = useWorkStore((state) => state.tasks[taskId])
+  const hydrated = useWorkStore((state) => state.hydrated)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [tab, setTab] = useState<WorkspaceTab>('overview')
 
-  // Unknown or deleted id → recover to the Work home (audit R3).
+  // Unknown or deleted id → recover to the Work home — but only after
+  // hydration, or a direct load would redirect before tasks exist
+  // (audit R3).
   useEffect(() => {
+    if (!hydrated) return
     if (!task) navigate('/work', { replace: true })
-  }, [task, navigate])
+  }, [task, hydrated, navigate])
 
   if (!task) return null
 
