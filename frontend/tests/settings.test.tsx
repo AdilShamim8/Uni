@@ -165,3 +165,16 @@ describe('provider quick setup', () => {
     expect(await dialog.findByRole('heading', { name: 'Groq' })).toBeInTheDocument()
   })
 })
+
+describe('settings keyboard shortcut', () => {
+  it('opens Settings with Ctrl/Cmd+, and Escape closes it', async () => {
+    renderApp('/')
+    fireEvent.keyDown(window, { key: ',', ctrlKey: true })
+
+    const dialog = await screen.findByRole('dialog', { name: 'Settings' })
+    expect(dialog).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog', { name: 'Settings' })).not.toBeInTheDocument()
+  })
+})

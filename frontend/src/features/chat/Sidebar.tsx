@@ -364,7 +364,11 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
             </button>
           }
         >
-          <MenuItem icon={<SettingsIcon size={15} />} onClick={() => setUi({ settingsOpen: true })}>
+          <MenuItem
+            icon={<SettingsIcon size={15} />}
+            shortcut="⌘,"
+            onClick={() => setUi({ settingsOpen: true })}
+          >
             Settings
           </MenuItem>
           <MenuItem
