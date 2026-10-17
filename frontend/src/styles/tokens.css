@@ -1,0 +1,150 @@
+/*
+ * Universe design tokens.
+ * Specification and rationale: frontend/docs/design-tokens.md
+ * Every color is semantic; components consume them through Tailwind
+ * theme aliases (bg-canvas, text-ink, border-line, ...) — never raw hex.
+ */
+
+:root {
+  /* Layout geometry */
+  --w-sidebar: 264px;
+  --w-rail: 64px;
+  --w-column: 760px;
+
+  /* Density (comfortable defaults; compact overrides below) */
+  --pad-list-item: 10px;
+  --gap-chat: 28px;
+  --pad-compose: 18px;
+
+  /* Typography */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas,
+    'Liberation Mono', monospace;
+
+  /* Shadows — low and diffuse */
+  --shadow-soft: 0 1px 2px rgba(38, 36, 31, 0.06), 0 4px 12px rgba(38, 36, 31, 0.07);
+  --shadow-raised: 0 4px 16px rgba(38, 36, 31, 0.1), 0 12px 40px rgba(38, 36, 31, 0.12);
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-normal: 180ms;
+}
+
+/* ---------- Light theme (default) ---------- */
+
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  --c-canvas: #ffffff;
+  --c-panel: #faf9f7;
+  --c-subtle: #f1efe9;
+  --c-raised: #ffffff;
+  --c-overlay: #ffffff;
+  --c-inverse: #26241f;
+  --c-line: #e7e4dc;
+  --c-line-strong: #d5d1c7;
+
+  --c-ink: #26241f;
+  --c-ink-soft: #5d5a52;
+  --c-ink-faint: #8b867a;
+  --c-ink-inverse: #f5f4f0;
+
+  --c-accent: #6d28d9;
+  --c-accent-strong: #5b21b6;
+  --c-accent-soft: #efeaf9;
+
+  --c-danger: #b3261e;
+  --c-danger-soft: #fdeeec;
+  --c-success: #1b7f4d;
+  --c-success-soft: #e9f5ee;
+  --c-warning: #92600a;
+  --c-warning-soft: #fdf3e2;
+
+  --c-scrim: rgba(38, 36, 31, 0.42);
+
+  --c-code-bg: #f6f4ef;
+  --c-code-base: #26241f;
+  --c-code-keyword: #6d28d9;
+  --c-code-string: #1b7f4d;
+  --c-code-comment: #8b867a;
+  --c-code-number: #b3261e;
+  --c-code-attr: #0e7490;
+  --c-code-title: #5b21b6;
+}
+
+/* ---------- Dark theme ---------- */
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --c-canvas: #1c1c21;
+  --c-panel: #151519;
+  --c-subtle: #232329;
+  --c-raised: #232329;
+  --c-overlay: #2a2a31;
+  --c-inverse: #eceae6;
+  --c-line: #2e2e36;
+  --c-line-strong: #3c3c45;
+
+  --c-ink: #eceae6;
+  --c-ink-soft: #a8a49b;
+  --c-ink-faint: #7c786f;
+  --c-ink-inverse: #1c1c21;
+
+  --c-accent: #b39dfa;
+  --c-accent-strong: #c7b8fd;
+  --c-accent-soft: #2e2a40;
+
+  --c-danger: #f18a84;
+  --c-danger-soft: #3a2422;
+  --c-success: #6fcf97;
+  --c-success-soft: #1d2f26;
+  --c-warning: #e5b567;
+  --c-warning-soft: #382c1a;
+
+  --c-scrim: rgba(0, 0, 0, 0.55);
+
+  --c-code-bg: #19191e;
+  --c-code-base: #eceae6;
+  --c-code-keyword: #b39dfa;
+  --c-code-string: #6fcf97;
+  --c-code-comment: #7c786f;
+  --c-code-number: #f18a84;
+  --c-code-attr: #7ec8e3;
+  --c-code-title: #c7b8fd;
+}
+
+/* ---------- Text size (application preference) ---------- */
+
+[data-textsize='s'] {
+  font-size: 15px;
+}
+[data-textsize='m'] {
+  font-size: 16px;
+}
+[data-textsize='l'] {
+  font-size: 17px;
+}
+
+/* ---------- Density (application preference) ---------- */
+
+[data-density='compact'] {
+  --pad-list-item: 6px;
+  --gap-chat: 18px;
+  --pad-compose: 12px;
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

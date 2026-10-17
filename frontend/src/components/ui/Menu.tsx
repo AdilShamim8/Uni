@@ -1,0 +1,142 @@
+import {
+  cloneElement,
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
+
+interface MenuContextValue {
+  close: () => void
+}
+
+const MenuContext = createContext<MenuContextValue | null>(null)
+
+export interface MenuProps {
+  /** A single button element; receives open/aria wiring. */
+  trigger: ReactElement
+  children: ReactNode
+  align?: 'start' | 'end'
+  width?: string
+  label?: string
+}
+
+interface TriggerWiring {
+  ref: React.Ref<HTMLButtonElement>
+  onClick: () => void
+  'aria-haspopup': 'menu'
+  'aria-expanded': boolean
+}
+
+/**
+ * Lightweight dropdown menu: click or keyboard toggle, ArrowUp/Down
+ * navigation, Escape closes and restores focus to the trigger.
+ */
+export function Menu({ trigger, children, align = 'end', width = 'w-56', label }: MenuProps) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const onPointerDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) {
+        setOpen(false)
+      }
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+      }
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    const first = menuRef.current?.querySelector<HTMLElement>(
+      '[role="menuitem"]:not([disabled])',
+    )
+    first?.focus()
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [open])
+
+  function handleMenuKeyDown(event: React.KeyboardEvent) {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
+    event.preventDefault()
+    const items = Array.from(
+      menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not([disabled])') ?? [],
+    )
+    if (items.length === 0) return
+    const index = items.indexOf(document.activeElement as HTMLElement)
+    const next =
+      event.key === 'ArrowDown'
+        ? (index + 1 + items.length) % items.length
+        : (index - 1 + items.length) % items.length
+    items[next].focus()
+  }
+
+  const close = () => setOpen(false)
+
+  const wiring: TriggerWiring = {
+    ref: triggerRef,
+    onClick: () => setOpen((value) => !value),
+    'aria-haspopup': 'menu',
+    'aria-expanded': open,
+  }
+
+  return (
+    <div ref={containerRef} className="relative">
+      {/* The trigger is always one of our own button components, which
+          forward refs and spread the wiring props onto a native button. */}
+      {cloneElement(trigger, wiring)}
+      {open && (
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label={label}
+          onKeyDown={handleMenuKeyDown}
+          className={`absolute top-[calc(100%+6px)] z-40 ${align === 'end' ? 'right-0' : 'left-0'} ${width} rounded-xl border border-line bg-overlay p-1.5 shadow-soft`}
+        >
+          <MenuContext.Provider value={{ close }}>{children}</MenuContext.Provider>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export interface MenuItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  icon?: ReactNode
+  danger?: boolean
+  /** Right-aligned hint text (e.g. "Unavailable"). */
+  hint?: string
+  children: ReactNode
+}
+
+export function MenuItem({ icon, danger, hint, className = '', children, ...props }: MenuItemProps) {
+  const context = useContext(MenuContext)
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm transition-colors disabled:pointer-events-none disabled:opacity-50 ${
+        danger ? 'text-danger hover:bg-danger-soft' : 'text-ink hover:bg-subtle'
+      } ${className}`}
+      onClick={(event) => {
+        props.onClick?.(event)
+        if (!event.defaultPrevented) context?.close()
+      }}
+      {...props}
+    >
+      {icon && <span className="shrink-0 opacity-70">{icon}</span>}
+      <span className="min-w-0 flex-1 truncate">{children}</span>
+      {hint && <span className="shrink-0 text-xs text-ink-faint">{hint}</span>}
+    </button>
+  )
+}

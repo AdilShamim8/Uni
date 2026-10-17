@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-label="Geometric Bloom — original sample artwork">
+  <rect width="640" height="480" fill="#efeaf9"/>
+  <g transform="translate(320 240)">
+    <circle r="52" fill="#6d28d9"/>
+    <g fill="none" stroke="#26241f" stroke-width="3">
+      <circle r="86"/>
+      <circle r="124" stroke-dasharray="10 8"/>
+      <circle r="166" stroke-dasharray="2 12"/>
+    </g>
+    <g fill="#8b867a">
+      <circle cx="0" cy="-124" r="12"/>
+      <circle cx="124" cy="0" r="12"/>
+      <circle cx="0" cy="124" r="12"/>
+      <circle cx="-124" cy="0" r="12"/>
+    </g>
+    <g stroke="#6d28d9" stroke-width="2">
+      <line x1="0" y1="-52" x2="0" y2="-124"/>
+      <line x1="52" y1="0" x2="124" y2="0"/>
+      <line x1="0" y1="52" x2="0" y2="124"/>
+      <line x1="-52" y1="0" x2="-124" y2="0"/>
+    </g>
+  </g>
+</svg>

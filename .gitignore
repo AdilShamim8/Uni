@@ -1,0 +1,7 @@
+# Workspace ignore rules
+node_modules/
+dist/
+coverage/
+*.local
+.DS_Store
+npm-debug.log*
