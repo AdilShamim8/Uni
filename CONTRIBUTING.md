@@ -5,7 +5,7 @@ Thanks for helping! ReWoo aims to be a premium, lightweight, honest open-source 
 ## Setup
 
 ```bash
-git clone https://github.com/AdilShamim8/ReWoo.git && cd ReWoo
+git clone https://github.com/AdilShamim8/Universe.git && cd Universe
 bun install            # or: npm install
 cp .env.example .env   # defaults work for local development
 bun run db:push        # create the SQLite schema

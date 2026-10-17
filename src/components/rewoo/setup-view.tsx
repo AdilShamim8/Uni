@@ -22,7 +22,7 @@ interface Step {
   hrefLabel?: string;
 }
 
-const DOCS_URL = "https://github.com/AdilShamim8/ReWoo/blob/main/docs/DEPLOYMENT.md";
+const DOCS_URL = "https://github.com/AdilShamim8/Universe/blob/main/docs/DEPLOYMENT.md";
 
 function buildSteps(status: HealthInfo | null): Step[] {
   const steps: Step[] = [];

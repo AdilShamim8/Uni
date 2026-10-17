@@ -33,7 +33,7 @@ ReWoo ships as a single Next.js application. It deploys cleanly to **Vercel** (t
 5. **Create the tables** — once, from your machine:
 
    ```bash
-   git clone https://github.com/<you>/ReWoo && cd ReWoo
+   git clone https://github.com/<you>/ReWoo && cd Universe
    bun install
    DATABASE_URL="postgresql://…" bun run db:push
    ```
@@ -53,7 +53,7 @@ ReWoo ships as a single Next.js application. It deploys cleanly to **Vercel** (t
 Requirements: Node.js 20+ (or Bun 1.1+), a PostgreSQL database (or SQLite for a single-user, non-clustered deployment).
 
 ```bash
-git clone https://github.com/AdilShamim8/ReWoo.git && cd ReWoo
+git clone https://github.com/AdilShamim8/Universe.git && cd Universe
 bun install                       # or npm install
 cp .env.example .env              # set DATABASE_URL + REWOO_MASTER_KEY
 bun run db:push                   # create tables

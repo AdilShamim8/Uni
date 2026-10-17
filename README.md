@@ -33,8 +33,8 @@ ReWoo is a **premium, lightweight, open-source AI workspace**. Bring your own AP
 Requires **Node.js 20+** (or **Bun 1.1+**).
 
 ```bash
-git clone https://github.com/AdilShamim8/ReWoo.git
-cd ReWoo
+git clone https://github.com/AdilShamim8/Universe.git
+cd Universe
 bun install            # or: npm install — also creates the local SQLite database
 bun run dev            # http://localhost:3000 — no .env copy needed
 ```

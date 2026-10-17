@@ -4,7 +4,7 @@
 
 **Audit date:** 2026-10-15
 **Auditor:** Engineering agent team (automated inspection)
-**Repository:** https://github.com/AdilShamim8/ReWoo @ `main` (6076fb50)
+**Repository:** https://github.com/AdilShamim8/Universe @ `main` (6076fb50)
 **Method:** Full clone, file-by-file inspection of first-party code (`rewoo/`, `web/`, `tests/`, docs), metadata review of vendored engines, cross-reference with `BUGS_AND_ISSUES.md`, `RESEARCH.md`, `docs/ARCHITECTURE.md`.
 
 ---

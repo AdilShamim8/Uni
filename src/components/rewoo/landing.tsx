@@ -55,7 +55,7 @@ export function Landing({ setupRequired, onStart, onSignIn, onOpenSetup }: Landi
         <ReWooWordmark size={24} />
         <div className="flex items-center gap-2">
           <a
-            href="https://github.com/AdilShamim8/ReWoo"
+            href="https://github.com/AdilShamim8/Universe"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
@@ -109,7 +109,7 @@ export function Landing({ setupRequired, onStart, onSignIn, onOpenSetup }: Landi
               <ArrowRight className="size-4" aria-hidden="true" />
             </Button>
             <a
-              href="https://github.com/AdilShamim8/ReWoo"
+              href="https://github.com/AdilShamim8/Universe"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex h-11 items-center gap-2 rounded-xl border border-border bg-card px-5 text-[15px] font-medium transition-colors hover:bg-accent"
