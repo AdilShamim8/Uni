@@ -53,6 +53,8 @@ export interface AppStore {
 
   initialize: () => void
   resetDemoData: () => void
+  clearHistory: () => void
+  exportAllData: () => string
 
   newConversation: (options?: { temporary?: boolean }) => string
   selectConversation: (id: string) => void
@@ -157,6 +159,18 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       activeModelId: 'demo-pro',
     })
   },
+
+  clearHistory: () => {
+    set((state) => {
+      const conversations: Record<string, Conversation> = {}
+      for (const [id, conversation] of Object.entries(state.conversations)) {
+        if (conversation.temporary) conversations[id] = conversation
+      }
+      return { conversations, activeConversationId: null }
+    })
+  },
+
+  exportAllData: () => JSON.stringify(serialize(get()), null, 2),
 
   newConversation: (options) => {
     const now = Date.now()
