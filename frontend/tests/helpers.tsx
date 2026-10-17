@@ -4,6 +4,9 @@ import { afterEach, beforeEach } from 'vitest'
 import { App } from '@/app/App'
 import { createMockAdapter } from '@/services/mock/mockChatAdapter'
 import { resetStoreForTests, setChatAdapter, useAppStore } from '@/state/store'
+import { resetAgentsStoreForTests } from '@/state/agentsStore'
+import { resetWorkStoreForTests } from '@/state/workStore'
+import { resetLibraryStoreForTests } from '@/state/libraryStore'
 
 /** Render the full app with an in-memory router. */
 export function renderApp(initialEntry = '/'): ReturnType<typeof render> {
@@ -21,6 +24,9 @@ export function renderApp(initialEntry = '/'): ReturnType<typeof render> {
 export function setupAppTest(options: { chunkDelay?: number } = {}): void {
   beforeEach(() => {
     resetStoreForTests()
+    resetAgentsStoreForTests()
+    resetWorkStoreForTests()
+    resetLibraryStoreForTests()
     setChatAdapter(
       createMockAdapter({ chunkDelay: options.chunkDelay ?? 0, firstTokenDelay: 0 }),
     )
@@ -29,6 +35,9 @@ export function setupAppTest(options: { chunkDelay?: number } = {}): void {
   afterEach(() => {
     cleanup()
     resetStoreForTests()
+    resetAgentsStoreForTests()
+    resetWorkStoreForTests()
+    resetLibraryStoreForTests()
   })
 }
 

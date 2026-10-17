@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   BarChart3,
-  Briefcase,
+  Bot,
   ChevronDown,
-  FolderKanban,
   Ghost,
   Image as ImageIcon,
-  Mail,
+  Library as LibraryIcon,
   Mic,
   PanelLeftClose,
   PanelLeftOpen,
@@ -15,11 +14,13 @@ import {
   Plus,
   Search,
   Settings as SettingsIcon,
-  Sparkles,
+  MessageSquare,
+  Briefcase,
   Telescope,
 } from 'lucide-react'
 import { groupConversations } from '@/domain/grouping'
 import { useAppStore } from '@/state/store'
+import { useWorkStore } from '@/state/workStore'
 import { UniverseMark } from '@/components/layout/UniverseMark'
 import { Badge, Tooltip } from '@/components/ui/Tooltip'
 import { IconButton } from '@/components/ui/IconButton'
@@ -32,7 +33,89 @@ export interface SidebarProps {
   forceExpanded?: boolean
 }
 
-/** Small contextual dot marking a simulated/preview entry (replaces text badges). */
+/* ------------------------------------------------------------------ */
+/* Primary destinations                                                */
+/* ------------------------------------------------------------------ */
+
+type DestinationId = 'chat' | 'work' | 'agents'
+
+interface Destination {
+  id: DestinationId
+  label: string
+  icon: React.ReactNode
+  path: string
+  match: (pathname: string) => boolean
+}
+
+const DESTINATIONS: Destination[] = [
+  {
+    id: 'chat',
+    label: 'Chat',
+    icon: <MessageSquare size={17} />,
+    path: '/',
+    match: (p) => p === '/' || p.startsWith('/c/'),
+  },
+  {
+    id: 'work',
+    label: 'Work',
+    icon: <Briefcase size={17} />,
+    path: '/work',
+    match: (p) => p.startsWith('/work'),
+  },
+  {
+    id: 'agents',
+    label: 'Agents',
+    icon: <Bot size={17} />,
+    path: '/agents',
+    match: (p) => p.startsWith('/agents'),
+  },
+]
+
+/** One obvious active-destination treatment, shared by all entries. */
+function DestinationRow({
+  destination,
+  active,
+  onClick,
+}: {
+  destination: Destination
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={`flex min-touch w-full items-center gap-2.5 px-3 py-[7px] text-left transition-colors duration-[var(--motion-fast)] ${
+        active
+          ? 'bg-accent-soft font-medium text-accent'
+          : 'text-ink hover:bg-[var(--c-hover-wash)] active:bg-[var(--c-active-wash)]'
+      }`}
+    >
+      <span className="shrink-0">{destination.icon}</span>
+      <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">
+        {destination.label}
+      </span>
+      {active && (
+        <span
+          aria-hidden="true"
+          className="h-[5px] w-[5px] shrink-0 rounded-full bg-accent"
+        />
+      )}
+    </button>
+  )
+}
+
+/** Inset grouped card container with hairline separators between rows. */
+function GroupedCard({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="divide-y divide-line/60 overflow-hidden rounded-[12px] border border-line/70 bg-raised/70">
+      {children}
+    </div>
+  )
+}
+
+/** Small contextual dot marking a simulated/preview entry. */
 function AvailabilityDot({ label }: { label: string }) {
   return (
     <Tooltip label={label}>
@@ -78,17 +161,8 @@ function GroupedRow({
   )
 }
 
-/** Inset grouped card container with hairline separators between rows. */
-function GroupedCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="divide-y divide-line/60 overflow-hidden rounded-[12px] border border-line/70 bg-raised/70">
-      {children}
-    </div>
-  )
-}
-
 interface ToolEntry {
-  kind: 'research' | 'images' | 'voice' | 'canvas' | 'data' | 'presets'
+  kind: 'research' | 'images' | 'voice' | 'canvas' | 'data'
   label: string
   icon: React.ReactNode
   note: string
@@ -100,24 +174,11 @@ const TOOLS: ToolEntry[] = [
   { kind: 'voice', label: 'Voice', icon: <Mic size={16} />, note: 'Sample — no microphone access' },
   { kind: 'canvas', label: 'Canvas', icon: <PenTool size={16} />, note: 'Local session panel' },
   { kind: 'data', label: 'Data analysis', icon: <BarChart3 size={16} />, note: 'Fixture dataset' },
-  { kind: 'presets', label: 'Assistant presets', icon: <Sparkles size={16} />, note: 'Local presets' },
-]
-
-interface LaterEntry {
-  kind: 'projects' | 'work' | 'email'
-  label: string
-  icon: React.ReactNode
-  note: string
-}
-
-const LATER: LaterEntry[] = [
-  { kind: 'projects', label: 'Projects', icon: <FolderKanban size={16} />, note: 'Planned — preview' },
-  { kind: 'work', label: 'Work', icon: <Briefcase size={16} />, note: 'Planned — preview' },
-  { kind: 'email', label: 'Email', icon: <Mail size={16} />, note: 'Planned — preview' },
 ]
 
 export function Sidebar({ forceExpanded = false }: SidebarProps) {
   const navigate = useNavigate()
+  const location = useLocation()
   const conversations = useAppStore((state) => state.conversations)
   const activeConversationId = useAppStore((state) => state.activeConversationId)
   const collapsedPreference = useAppStore((state) => state.preferences.sidebarCollapsed)
@@ -126,10 +187,34 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
   const updatePreferences = useAppStore((state) => state.updatePreferences)
   const setUi = useAppStore((state) => state.setUi)
   const openPreview = useAppStore((state) => state.openPreview)
+  const tasks = useWorkStore((state) => state.tasks)
+  // Derived, scope-specific chat status (audit S1): the sidebar badge
+  // follows the same credential source as the top bar instead of a
+  // hard-coded "Demo", and its copy stays mode-specific.
+  const chatLive = useAppStore((state) => {
+    const credential = state.activeProviderId
+      ? state.credentials[state.activeProviderId]
+      : undefined
+    return (
+      !!state.activeModelId &&
+      credential?.status === 'connected' &&
+      !!credential.apiKey
+    )
+  })
 
   const collapsed = forceExpanded ? false : collapsedPreference
   const [showArchived, setShowArchived] = useState(false)
   const [toolsOpen, setToolsOpen] = useState(true)
+
+  const onWorkRoute = location.pathname.startsWith('/work')
+
+  const recentTasks = useMemo(
+    () =>
+      Object.values(tasks)
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .slice(0, 8),
+    [tasks],
+  )
 
   const visible = useMemo(
     () =>
@@ -154,6 +239,12 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
     navigate(`/c/${id}`)
   }
 
+  function go(path: string) {
+    navigate(path)
+    // Destination changes close the mobile drawer.
+    setUi({ mobileSidebarOpen: false })
+  }
+
   if (collapsed) {
     return (
       <div className="material flex h-full w-rail flex-col items-center gap-1 border-r border-line bg-mat-sidebar py-3">
@@ -163,6 +254,16 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         >
           <PanelLeftOpen size={18} />
         </IconButton>
+        {DESTINATIONS.map((destination) => (
+          <IconButton
+            key={destination.id}
+            label={destination.label}
+            tone={destination.match(location.pathname) ? 'accent' : 'default'}
+            onClick={() => go(destination.path)}
+          >
+            {destination.icon}
+          </IconButton>
+        ))}
         <IconButton label="New chat" tone="accent" onClick={() => handleNewChat(false)}>
           <Plus size={18} />
         </IconButton>
@@ -175,11 +276,8 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         >
           <Search size={18} />
         </IconButton>
-        <IconButton
-          label="Projects (preview)"
-          onClick={() => openPreview({ kind: 'projects' })}
-        >
-          <FolderKanban size={18} />
+        <IconButton label="Library" onClick={() => go('/library')}>
+          <LibraryIcon size={18} />
         </IconButton>
         <div className="flex-1" />
         <IconButton label="Settings" onClick={() => setUi({ settingsOpen: true })}>
@@ -191,16 +289,22 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
 
   return (
     <div className="material safe-left flex h-full w-sidebar flex-col bg-mat-sidebar">
-      {/* Identity — one persistent, understandable demo indicator */}
+      {/* Identity — chat-mode status, honestly derived */}
       <div className="flex items-center gap-2 px-3 pb-1 pt-3">
         <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
           <UniverseMark size={22} className="shrink-0 text-ink" />
           <span className="truncate text-[15px] font-semibold tracking-tight text-ink">
             Universe
           </span>
-          <Tooltip label="Demo workspace — responses are simulated locally. Add a provider in Settings to connect a real model with your own API key.">
-            <Badge className="cursor-help">Demo</Badge>
-          </Tooltip>
+          {chatLive ? (
+            <Tooltip label="Chat is live through your connected provider. Work runs and agent execution stay local demos either way.">
+              <Badge tone="success" className="cursor-help">Live</Badge>
+            </Tooltip>
+          ) : (
+            <Tooltip label="Chat responses are simulated locally. Add a provider in Settings to connect a real model with your own API key.">
+              <Badge className="cursor-help">Demo</Badge>
+            </Tooltip>
+          )}
         </div>
         {!forceExpanded && (
           <IconButton
@@ -244,8 +348,34 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         </div>
       </div>
 
+      {/* Primary destinations */}
+      <nav aria-label="Primary" className="mt-4 px-2">
+        <GroupedCard>
+          {DESTINATIONS.map((destination) => (
+            <DestinationRow
+              key={destination.id}
+              destination={destination}
+              active={destination.match(location.pathname)}
+              onClick={() => go(destination.path)}
+            />
+          ))}
+        </GroupedCard>
+      </nav>
+
+      {/* Library — shared secondary destination */}
+      <div className="mt-3 px-2">
+        <GroupedCard>
+          <GroupedRow
+            icon={<LibraryIcon size={16} />}
+            label="Library"
+            note="Local artifacts and projects"
+            onClick={() => go('/library')}
+          />
+        </GroupedCard>
+      </div>
+
       {/* Tools — one coherent, collapsible inset group */}
-      <div className="mt-4 px-2">
+      <div className="mt-3 px-2">
         <button
           type="button"
           aria-expanded={toolsOpen}
@@ -274,67 +404,94 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         )}
       </div>
 
-      {/* Later — subdued, out of daily navigation */}
-      <div className="mt-3 px-2">
-        <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint/80">
-          Later
-        </p>
-        <GroupedCard>
-          {LATER.map((entry) => (
-            <GroupedRow
-              key={entry.kind}
-              icon={entry.icon}
-              label={entry.label}
-              note={entry.note}
-              subdued
-              onClick={() => openPreview({ kind: entry.kind })}
-            />
-          ))}
-        </GroupedCard>
-      </div>
-
-      {/* Conversation history */}
+      {/* Route-specific history: tasks on Work, conversations elsewhere */}
       <div className="mt-4 flex min-h-0 flex-1 flex-col px-2">
-        <div className="flex items-center justify-between px-2 pb-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-            {showArchived ? 'Archived' : 'Recent'}
-          </p>
-          {archivedCount > 0 && (
-            <button
-              type="button"
-              onClick={() => setShowArchived((value) => !value)}
-              className="rounded px-1 text-[11px] font-medium text-ink-faint transition-colors hover:text-accent"
-            >
-              {showArchived ? 'Recent' : `Archived (${archivedCount})`}
-            </button>
-          )}
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto pb-2">
-          {groups.length === 0 && (
-            <p className="px-2 py-6 text-center text-xs leading-relaxed text-ink-faint">
-              {showArchived
-                ? 'No archived conversations.'
-                : 'No conversations yet. Start a new chat and it will appear here.'}
-            </p>
-          )}
-          {groups.map((group) => (
-            <section key={group.key} className="mb-2">
-              <p className="px-2 pb-1 pt-2 text-[11px] font-medium text-ink-faint/90">
-                {group.label}
+        {onWorkRoute ? (
+          <>
+            <div className="flex items-center justify-between px-2 pb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                Recent tasks
               </p>
-              <div className="flex flex-col gap-0.5">
-                {group.conversations.map((conversation) => (
-                  <ConversationListItem
-                    key={conversation.id}
-                    conversation={conversation}
-                    active={conversation.id === activeConversationId}
-                    onSelect={handleSelect}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+              <button
+                type="button"
+                onClick={() => go('/work')}
+                className="rounded px-1 text-[11px] font-medium text-ink-faint transition-colors hover:text-accent"
+              >
+                All tasks
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+              {recentTasks.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs leading-relaxed text-ink-faint">
+                  No tasks yet. Create one from the Work page.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-0.5">
+                  {recentTasks.map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={() => go(`/work/${task.id}`)}
+                      aria-current={
+                        location.pathname === `/work/${task.id}` ? 'page' : undefined
+                      }
+                      className={`min-touch flex w-full items-center gap-2 rounded-control py-[var(--pad-list-item)] pl-3 pr-1 text-left text-sm transition-colors ${
+                        location.pathname === `/work/${task.id}`
+                          ? 'bg-accent-soft font-medium text-accent'
+                          : 'text-ink hover:bg-[var(--c-hover-wash)]'
+                      }`}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center justify-between px-2 pb-1">
+              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                {showArchived ? 'Archived' : 'Recent'}
+              </p>
+              {archivedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowArchived((value) => !value)}
+                  className="rounded px-1 text-[11px] font-medium text-ink-faint transition-colors hover:text-accent"
+                >
+                  {showArchived ? 'Recent' : `Archived (${archivedCount})`}
+                </button>
+              )}
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+              {groups.length === 0 && (
+                <p className="px-2 py-6 text-center text-xs leading-relaxed text-ink-faint">
+                  {showArchived
+                    ? 'No archived conversations.'
+                    : 'No conversations yet. Start a new chat and it will appear here.'}
+                </p>
+              )}
+              {groups.map((group) => (
+                <section key={group.key} className="mb-2">
+                  <p className="px-2 pb-1 pt-2 text-[11px] font-medium text-ink-faint/90">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-col gap-0.5">
+                    {group.conversations.map((conversation) => (
+                      <ConversationListItem
+                        key={conversation.id}
+                        conversation={conversation}
+                        active={conversation.id === activeConversationId}
+                        onSelect={handleSelect}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Profile / settings */}
