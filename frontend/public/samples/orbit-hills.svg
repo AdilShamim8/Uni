@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-label="Orbit Hills — original sample artwork">
+  <rect width="640" height="480" fill="#faf9f7"/>
+  <circle cx="500" cy="110" r="46" fill="#6d28d9"/>
+  <ellipse cx="500" cy="110" rx="86" ry="26" fill="none" stroke="#26241f" stroke-width="3" transform="rotate(-18 500 110)"/>
+  <circle cx="576" cy="86" r="10" fill="#26241f"/>
+  <path d="M0 360 L120 268 L232 340 L344 264 L470 352 L640 288 L640 480 L0 480 Z" fill="#d5d1c7"/>
+  <path d="M0 412 L150 330 L290 402 L430 322 L560 408 L640 368 L640 480 L0 480 Z" fill="#8b867a"/>
+  <path d="M0 452 L180 396 L360 448 L520 392 L640 436 L640 480 L0 480 Z" fill="#26241f"/>
+  <circle cx="120" cy="300" r="5" fill="#6d28d9"/>
+  <circle cx="360" cy="310" r="4" fill="#6d28d9"/>
+</svg>

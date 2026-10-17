@@ -1,16 +1,22 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  BarChart3,
   Briefcase,
   ChevronDown,
   FolderKanban,
   Ghost,
+  Image as ImageIcon,
   Mail,
+  Mic,
   PanelLeftClose,
   PanelLeftOpen,
+  PenTool,
   Plus,
   Search,
   Settings as SettingsIcon,
+  Sparkles,
+  Telescope,
 } from 'lucide-react'
 import { groupConversations } from '@/domain/grouping'
 import { useAppStore } from '@/state/store'
@@ -137,6 +143,67 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
           <Search size={16} />
           Search conversations
           <span className="ml-auto hidden text-[11px] text-ink-faint sm:inline">Ctrl K</span>
+        </Button>
+      </div>
+
+      {/* Advanced workflow previews — labeled, local, honest */}
+      <div className="mt-2 border-t border-line px-2 pt-2">
+        <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+          Previews
+        </p>
+        <Button
+          variant="ghost"
+          className="justify-start"
+          onClick={() => openPreview({ kind: 'research' })}
+        >
+          <Telescope size={16} />
+          Research
+          <Badge className="ml-auto">Simulated</Badge>
+        </Button>
+        <Button
+          variant="ghost"
+          className="justify-start"
+          onClick={() => openPreview({ kind: 'images' })}
+        >
+          <ImageIcon size={16} />
+          Images
+          <Badge className="ml-auto">Sample</Badge>
+        </Button>
+        <Button
+          variant="ghost"
+          className="justify-start"
+          onClick={() => openPreview({ kind: 'voice' })}
+        >
+          <Mic size={16} />
+          Voice
+          <Badge className="ml-auto">Sample</Badge>
+        </Button>
+        <Button
+          variant="ghost"
+          className="justify-start"
+          onClick={() => openPreview({ kind: 'canvas' })}
+        >
+          <PenTool size={16} />
+          Canvas
+          <Badge className="ml-auto">Local</Badge>
+        </Button>
+        <Button
+          variant="ghost"
+          className="justify-start"
+          onClick={() => openPreview({ kind: 'data' })}
+        >
+          <BarChart3 size={16} />
+          Data analysis
+          <Badge className="ml-auto">Fixture</Badge>
+        </Button>
+        <Button
+          variant="ghost"
+          className="justify-start"
+          onClick={() => openPreview({ kind: 'presets' })}
+        >
+          <Sparkles size={16} />
+          Assistant presets
+          <Badge className="ml-auto">Local</Badge>
         </Button>
       </div>
 

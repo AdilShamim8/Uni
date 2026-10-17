@@ -6,6 +6,7 @@ import { ToastHost } from '@/components/ui/Toast'
 import { useAppStore } from '@/state/store'
 import { ChatPage } from '@/features/chat/ChatPage'
 import { SearchDialog } from '@/features/chat/SearchDialog'
+import { PreviewHost } from '@/features/previews/PreviewHost'
 import { SettingsDialog } from '@/features/settings/SettingsDialog'
 
 export function App() {
@@ -48,6 +49,7 @@ export function App() {
       </AppShell>
       <SearchDialog />
       <SettingsDialog />
+      <PreviewHost />
       <ToastHost />
     </ThemeProvider>
   )
