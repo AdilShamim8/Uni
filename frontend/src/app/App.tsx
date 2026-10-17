@@ -1,51 +1,54 @@
-import { ThemeProvider, useTheme } from '@/app/ThemeProvider'
-
-const THEME_OPTIONS = [
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
-  { value: 'system', label: 'System' },
-] as const
-
-function ThemeDemo() {
-  const { theme, resolvedTheme, setTheme } = useTheme()
-  return (
-    <div className="w-full max-w-md rounded-2xl border border-line bg-raised p-6 shadow-raised">
-      <h1 className="text-xl font-semibold tracking-tight">Universe</h1>
-      <p className="mt-2 leading-relaxed text-ink-soft">
-        Design tokens are live. Surfaces, text, and the muted violet accent all
-        switch through semantic variables — this card included.
-      </p>
-      <div className="mt-5 flex items-center gap-2" role="radiogroup" aria-label="Theme">
-        {THEME_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={theme === option.value}
-            onClick={() => setTheme(option.value)}
-            className={`rounded-[10px] border px-3 py-1.5 text-sm transition-colors ${
-              theme === option.value
-                ? 'border-accent bg-accent-soft text-accent'
-                : 'border-line bg-transparent text-ink-soft hover:bg-subtle'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-      <p className="mt-4 text-xs text-ink-faint" aria-live="polite">
-        Active theme: {theme} (resolved: {resolvedTheme})
-      </p>
-    </div>
-  )
-}
+import { useEffect } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { ThemeProvider } from '@/app/ThemeProvider'
+import { AppShell } from '@/components/layout/AppShell'
+import { ToastHost } from '@/components/ui/Toast'
+import { useAppStore } from '@/state/store'
+import { ChatPage } from '@/features/chat/ChatPage'
+import { SearchDialog } from '@/features/chat/SearchDialog'
+import { SettingsDialog } from '@/features/settings/SettingsDialog'
 
 export function App() {
+  const initialize = useAppStore((state) => state.initialize)
+  const setUi = useAppStore((state) => state.setUi)
+  const density = useAppStore((state) => state.preferences.density)
+  const textSize = useAppStore((state) => state.preferences.textSize)
+
+  useEffect(() => {
+    initialize()
+  }, [initialize])
+
+  // Apply display preferences to the document root.
+  useEffect(() => {
+    const root = document.documentElement
+    root.setAttribute('data-density', density)
+    root.setAttribute('data-textsize', textSize)
+  }, [density, textSize])
+
+  // Global shortcut: Ctrl/Cmd+K opens conversation search.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault()
+        setUi({ searchOpen: true })
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [setUi])
+
   return (
     <ThemeProvider>
-      <main className="flex min-h-screen items-center justify-center bg-canvas px-6 text-ink">
-        <ThemeDemo />
-      </main>
+      <AppShell>
+        <Routes>
+          <Route path="/" element={<ChatPage />} />
+          <Route path="/c/:conversationId" element={<ChatPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AppShell>
+      <SearchDialog />
+      <SettingsDialog />
+      <ToastHost />
     </ThemeProvider>
   )
 }
