@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAppStore } from '@/state/store'
 import { TopBar } from './TopBar'
-import { EmptyState } from './EmptyState'
+import { WelcomeHeading, StarterRow, ProviderHint } from './EmptyState'
 import { EmptyRecents } from './EmptyRecents'
 import { MessageList } from './MessageList'
 import { Composer, type ComposerHandle } from './Composer'
@@ -70,22 +70,20 @@ export function ChatPage() {
         }}
       >
         {/* One composer instance, position-stable via key: the empty chat
-            scrolls greeting → composer → recents as a single composition;
-            a populated conversation pins the composer below the
-            transcript. The textarea never remounts, so focus, IME
-            composition, and drafts survive the transition. */}
+            scrolls greeting → composer → starters → recents as a single
+            centered composition; a populated conversation pins the composer
+            below the transcript. The textarea never remounts, so focus,
+            IME composition, and drafts survive the transition. The static
+            welcome wash renders only in the empty state — it disappears
+            entirely in reading views. */}
         <div
           className={`flex min-h-0 flex-1 flex-col ${
-            hasMessages ? 'overflow-hidden' : 'overflow-y-auto'
+            hasMessages ? 'overflow-hidden' : 'welcome-wash overflow-y-auto'
           }`}
         >
           {!hasMessages && (
             <div key="empty" className="mx-auto w-full max-w-column px-3 sm:px-4">
-              <EmptyState
-                onSuggestion={(text) => {
-                  composerRef.current?.setText(text)
-                }}
-              />
+              <WelcomeHeading />
             </div>
           )}
           {hasMessages && conversation && (
@@ -93,7 +91,13 @@ export function ChatPage() {
           )}
           <Composer key="composer" ref={composerRef} />
           {!hasMessages && (
-            <div key="recents" className="mx-auto w-full max-w-column px-3 pb-10 sm:px-4">
+            <div key="starters" className="mx-auto w-full max-w-column px-3 pb-10 sm:px-4">
+              <StarterRow
+                onSuggestion={(text) => {
+                  composerRef.current?.setText(text)
+                }}
+              />
+              <ProviderHint />
               <EmptyRecents />
             </div>
           )}
