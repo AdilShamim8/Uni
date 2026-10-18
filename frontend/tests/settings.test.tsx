@@ -133,7 +133,7 @@ describe('provider quick setup', () => {
     renderApp('/')
 
     await user.click(
-      screen.getByRole('button', { name: /Connect your API key — bring any provider/i }),
+      screen.getByRole('button', { name: /Connect a supported provider/i }),
     )
 
     const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
@@ -146,7 +146,7 @@ describe('provider quick setup', () => {
     renderApp('/')
 
     await user.click(
-      screen.getByRole('button', { name: /Connect your API key — bring any provider/i }),
+      screen.getByRole('button', { name: /Connect a supported provider/i }),
     )
     const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
     await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))

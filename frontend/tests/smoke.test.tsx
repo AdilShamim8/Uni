@@ -16,7 +16,7 @@ describe('scaffold smoke test', () => {
     // Empty state shows the welcome composition; the sidebar carries the
     // Universe wordmark, so the top bar no longer duplicates it.
     expect(
-      screen.getByRole('heading', { name: /where should we begin/i }),
+      screen.getByRole('heading', { name: /what would you like to create\?/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Universe')).toBeInTheDocument()
   })
