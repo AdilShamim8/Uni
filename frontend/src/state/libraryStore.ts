@@ -177,6 +177,12 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => ({
       delete artifacts[id]
       return { artifacts }
     })
+    // Context selections referencing this artifact are pruned so nothing
+    // shows a raw orphan id.
+    void (async () => {
+      const { useContextStore } = await import('@/state/contextStore')
+      useContextStore.getState().pruneReferences({ artifactId: id })
+    })()
   },
 
   setWorkingDraft: (id, markdown) => {
@@ -301,11 +307,25 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => ({
     set((state) => {
       const projects = { ...state.projects }
       delete projects[id]
-      // Tasks keep their projectId reference; the work page shows the raw
-      // id if the project disappears. Artifacts are kept — only the group
-      // is removed.
-      return { projects }
+      // Artifacts are kept — only the grouping is removed. Their project
+      // link is cleared so nothing points at a deleted project.
+      const artifacts: Record<string, Artifact> = {}
+      for (const [artifactId, artifact] of Object.entries(state.artifacts)) {
+        artifacts[artifactId] =
+          artifact.projectId === id ? { ...artifact, projectId: null } : artifact
+      }
+      return { projects, artifacts }
     })
+    // Cross-store cleanup runs after the state update; dynamic imports
+    // avoid module cycles between the workspace stores.
+    void (async () => {
+      const { useWorkStore } = await import('@/state/workStore')
+      const { useAgentsStore } = await import('@/state/agentsStore')
+      const { useContextStore } = await import('@/state/contextStore')
+      useWorkStore.getState().detachProject(id)
+      useAgentsStore.getState().detachProject(id)
+      useContextStore.getState().pruneReferences({ projectId: id })
+    })()
   },
 }))
 

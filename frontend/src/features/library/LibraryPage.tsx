@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   BarChart3,
+  ChevronLeft,
   FileCode2,
   FileText,
   FolderPlus,
@@ -16,8 +18,10 @@ import {
 } from 'lucide-react'
 import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
-import { useWorkStore } from '@/state/workStore'
+import { useAgentsStore } from '@/state/agentsStore'
 import { useAppStore } from '@/state/store'
+import { useContextStore } from '@/state/contextStore'
+import { useWorkStore } from '@/state/workStore'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -52,6 +56,8 @@ const FILTERS: { id: 'all' | ArtifactKind; label: string }[] = [
 ]
 
 export function LibraryPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const projectId = searchParams.get('project')
   const artifacts = useLibraryStore((state) => state.artifacts)
   const projects = useLibraryStore((state) => state.projects)
   const tasks = useWorkStore((state) => state.tasks)
@@ -70,6 +76,15 @@ export function LibraryPage() {
   )
   const openInCanvas = (id: string) => {
     useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId: id })
+  }
+
+  if (projectId) {
+    return (
+      <ProjectDetail
+        projectId={projectId}
+        onBack={() => setSearchParams({}, { replace: true })}
+      />
+    )
   }
 
   return (
@@ -224,20 +239,27 @@ export function LibraryPage() {
                     return (
                       <li
                         key={project.id}
-                        className="flex items-center gap-3 rounded-group border border-line bg-raised px-4 py-3"
+                        className="flex items-center gap-3 rounded-group border border-line bg-raised px-4 py-3 transition-colors hover:bg-subtle"
                       >
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-subtle text-ink-faint">
-                          <FolderKanban size={16} />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate text-sm font-medium text-ink">
-                            {project.name}
+                        <button
+                          type="button"
+                          onClick={() => setSearchParams({ project: project.id })}
+                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                          aria-label={`Open project ${project.name}`}
+                        >
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-subtle text-ink-faint">
+                            <FolderKanban size={16} />
                           </span>
-                          <span className="mt-0.5 block truncate text-xs text-ink-faint">
-                            {project.description || 'No description'}
-                            {` · ${taskCount} task${taskCount === 1 ? '' : 's'}, ${artifactCount} artifact${artifactCount === 1 ? '' : 's'}`}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium text-ink">
+                              {project.name}
+                            </span>
+                            <span className="mt-0.5 block truncate text-xs text-ink-faint">
+                              {project.description || 'No description'}
+                              {` · ${taskCount} task${taskCount === 1 ? '' : 's'}, ${artifactCount} artifact${artifactCount === 1 ? '' : 's'}`}
+                            </span>
                           </span>
-                        </span>
+                        </button>
                         <button
                           type="button"
                           aria-label={`Delete project ${project.name}`}
@@ -430,5 +452,210 @@ function NewProjectDialog({ open, onClose }: { open: boolean; onClose: () => voi
         />
       </div>
     </Dialog>
+  )
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Project detail — one honest view of everything linked to a project   */
+/* ------------------------------------------------------------------ */
+
+function ProjectDetail({ projectId, onBack }: { projectId: string; onBack: () => void }) {
+  const project = useLibraryStore((state) => state.projects[projectId])
+  const artifacts = useLibraryStore((state) => state.artifacts)
+  const tasks = useWorkStore((state) => state.tasks)
+  const agents = useAgentsStore((state) => state.agents)
+  const conversations = useAppStore((state) => state.conversations)
+  const contextSelections = useContextStore((state) => state.selections)
+  const openInCanvas = (id: string) => {
+    useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId: id })
+  }
+
+  const projectTasks = useMemo(
+    () => Object.values(tasks).filter((task) => task.projectId === projectId),
+    [tasks, projectId],
+  )
+  const projectArtifacts = useMemo(
+    () =>
+      Object.values(artifacts)
+        .filter((artifact) => artifact.projectId === projectId)
+        .sort((a, b) => b.updatedAt - a.updatedAt),
+    [artifacts, projectId],
+  )
+  const projectAgents = useMemo(
+    () => Object.values(agents).filter((agent) => agent.projectIds.includes(projectId)),
+    [agents, projectId],
+  )
+  // Chats link to a project through their explicit context selection.
+  const projectChats = useMemo(() => {
+    const ids = new Set<string>()
+    for (const [targetKey, items] of Object.entries(contextSelections)) {
+      if (
+        items.some((item) => item.kind === 'project' && item.refId === projectId) &&
+        conversations[targetKey]
+      ) {
+        ids.add(targetKey)
+      }
+    }
+    return Object.values(conversations).filter(
+      (conversation) => ids.has(conversation.id) && !conversation.temporary,
+    )
+  }, [contextSelections, conversations, projectId])
+
+  if (!project) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
+        <FolderKanban size={24} className="text-ink-faint" aria-hidden="true" />
+        <p className="max-w-[20rem] text-sm leading-relaxed text-ink-soft">
+          This project was deleted or is no longer available. Nothing you see here links to it
+          anymore.
+        </p>
+        <Button variant="secondary" size="sm" onClick={onBack}>
+          Back to Library
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+        <div className="lg:hidden">
+          <MobileMenuButton />
+        </div>
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          <ChevronLeft size={15} />
+          Library
+        </Button>
+        <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
+          {project.name}
+        </h1>
+        <HeaderExtras />
+      </header>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
+          <div className="rounded-group border border-line bg-raised px-4 py-4">
+            <h2 className="text-lg font-semibold tracking-tight text-ink">{project.name}</h2>
+            <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+              {project.description || 'No description yet.'}
+            </p>
+            <p className="mt-2 text-xs text-ink-faint">
+              {projectTasks.length} task{projectTasks.length === 1 ? '' : 's'} ·{' '}
+              {projectArtifacts.length} document{projectArtifacts.length === 1 ? '' : 's'} ·{' '}
+              {projectAgents.length} agent{projectAgents.length === 1 ? '' : 's'} ·{' '}
+              {projectChats.length} chat{projectChats.length === 1 ? '' : 's'} with this project
+              in context
+            </p>
+          </div>
+
+          <ProjectSection title="Tasks" empty="No tasks linked to this project yet.">
+            {projectTasks.map((task) => (
+              <Link
+                key={task.id}
+                to={`/work/${task.id}`}
+                className="flex min-touch items-center gap-3 rounded-group border border-line bg-raised px-4 py-3 transition-colors hover:bg-subtle"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink">
+                    {task.title}
+                  </span>
+                  <span className="block text-xs text-ink-faint">{task.status}</span>
+                </span>
+              </Link>
+            ))}
+          </ProjectSection>
+
+          <ProjectSection title="Documents" empty="No documents in this project yet.">
+            {projectArtifacts.map((artifact) => (
+              <button
+                key={artifact.id}
+                type="button"
+                onClick={() => openInCanvas(artifact.id)}
+                className="flex min-touch w-full items-center gap-3 rounded-group border border-line bg-raised px-4 py-3 text-left transition-colors hover:bg-subtle"
+              >
+                <FileText size={16} className="shrink-0 text-ink-faint" aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink">
+                    {artifact.title}
+                  </span>
+                  <span className="block text-xs text-ink-faint">
+                    {artifact.versions.length} version{artifact.versions.length === 1 ? '' : 's'}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </ProjectSection>
+
+          <ProjectSection title="Agents" empty="No agents assigned to this project yet.">
+            {projectAgents.map((agent) => (
+              <Link
+                key={agent.id}
+                to={`/agents/${agent.id}`}
+                className="flex min-touch items-center gap-3 rounded-group border border-line bg-raised px-4 py-3 transition-colors hover:bg-subtle"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink">
+                    {agent.name}
+                  </span>
+                  <span className="block truncate text-xs text-ink-faint">
+                    {agent.description}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </ProjectSection>
+
+          <ProjectSection
+            title="Chats using this project"
+            empty="No conversation has this project in its context yet. Add it from a chat's context inspector."
+          >
+            {projectChats.map((conversation) => (
+              <Link
+                key={conversation.id}
+                to={`/c/${conversation.id}`}
+                className="flex min-touch items-center gap-3 rounded-group border border-line bg-raised px-4 py-3 transition-colors hover:bg-subtle"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink">
+                    {conversation.title}
+                  </span>
+                  <span className="block text-xs text-ink-faint">
+                    {conversation.archived ? 'Archived' : 'Active'}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </ProjectSection>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ProjectSection({
+  title,
+  empty,
+  children,
+}: {
+  title: string
+  empty: string
+  children: React.ReactNode
+}) {
+  const items = Array.isArray(children) ? children.flat() : [children]
+  const hasContent = items.filter(Boolean).length > 0
+  return (
+    <section className="mt-6" aria-label={title}>
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">{title}</h3>
+      <div className="mt-2 flex flex-col gap-2">
+        {hasContent ? (
+          children
+        ) : (
+          <p className="rounded-group border border-dashed border-line px-4 py-3 text-xs text-ink-faint">
+            {empty}
+          </p>
+        )}
+      </div>
+    </section>
   )
 }

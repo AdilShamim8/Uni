@@ -124,6 +124,8 @@ export interface AgentsStore {
 
   saveAgent: (profile: AgentProfile) => void
   archiveAgent: (id: string, archived: boolean) => void
+  /** Clear a deleted project's id from every agent that referenced it. */
+  detachProject: (projectId: string) => void
   /**
    * Deletes a non-built-in profile. When the profile is still referenced
    * (e.g. by Work tasks), it is archived instead so history stays readable.
@@ -185,6 +187,26 @@ export const useAgentsStore = create<AgentsStore>()((set, get) => ({
       createdAt: existing?.createdAt ?? Date.now(),
     }
     set((state) => ({ agents: { ...state.agents, [next.id]: next } }))
+  },
+
+  detachProject: (projectId) => {
+    set((state) => {
+      let changed = false
+      const agents: Record<string, AgentProfile> = {}
+      for (const [id, agent] of Object.entries(state.agents)) {
+        if (agent.projectIds.includes(projectId)) {
+          agents[id] = {
+            ...agent,
+            projectIds: agent.projectIds.filter((pid) => pid !== projectId),
+            updatedAt: Date.now(),
+          }
+          changed = true
+        } else {
+          agents[id] = agent
+        }
+      }
+      return changed ? { agents } : state
+    })
   },
 
   archiveAgent: (id, archived) => {
