@@ -8,8 +8,11 @@ import { useAgentsStore } from '@/state/agentsStore'
 import { useWorkStore } from '@/state/workStore'
 import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
+import { useContextStore } from '@/state/contextStore'
+import { useCompareStore } from '@/state/compareStore'
 import { ChatPage } from '@/features/chat/ChatPage'
-import { SearchDialog } from '@/features/chat/SearchDialog'
+import { CommandPalette } from '@/features/search/CommandPalette'
+import { CompareDialog } from '@/features/compare/CompareDialog'
 import { PreviewHost } from '@/features/previews/PreviewHost'
 import { SettingsDialog } from '@/features/settings/SettingsDialog'
 import { WorkPage } from '@/features/work/WorkPage'
@@ -32,6 +35,8 @@ export function App() {
     useWorkStore.getState().initialize()
     useLibraryStore.getState().initialize()
     useWorkspaceUiStore.getState().initialize()
+    useContextStore.getState().initialize()
+    useCompareStore.getState().initialize()
   }, [initialize])
 
   // Apply display preferences to the document root.
@@ -95,7 +100,8 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
-      <SearchDialog />
+      <CommandPalette />
+      <CompareDialog />
       <SettingsDialog />
       <PreviewHost />
       <ToastHost />

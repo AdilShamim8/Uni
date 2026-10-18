@@ -41,9 +41,13 @@ import {
 } from '@/services/storage/credentials'
 import { makeId } from '@/domain/ids'
 import { useAgentsStore } from '@/state/agentsStore'
+import { buildContextBlock, resolveContextItems } from '@/domain/contextResolution'
 
 interface UiState {
   searchOpen: boolean
+  /** Scope the command palette opens with (null = workspace-wide). */
+  searchScope: 'all' | 'chats' | 'tasks' | 'agents' | 'projects' | 'files' | null
+  compareOpen: boolean
   settingsOpen: boolean
   /** Section to focus when the settings dialog opens (e.g. 'providers'). */
   settingsSection: string | null
@@ -98,6 +102,14 @@ export interface AppStore {
   setActiveModel: (providerId: string, modelId: string) => void
   setCredential: (providerId: string, credential: ProviderCredential) => void
   clearCredential: (providerId: string) => void
+
+  /** Continue a comparison result as a normal conversation. */
+  importComparisonResult: (input: {
+    prompt: string
+    response: string
+    modelLabel: string
+    providerLabel: string
+  }) => string
 
   setUi: (patch: Partial<UiState>) => void
   openPreview: (preview: PreviewState) => void
@@ -166,6 +178,8 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   credentials: {},
   ui: {
     searchOpen: false,
+    searchScope: null,
+    compareOpen: false,
     settingsOpen: false,
     settingsSection: null,
     mobileSidebarOpen: false,
@@ -401,10 +415,25 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     })
 
     const previewTool = tools.find(
-      (tool) => tool === 'research' || tool === 'images' || tool === 'voice' || tool === 'canvas',
+      (tool) => tool === 'research' || tool === 'images' || tool === 'voice',
     )
     if (previewTool) {
       get().openPreview({ kind: previewTool, brief: trimmed })
+    }
+    if (tools.includes('canvas')) {
+      // Canvas is a persistent workspace now: the brief seeds a new
+      // versioned document and opens the Canvas panel — no session-only
+      // overlay, no silent overwrites.
+      const { useLibraryStore } = await import('@/state/libraryStore')
+      const { useWorkspaceUiStore } = await import('@/state/workspaceUiStore')
+      const title = trimmed.split('\n')[0].slice(0, 60) || 'Canvas document'
+      const artifactId = useLibraryStore.getState().addArtifact({
+        title,
+        kind: 'document',
+        markdown: `# ${title}\n\n${trimmed}\n`,
+        provenance: 'user-authored',
+      })
+      useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId })
     }
 
     await runAssistantTurn(conversationId, userNode)
@@ -580,6 +609,24 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     })
   },
 
+  importComparisonResult: ({ prompt, response, modelLabel, providerLabel }) => {
+    // A new conversation keeps the original comparison untouched and
+    // records where the starting message came from.
+    const id = get().newConversation()
+    const userNode = createNode('user', prompt, null, Date.now())
+    updateConversation(id, (draft) => {
+      attachNode(draft, userNode)
+      draft.title = deriveTitle(prompt)
+    })
+    const assistant = createNode('assistant', response, userNode.id, Date.now(), {
+      statusPrefix: `Continued from a comparison — ${modelLabel} via ${providerLabel}`,
+    })
+    updateConversation(id, (draft) => {
+      attachNode(draft, assistant)
+    })
+    return id
+  },
+
   setUi: (patch) => {
     set((state) => ({ ui: { ...state.ui, ...patch } }))
   },
@@ -654,7 +701,28 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
   const agent = conversation.agentId
     ? useAgentsStore.getState().agents[conversation.agentId]
     : null
-  const system = agent?.instructions.trim() ? agent.instructions.trim() : undefined
+  let system = agent?.instructions.trim() ? agent.instructions.trim() : undefined
+
+  // Explicit context selection: resolved and included only at this moment
+  // (a real user send), never on mount or selection. The user previews the
+  // exact block in the context inspector; content never leaves the device
+  // before this point.
+  {
+    const { useContextStore } = await import('@/state/contextStore')
+    const { useLibraryStore } = await import('@/state/libraryStore')
+    const contextItems = useContextStore.getState().getSelection(conversationId)
+    if (contextItems.length > 0) {
+      const resolved = resolveContextItems(
+        contextItems,
+        useLibraryStore.getState().artifacts,
+        useLibraryStore.getState().projects,
+      )
+      const block = buildContextBlock(resolved)
+      if (block) {
+        system = system ? `${system}\n\n---\n\n${block}` : `Selected context:\n\n${block}`
+      }
+    }
+  }
 
   const history: ChatTurn[] = activePath(conversation)
     .filter((node) => node.id !== assistant.id && node.id !== userNode.id)
@@ -766,12 +834,14 @@ export function resetStoreForTests(options: { keepStorage?: boolean } = {}): voi
     activeModelId: null,
     credentials: {},
     ui: {
-    searchOpen: false,
-    settingsOpen: false,
-    settingsSection: null,
-    mobileSidebarOpen: false,
-    preview: null,
-  },
+      searchOpen: false,
+      searchScope: null,
+      compareOpen: false,
+      settingsOpen: false,
+      settingsSection: null,
+      mobileSidebarOpen: false,
+      preview: null,
+    },
     toast: null,
   })
 }
