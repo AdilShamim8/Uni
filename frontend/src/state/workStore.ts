@@ -306,6 +306,8 @@ export interface WorkStore {
     patch: Partial<Pick<WorkTask, 'title' | 'goal' | 'deliverable' | 'agentId' | 'projectId'>>,
   ) => void
   deleteTask: (id: string) => void
+  /** Clear a deleted project's id from every task that referenced it. */
+  detachProject: (projectId: string) => void
 
   runTask: (id: string) => void
   pauseTask: (id: string) => void
@@ -407,6 +409,22 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
       return {
         tasks: { ...state.tasks, [id]: { ...task, ...patch, updatedAt: Date.now() } },
       }
+    })
+  },
+
+  detachProject: (projectId) => {
+    set((state) => {
+      let changed = false
+      const tasks: Record<string, WorkTask> = {}
+      for (const [id, task] of Object.entries(state.tasks)) {
+        if (task.projectId === projectId) {
+          tasks[id] = { ...task, projectId: null, updatedAt: Date.now() }
+          changed = true
+        } else {
+          tasks[id] = task
+        }
+      }
+      return changed ? { tasks } : state
     })
   },
 

@@ -41,6 +41,7 @@ import {
 } from '@/services/storage/credentials'
 import { makeId } from '@/domain/ids'
 import { useAgentsStore } from '@/state/agentsStore'
+import { buildContextBlock, resolveContextItems } from '@/domain/contextResolution'
 
 interface UiState {
   searchOpen: boolean
@@ -672,7 +673,28 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
   const agent = conversation.agentId
     ? useAgentsStore.getState().agents[conversation.agentId]
     : null
-  const system = agent?.instructions.trim() ? agent.instructions.trim() : undefined
+  let system = agent?.instructions.trim() ? agent.instructions.trim() : undefined
+
+  // Explicit context selection: resolved and included only at this moment
+  // (a real user send), never on mount or selection. The user previews the
+  // exact block in the context inspector; content never leaves the device
+  // before this point.
+  {
+    const { useContextStore } = await import('@/state/contextStore')
+    const { useLibraryStore } = await import('@/state/libraryStore')
+    const contextItems = useContextStore.getState().getSelection(conversationId)
+    if (contextItems.length > 0) {
+      const resolved = resolveContextItems(
+        contextItems,
+        useLibraryStore.getState().artifacts,
+        useLibraryStore.getState().projects,
+      )
+      const block = buildContextBlock(resolved)
+      if (block) {
+        system = system ? `${system}\n\n---\n\n${block}` : `Selected context:\n\n${block}`
+      }
+    }
+  }
 
   const history: ChatTurn[] = activePath(conversation)
     .filter((node) => node.id !== assistant.id && node.id !== userNode.id)

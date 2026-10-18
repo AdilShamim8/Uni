@@ -1,7 +1,7 @@
 import { FolderKanban, PenTool } from 'lucide-react'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { CanvasPanel } from '@/features/canvas/CanvasPanel'
-import { Tooltip } from '@/components/ui/Tooltip'
+import { ContextInspector } from '@/features/context/ContextInspector'
 
 /**
  * InspectorHost — the right-hand workspace panel. One clear active tab:
@@ -35,7 +35,7 @@ export function InspectorHost() {
         />
       </div>
       <div className="min-h-0 flex-1">
-        {tab === 'canvas' ? <CanvasPanel /> : <ContextPlaceholder />}
+        {tab === 'canvas' ? <CanvasPanel /> : <ContextInspector />}
       </div>
     </div>
   )
@@ -70,17 +70,3 @@ function InspectorTabButton({
   )
 }
 
-/** Context inspector lands with feature C; honest placeholder until then. */
-function ContextPlaceholder() {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
-      <Tooltip label="Ships in this milestone — project context control">
-        <FolderKanban size={22} className="text-ink-faint" aria-hidden="true" />
-      </Tooltip>
-      <p className="max-w-[16rem] text-sm leading-relaxed text-ink-faint">
-        Context control — choosing exactly which projects and documents a chat or task can see —
-        arrives with project context in this milestone.
-      </p>
-    </div>
-  )
-}
