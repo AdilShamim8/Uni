@@ -47,6 +47,7 @@ interface UiState {
   searchOpen: boolean
   /** Scope the command palette opens with (null = workspace-wide). */
   searchScope: 'all' | 'chats' | 'tasks' | 'agents' | 'projects' | 'files' | null
+  compareOpen: boolean
   settingsOpen: boolean
   /** Section to focus when the settings dialog opens (e.g. 'providers'). */
   settingsSection: string | null
@@ -101,6 +102,14 @@ export interface AppStore {
   setActiveModel: (providerId: string, modelId: string) => void
   setCredential: (providerId: string, credential: ProviderCredential) => void
   clearCredential: (providerId: string) => void
+
+  /** Continue a comparison result as a normal conversation. */
+  importComparisonResult: (input: {
+    prompt: string
+    response: string
+    modelLabel: string
+    providerLabel: string
+  }) => string
 
   setUi: (patch: Partial<UiState>) => void
   openPreview: (preview: PreviewState) => void
@@ -170,6 +179,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   ui: {
     searchOpen: false,
     searchScope: null,
+    compareOpen: false,
     settingsOpen: false,
     settingsSection: null,
     mobileSidebarOpen: false,
@@ -599,6 +609,24 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     })
   },
 
+  importComparisonResult: ({ prompt, response, modelLabel, providerLabel }) => {
+    // A new conversation keeps the original comparison untouched and
+    // records where the starting message came from.
+    const id = get().newConversation()
+    const userNode = createNode('user', prompt, null, Date.now())
+    updateConversation(id, (draft) => {
+      attachNode(draft, userNode)
+      draft.title = deriveTitle(prompt)
+    })
+    const assistant = createNode('assistant', response, userNode.id, Date.now(), {
+      statusPrefix: `Continued from a comparison — ${modelLabel} via ${providerLabel}`,
+    })
+    updateConversation(id, (draft) => {
+      attachNode(draft, assistant)
+    })
+    return id
+  },
+
   setUi: (patch) => {
     set((state) => ({ ui: { ...state.ui, ...patch } }))
   },
@@ -808,6 +836,7 @@ export function resetStoreForTests(options: { keepStorage?: boolean } = {}): voi
     ui: {
       searchOpen: false,
       searchScope: null,
+      compareOpen: false,
       settingsOpen: false,
       settingsSection: null,
       mobileSidebarOpen: false,
