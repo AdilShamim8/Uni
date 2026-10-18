@@ -19,6 +19,8 @@ import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { StatusPill } from '@/components/ui/StatusPill'
+import { HeaderExtras } from '@/components/layout/HeaderExtras'
+import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { TOOL_REGISTRY } from '@/features/chat/toolRegistry'
 import { PersonalAssistantView } from './PersonalAssistantView'
 import type { AgentProfile } from '@/domain/workspaceTypes'
@@ -70,6 +72,9 @@ function AgentDirectory() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+        <div className="lg:hidden">
+          <MobileMenuButton />
+        </div>
         <h1 className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Bot size={16} className="text-ink-faint" />
           Agents
@@ -77,6 +82,8 @@ function AgentDirectory() {
         <span className="hidden text-xs text-ink-faint sm:inline">
           Reusable local profiles
         </span>
+        <div className="flex-1" />
+        <HeaderExtras />
       </header>
 
       <div className="flex-1 overflow-y-auto">
