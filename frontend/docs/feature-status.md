@@ -77,3 +77,80 @@ real request to a provider the user configured with their own API key.
 - Storage failures surface a warning; nothing reports "saved" on a failed write.
 - Temporary chats are not saved locally, but a live request still reaches its provider.
 - Credentials never appear in exports, events, notes, schedules, or fixtures.
+
+---
+
+# Milestone 4 additions — Dynamic workspace & premium features
+
+## Shell and composition
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Simplified sidebar (project selector, one nav card, context-aware New, one Tools menu) | Working | No per-item cards/dots; Library is a fourth destination |
+| Mobile bottom destination bar | Working | Four real destinations; drawer keeps history/tools |
+| Honest activity indicator | Working | Real count of running/paused/needs-input tasks; hidden when none |
+| Focus mode | Working | Collapses sidebar + panels; Esc exits; no state cleared |
+| Balanced empty chat | Working | Composer directly below greeting in one composition; real recents only when data exists |
+| Resizable inspector panel | Working | Pointer + keyboard (arrows/Home/End/Enter), 360–560px, remembered in `universe:layout:v1`; full-height sheet below 1280px |
+| Inspector tabs (Canvas / Context) | Working | One panel surface across all destinations |
+
+## Feature A — Workspace command palette
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Ctrl/Cmd+K global search | Working | Platform-aware shortcut labels |
+| Scopes: All / Chats / Tasks / Agents / Projects / Files | Working | Real local titles and content |
+| Quick actions (new chat/task/document, settings, theme) | Working | Keyboard navigable, grouped |
+| Temporary-chat exclusion; no credentials indexed | Working | Tested |
+| Chats-only flow preserved | Working | Scope selector defaults to All; Chats one click away |
+
+## Feature B — Persistent Canvas and artifact versions
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Library-backed Canvas panel (edit/preview/rename/copy/download) | Working | Downloads always match the screen, including unsaved edits |
+| Debounced working-draft autosave with truthful save states | Working | Draft separate from versions; storage failures shown honestly |
+| Bounded version history (20) + named snapshots | Working | No version per keystroke |
+| Version diff + Restore as a new version | Working | Restoration never erases history |
+| Save-from-message with source conversation/message ids | Working | Always a new document — never a silent overwrite |
+| Canvas tool creates a document | Working | Composer tool seeds a versioned document and opens the panel |
+| Code artifacts are plain text | Working | No execution, no untrusted HTML |
+| Migration from pre-version artifacts | Working | Tested from a real old fixture |
+
+## Feature C — Real project context
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Context inspector (add/remove, availability, size) | Working | Per chat/task; deleted records show "was deleted", not orphan ids |
+| "Included on your next live send" preview | Working | Exact block shown before anything leaves the device |
+| Context sent only on explicit sends | Working | Prepended to the system prompt at send time only |
+| Explicit size limits | Working | 16 KB/item, 48 KB total, truncation labeled |
+| Project detail view (tasks, documents, agents, context-using chats) | Working | `/library?project=<id>` |
+| Cross-store cleanup on project/artifact delete | Working | Task/agent references cleared; context pruned |
+| Context persisted independently of credentials | Working | `universe:context:v1`; never in exports |
+
+## Feature D — Analysis of uploaded CSV files
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Real local parsing (quoted delimiters/newlines, ragged rows, duplicate headers) | Working | papaparse; warnings shown, never substituted results |
+| File/row limits | Working | 2 MB, 20k rows, 200 cols — truncation labeled |
+| Input preview + column type control | Working | Auto inference with ambiguity notes; explicit overrides |
+| Numeric summaries (min/max/mean/median/σ/missing) | Working | Hand-checked tests; blanks, negatives, zeros, malformed handled |
+| Grouping + chart with data-table alternative | Working | sum/mean/count/min/max; labeled SVG + table |
+| Downloads (data CSV + summary MD) | Working | Formula-sanitized exports (`=+-@` neutralized) |
+| Derived artifact with local-computation provenance | Working | Source file never persisted; retention stated in UI |
+| Sample retained as labeled example | Working | Same computation path as uploads |
+
+## Feature E — Side-by-side model comparison
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Compare action in Chat | Working | Explicit Run only — never auto-runs |
+| Up to two models, one prompt, context inspection | Working | Context summary with size; included only on live runs |
+| Demo without a key | Working | Two clearly labeled fixture responses |
+| Live through BYOK | Working | Up-to-two-requests charge warning; reuses the live adapter per slot |
+| Per-slot controllers, run ids, result slots | Working | Stop/failure of one side never affects the other; not routed through the active-chat controller |
+| Copy / Continue in chat / Save to Canvas | Working | Provenance preserved ("Continued from a comparison") |
+| Neutral presentation | Working | Measured durations only; no invented scores, costs, or latencies |
+| Credential-free history | Working | `universe:compare:v1` stores no keys (tested) |
