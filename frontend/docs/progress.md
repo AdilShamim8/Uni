@@ -114,3 +114,53 @@ Week 2 of `roadmap.md`: accessibility pass with real assistive technology, perfo
 - Artifact versioning and richer previews (PDF export needs a real renderer).
 - Screen-reader pass with NVDA/VoiceOver on real devices; axe audit.
 - Optional: project detail views linking tasks + artifacts.
+
+---
+
+# Milestone 04 — Dynamic workspace & premium features
+
+Branch `feat/dynamic-workspace-premium` from `bb7be83ef` (main).
+
+Delivered stages (each committed and pushed individually):
+
+1. `docs/milestone-04-plan.md` — audited gaps (G1–G10), chosen composition,
+   feature scope, acceptance checks.
+2. Layout foundation — geometry tokens (256px sidebar, 768px reading column,
+   360–560px inspector), `workspaceUiStore` (focus mode, remembered split),
+   `SplitWorkspace` (pointer + keyboard resizing, full-height sheet below
+   1280px).
+3. Dynamic shell — simplified sidebar (project selector, context-aware New,
+   one Tools menu), mobile bottom destination bar, honest activity
+   indicator, focus mode with Escape.
+4. Balanced empty chat — composer directly below the greeting, real recent
+   work below, drafts/focus survive the transition (composer key-stable).
+5. Workspace command palette (Feature A) — scopes, quick actions,
+   platform-aware shortcuts; replaces the chats-only dialog.
+6. Versioned artifacts + persistent Canvas (Feature B) — data layer first
+   (10-test suite incl. migration from a real pre-v2 fixture), then the
+   panel: autosaved drafts, named snapshots, diff, restore-as-new-version,
+   save-from-message with source ids, canvas tool creates documents.
+7. Real project context (Feature C) — context inspector with exact preview
+   of what a live send includes, per-chat/task selection, project detail
+   view, cross-store cleanup, `universe:context:v1`.
+8. Real CSV analysis (Feature D) — papaparse-backed parsing with honest
+   warnings, hand-checked summaries, grouping + labeled chart with data
+   table, formula-sanitized exports, local-computation provenance
+   (17-test suite).
+9. Side-by-side model comparison (Feature E) — explicit Run, per-slot
+   controllers (isolated stop/failure), demo fixtures, live BYOK with
+   charge warning, credential-free history, continue-in-chat and
+   save-to-Canvas (7-test suite).
+10. `docs/capability-backlog.md` + feature-status/progress updates.
+
+Quality gates at every step: eslint 0, tsc clean, full vitest suite green
+(182 tests at the final feature commit), production build clean.
+
+## Next concrete tasks
+
+- Browser QA pass at 390/768/1440 both themes; screenshots; verification
+  record update.
+- Screen-reader pass with NVDA/VoiceOver on real devices; axe audit.
+- Real-device Safari checks (backdrop-filter, dvh, safe areas).
+- Backend integrations per `capability-backlog.md` — none were started, by
+  design.
