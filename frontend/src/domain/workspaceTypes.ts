@@ -157,17 +157,47 @@ export interface ScheduleDraft {
 
 export type ArtifactKind = 'report' | 'email' | 'data' | 'notes' | 'document' | 'code'
 
+/**
+ * A saved point in an artifact's history. Working drafts are kept
+ * separately from snapshots — a version is never created per keystroke,
+ * only on explicit saves, named snapshots, and restores.
+ */
+export interface ArtifactVersion {
+  id: string
+  label: string
+  createdAt: number
+  markdown: string
+  kind: 'initial' | 'snapshot' | 'restore'
+}
+
+/** Where an artifact came from — links back without overwriting sources. */
+export interface ArtifactSource {
+  conversationId: string | null
+  messageId: string | null
+  taskId: string | null
+}
+
 export interface Artifact {
   id: string
   title: string
   kind: ArtifactKind
   taskId: string | null
   projectId: string | null
+  /** Latest committed content (the newest version's markdown). */
   markdown: string
+  /**
+   * Unsaved working draft, autosaved separately from snapshots. `null`
+   * means the editing surface matches the committed content.
+   */
+  workingDraft: string | null
+  draftUpdatedAt: number | null
+  /** Bounded version history, newest first. */
+  versions: ArtifactVersion[]
+  source: ArtifactSource | null
   createdAt: number
   updatedAt: number
   /** How this artifact was produced — always shown in the UI. */
-  provenance: 'demo-simulation' | 'user-authored'
+  provenance: 'demo-simulation' | 'user-authored' | 'model-output' | 'local-computation'
 }
 
 export interface Project {
