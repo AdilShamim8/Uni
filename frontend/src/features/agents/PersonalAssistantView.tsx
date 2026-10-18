@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Switch } from '@/components/ui/Switch'
+import { PageToolbar } from '@/components/layout/PageToolbar'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { TASK_STATUS_LABELS, TASK_STATUS_TONES } from '@/domain/taskMachine'
 import type { MemoryNote, ScheduleDraft } from '@/domain/workspaceTypes'
@@ -56,7 +57,7 @@ export function PersonalAssistantView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <button
           type="button"
           onClick={() => navigate('/agents')}
@@ -85,7 +86,7 @@ export function PersonalAssistantView({
           <PencilLine size={14} />
           <span className="hidden sm:inline">Edit</span>
         </Button>
-      </header>
+      </PageToolbar>
 
       {/* Tabs (scrollable on narrow screens) */}
       <div

@@ -28,6 +28,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Dialog } from '@/components/ui/Dialog'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
+import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
 import type { Artifact, ArtifactKind } from '@/domain/workspaceTypes'
@@ -89,7 +90,7 @@ export function LibraryPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
@@ -100,7 +101,7 @@ export function LibraryPage() {
         <span className="hidden text-xs text-ink-faint sm:inline">Local only</span>
         <div className="flex-1" />
         <HeaderExtras />
-      </header>
+      </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
@@ -519,7 +520,7 @@ function ProjectDetail({ projectId, onBack }: { projectId: string; onBack: () =>
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
@@ -531,7 +532,7 @@ function ProjectDetail({ projectId, onBack }: { projectId: string; onBack: () =>
           {project.name}
         </h1>
         <HeaderExtras />
-      </header>
+      </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">

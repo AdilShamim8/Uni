@@ -29,6 +29,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
+import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { Markdown } from '@/features/chat/Markdown'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
@@ -102,7 +103,7 @@ function WorkHome() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
@@ -113,7 +114,7 @@ function WorkHome() {
         <StatusPill label="Demo execution" tone="neutral" />
         <div className="flex-1" />
         <HeaderExtras />
-      </header>
+      </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
@@ -330,7 +331,7 @@ function NewTaskForm() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <button
           type="button"
           onClick={() => navigate('/work')}
@@ -340,7 +341,7 @@ function NewTaskForm() {
           Work
         </button>
         <h1 className="text-sm font-semibold text-ink">New task</h1>
-      </header>
+      </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
@@ -469,7 +470,7 @@ function TaskWorkspace({ taskId }: { taskId: string }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <button
           type="button"
           onClick={() => navigate('/work')}
@@ -486,7 +487,7 @@ function TaskWorkspace({ taskId }: { taskId: string }) {
         />
         <StatusPill label="Demo" tone="neutral" />
         <WorkspaceMenu taskId={taskId} onDelete={() => setDeleteOpen(true)} />
-      </header>
+      </PageToolbar>
 
       {/* Mobile tabs */}
       <div className="flex gap-1 border-b border-line px-2 py-1.5 lg:hidden" role="tablist" aria-label="Task sections">
