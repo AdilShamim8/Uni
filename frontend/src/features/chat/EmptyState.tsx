@@ -36,7 +36,7 @@ const SUGGESTIONS = [
  */
 export function WelcomeHeading() {
   return (
-    <section className="pt-[max(9vh,3.25rem)] text-center">
+    <section className="pb-7 pt-[max(9vh,3.25rem)] text-center">
       <UniverseMark size={36} className="mx-auto text-ink" />
       <h2 className="mx-auto mt-4 max-w-[15ch] text-balance text-[clamp(2rem,4.1vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.022em] text-ink">
         What would you like to create?
