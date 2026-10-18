@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
   flushWorkPersistence,
@@ -9,6 +9,9 @@ import {
 import { useLibraryStore } from '@/state/libraryStore'
 import { downloadText } from '@/features/chat/exportUtils'
 import { renderApp, setupAppTest } from './helpers'
+
+/** Artifact titles also appear in the sidebar's recents; scope to the page. */
+const main = () => within(screen.getByRole('main'))
 
 vi.mock('@/features/chat/exportUtils', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/features/chat/exportUtils')>()
@@ -67,14 +70,14 @@ describe('Library — artifact collection', () => {
     })
 
     renderApp('/library')
-    expect(await screen.findByText('Weekly notes')).toBeTruthy()
-    expect(screen.getByText(/written by you/)).toBeTruthy()
+    expect(await screen.findAllByText('Weekly notes')).not.toHaveLength(0)
+    expect(main().getByText(/written by you/)).toBeTruthy()
 
     // Filter to Notes hides nothing here; switch to Reports to hide it.
     await userEvent.click(screen.getByRole('tab', { name: 'Reports' }))
-    expect(screen.queryByText('Weekly notes')).toBeNull()
+    expect(main().queryByText('Weekly notes')).toBeNull()
     await userEvent.click(screen.getByRole('tab', { name: 'Notes' }))
-    expect(screen.getByText('Weekly notes')).toBeTruthy()
+    expect(main().getByText('Weekly notes')).toBeTruthy()
 
     // Open the viewer, edit the content, and download the edited version.
     await userEvent.click(screen.getByRole('button', { name: /Actions for Weekly notes/ }))
@@ -107,7 +110,7 @@ describe('Library — artifact collection', () => {
     await userEvent.type(renameField, 'Renamed notes')
     await userEvent.click(screen.getByRole('button', { name: 'Save' }))
 
-    expect(await screen.findByText('Renamed notes')).toBeTruthy()
+    expect(await main().findByText('Renamed notes')).toBeTruthy()
     expect(useLibraryStore.getState().artifacts[id]?.title).toBe('Renamed notes')
 
     // Delete with confirmation.
@@ -115,8 +118,9 @@ describe('Library — artifact collection', () => {
     await userEvent.click(screen.getByRole('menuitem', { name: 'Delete' }))
     await userEvent.click(screen.getByRole('button', { name: 'Delete', hidden: false }))
     await waitFor(() => {
-      expect(screen.queryByText('Renamed notes')).toBeNull()
       expect(useLibraryStore.getState().artifacts[id]).toBeUndefined()
+      // The sidebar recents drop it too once the artifact is gone.
+      expect(screen.queryByText('Renamed notes')).toBeNull()
     })
   })
 

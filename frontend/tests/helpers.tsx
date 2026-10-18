@@ -7,6 +7,8 @@ import { resetStoreForTests, setChatAdapter, useAppStore } from '@/state/store'
 import { resetAgentsStoreForTests } from '@/state/agentsStore'
 import { resetWorkStoreForTests } from '@/state/workStore'
 import { resetLibraryStoreForTests } from '@/state/libraryStore'
+import { resetWorkspaceUiForTests } from '@/state/workspaceUiStore'
+import { resetComposerDraftsForTests } from '@/features/chat/composerDrafts'
 
 /** Render the full app with an in-memory router. */
 export function renderApp(initialEntry = '/'): ReturnType<typeof render> {
@@ -27,6 +29,8 @@ export function setupAppTest(options: { chunkDelay?: number } = {}): void {
     resetAgentsStoreForTests()
     resetWorkStoreForTests()
     resetLibraryStoreForTests()
+    resetWorkspaceUiForTests()
+    resetComposerDraftsForTests()
     setChatAdapter(
       createMockAdapter({ chunkDelay: options.chunkDelay ?? 0, firstTokenDelay: 0 }),
     )
@@ -38,6 +42,8 @@ export function setupAppTest(options: { chunkDelay?: number } = {}): void {
     resetAgentsStoreForTests()
     resetWorkStoreForTests()
     resetLibraryStoreForTests()
+    resetWorkspaceUiForTests()
+    resetComposerDraftsForTests()
   })
 }
 

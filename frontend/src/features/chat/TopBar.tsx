@@ -26,6 +26,7 @@ import { Menu, MenuItem } from '@/components/ui/Menu'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TextField } from '@/components/ui/TextField'
 import { Badge, Tooltip } from '@/components/ui/Tooltip'
+import { HeaderExtras } from '@/components/layout/HeaderExtras'
 import { conversationToMarkdown, downloadText, slugifyTitle } from './exportUtils'
 
 export function TopBar() {
@@ -209,6 +210,8 @@ export function TopBar() {
           </Badge>
         </Tooltip>
       )}
+
+      <HeaderExtras />
 
       <Tooltip
         label={

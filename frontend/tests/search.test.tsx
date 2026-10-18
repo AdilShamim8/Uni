@@ -15,7 +15,7 @@ describe('conversation search', () => {
   it('focuses the search input when opened so typing works immediately', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    await user.click(screen.getByRole('button', { name: 'Search conversations' }))
+    await user.click(screen.getByRole('button', { name: 'Search workspace' }))
 
     const input = await screen.findByPlaceholderText(/Search titles and message content/)
     expect(input).toHaveFocus()
@@ -28,7 +28,7 @@ describe('conversation search', () => {
   it('filters real local message content and opens the result by keyboard', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    await user.click(screen.getByRole('button', { name: 'Search conversations' }))
+    await user.click(screen.getByRole('button', { name: 'Search workspace' }))
 
     const input = await screen.findByPlaceholderText(/Search titles and message content/)
     await user.type(input, 'rainy')
@@ -45,7 +45,7 @@ describe('conversation search', () => {
   it('shows a useful empty state when nothing matches', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    await user.click(screen.getByRole('button', { name: 'Search conversations' }))
+    await user.click(screen.getByRole('button', { name: 'Search workspace' }))
     const input = await screen.findByPlaceholderText(/Search titles and message content/)
     await user.type(input, 'zzzz-nothing-matches-this')
 

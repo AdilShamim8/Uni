@@ -7,6 +7,7 @@ import { useAppStore } from '@/state/store'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useWorkStore } from '@/state/workStore'
 import { useLibraryStore } from '@/state/libraryStore'
+import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { ChatPage } from '@/features/chat/ChatPage'
 import { SearchDialog } from '@/features/chat/SearchDialog'
 import { PreviewHost } from '@/features/previews/PreviewHost'
@@ -30,6 +31,7 @@ export function App() {
     useAgentsStore.getState().initialize()
     useWorkStore.getState().initialize()
     useLibraryStore.getState().initialize()
+    useWorkspaceUiStore.getState().initialize()
   }, [initialize])
 
   // Apply display preferences to the document root.

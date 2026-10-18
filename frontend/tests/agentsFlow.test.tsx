@@ -1,24 +1,27 @@
 import { describe, expect, it } from 'vitest'
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useAgentsStore, flushAgentsPersistence } from '@/state/agentsStore'
 import { useAppStore } from '@/state/store'
 import { useWorkStore } from '@/state/workStore'
 import { renderApp, setupAppTest } from './helpers'
 
+/** The agent also appears in the sidebar's agents list; scope to the page. */
+const main = () => within(screen.getByRole('main'))
+
 describe('Agents — directory and builder', () => {
   setupAppTest()
 
   it('seeds the personal assistant and specialists, searchable', async () => {
     renderApp('/agents')
-    expect(await screen.findByText('Universe Assistant')).toBeTruthy()
-    expect(screen.getByText('Research Analyst')).toBeTruthy()
-    expect(screen.getByText('Writing Assistant')).toBeTruthy()
-    expect(screen.getByText('Finance Analyst')).toBeTruthy()
+    expect(await screen.findAllByText('Universe Assistant')).not.toHaveLength(0)
+    expect(main().getByText('Research Analyst')).toBeTruthy()
+    expect(main().getByText('Writing Assistant')).toBeTruthy()
+    expect(main().getByText('Finance Analyst')).toBeTruthy()
 
     await userEvent.type(screen.getByLabelText('Search agents'), 'finance')
-    expect(screen.queryByText('Research Analyst')).toBeNull()
-    expect(screen.getByText('Finance Analyst')).toBeTruthy()
+    expect(main().queryByText('Research Analyst')).toBeNull()
+    expect(main().getByText('Finance Analyst')).toBeTruthy()
   })
 
   it('validates the builder: empty name and instructions are rejected', async () => {
@@ -50,7 +53,7 @@ describe('Agents — directory and builder', () => {
 
   it('refuses to delete built-in agents and archives referenced custom agents', async () => {
     renderApp('/agents')
-    await screen.findByText('Universe Assistant')
+    await screen.findAllByText('Universe Assistant')
     // Built-ins expose no delete action (archive instead); the personal
     // assistant's menu offers Archive, not Delete.
     expect(screen.queryByRole('menuitem', { name: 'Delete' })).toBeNull()
@@ -62,10 +65,10 @@ describe('Agents — chat wiring', () => {
 
   it('"Chat with agent" opens one scoped conversation that reuses the same thread', async () => {
     renderApp('/agents')
-    await screen.findByText('Research Analyst')
+    await screen.findAllByText('Research Analyst')
 
     // Open the profile, then chat with it.
-    await userEvent.click(screen.getByText('Research Analyst'))
+    await userEvent.click(main().getByText('Research Analyst'))
     await userEvent.click(
       await screen.findByRole('button', { name: /Chat with agent/ }),
     )
@@ -104,8 +107,8 @@ describe('Agents — chat wiring', () => {
 
   it('"Assign task" preselects the agent in the Work brief', async () => {
     renderApp('/agents')
-    await screen.findByText('Writing Assistant')
-    await userEvent.click(screen.getByText('Writing Assistant'))
+    await screen.findAllByText('Writing Assistant')
+    await userEvent.click(main().getByText('Writing Assistant'))
     await userEvent.click(await screen.findByRole('button', { name: /Chat with agent|\.\.\./ }))
   })
 })
