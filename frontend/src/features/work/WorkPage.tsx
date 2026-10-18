@@ -28,6 +28,8 @@ import { TextField } from '@/components/ui/TextField'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { StatusPill } from '@/components/ui/StatusPill'
+import { HeaderExtras } from '@/components/layout/HeaderExtras'
+import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { Markdown } from '@/features/chat/Markdown'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
 import { TASK_TEMPLATES } from './taskTemplates'
@@ -101,11 +103,16 @@ function WorkHome() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+        <div className="lg:hidden">
+          <MobileMenuButton />
+        </div>
         <h1 className="flex items-center gap-2 text-sm font-semibold text-ink">
           <Briefcase size={16} className="text-ink-faint" />
           Work
         </h1>
         <StatusPill label="Demo execution" tone="neutral" />
+        <div className="flex-1" />
+        <HeaderExtras />
       </header>
 
       <div className="flex-1 overflow-y-auto">

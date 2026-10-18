@@ -16,12 +16,12 @@ describe('mobile drawer modal semantics (audit D3)', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
 
-    const drawer = await screen.findByRole('dialog', { name: 'Navigation' })
+    const drawer = await screen.findByRole('dialog', { name: 'History and tools' })
     expect(drawer).toHaveAttribute('aria-modal', 'true')
 
     await userEvent.keyboard('{Escape}')
     await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Navigation' })).toBeNull(),
+      expect(screen.queryByRole('dialog', { name: 'History and tools' })).toBeNull(),
     )
   })
 
@@ -29,14 +29,14 @@ describe('mobile drawer modal semantics (audit D3)', () => {
     renderApp('/')
 
     await userEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
-    await screen.findByRole('dialog', { name: 'Navigation' })
+    await screen.findByRole('dialog', { name: 'History and tools' })
 
     const main = document.querySelector('main')
     expect(main?.hasAttribute('inert')).toBe(true)
 
     await userEvent.keyboard('{Escape}')
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Navigation' })).toBeNull()
+      expect(screen.queryByRole('dialog', { name: 'History and tools' })).toBeNull()
       expect(main?.hasAttribute('inert')).toBe(false)
     })
   })
@@ -47,17 +47,17 @@ describe('mobile drawer modal semantics (audit D3)', () => {
     const trigger = screen.getByRole('button', { name: 'Open navigation' })
     trigger.focus()
     await userEvent.click(trigger)
-    await screen.findByRole('dialog', { name: 'Navigation' })
+    await screen.findByRole('dialog', { name: 'History and tools' })
 
     // Focus moved into the drawer (its first primary action).
     await waitFor(() => {
-      const drawer = screen.getByRole('dialog', { name: 'Navigation' })
+      const drawer = screen.getByRole('dialog', { name: 'History and tools' })
       expect(drawer.contains(document.activeElement)).toBe(true)
     })
 
     await userEvent.keyboard('{Escape}')
     await waitFor(() => {
-      expect(screen.queryByRole('dialog', { name: 'Navigation' })).toBeNull()
+      expect(screen.queryByRole('dialog', { name: 'History and tools' })).toBeNull()
       // Focus restored to the trigger that opened the drawer.
       expect(document.activeElement).toBe(trigger)
     })

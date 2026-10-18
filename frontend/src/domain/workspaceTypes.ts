@@ -155,7 +155,7 @@ export interface ScheduleDraft {
 /* Library — shared artifacts and lightweight project context           */
 /* ------------------------------------------------------------------ */
 
-export type ArtifactKind = 'report' | 'email' | 'data' | 'notes'
+export type ArtifactKind = 'report' | 'email' | 'data' | 'notes' | 'document' | 'code'
 
 export interface Artifact {
   id: string
