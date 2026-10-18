@@ -52,6 +52,7 @@ export default {
       borderRadius: {
         control: 'var(--r-control)',
         group: 'var(--r-group)',
+        float: 'var(--r-float)',
         composer: 'var(--r-composer)',
         overlay: 'var(--r-overlay)',
       },
@@ -62,6 +63,7 @@ export default {
       boxShadow: {
         soft: 'var(--shadow-soft)',
         raised: 'var(--shadow-raised)',
+        float: 'var(--shadow-float), var(--glass-edge)',
       },
       spacing: {
         sidebar: 'var(--w-sidebar)',
@@ -73,6 +75,8 @@ export default {
         'list-item': 'var(--pad-list-item)',
         chat: 'var(--gap-chat)',
         compose: 'var(--pad-compose)',
+        'shell-inset': 'var(--shell-inset)',
+        toolbar: 'var(--h-toolbar)',
       },
     },
   },

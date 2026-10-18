@@ -92,36 +92,70 @@ export function Menu({
     }
   }, [open])
 
-  // Collision handling: measure the freshly rendered panel and flip its
-  // direction when it would extend past the viewport edge. Runs before
-  // paint so the user never sees the overflow. Also caps the height so
-  // long menus scroll instead of leaving the screen.
+  // Collision handling: the panel is viewport-positioned (fixed) from the
+  // trigger's rect, then measured before paint to flip its direction when
+  // it would extend past the viewport edge, clamp it horizontally, and cap
+  // its height so long menus scroll instead of leaving the screen. Fixed
+  // positioning also means no rounded/overflow-hidden ancestor (floating
+  // sidebar, dialogs) can ever clip a menu.
   useLayoutEffect(() => {
-    if (!open || !menuRef.current) return
+    if (!open || !menuRef.current || !triggerRef.current) return
     const panel = menuRef.current
-    const rect = panel.getBoundingClientRect()
-    const viewport = window.innerHeight
-    // Environments without layout (jsdom) report all-zero rects — keep the
-    // preferred direction instead of "flipping" on fake geometry.
-    const hasLayout = rect.width > 0 || rect.height > 0 || rect.top !== 0 || rect.bottom !== 0
-    if (hasLayout) {
+    const triggerRect = triggerRef.current.getBoundingClientRect()
+
+    const place = () => {
+      const rect = panel.getBoundingClientRect()
+      const viewportH = window.innerHeight
+      const viewportW = window.innerWidth
+      // Environments without layout (jsdom) report all-zero rects — keep
+      // the preferred direction instead of "flipping" on fake geometry.
+      const hasLayout =
+        rect.width > 0 || rect.height > 0 || rect.top !== 0 || rect.bottom !== 0
       let next = direction
-      if (direction === 'down' && rect.bottom > viewport - 8) {
-        // Would overflow the bottom — flip when there is more room above.
-        if (viewport - rect.bottom > rect.height / 2 || rect.top > rect.height + 8) {
-          next = 'up'
+      if (hasLayout) {
+        if (direction === 'down' && rect.bottom > viewportH - 8) {
+          // Would overflow the bottom — flip when there is more room above.
+          if (viewportH - rect.bottom > rect.height / 2 || rect.top > rect.height + 8) {
+            next = 'up'
+          }
+        } else if (direction === 'up' && rect.top < 8) {
+          next = 'down'
         }
-      } else if (direction === 'up' && rect.top < 8) {
-        next = 'down'
       }
       setEffectiveDirection(next)
 
-      const maxHeight = Math.min(360, viewport - 24)
-      if (rect.height > maxHeight) {
-        panel.style.maxHeight = `${maxHeight}px`
-        panel.style.overflowY = 'auto'
+      const style = panel.style
+      style.left = ''
+      style.right = ''
+      style.top = ''
+      style.bottom = ''
+      if (align === 'end') {
+        style.right = `${Math.max(8, viewportW - triggerRect.right)}px`
+      } else {
+        const width = hasLayout ? rect.width : 0
+        style.left = `${Math.max(
+          8,
+          Math.min(triggerRect.left, viewportW - width - 8),
+        )}px`
       }
+      if (next === 'up') {
+        style.bottom = `${Math.max(8, viewportH - triggerRect.top + 6)}px`
+      } else {
+        style.top = `${Math.max(8, triggerRect.bottom + 6)}px`
+      }
+
+      const maxHeight = Math.min(360, viewportH - 24)
+      if (hasLayout && rect.height > maxHeight) {
+        style.maxHeight = `${maxHeight}px`
+        style.overflowY = 'auto'
+      }
+      // Reveal only after the panel is positioned (pre-paint, so this is
+      // never visible as a jump — including in jsdom, where place() runs
+      // with zero-geometry fallbacks and still shows the menu).
+      style.visibility = 'visible'
     }
+
+    place()
 
     // Focus without scrolling: the panel is already placed inside the
     // viewport, and a native scroll-into-view here could programmatically
@@ -129,7 +163,20 @@ export function Menu({
     panel
       .querySelector<HTMLElement>('[role^="menuitem"]:not([disabled])')
       ?.focus({ preventScroll: true })
-  }, [open, direction])
+
+    // Follow the trigger if an inner scroll container or the window moves
+    // while the menu is open (re-measure before paint, no flicker).
+    const onReposition = () => {
+      if (!triggerRef.current) return
+      place()
+    }
+    window.addEventListener('scroll', onReposition, true)
+    window.addEventListener('resize', onReposition)
+    return () => {
+      window.removeEventListener('scroll', onReposition, true)
+      window.removeEventListener('resize', onReposition)
+    }
+  }, [open, direction, align])
 
   function handleMenuKeyDown(event: React.KeyboardEvent) {
     if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') return
@@ -168,11 +215,10 @@ export function Menu({
           role="menu"
           aria-label={label}
           onKeyDown={handleMenuKeyDown}
-          className={`material pop-in ${
-            effectiveDirection === 'up'
-              ? 'pop-in-up bottom-[calc(100%+6px)]'
-              : 'top-[calc(100%+6px)]'
-          } absolute z-40 ${align === 'end' ? 'right-0' : 'left-0'} ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
+          style={{ visibility: 'hidden', left: 0, top: 0 }}
+          className={`material pop-in z-50 ${
+            effectiveDirection === 'up' ? 'pop-in-up' : ''
+          } fixed ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
         >
           <MenuContext.Provider value={{ close }}>{children}</MenuContext.Provider>
         </div>

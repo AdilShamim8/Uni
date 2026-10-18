@@ -35,6 +35,30 @@ export type TaskStatus =
 
 export type TaskDeliverable = 'research-report' | 'data-review' | 'email-draft'
 
+/** How a task executes: local simulation or a live BYOK drafting request. */
+export type WorkTaskMode = 'demo' | 'ai-draft'
+
+/**
+ * The connected model an AI-draft task sends its single drafting request
+ * to. Labels are snapshotted at configuration time so the task's history
+ * stays readable even if the profile is later renamed or removed.
+ */
+export interface AiDraftModel {
+  providerId: string
+  modelId: string
+  providerLabel: string
+  modelLabel: string
+}
+
+/** Configuration for the AI-draft mode — never contains credentials. */
+export interface AiDraftConfig {
+  model: AiDraftModel
+  /** Extra drafting instructions beyond the goal and agent profile. */
+  instructions: string
+  /** Explicitly selected text context sent with the request. */
+  contextText: string
+}
+
 export type TaskEventKind =
   | 'created'
   | 'status'
@@ -60,12 +84,26 @@ export interface TaskEvent {
   detail?: string
 }
 
-/** The editable review deliverable produced at `ready_for_review`. */
+/**
+ * The editable review deliverable produced at `ready_for_review`.
+ *
+ * `provenance` records honestly how the content came to exist: demo runs
+ * produce simulated fixtures; AI-draft runs stream provider-generated text
+ * (with the effective model snapshotted in `generatedBy`). Partial output
+ * kept after a stop or failure is flagged with `stoppedPartial`.
+ */
 export interface TaskReport {
-  template: 'research' | 'data' | 'email'
+  template: 'research' | 'data' | 'email' | 'draft'
   markdown: string
   /** Library artifact created from this report, once it is saved. */
   artifactId: string | null
+  provenance: 'demo-simulation' | 'provider-generated'
+  /** Effective model for provider-generated reports; null for demo. */
+  generatedBy: AiDraftModel | null
+  /** True when user-selected context was included in the request. */
+  contextIncluded: boolean
+  /** True when this content is a preserved partial from a stopped/failed run. */
+  stoppedPartial: boolean
 }
 
 export interface WorkTask {
@@ -78,8 +116,10 @@ export interface WorkTask {
   /** Local attachment metadata (names/sizes), never file contents. */
   attachments: AttachmentMeta[]
   status: TaskStatus
-  /** Execution mode — Work runs are local simulations in this milestone. */
-  mode: 'demo'
+  /** Execution mode — local demo simulation or live BYOK AI draft. */
+  mode: WorkTaskMode
+  /** AI-draft configuration; null for demo tasks. Never holds credentials. */
+  draftConfig: AiDraftConfig | null
   createdAt: number
   updatedAt: number
   events: TaskEvent[]
@@ -94,6 +134,8 @@ export interface WorkTask {
   report: TaskReport | null
   /** Pending question from a `needs_input` pause. */
   inputRequest: { question: string; options: string[] } | null
+  /** Last run failure message (AI-draft requests); cleared on the next run. */
+  error: string | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -197,7 +239,14 @@ export interface Artifact {
   createdAt: number
   updatedAt: number
   /** How this artifact was produced — always shown in the UI. */
-  provenance: 'demo-simulation' | 'user-authored' | 'model-output' | 'local-computation'
+  provenance:
+    | 'demo-simulation'
+    | 'user-authored'
+    | 'model-output'
+    | 'local-computation'
+    | 'provider-generated'
+  /** For provider-generated artifacts: the effective model snapshot. */
+  generatedBy: AiDraftModel | null
 }
 
 export interface Project {

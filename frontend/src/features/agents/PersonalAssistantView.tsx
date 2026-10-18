@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Switch } from '@/components/ui/Switch'
+import { PageToolbar } from '@/components/layout/PageToolbar'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { TASK_STATUS_LABELS, TASK_STATUS_TONES } from '@/domain/taskMachine'
 import type { MemoryNote, ScheduleDraft } from '@/domain/workspaceTypes'
@@ -56,7 +57,7 @@ export function PersonalAssistantView({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <button
           type="button"
           onClick={() => navigate('/agents')}
@@ -80,12 +81,12 @@ export function PersonalAssistantView({
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
           <Sparkles size={15} />
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{agent.name}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">{agent.name}</h1>
         <Button variant="ghost" size="sm" onClick={onEdit}>
           <PencilLine size={14} />
           <span className="hidden sm:inline">Edit</span>
         </Button>
-      </header>
+      </PageToolbar>
 
       {/* Tabs (scrollable on narrow screens) */}
       <div
@@ -231,7 +232,7 @@ function ConversationTab({ agentId }: { agentId: string }) {
 
         {agent?.starters.length > 0 && (
           <div className="mt-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="text-[12px] font-medium text-ink-faint">
               Try asking
             </p>
             <ul className="mt-2 flex flex-col gap-1.5">

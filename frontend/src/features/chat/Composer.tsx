@@ -310,11 +310,12 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
         </div>
       )}
 
-      {/* Input surface — solid, high-legibility, gently elevated */}
+      {/* Input surface — solid, high-legibility, gently elevated. Focus
+          strengthens the edge gently (border + soft ring); no layout shift. */}
       <div className="rounded-composer border border-line bg-raised shadow-[var(--shadow-composer)] transition-[border-color,box-shadow] duration-[var(--motion-fast)] focus-within:border-accent focus-within:shadow-composer focus-within:ring-[3px] focus-within:ring-[var(--c-focus-ring)]">
         {/* Selected tools */}
         {tools.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 px-3.5 pb-1 pt-3">
+          <div className="flex flex-wrap gap-1.5 px-5 pb-1 pt-4">
             {tools.map((tool) => {
               const definition = TOOL_REGISTRY.find((entry) => entry.id === tool)
               return (
@@ -349,11 +350,11 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
           onChange={(event) => setText(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Message Universe…"
-          className="block max-h-[220px] w-full resize-none bg-transparent px-4 pb-2 pt-3.5 text-[16px] leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none"
+          className="block max-h-[220px] w-full resize-none bg-transparent px-5 pb-2.5 pt-4 text-[16.5px] leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none"
         />
 
         {/* Action row — visually distinct from the writing area */}
-        <div className="flex items-center gap-1 border-t border-line/60 px-2.5 pb-2.5 pt-2">
+        <div className="flex items-center gap-1 border-t border-line/60 px-3.5 pb-3 pt-2.5">
           <input
             ref={fileInputRef}
             type="file"
@@ -386,9 +387,9 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
               aria-label="Stop generating"
               title="Stop generating"
               onClick={stopGeneration}
-              className="min-touch inline-flex h-9 w-9 items-center justify-center rounded-full bg-inverse text-ink-inverse transition-opacity hover:opacity-90"
+              className="press min-touch inline-flex h-10 w-10 items-center justify-center rounded-full bg-inverse text-ink-inverse transition-opacity hover:opacity-90"
             >
-              <Square size={12} fill="currentColor" />
+              <Square size={13} fill="currentColor" />
             </button>
           ) : (
             <button
@@ -397,20 +398,20 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
               title="Send message"
               disabled={!canSend}
               onClick={() => void handleSend()}
-              className={`min-touch inline-flex h-9 w-9 items-center justify-center rounded-full transition-[background-color,color,opacity,transform] duration-[var(--motion-fast)] active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 ${
+              className={`press min-touch inline-flex h-10 w-10 items-center justify-center rounded-full transition-[background-color,color,opacity,transform] duration-[var(--motion-press)] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100 ${
                 canSend
                   ? 'bg-accent text-accent-contrast shadow-soft hover:bg-accent-strong'
                   : 'bg-subtle text-ink-faint'
               }`}
             >
-              <ArrowUp size={17} />
+              <ArrowUp size={18} />
             </button>
           )}
         </div>
       </div>
 
       <p
-        className="mt-2 text-center text-[11px] leading-relaxed text-ink-faint"
+        className="mt-2 text-center text-[12px] leading-relaxed text-ink-faint"
         aria-live="polite"
       >
         {isTemporary && (

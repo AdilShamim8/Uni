@@ -94,7 +94,7 @@ export function ContextInspector() {
       <header className="flex shrink-0 items-center gap-2 border-b border-line px-3 py-2.5">
         <FolderKanban size={15} className="shrink-0 text-ink-faint" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-ink">Context</p>
+          <p className="truncate text-[15px] font-semibold tracking-tight text-ink">Context</p>
           <p className="truncate text-[11.5px] text-ink-faint">
             {taskTitle ? `Task — ${taskTitle}` : 'This conversation'}
           </p>
@@ -131,7 +131,7 @@ export function ContextInspector() {
 
         {items.length > 0 && contextBlock && (
           <section className="mt-4" aria-label="What a live send includes">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="text-[12px] font-medium text-ink-faint">
               Included on your next live send
             </p>
             <pre className="mt-1.5 max-h-40 overflow-y-auto whitespace-pre-wrap rounded-group border border-line bg-raised p-3 text-[11.5px] leading-relaxed text-ink-soft">
@@ -282,7 +282,7 @@ function AddContextMenu({ onAddNote }: { onAddNote: () => void }) {
       {projectList.length > 0 && (
         <>
           <div className="my-1 border-t border-line" />
-          <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+          <p className="px-2.5 pb-1 pt-1.5 text-[12px] font-medium text-ink-faint">
             Projects
           </p>
           {projectList.map((project) => (
@@ -304,7 +304,7 @@ function AddContextMenu({ onAddNote }: { onAddNote: () => void }) {
       {artifactList.length > 0 && (
         <>
           <div className="my-1 border-t border-line" />
-          <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+          <p className="px-2.5 pb-1 pt-1.5 text-[12px] font-medium text-ink-faint">
             Documents
           </p>
           {artifactList.slice(0, 12).map((artifact) => (

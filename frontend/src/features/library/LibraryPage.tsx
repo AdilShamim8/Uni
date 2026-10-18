@@ -28,6 +28,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Dialog } from '@/components/ui/Dialog'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
+import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
 import type { Artifact, ArtifactKind } from '@/domain/workspaceTypes'
@@ -89,18 +90,18 @@ export function LibraryPage() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
-        <h1 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <h1 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink">
           <LibraryIcon size={16} className="text-ink-faint" />
           Library
         </h1>
         <span className="hidden text-xs text-ink-faint sm:inline">Local only</span>
         <div className="flex-1" />
         <HeaderExtras />
-      </header>
+      </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
@@ -208,7 +209,7 @@ export function LibraryPage() {
           <section className="mt-10" aria-label="Projects">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
+                <h3 className="text-[13px] font-semibold text-ink-faint">
                   Projects
                 </h3>
                 <p className="mt-0.5 text-xs text-ink-soft">
@@ -519,7 +520,7 @@ function ProjectDetail({ projectId, onBack }: { projectId: string; onBack: () =>
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
@@ -527,11 +528,11 @@ function ProjectDetail({ projectId, onBack }: { projectId: string; onBack: () =>
           <ChevronLeft size={15} />
           Library
         </Button>
-        <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">
           {project.name}
         </h1>
         <HeaderExtras />
-      </header>
+      </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
@@ -646,7 +647,7 @@ function ProjectSection({
   const hasContent = items.filter(Boolean).length > 0
   return (
     <section className="mt-6" aria-label={title}>
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">{title}</h3>
+      <h3 className="text-[13px] font-semibold text-ink-faint">{title}</h3>
       <div className="mt-2 flex flex-col gap-2">
         {hasContent ? (
           children

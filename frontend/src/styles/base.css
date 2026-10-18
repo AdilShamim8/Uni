@@ -45,6 +45,32 @@ body {
   backdrop-filter: var(--blur-material-soft);
 }
 
+/* Floating glass surface — navigation and floating controls only.
+ * Restrained translucency, a 1px edge highlight, and a grounded shadow.
+ * Documents, message text, forms, and tables stay opaque by design. */
+.glass-float {
+  -webkit-backdrop-filter: var(--blur-material);
+  backdrop-filter: var(--blur-material);
+  box-shadow: var(--shadow-float), var(--glass-edge);
+}
+
+/* Welcome wash — one static, low-contrast radial hint that sits behind
+ * the empty-chat composition only. It recedes in reading/editing views
+ * (those simply never render it) and never animates. */
+.welcome-wash {
+  background:
+    radial-gradient(52rem 30rem at 50% 34%, var(--welcome-wash-a), transparent 65%),
+    radial-gradient(40rem 26rem at 42% 18%, var(--welcome-wash-b), transparent 70%);
+}
+
+/* Press feedback — small visual compression with immediate response. */
+.press {
+  transition: transform var(--motion-press) var(--ease-standard);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
 /* Touch targets: controls that matter on touch devices stay reachable
  * even when their visual size is compact (hover-capable pointers get
  * the precise desktop sizing). */

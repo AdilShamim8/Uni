@@ -11,13 +11,16 @@
  */
 
 :root {
-  /* Layout geometry — sidebar 248–264, reading 720–800, inspector 360–560 */
-  --w-sidebar: 256px;
+  /* Layout geometry — floating sidebar 240px inside a 14px viewport inset,
+     reading 720–800, inspector 360–560, toolbar 56–64 */
+  --w-sidebar: 240px;
   --w-rail: 64px;
   --w-column: 768px;
   --w-inspector: 420px;
   --w-inspector-min: 360px;
   --w-inspector-max: 560px;
+  --shell-inset: 14px;
+  --h-toolbar: 60px;
 
   /* Density (comfortable defaults; compact overrides below) */
   --pad-list-item: 10px;
@@ -29,49 +32,58 @@
   --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas,
     'Liberation Mono', monospace;
 
-  /* Radii — controls 10–12, grouped surfaces 14–16, composer/overlays 22–24 */
+  /* Radii — controls 12, content groups 16–20, major surfaces 24, composer 28 */
   --r-control: 12px;
-  --r-group: 16px;
-  --r-composer: 24px;
+  --r-group: 18px;
+  --r-float: 24px;
+  --r-composer: 28px;
   --r-overlay: 24px;
 
   /* Material blur (applied only where a real layer exists) */
   --blur-material: saturate(180%) blur(24px);
   --blur-material-soft: saturate(160%) blur(14px);
 
-  /* Motion — subtle, 140–220ms opacity/transform */
+  /* Motion — behavior-timed, subtle opacity/transform only.
+     press 100–140 · select 160–200 · menu 180–240 · inspector 220–280
+     transition 240–300 · status 160–200 (ms) */
   --motion-fast: 140ms;
   --motion-normal: 200ms;
+  --motion-press: 120ms;
+  --motion-select: 180ms;
+  --motion-menu: 210ms;
+  --motion-inspector: 250ms;
+  --motion-transition: 270ms;
+  --motion-status: 180ms;
   --ease-standard: cubic-bezier(0.25, 0.1, 0.25, 1);
   --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
-/* ---------- Light theme (default) ---------- */
+/* ---------- Light theme (porcelain, default) ---------- */
 
 :root,
 [data-theme='light'] {
   color-scheme: light;
 
   /* Base surfaces */
-  --c-canvas: #f5f5f7;
+  --c-canvas: #f7f8fa;
   --c-panel: #ffffff;
-  --c-subtle: #ececef;
+  --c-subtle: #eceef2;
   --c-raised: #ffffff;
   --c-overlay: #ffffff;
-  --c-inverse: #1d1d1f;
-  --c-line: #e6e6eb;
-  --c-line-strong: #d8d8de;
+  --c-inverse: #15171c;
+  --c-line: #e5e7ec;
+  --c-line-strong: #d5d8e0;
 
   /* Ink */
-  --c-ink: #1d1d1f;
-  --c-ink-soft: #5d5d64;
-  --c-ink-faint: #78787f;
+  --c-ink: #15171c;
+  --c-ink-soft: #565c68;
+  --c-ink-faint: #757b88;
   --c-ink-inverse: #ffffff;
 
   /* Accent */
-  --c-accent: #6953d9;
-  --c-accent-strong: #5a46c6;
-  --c-accent-soft: #efecfb;
+  --c-accent: #6555d9;
+  --c-accent-strong: #5848c4;
+  --c-accent-soft: #efedfb;
   --c-accent-contrast: #ffffff;
 
   /* Status */
@@ -83,59 +95,69 @@
   --c-warning-soft: #fdf3e1;
 
   /* Interaction semantics */
-  --c-focus-ring: rgba(105, 83, 217, 0.35);
-  --c-selection: rgba(105, 83, 217, 0.18);
-  --c-hover-wash: rgba(29, 29, 31, 0.045);
-  --c-active-wash: rgba(29, 29, 31, 0.08);
-  --c-scrim: rgba(29, 29, 31, 0.4);
-  --c-disabled-fg: #b0b0b8;
+  --c-focus-ring: rgba(101, 85, 217, 0.35);
+  --c-selection: rgba(101, 85, 217, 0.18);
+  --c-hover-wash: rgba(21, 23, 28, 0.045);
+  --c-active-wash: rgba(21, 23, 28, 0.08);
+  --c-scrim: rgba(21, 23, 28, 0.4);
+  --c-disabled-fg: #b0b2ba;
 
   /* Code */
-  --c-code-bg: #f6f6f9;
-  --c-code-base: #1d1d1f;
-  --c-code-keyword: #6953d9;
+  --c-code-bg: #f5f6fa;
+  --c-code-base: #15171c;
+  --c-code-keyword: #6555d9;
   --c-code-string: #1d7f4e;
-  --c-code-comment: #8e8e96;
+  --c-code-comment: #8b909c;
   --c-code-number: #c9352c;
   --c-code-attr: #0e7490;
-  --c-code-title: #5a46c6;
+  --c-code-title: #5848c4;
 
-  /* Shadows — low, diffuse, layered */
-  --shadow-soft: 0 1px 2px rgba(29, 27, 32, 0.04), 0 4px 16px rgba(29, 27, 32, 0.05);
-  --shadow-raised: 0 2px 8px rgba(29, 27, 32, 0.06), 0 12px 40px rgba(29, 27, 32, 0.12);
-  --shadow-composer: 0 1px 2px rgba(29, 27, 32, 0.03), 0 8px 28px rgba(29, 27, 32, 0.07);
+  /* Shadows — low, diffuse, layered; floating surfaces are grounded */
+  --shadow-soft: 0 1px 2px rgba(18, 20, 28, 0.05), 0 4px 16px rgba(18, 20, 28, 0.06);
+  --shadow-raised: 0 2px 8px rgba(18, 20, 28, 0.06), 0 12px 40px rgba(18, 20, 28, 0.13);
+  --shadow-composer: 0 1px 2px rgba(18, 20, 28, 0.04), 0 8px 28px rgba(18, 20, 28, 0.08);
+  --shadow-float: 0 1px 1px rgba(18, 20, 28, 0.04), 0 6px 24px rgba(18, 20, 28, 0.09),
+    0 18px 56px rgba(18, 20, 28, 0.1);
+
+  /* Glass edge highlight — a light-catching 1px line on floating surfaces */
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+
+  /* Welcome wash — one static, low-contrast radial hint behind the
+     greeting only. It never animates and never appears in reading views. */
+  --welcome-wash-a: rgba(101, 85, 217, 0.07);
+  --welcome-wash-b: rgba(62, 99, 221, 0.05);
 
   /* Materials — opaque fallbacks (also used under Reduce transparency) */
-  --mat-sidebar: #f0f0f4;
-  --mat-header: rgba(245, 245, 247, 0.88);
+  --mat-sidebar: #eff0f5;
+  --mat-header: rgba(247, 248, 250, 0.88);
   --mat-menu: #ffffff;
   --mat-overlay: #ffffff;
   --mat-popover: #ffffff;
 }
 
-/* ---------- Dark theme ---------- */
+/* ---------- Dark theme (deep graphite) ---------- */
 
 [data-theme='dark'] {
   color-scheme: dark;
 
-  --c-canvas: #111113;
-  --c-panel: #1c1c1f;
-  --c-subtle: #28282d;
-  --c-raised: #1c1c1f;
-  --c-overlay: #1c1c1f;
-  --c-inverse: #f5f5f7;
-  --c-line: #2a2a2f;
-  --c-line-strong: #3a3a41;
+  --c-canvas: #0d0f14;
+  --c-panel: #191c23;
+  --c-subtle: #232732;
+  --c-raised: #191c23;
+  --c-overlay: #1b1e26;
+  --c-inverse: #f5f7fc;
+  --c-line: #262a35;
+  --c-line-strong: #363b48;
 
-  --c-ink: #f5f5f7;
-  --c-ink-soft: #b3b3bb;
-  --c-ink-faint: #909099;
-  --c-ink-inverse: #141416;
+  --c-ink: #f5f7fc;
+  --c-ink-soft: #b2bac9;
+  --c-ink-faint: #8d95a5;
+  --c-ink-inverse: #15171c;
 
-  --c-accent: #b5a3ff;
-  --c-accent-strong: #c9baff;
-  --c-accent-soft: #2b2741;
-  --c-accent-contrast: #141416;
+  --c-accent: #b3a8ff;
+  --c-accent-strong: #c6bcff;
+  --c-accent-soft: #2a2742;
+  --c-accent-contrast: #15171c;
 
   --c-danger: #f08a80;
   --c-danger-soft: #3a2422;
@@ -144,31 +166,38 @@
   --c-warning: #e3b565;
   --c-warning-soft: #362a18;
 
-  --c-focus-ring: rgba(181, 163, 255, 0.4);
-  --c-selection: rgba(181, 163, 255, 0.26);
-  --c-hover-wash: rgba(245, 245, 247, 0.06);
-  --c-active-wash: rgba(245, 245, 247, 0.1);
-  --c-scrim: rgba(0, 0, 0, 0.58);
-  --c-disabled-fg: #5a5a63;
+  --c-focus-ring: rgba(179, 168, 255, 0.4);
+  --c-selection: rgba(179, 168, 255, 0.26);
+  --c-hover-wash: rgba(245, 247, 252, 0.06);
+  --c-active-wash: rgba(245, 247, 252, 0.1);
+  --c-scrim: rgba(0, 0, 0, 0.6);
+  --c-disabled-fg: #565d6b;
 
-  --c-code-bg: #19191d;
-  --c-code-base: #f5f5f7;
-  --c-code-keyword: #b5a3ff;
+  --c-code-bg: #171a21;
+  --c-code-base: #f5f7fc;
+  --c-code-keyword: #b3a8ff;
   --c-code-string: #74d09a;
-  --c-code-comment: #85858e;
+  --c-code-comment: #7e8595;
   --c-code-number: #f08a80;
   --c-code-attr: #7ec8e3;
-  --c-code-title: #c9baff;
+  --c-code-title: #c6bcff;
 
-  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.45), 0 4px 16px rgba(0, 0, 0, 0.35);
-  --shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.5), 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-raised: 0 2px 8px rgba(0, 0, 0, 0.5), 0 12px 40px rgba(0, 0, 0, 0.62);
   --shadow-composer: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 28px rgba(0, 0, 0, 0.45);
+  --shadow-float: 0 1px 1px rgba(0, 0, 0, 0.4), 0 6px 24px rgba(0, 0, 0, 0.45),
+    0 18px 56px rgba(0, 0, 0, 0.5);
 
-  --mat-sidebar: #161618;
-  --mat-header: rgba(17, 17, 19, 0.86);
-  --mat-menu: #242428;
-  --mat-overlay: #1f1f23;
-  --mat-popover: #242428;
+  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.07);
+
+  --welcome-wash-a: rgba(179, 168, 255, 0.06);
+  --welcome-wash-b: rgba(86, 116, 226, 0.05);
+
+  --mat-sidebar: #181b22;
+  --mat-header: rgba(24, 27, 34, 0.9);
+  --mat-menu: #20242e;
+  --mat-overlay: #1b1e26;
+  --mat-popover: #20242e;
 }
 
 /* ---------- Translucent materials ------------------------------------
@@ -180,19 +209,19 @@
 @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   :root:not([data-transparency='off']),
   :root:not([data-transparency='off'])[data-theme='light'] {
-    --mat-sidebar: rgba(238, 238, 242, 0.78);
-    --mat-header: rgba(245, 245, 247, 0.72);
+    --mat-sidebar: rgba(240, 241, 246, 0.76);
+    --mat-header: rgba(247, 248, 250, 0.72);
     --mat-menu: rgba(255, 255, 255, 0.86);
     --mat-overlay: rgba(255, 255, 255, 0.88);
     --mat-popover: rgba(255, 255, 255, 0.92);
   }
 
   :root:not([data-transparency='off'])[data-theme='dark'] {
-    --mat-sidebar: rgba(21, 21, 24, 0.78);
-    --mat-header: rgba(17, 17, 19, 0.68);
-    --mat-menu: rgba(36, 36, 40, 0.88);
-    --mat-overlay: rgba(30, 30, 34, 0.9);
-    --mat-popover: rgba(36, 36, 40, 0.92);
+    --mat-sidebar: rgba(26, 29, 37, 0.72);
+    --mat-header: rgba(22, 25, 32, 0.72);
+    --mat-menu: rgba(32, 36, 46, 0.88);
+    --mat-overlay: rgba(27, 30, 38, 0.9);
+    --mat-popover: rgba(32, 36, 46, 0.92);
   }
 }
 

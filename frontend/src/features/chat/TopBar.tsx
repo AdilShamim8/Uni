@@ -27,6 +27,7 @@ import { Menu, MenuItem } from '@/components/ui/Menu'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TextField } from '@/components/ui/TextField'
 import { Badge, Tooltip } from '@/components/ui/Tooltip'
+import { PageToolbar, ToolbarGroup } from '@/components/layout/PageToolbar'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
 import { conversationToMarkdown, downloadText, slugifyTitle } from './exportUtils'
 
@@ -91,7 +92,7 @@ export function TopBar() {
   }
 
   return (
-    <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+    <PageToolbar>
       <div className="lg:hidden">
         <IconButton label="Open navigation" onClick={() => setUi({ mobileSidebarOpen: true })}>
           <MenuIcon size={18} />
@@ -128,7 +129,7 @@ export function TopBar() {
           const connected = liveProviderIds.has(provider.id)
           return (
             <div key={provider.id}>
-              <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[12px] font-medium text-ink-faint">
                 {connected && (
                   <span
                     aria-label="Connected"
@@ -175,7 +176,7 @@ export function TopBar() {
 
       {/* Title + state */}
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <h1 className="min-w-0 truncate text-sm font-medium text-ink">
+        <h1 className="min-w-0 truncate text-[15px] font-semibold tracking-tight text-ink">
           {conversation?.title ?? ''}
         </h1>
         {conversationAgent && (
@@ -214,40 +215,42 @@ export function TopBar() {
 
       <HeaderExtras />
 
-      <Tooltip label="Compare two models side by side on one prompt">
-        <IconButton
-          label="Compare models"
-          onClick={() => setUi({ compareOpen: true })}
-        >
-          <Scale size={18} />
-        </IconButton>
-      </Tooltip>
-
-      <Tooltip
-        label={
-          conversation?.temporary
-            ? 'Temporary chat — not saved locally'
-            : 'Make this conversation temporary (not saved)'
-        }
-      >
-        <IconButton
-          label="Toggle temporary chat"
-          active={!!conversation?.temporary}
-          onClick={handleTemporaryToggle}
-        >
-          <Ghost size={18} />
-        </IconButton>
-      </Tooltip>
-
-      {/* Conversation actions */}
-      <Menu
-        label="Conversation actions"
-        trigger={
-          <IconButton label="Conversation actions" disabled={!conversation}>
-            <MoreHorizontal size={18} />
+      {/* Related icon actions share one small grouped surface instead of
+          scattering tiny icons across the toolbar. */}
+      <ToolbarGroup>
+        <Tooltip label="Compare two models side by side on one prompt">
+          <IconButton
+            label="Compare models"
+            onClick={() => setUi({ compareOpen: true })}
+          >
+            <Scale size={17} />
           </IconButton>
-        }
-      >
+        </Tooltip>
+
+        <Tooltip
+          label={
+            conversation?.temporary
+              ? 'Temporary chat — not saved locally'
+              : 'Make this conversation temporary (not saved)'
+          }
+        >
+          <IconButton
+            label="Toggle temporary chat"
+            active={!!conversation?.temporary}
+            onClick={handleTemporaryToggle}
+          >
+            <Ghost size={17} />
+          </IconButton>
+        </Tooltip>
+
+        <Menu
+          label="Conversation actions"
+          trigger={
+            <IconButton label="Conversation actions" disabled={!conversation}>
+              <MoreHorizontal size={18} />
+            </IconButton>
+          }
+        >
         <MenuItem
           icon={<PencilLine size={15} />}
           disabled={!conversation}
@@ -291,7 +294,8 @@ export function TopBar() {
         >
           Delete
         </MenuItem>
-      </Menu>
+        </Menu>
+      </ToolbarGroup>
 
       <Dialog
         open={renameOpen}
@@ -336,6 +340,6 @@ export function TopBar() {
           navigate('/')
         }}
       />
-    </header>
+    </PageToolbar>
   )
 }
