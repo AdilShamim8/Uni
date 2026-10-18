@@ -33,8 +33,9 @@ real request to a provider the user configured with their own API key.
 | Input requests during a run | Working | Question + options; answers persist across reload and reach the report |
 | Activity timeline | Working | Per-run events with kinds, timestamps, honest labels |
 | Review flow: edit → download → complete | Working | Download always matches the edited visible report |
-| Save report to Library | Working | Creates/updates one linked artifact, no duplicates |
-| Work execution itself | Simulated (labeled) | Deterministic local script; no provider is contacted for Work runs |
+| Save report to Library | Working | Creates/updates one linked artifact, no duplicates; AI drafts save with provider-generated provenance and model snapshot |
+| Work execution (demo mode) | Simulated (labeled) | Deterministic local script; no provider is contacted for demo runs |
+| Work AI-draft execution | Live (BYOK) | One bounded drafting request via the BYOK ChatAdapter — connected model only, explicit Generate, run-scoped events, stop/failure preserve partial content, per-task controller isolation, provider-generated provenance (milestone 05) |
 
 ## Agents
 

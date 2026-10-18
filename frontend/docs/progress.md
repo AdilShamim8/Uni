@@ -164,3 +164,34 @@ Quality gates at every step: eslint 0, tsc clean, full vitest suite green
 - Real-device Safari checks (backdrop-filter, dvh, safe areas).
 - Backend integrations per `capability-backlog.md` — none were started, by
   design.
+
+## Milestone 05 — Apple-inspired visual reset (18 October 2026)
+
+Delivered on `feat/apple-inspired-visual-reset` (see
+`milestone-05-design.md` for decisions and evidence):
+
+1. Porcelain/graphite token system — new palette, 14px shell inset, 24px
+   major surfaces, 28px composer, behavior-timed motion tokens, glass
+   materials with edge highlight + grounded shadow, static welcome wash.
+2. Floating shell — glass sidebar inset from the viewport, rounded mobile
+   drawer, floating destination pill; menus moved to viewport-fixed
+   positioning so no rounded ancestor can clip them.
+3. Sidebar as a simple navigation list; New chat and Temporary chat are
+   separate sibling controls (regression-tested).
+4. Centered welcome composition — 44–52px headline, composer as the
+   primary object, compact starter chips, accurate supported-provider
+   wording.
+5. Composer refinement (28px radius, 20px interior, 40px send/stop) and
+   conversation polish.
+6. One shared floating PageToolbar per destination with grouped icon
+   actions; readable typography sweep (sentence-case labels, 15px titles).
+7. Live AI drafting in Work — bounded BYOK draft mode: connected-model
+   selection, charge warning, explicit Generate, run-scoped events,
+   partial-content preservation on stop/failure, per-task controller
+   isolation, provider-generated provenance, credential-free persistence,
+   migrations for pre-AI-draft data (12-test suite).
+
+Quality gates at every step: eslint 0, tsc clean, full vitest suite green
+(196 tests at the final feature commit), production build clean, no
+horizontal overflow at 390/768/1440px or 200% zoom, zero console errors,
+zero non-local network requests, keyboard pass with visible focus.

@@ -4,37 +4,41 @@ Date: 17 October 2026 · These tokens are Universe's own design choices (see `re
 
 ## Principles
 
-- Quiet, warm-neutral light surfaces; charcoal dark surfaces; one muted violet accent used for selection, focus, and identity.
+- Bright porcelain light surfaces; deep graphite dark surfaces; one blue-lilac accent used for selection, focus, and identity.
 - Semantic tokens only — components reference `--c-*` variables through Tailwind theme aliases (`bg-canvas`, `text-ink`, `border-line`, …), never scattered hex values.
-- No decorative gradients, no glass effects, restrained shadows, 12–18px surface radii.
+- Floating glass materials for navigation and floating controls only (restrained translucency, 1px edge highlight, grounded shadow; opaque fallbacks); documents, message text, forms, and tables stay opaque.
+- One static, low-contrast radial wash behind the empty-chat composition only; no moving gradients, star fields, particles, or fake 3D.
+- Geometry: 14px shell inset, 12px control radius, 18px content groups, 24px major surfaces, 28px composer; behavior-timed motion (press 120 / select 180 / menu 210 / inspector 250 / transition 270 / status 180 ms).
 - System font stack; comfortable line height; consistent icon weight (Lucide, ISC license).
 
 ## Color tokens
 
 | Token | Light | Dark | Usage |
 | --- | --- | --- | --- |
-| `--c-canvas` | `#ffffff` | `#1c1c21` | Main conversation background |
-| `--c-panel` | `#faf9f7` | `#151519` | Sidebar background (warm neutral / charcoal) |
-| `--c-subtle` | `#f1efe9` | `#232329` | Hover fills, inline code background |
-| `--c-raised` | `#ffffff` | `#232329` | Composer, cards |
-| `--c-overlay` | `#ffffff` | `#2a2a31` | Menus, tooltips, popovers |
-| `--c-inverse` | `#26241f` | `#eceae6` | Inverse surfaces (badges) |
-| `--c-line` | `#e7e4dc` | `#2e2e36` | Subtle borders, dividers |
-| `--c-line-strong` | `#d5d1c7` | `#3c3c45` | Emphasized borders |
-| `--c-ink` | `#26241f` | `#eceae6` | Primary text |
-| `--c-ink-soft` | `#5d5a52` | `#a8a49b` | Secondary text |
-| `--c-ink-faint` | `#8b867a` | `#7c786f` | Tertiary text, placeholders |
-| `--c-ink-inverse` | `#f5f4f0` | `#1c1c21` | Text on inverse/accent surfaces |
-| `--c-accent` | `#6d28d9` | `#b39dfa` | Accent (muted violet) — selection, focus, links, primary actions |
-| `--c-accent-strong` | `#5b21b6` | `#c7b8fd` | Accent hover/active |
-| `--c-accent-soft` | `#efeaf9` | `#2e2a40` | Selected-item fills, chips |
-| `--c-danger` / `--c-danger-soft` | `#b3261e` / `#fdeeec` | `#f18a84` / `#3a2422` | Destructive actions, errors |
-| `--c-success` / `--c-success-soft` | `#1b7f4d` / `#e9f5ee` | `#6fcf97` / `#1d2f26` | Positive status |
-| `--c-warning` / `--c-warning-soft` | `#92600a` / `#fdf3e2` | `#e5b567` / `#382c1a` | Cautions |
-| `--c-scrim` | `rgba(38,36,31,.42)` | `rgba(0,0,0,.55)` | Dialog/drawer scrims |
+| `--c-canvas` | `#f7f8fa` | `#0d0f14` | Workspace canvas (porcelain / deep graphite) |
+| `--c-panel` | `#ffffff` | `#191c23` | Primary content surface |
+| `--c-subtle` | `#eceef2` | `#232732` | Hover fills, inline code background |
+| `--c-raised` | `#ffffff` | `#191c23` | Composer, cards |
+| `--c-overlay` | `#ffffff` | `#1b1e26` | Menus, tooltips, popovers |
+| `--c-inverse` | `#15171c` | `#f5f7fc` | Inverse surfaces (badges) |
+| `--c-line` | `#e5e7ec` | `#262a35` | Subtle borders, dividers |
+| `--c-line-strong` | `#d5d8e0` | `#363b48` | Emphasized borders |
+| `--c-ink` | `#15171c` | `#f5f7fc` | Primary text |
+| `--c-ink-soft` | `#565c68` | `#b2bac9` | Secondary text |
+| `--c-ink-faint` | `#757b88` | `#8d95a5` | Tertiary text, placeholders |
+| `--c-ink-inverse` | `#ffffff` | `#15171c` | Text on inverse/accent surfaces |
+| `--c-accent` | `#6555d9` | `#b3a8ff` | Accent (blue-lilac) — selection, focus, links, primary actions |
+| `--c-accent-strong` | `#5848c4` | `#c6bcff` | Accent hover/active |
+| `--c-accent-soft` | `#efedfb` | `#2a2742` | Selected-item fills, chips |
+| `--c-danger` / `--c-danger-soft` | `#c9352c` / `#fdeeec` | `#f08a80` / `#3a2422` | Destructive actions, errors |
+| `--c-success` / `--c-success-soft` | `#1d7f4e` / `#e8f5ee` | `#74d09a` / `#1c2f25` | Positive status |
+| `--c-warning` / `--c-warning-soft` | `#8a5a08` / `#fdf3e1` | `#e3b565` / `#362a18` | Cautions |
+| `--c-scrim` | `rgba(21,23,28,.4)` | `rgba(0,0,0,.6)` | Dialog/drawer scrims |
 | `--c-code-*` | see `tokens.css` | see `tokens.css` | Syntax highlighting (keyword/string/comment/number) |
+| `--mat-*` | see `tokens.css` | see `tokens.css` | Navigation/floating glass materials (translucent, opaque fallbacks) |
+| `--welcome-wash-a/b` | see `tokens.css` | see `tokens.css` | Static radial hint behind the empty-chat composition only |
 
-Contrast targets: body text and accent-on-light meet WCAG 2.2 AA (4.5:1); the light accent `#6d28d9` on white ≈ 7.3:1, dark accent `#b39dfa` on `#1c1c21` ≈ 7:1. Secondary text pairs were chosen to stay ≥ 4.5:1 on their surfaces.
+Contrast targets: body text and accent-on-light meet WCAG 2.2 AA (4.5:1); the light accent `#6555d9` on white ≈ 6.6:1, dark accent `#b3a8ff` on `#0d0f14` ≈ 8:1. Secondary text pairs were chosen to stay ≥ 4.5:1 on their surfaces. These starting values are design targets, not an accessibility certification — see `milestone-05-design.md`.
 
 ## Geometry
 
