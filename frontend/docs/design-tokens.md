@@ -40,11 +40,13 @@ Contrast targets: body text and accent-on-light meet WCAG 2.2 AA (4.5:1); the li
 
 | Token / rule | Value |
 | --- | --- |
-| Sidebar expanded | 264px (`--w-sidebar`) |
+| Sidebar expanded | 256px (`--w-sidebar`) — inside the 248–264px band |
 | Sidebar collapsed rail | 64px (`--w-rail`) |
-| Reading column | 760px max (`--w-column`) |
-| Radii | inputs/controls 10px, cards/bubbles 12px, composer/dialogs 16px (within the 12–18px band) |
+| Reading column | 768px max (`--w-column`) — inside the 720–800px band |
+| Inspector panel | default 420px (`--w-inspector`), resizable 360–560px (`--w-inspector-min/max`) |
+| Radii | controls 12px, groups 16px, composer/overlays 24px (`--r-control/group/composer/overlay`) |
 | Shadows | `--shadow-soft` (dropdowns), `--shadow-raised` (dialogs) — low, diffuse |
+| Motion | 140–220ms transform/opacity (`--motion-fast/normal`), reduced-motion honored |
 
 ## Typography
 
