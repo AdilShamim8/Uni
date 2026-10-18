@@ -146,7 +146,7 @@ export function CanvasPanel() {
             setRenameDraft(artifact!.title)
             setRenameOpen(true)
           }}
-          className="min-w-0 flex-1 truncate rounded-control px-1.5 py-1 text-left text-sm font-semibold text-ink transition-colors hover:bg-[var(--c-hover-wash)]"
+          className="min-w-0 flex-1 truncate rounded-control px-1.5 py-1 text-left text-[15px] font-semibold tracking-tight text-ink transition-colors hover:bg-[var(--c-hover-wash)]"
           aria-label={`Rename ${artifact.title}`}
         >
           {artifact.title}
@@ -180,7 +180,7 @@ export function CanvasPanel() {
             Save named snapshot…
           </MenuItem>
           <div className="my-1 border-t border-line" />
-          <p className="px-2.5 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+          <p className="px-2.5 pb-1 pt-1.5 text-[12px] font-medium text-ink-faint">
             {artifact.versions.length} {artifact.versions.length === 1 ? 'version' : 'versions'} —
             newest first
           </p>

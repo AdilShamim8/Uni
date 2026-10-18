@@ -17,14 +17,15 @@ are relevant.
 | Project context selection and inclusion | **Local** | `contextStore.ts` + `contextResolution.ts`; sent only on explicit live sends |
 | CSV/TSV analysis of uploads | **Local** | `csvAnalysis.ts` — real parsing and computation, files never uploaded |
 | Two-model comparison | **Local demo / live with a key** | `compareStore.ts`, explicit Run only, per-slot controllers |
-| Work task runs | **Simulated** | deterministic runner in `workStore.ts`, "Demo execution" pill in the header |
+| Work task runs (demo) | **Simulated** | deterministic runner in `workStore.ts`, "Demo" pill in the header |
+| Work AI drafts (live) | **Live (BYOK)** | `workStore.ts` AI-draft runner on `liveChatAdapter.ts` — one bounded text-drafting request per explicit Generate; charge warning, context disclosure, provider-generated provenance |
 | Export (conversations, documents, analysis) | **Local** | `exportUtils.ts`, `csvAnalysis.ts` — downloads match what is on screen |
 
 ## Missing integrations — and what completing them would take
 
 | Capability | Current constraint | What completion would require |
 | --- | --- | --- |
-| Autonomous Work execution | Existing Work runner uses fixtures — `workStore.ts` executes a scripted plan locally with labeled "Demo execution" status; no tools run, no external effects | Real orchestration/tool runtime and execution events: a server-side (or local) agent runtime with sandboxed tool execution, step-level event streaming, retry/rollback semantics, and audit logs |
+| Autonomous Work execution | Work now offers demo runs and bounded live AI drafts (`workStore.ts`); there is still no multi-step agent runtime — a draft is one request, no tools run, no external effects beyond that request | Real orchestration/tool runtime and execution events: a server-side (or local) agent runtime with sandboxed tool execution, step-level event streaming, retry/rollback semantics, and audit logs |
 | Web research with verified citations | Existing research preview uses examples — `ResearchPreview.tsx` renders fixture sources explicitly labeled "simulated"; no live retrieval happens | Search/retrieval service, source attribution, and real results: a search API or retrieval pipeline, citation extraction with original URLs, freshness checks, and per-claim source linking |
 | Image generation | Existing images are samples — `ImagesPreview.tsx` shows bundled SVG artwork created for this project | Supported image-generation API and output handling: a generation provider integration, content-policy handling, storage for generated assets, and provenance labeling |
 | Real voice conversation | Existing voice view is a sample — `VoicePreview.tsx` requests no microphone and plays nothing | Audio permissions, capture/playback, supported speech/realtime integration: WebAudio capture, a speech-to-text + text-to-speech (or realtime websocket) provider, and honest handling of unsupported browsers |

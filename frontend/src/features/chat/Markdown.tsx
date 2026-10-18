@@ -64,7 +64,7 @@ function CodePre({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
       </figcaption>
       <pre
         ref={ref}
-        className="overflow-x-auto rounded-b-group bg-[var(--c-code-bg)] p-4 font-mono text-[13px] leading-relaxed text-ink"
+        className="overflow-x-auto rounded-b-group border border-t-0 border-line bg-[var(--c-code-bg)] p-4 font-mono text-[13px] leading-relaxed text-ink"
         {...props}
       >
         {children}

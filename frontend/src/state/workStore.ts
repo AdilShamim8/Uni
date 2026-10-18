@@ -1,13 +1,17 @@
 import { create } from 'zustand'
 import type {
+  AiDraftConfig,
   TaskDeliverable,
   TaskEvent,
   TaskEventKind,
   WorkTask,
+  WorkTaskMode,
 } from '@/domain/workspaceTypes'
 import { canTransition } from '@/domain/taskMachine'
 import { makeId } from '@/domain/ids'
 import type { AttachmentMeta } from '@/domain/types'
+import type { ChatAdapter } from '@/domain/chatAdapter'
+import { createLiveAdapter } from '@/services/live/liveChatAdapter'
 import {
   clearWorkSlice,
   loadWorkSlice,
@@ -227,6 +231,8 @@ export function activeRunCount(): number {
 export function abortAllRunsForTests(): void {
   for (const handle of activeRuns.values()) handle.abort.abort()
   activeRuns.clear()
+  for (const handle of aiRuns.values()) handle.abort.abort()
+  aiRuns.clear()
 }
 
 async function executeRun(taskId: string, runId: string): Promise<void> {
@@ -281,6 +287,132 @@ async function executeRun(taskId: string, runId: string): Promise<void> {
 }
 
 /* ------------------------------------------------------------------ */
+/* AI-draft runner (live BYOK request)                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Live drafting requests — one controller per task, keyed by task id.
+ * Completely separate from the demo runner's handles above, from chat's
+ * generation controller, and from Compare's per-slot controllers: stopping
+ * one never touches another surface. Only run ids and abort handles live
+ * here; nothing is persisted, and credentials are read at request time and
+ * kept solely inside the streaming closure.
+ */
+interface AiRunHandle {
+  runId: string
+  abort: AbortController
+}
+
+const aiRuns = new Map<string, AiRunHandle>()
+
+/** Test seam: replace the live adapter construction (never a real key). */
+let adapterFactoryForTests: ((providerId: string) => ChatAdapter | null) | null = null
+
+export function setAiAdapterFactoryForTests(
+  factory: ((providerId: string) => ChatAdapter | null) | null,
+): void {
+  adapterFactoryForTests = factory
+}
+
+export function aiRunCount(): number {
+  return aiRuns.size
+}
+
+/** Compose the single drafting request from the task's own configuration. */
+function buildDraftRequest(task: WorkTask, agentInstructions: string) {
+  const config = task.draftConfig!
+  const system = [
+    'You are drafting a work document for the Universe workspace.',
+    agentInstructions.trim()
+      ? `Agent instructions for this task:\n${agentInstructions.trim()}`
+      : '',
+    config.instructions.trim() ? `Additional instructions:\n${config.instructions.trim()}` : '',
+    config.contextText.trim()
+      ? `Selected context supplied by the user (use only this material; do not invent sources or citations):\n\n${config.contextText.trim()}`
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+
+  return {
+    prompt: [
+      `Write the draft deliverable for this task.`,
+      `Title: ${task.title}`,
+      `Goal: ${task.goal.trim() || '(none provided)'}`,
+    ].join('\n\n'),
+    system,
+  }
+}
+
+async function executeAiDraft(taskId: string, runId: string): Promise<void> {
+  const handle: AiRunHandle = { runId, abort: new AbortController() }
+  aiRuns.set(taskId, handle)
+
+  try {
+    const task = useWorkStore.getState().tasks[taskId]
+    if (!task || task.mode !== 'ai-draft' || !task.draftConfig) return
+    const config = task.draftConfig
+
+    // Credentials are read at the moment of the explicit request and never
+    // leave this closure — they are not written to the task, the store
+    // snapshot, or persistence.
+    const { useAppStore } = await import('@/state/store')
+    const appState = useAppStore.getState()
+    const provider = appState.providers.find((p) => p.id === config.model.providerId)
+    const credential = appState.credentials[config.model.providerId]
+    const apiKey = credential?.status === 'connected' ? credential.apiKey : null
+
+    if (!provider || !apiKey) {
+      useWorkStore.getState().failAiRun(taskId, runId, {
+        message:
+          'The provider for this task is not connected. Reconnect it in Settings, then generate again.',
+      })
+      return
+    }
+
+    if (handle.abort.signal.aborted) return
+
+    const adapter =
+      adapterFactoryForTests?.(provider.id) ?? createLiveAdapter(provider, apiKey, config.model.modelId)
+
+    const agent = task.agentId
+      ? (await import('@/state/agentsStore')).useAgentsStore.getState().agents[task.agentId]
+      : null
+    const { prompt, system } = buildDraftRequest(task, agent?.instructions ?? '')
+
+    await adapter.stream(
+      {
+        prompt,
+        history: [],
+        tools: [],
+        attachments: [],
+        nickname: '',
+        traits: '',
+        system: system || undefined,
+      },
+      {
+        onStart: () => {
+          useWorkStore.getState().appendEvent(taskId, {
+            id: makeId('ev'),
+            runId,
+            at: Date.now(),
+            kind: 'tool',
+            label: `Streaming draft content from ${config.model.modelLabel}…`,
+          })
+        },
+        onDelta: (text) => useWorkStore.getState().appendAiContent(taskId, runId, text),
+        onDone: (reason) => useWorkStore.getState().finishAiRun(taskId, runId, reason),
+        onError: (error) => useWorkStore.getState().failAiRun(taskId, runId, error),
+      },
+      handle.abort.signal,
+    )
+  } finally {
+    const entry = aiRuns.get(taskId)
+    if (entry?.runId === runId) aiRuns.delete(taskId)
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Store                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -291,6 +423,8 @@ export interface CreateTaskInput {
   agentId?: string | null
   projectId?: string | null
   attachments?: AttachmentMeta[]
+  mode?: WorkTaskMode
+  draftConfig?: AiDraftConfig | null
 }
 
 export interface WorkStore {
@@ -310,6 +444,8 @@ export interface WorkStore {
   detachProject: (projectId: string) => void
 
   runTask: (id: string) => void
+  /** Internal — shared start-of-run state. Exposed for testability. */
+  startRun: (id: string, runId: string, startLabel: string) => void
   pauseTask: (id: string) => void
   resumeTask: (id: string) => void
   cancelTask: (id: string) => void
@@ -317,6 +453,18 @@ export interface WorkStore {
   reopenTask: (id: string) => void
   completeTask: (id: string) => void
   answerInput: (id: string, answer: string) => void
+
+  /** Update the AI-draft configuration of a draft task. */
+  updateDraftConfig: (id: string, patch: Partial<AiDraftConfig>) => void
+
+  /** Internal — AI-draft runner callbacks. Exposed for testability. */
+  appendAiContent: (taskId: string, runId: string, text: string) => void
+  finishAiRun: (taskId: string, runId: string, reason: 'complete' | 'stopped') => void
+  failAiRun: (
+    taskId: string,
+    runId: string,
+    error: { code?: string; message: string },
+  ) => void
 
   updateReport: (id: string, markdown: string) => void
   /** Link (or re-link) the library artifact produced from the report. */
@@ -347,9 +495,31 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
     const loaded = loadWorkSlice()
     const tasks: Record<string, WorkTask> = {}
     if (loaded.state) {
-      for (const task of loaded.state.tasks) {
+      for (const raw of loaded.state.tasks) {
+        // Pre-AI-draft tasks (and any future partial writes) normalize to
+        // demo mode with an empty config; reports gain their provenance
+        // defaults. Old demo tasks and artifacts keep loading untouched.
+        const task: WorkTask = {
+          ...raw,
+          mode: raw.mode === 'ai-draft' ? 'ai-draft' : 'demo',
+          draftConfig: raw.draftConfig ?? null,
+          error: raw.error ?? null,
+          report: raw.report
+            ? {
+                template: raw.report.template,
+                markdown: raw.report.markdown,
+                artifactId: raw.report.artifactId ?? null,
+                provenance: raw.report.provenance ?? 'demo-simulation',
+                generatedBy: raw.report.generatedBy ?? null,
+                contextIncluded: raw.report.contextIncluded ?? false,
+                stoppedPartial: raw.report.stoppedPartial ?? false,
+              }
+            : null,
+        }
         // A reload ends any live simulation honestly: running/queued tasks
-        // become paused and interrupted, with a clear Resume action.
+        // become paused and interrupted, with a clear Resume action. A live
+        // drafting request equally cannot continue through a reload — the
+        // network handle existed only in the closed page.
         if (task.status === 'running' || task.status === 'queued') {
           tasks[task.id] = {
             ...task,
@@ -358,7 +528,12 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
             currentRunId: null,
             events: [
               ...task.events,
-              nowEvent('note', 'Run interrupted by a reload — resume to continue.'),
+              nowEvent(
+                'note',
+                task.mode === 'ai-draft'
+                  ? 'Draft request interrupted by a reload — the request did not continue in the background. Generate again to start a new one.'
+                  : 'Run interrupted by a reload — resume to continue.',
+              ),
             ],
           }
         } else {
@@ -378,6 +553,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
 
   createTask: (input) => {
     const now = Date.now()
+    const mode: WorkTaskMode = input.mode === 'ai-draft' ? 'ai-draft' : 'demo'
     const task: WorkTask = {
       id: makeId('task'),
       title: input.title.trim() || 'Untitled task',
@@ -387,16 +563,25 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
       projectId: input.projectId ?? null,
       attachments: input.attachments ?? [],
       status: 'draft',
-      mode: 'demo',
+      mode,
+      draftConfig: mode === 'ai-draft' ? (input.draftConfig ?? null) : null,
       createdAt: now,
       updatedAt: now,
-      events: [nowEvent('created', 'Task created')],
+      events: [
+        nowEvent(
+          'created',
+          mode === 'ai-draft'
+            ? 'Task created — AI draft mode (live request on demand)'
+            : 'Task created',
+        ),
+      ],
       currentRunId: null,
       planCursor: 0,
       runAnswers: [],
       interrupted: false,
       report: null,
       inputRequest: null,
+      error: null,
     }
     set((state) => ({ tasks: { ...state.tasks, [task.id]: task } }))
     return task.id
@@ -429,8 +614,8 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
   },
 
   deleteTask: (id) => {
-    const handle = activeRuns.get(id)
-    if (handle) handle.abort.abort()
+    activeRuns.get(id)?.abort.abort()
+    aiRuns.get(id)?.abort.abort()
     set((state) => {
       const tasks = { ...state.tasks }
       delete tasks[id]
@@ -438,29 +623,49 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
     })
   },
 
+  /** Shared start-of-run state for both modes. */
+  startRun: (id, runId, startLabel) => {
+    set((state) => {
+      const task = state.tasks[id]
+      if (!task) return state
+      return {
+        tasks: {
+          ...state.tasks,
+          [id]: {
+            ...task,
+            status: 'running',
+            currentRunId: runId,
+            planCursor: 0,
+            runAnswers: [],
+            interrupted: false,
+            inputRequest: null,
+            error: null,
+            // A new run is a new draft: the report resets (partial output
+            // from earlier runs was already preserved until this explicit
+            // new request — the user can edit/save it before regenerating).
+            report: null,
+            updatedAt: Date.now(),
+            events: [...task.events, nowEvent('status', startLabel)],
+          },
+        },
+      }
+    })
+  },
+
   runTask: (id) => {
     const task = get().tasks[id]
     if (!task || !canTransition(task.status, 'queued')) return
     const runId = makeId('run')
-    set((state) => ({
-      tasks: {
-        ...state.tasks,
-        [id]: {
-          ...state.tasks[id],
-          status: 'running',
-          currentRunId: runId,
-          planCursor: 0,
-          runAnswers: [],
-          interrupted: false,
-          inputRequest: null,
-          updatedAt: Date.now(),
-          events: [
-            ...state.tasks[id].events,
-            nowEvent('status', 'Run started (demo execution)'),
-          ],
-        },
-      },
-    }))
+    if (task.mode === 'ai-draft') {
+      get().startRun(
+        id,
+        runId,
+        `Draft generation started — live request to ${task.draftConfig?.model.providerLabel ?? 'provider'}`,
+      )
+      void executeAiDraft(id, runId)
+      return
+    }
+    get().startRun(id, runId, 'Run started (demo execution)')
     void executeRun(id, runId)
   },
 
@@ -468,24 +673,52 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
     const task = get().tasks[id]
     if (!task || !canTransition(task.status, 'paused')) return
     activeRuns.get(id)?.abort.abort()
-    set((state) => ({
-      tasks: {
-        ...state.tasks,
-        [id]: {
-          ...state.tasks[id],
-          status: 'paused',
-          currentRunId: null,
-          updatedAt: Date.now(),
-          events: [...state.tasks[id].events, nowEvent('status', 'Run paused')],
+    aiRuns.get(id)?.abort.abort()
+    set((state) => {
+      const task = state.tasks[id]
+      if (!task) return state
+      const hadPartial =
+        task.mode === 'ai-draft' && !!task.report && task.report.markdown.trim().length > 0
+      return {
+        tasks: {
+          ...state.tasks,
+          [id]: {
+            ...task,
+            status: 'paused',
+            currentRunId: null,
+            report: task.report
+              ? { ...task.report, stoppedPartial: task.mode === 'ai-draft' }
+              : null,
+            updatedAt: Date.now(),
+            events: [
+              ...task.events,
+              nowEvent(
+                'status',
+                task.mode === 'ai-draft'
+                  ? hadPartial
+                    ? 'Generation stopped — partial draft preserved below'
+                    : 'Generation stopped before any content arrived'
+                  : 'Run paused',
+              ),
+            ],
+          },
         },
-      },
-    }))
+      }
+    })
   },
 
   resumeTask: (id) => {
     const task = get().tasks[id]
     if (!task || !canTransition(task.status, 'running')) return
     const runId = makeId('run')
+    if (task.mode === 'ai-draft') {
+      // Resuming an AI draft is an explicit NEW request (a network stream
+      // cannot continue through the pause); the preserved partial stays
+      // until this run replaces it.
+      get().startRun(id, runId, 'Draft generation restarted — new live request')
+      void executeAiDraft(id, runId)
+      return
+    }
     set((state) => ({
       tasks: {
         ...state.tasks,
@@ -509,6 +742,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
     const task = get().tasks[id]
     if (!task || !canTransition(task.status, 'cancelled')) return
     activeRuns.get(id)?.abort.abort()
+    aiRuns.get(id)?.abort.abort()
     set((state) => ({
       tasks: {
         ...state.tasks,
@@ -530,6 +764,11 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
     const task = get().tasks[id]
     if (!task || !canTransition(task.status, 'queued')) return
     const runId = makeId('run')
+    if (task.mode === 'ai-draft') {
+      get().startRun(id, runId, 'Retry started — new live draft request')
+      void executeAiDraft(id, runId)
+      return
+    }
     set((state) => ({
       tasks: {
         ...state.tasks,
@@ -606,6 +845,115 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
       }))
       get().resumeTask(id)
     }
+  },
+
+  updateDraftConfig: (id, patch) => {
+    set((state) => {
+      const task = state.tasks[id]
+      if (!task || task.mode !== 'ai-draft' || !task.draftConfig) return state
+      if (task.status !== 'draft') return state
+      return {
+        tasks: {
+          ...state.tasks,
+          [id]: {
+            ...task,
+            draftConfig: { ...task.draftConfig, ...patch },
+            updatedAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  appendAiContent: (taskId, runId, text) => {
+    set((state) => {
+      const task = state.tasks[taskId]
+      if (!task || task.currentRunId !== runId || task.status !== 'running') return state
+      const config = task.draftConfig
+      const report = task.report ?? {
+        template: 'draft' as const,
+        markdown: '',
+        artifactId: null,
+        provenance: 'provider-generated' as const,
+        generatedBy: config?.model ?? null,
+        contextIncluded: !!config?.contextText.trim(),
+        stoppedPartial: false,
+      }
+      return {
+        tasks: {
+          ...state.tasks,
+          [taskId]: {
+            ...task,
+            report: { ...report, markdown: report.markdown + text },
+            updatedAt: Date.now(),
+          },
+        },
+      }
+    })
+  },
+
+  finishAiRun: (taskId, runId, reason) => {
+    set((state) => {
+      const task = state.tasks[taskId]
+      if (!task || task.currentRunId !== runId || task.status !== 'running') return state
+      const model = task.draftConfig?.model
+      return {
+        tasks: {
+          ...state.tasks,
+          [taskId]: {
+            ...task,
+            status: 'ready_for_review',
+            currentRunId: null,
+            inputRequest: null,
+            report: task.report
+              ? { ...task.report, stoppedPartial: reason === 'stopped' }
+              : null,
+            updatedAt: Date.now(),
+            events: [
+              ...task.events,
+              {
+                ...nowEvent(
+                  'output',
+                  reason === 'stopped'
+                    ? `Draft stopped — partial content preserved (${model?.modelLabel ?? 'provider'})`
+                    : `Draft ready for review — provider-generated by ${model?.modelLabel ?? 'provider'}`,
+                ),
+                runId,
+              },
+            ],
+          },
+        },
+      }
+    })
+  },
+
+  failAiRun: (taskId, runId, error) => {
+    set((state) => {
+      const task = state.tasks[taskId]
+      if (!task || task.currentRunId !== runId) return state
+      // Partial content already streamed stays with the task for review;
+      // only the status records the failure. Retrying is always explicit.
+      return {
+        tasks: {
+          ...state.tasks,
+          [taskId]: {
+            ...task,
+            status: 'failed',
+            currentRunId: null,
+            error: error.message,
+            report: task.report ? { ...task.report, stoppedPartial: true } : null,
+            updatedAt: Date.now(),
+            events: [
+              ...task.events,
+              {
+                ...nowEvent('note', `Draft request failed — ${error.message}`),
+                runId,
+              },
+            ],
+          },
+        },
+      }
+    })
   },
 
   updateReport: (id, markdown) => {
@@ -730,7 +1078,15 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
             status: 'ready_for_review',
             currentRunId: null,
             inputRequest: null,
-            report: { template: plan.template, markdown, artifactId: null },
+            report: {
+              template: plan.template,
+              markdown,
+              artifactId: null,
+              provenance: 'demo-simulation',
+              generatedBy: null,
+              contextIncluded: false,
+              stoppedPartial: false,
+            },
             updatedAt: Date.now(),
             events: [
               ...task.events,
