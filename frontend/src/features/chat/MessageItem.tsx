@@ -222,7 +222,7 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
   return (
     <div className="message-in group flex flex-col items-end">
       <div
-        className="max-w-[85%] rounded-[18px] bg-subtle px-4 py-2.5"
+        className="max-w-[85%] rounded-[20px] bg-subtle px-4 py-3"
         title={formatFullTimestamp(node.createdAt)}
       >
         {node.tools && node.tools.length > 0 && (
@@ -336,8 +336,8 @@ function AssistantMessage({
   const streaming = node.status === 'streaming'
 
   return (
-    <div className="message-in group flex gap-3" title={formatFullTimestamp(node.createdAt)}>
-      <UniverseMark size={22} className="mt-0.5 shrink-0 text-ink" />
+    <div className="message-in group flex gap-3.5" title={formatFullTimestamp(node.createdAt)}>
+      <UniverseMark size={24} className="mt-0.5 shrink-0 text-ink" />
       <div className="min-w-0 flex-1">
         {node.statusPrefix && (
           <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-faint">
