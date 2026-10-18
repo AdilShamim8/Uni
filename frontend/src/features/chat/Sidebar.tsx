@@ -86,7 +86,7 @@ const DESTINATIONS: Destination[] = [
     icon: <LibraryIcon size={17} />,
     path: '/library',
     match: (p) => p.startsWith('/library') || p.startsWith('/projects/'),
-    newLabel: 'New document',
+    newLabel: 'New note',
     newIcon: <Plus size={16} />,
   },
 ]
@@ -253,11 +253,10 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         break
       case 'library': {
         const id = addArtifact({
-          title: 'Untitled document',
-          kind: 'document',
-          markdown: '',
+          title: 'Untitled note',
+          kind: 'notes',
+          markdown: '# Untitled note\n\nStart writing…',
           projectId: selectedProjectId,
-          provenance: 'user-authored',
         })
         openInspector({ tab: 'canvas', artifactId: id })
         if (location.pathname !== '/library') go('/library')

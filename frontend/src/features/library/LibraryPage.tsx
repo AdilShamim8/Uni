@@ -209,7 +209,7 @@ export function LibraryPage() {
           <section className="mt-10" aria-label="Projects">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
+                <h3 className="text-[13px] font-semibold text-ink-faint">
                   Projects
                 </h3>
                 <p className="mt-0.5 text-xs text-ink-soft">
@@ -647,7 +647,7 @@ function ProjectSection({
   const hasContent = items.filter(Boolean).length > 0
   return (
     <section className="mt-6" aria-label={title}>
-      <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">{title}</h3>
+      <h3 className="text-[13px] font-semibold text-ink-faint">{title}</h3>
       <div className="mt-2 flex flex-col gap-2">
         {hasContent ? (
           children
