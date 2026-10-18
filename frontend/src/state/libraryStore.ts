@@ -1,5 +1,11 @@
 import { create } from 'zustand'
-import type { Artifact, ArtifactSource, ArtifactVersion, Project } from '@/domain/workspaceTypes'
+import type {
+  AiDraftModel,
+  Artifact,
+  ArtifactSource,
+  ArtifactVersion,
+  Project,
+} from '@/domain/workspaceTypes'
 import { makeId } from '@/domain/ids'
 import {
   clearLibrarySlice,
@@ -56,6 +62,8 @@ function migrateArtifact(raw: Artifact): Artifact {
     workingDraft: typeof raw.workingDraft === 'string' ? raw.workingDraft : null,
     draftUpdatedAt: typeof raw.draftUpdatedAt === 'number' ? raw.draftUpdatedAt : null,
     source: raw.source ?? null,
+    // Pre-AI-draft artifacts load untouched; only the new field defaults.
+    generatedBy: raw.generatedBy ?? null,
   }
 }
 
@@ -83,6 +91,7 @@ export interface LibraryStore {
     projectId?: string | null
     provenance?: Artifact['provenance']
     source?: ArtifactSource | null
+    generatedBy?: AiDraftModel | null
   }) => string
   renameArtifact: (id: string, title: string) => void
   /** Commit content directly (no draft cycle) — used by migration-safe flows. */
@@ -146,6 +155,7 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => ({
       createdAt: now,
       updatedAt: now,
       provenance: input.provenance ?? 'user-authored',
+      generatedBy: input.generatedBy ?? null,
     }
     set((state) => ({ artifacts: { ...state.artifacts, [artifact.id]: artifact } }))
     return artifact.id
