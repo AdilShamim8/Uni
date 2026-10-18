@@ -9,7 +9,7 @@ import { useWorkStore } from '@/state/workStore'
 import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { ChatPage } from '@/features/chat/ChatPage'
-import { SearchDialog } from '@/features/chat/SearchDialog'
+import { CommandPalette } from '@/features/search/CommandPalette'
 import { PreviewHost } from '@/features/previews/PreviewHost'
 import { SettingsDialog } from '@/features/settings/SettingsDialog'
 import { WorkPage } from '@/features/work/WorkPage'
@@ -95,7 +95,7 @@ export function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>
-      <SearchDialog />
+      <CommandPalette />
       <SettingsDialog />
       <PreviewHost />
       <ToastHost />

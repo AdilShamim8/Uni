@@ -24,6 +24,7 @@ import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { UniverseMark } from '@/components/layout/UniverseMark'
 import { SidebarActivityRow } from '@/components/layout/HeaderExtras'
+import { searchShortcutLabel } from '@/features/search/platform'
 import { Tooltip } from '@/components/ui/Tooltip'
 import { IconButton } from '@/components/ui/IconButton'
 import { Menu, MenuItem } from '@/components/ui/Menu'
@@ -404,7 +405,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
             aria-hidden="true"
             className="ml-auto hidden text-[11px] font-normal text-ink-faint sm:inline"
           >
-            ⌘K
+            {searchShortcutLabel()}
           </span>
         </Button>
       </div>

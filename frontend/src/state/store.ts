@@ -44,6 +44,8 @@ import { useAgentsStore } from '@/state/agentsStore'
 
 interface UiState {
   searchOpen: boolean
+  /** Scope the command palette opens with (null = workspace-wide). */
+  searchScope: 'all' | 'chats' | 'tasks' | 'agents' | 'projects' | 'files' | null
   settingsOpen: boolean
   /** Section to focus when the settings dialog opens (e.g. 'providers'). */
   settingsSection: string | null
@@ -166,6 +168,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
   credentials: {},
   ui: {
     searchOpen: false,
+    searchScope: null,
     settingsOpen: false,
     settingsSection: null,
     mobileSidebarOpen: false,
@@ -766,12 +769,13 @@ export function resetStoreForTests(options: { keepStorage?: boolean } = {}): voi
     activeModelId: null,
     credentials: {},
     ui: {
-    searchOpen: false,
-    settingsOpen: false,
-    settingsSection: null,
-    mobileSidebarOpen: false,
-    preview: null,
-  },
+      searchOpen: false,
+      searchScope: null,
+      settingsOpen: false,
+      settingsSection: null,
+      mobileSidebarOpen: false,
+      preview: null,
+    },
     toast: null,
   })
 }
