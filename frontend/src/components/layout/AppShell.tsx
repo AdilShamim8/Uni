@@ -113,14 +113,16 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-dvh overflow-hidden bg-canvas text-ink">
-      {/* Desktop sidebar (static, collapsible; hidden in focus mode) */}
+      {/* Desktop floating sidebar — inset from the viewport, rounded glass
+          surface; the workspace keeps its own generous padding instead of
+          sharing one continuous flat sidebar background. */}
       {!focusMode && (
-        <div className="hidden h-full lg:block">
+        <div className="hidden h-full shrink-0 py-shell-inset pl-shell-inset lg:block">
           <Sidebar />
         </div>
       )}
 
-      {/* Mobile navigation drawer — scrim + sliding material panel */}
+      {/* Mobile navigation drawer — scrim + floating rounded material panel */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
           <div
@@ -133,7 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             role="dialog"
             aria-modal="true"
             aria-label="History and tools"
-            className="safe-left absolute inset-y-0 left-0 flex w-[min(19rem,85vw)] flex-col border-r border-line bg-mat-sidebar shadow-raised"
+            className="safe-left glass-float absolute bottom-3 left-3 top-3 flex w-[min(19rem,85vw)] flex-col overflow-hidden rounded-float border border-line/70 bg-mat-sidebar"
             style={{ animation: 'universe-drawer-in var(--motion-normal) var(--ease-standard) both' }}
           >
             <Sidebar forceExpanded />
@@ -144,7 +146,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       <main
         ref={mainRef}
-        className="flex min-w-0 flex-1 flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0"
+        className="flex min-w-0 flex-1 flex-col pb-[calc(4.25rem+env(safe-area-inset-bottom))] lg:gap-0 lg:pb-shell-inset lg:pl-2 lg:pr-shell-inset lg:pt-shell-inset"
       >
         <SplitWorkspace
           panelLabel="Workspace panel"
@@ -155,11 +157,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SplitWorkspace>
       </main>
 
-      {/* Mobile bottom destination bar — the four real destinations, no duplicates.
-          Grows to clear the iOS home indicator (safe area). */}
+      {/* Mobile floating destination bar — the four real destinations, no
+          duplicates. A rounded glass pill inset from the viewport edges,
+          grown to clear the iOS home indicator (safe area). */}
       <nav
         aria-label="Destinations"
-        className="safe-left safe-right material fixed inset-x-0 bottom-0 z-30 flex min-h-14 shrink-0 items-stretch border-t border-line bg-mat-header pb-[env(safe-area-inset-bottom)] lg:hidden"
+        className="material safe-left safe-right fixed bottom-[calc(10px+env(safe-area-inset-bottom))] left-2.5 right-2.5 z-30 flex min-h-14 shrink-0 items-stretch rounded-[20px] border border-line/70 bg-mat-header shadow-float lg:hidden"
       >
         {BOTTOM_DESTINATIONS.map((destination) => {
           const active = destination.match(location.pathname)
@@ -169,7 +172,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               type="button"
               onClick={() => navigate(destination.path)}
               aria-current={active ? 'page' : undefined}
-              className={`flex min-touch flex-1 flex-col items-center justify-center gap-0.5 px-1 transition-colors duration-[var(--motion-fast)] ${
+              className={`press flex min-touch flex-1 flex-col items-center justify-center gap-0.5 px-1 transition-colors duration-[var(--motion-fast)] ${
                 active ? 'text-accent' : 'text-ink-faint hover:text-ink-soft'
               }`}
             >
