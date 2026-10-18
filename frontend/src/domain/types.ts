@@ -134,7 +134,6 @@ export type PreviewKind =
   | 'research'
   | 'images'
   | 'voice'
-  | 'canvas'
   | 'data'
   | 'presets'
   | 'tasks'

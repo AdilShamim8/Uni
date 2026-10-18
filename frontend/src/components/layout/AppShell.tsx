@@ -4,6 +4,8 @@ import { Bot, Briefcase, Library as LibraryIcon, MessageSquare } from 'lucide-re
 import { useAppStore } from '@/state/store'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { Sidebar } from '@/features/chat/Sidebar'
+import { SplitWorkspace } from '@/components/layout/SplitWorkspace'
+import { InspectorHost } from '@/components/layout/InspectorHost'
 
 /**
  * Application shell: desktop sidebar + routed main surface, the mobile
@@ -144,7 +146,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         ref={mainRef}
         className="flex min-w-0 flex-1 flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-0"
       >
-        {children}
+        <SplitWorkspace
+          panelLabel="Workspace panel"
+          open={focusMode ? false : undefined}
+          renderPanel={() => <InspectorHost />}
+        >
+          {children}
+        </SplitWorkspace>
       </main>
 
       {/* Mobile bottom destination bar — the four real destinations, no duplicates */}

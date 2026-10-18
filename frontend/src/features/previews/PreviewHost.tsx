@@ -1,6 +1,5 @@
 import { useAppStore } from '@/state/store'
 import { AssistantPresetsPreview } from './AssistantPresetsPreview'
-import { CanvasPreview } from './CanvasPreview'
 import { ComingSoonPreview } from './ComingSoonPreview'
 import { DataAnalysisPreview } from './DataAnalysisPreview'
 import { ImagesPreview } from './ImagesPreview'
@@ -19,8 +18,6 @@ export function PreviewHost() {
       return <ImagesPreview brief={preview.brief} />
     case 'voice':
       return <VoicePreview brief={preview.brief} />
-    case 'canvas':
-      return <CanvasPreview brief={preview.brief} />
     case 'data':
       return <DataAnalysisPreview />
     case 'presets':

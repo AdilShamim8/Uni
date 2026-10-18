@@ -68,6 +68,9 @@ export interface LibraryStore {
   hydrated: boolean
   artifacts: Record<string, Artifact>
   projects: Record<string, Project>
+  /** Honest save indicator: null = nothing saved yet, false = last flush failed. */
+  lastSaveOk: boolean | null
+  lastSavedAt: number | null
 
   initialize: () => void
   resetDemoData: () => void
@@ -105,6 +108,8 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => ({
   hydrated: false,
   artifacts: {},
   projects: {},
+  lastSaveOk: null,
+  lastSavedAt: null,
 
   initialize: () => {
     if (get().hydrated) return
@@ -323,6 +328,7 @@ export function flushLibraryPersistence(): void {
     artifacts: Object.values(state.artifacts),
     projects: Object.values(state.projects),
   })
+  useLibraryStore.setState({ lastSaveOk: saved, lastSavedAt: saved ? Date.now() : state.lastSavedAt })
   if (!saved && !libraryStorageWarned) {
     libraryStorageWarned = true
     import('@/state/store').then(({ useAppStore }) => {
@@ -351,5 +357,5 @@ export function resetLibraryStoreForTests(options: { keepStorage?: boolean } = {
     clearTimeout(saveTimer)
     saveTimer = undefined
   }
-  useLibraryStore.setState({ hydrated: false, artifacts: {}, projects: {} })
+  useLibraryStore.setState({ hydrated: false, artifacts: {}, projects: {}, lastSaveOk: null, lastSavedAt: null })
 }
