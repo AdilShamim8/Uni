@@ -14,6 +14,7 @@ import {
   Play,
   Plus,
   RotateCcw,
+  Sparkles,
   Square,
   Telescope,
   Trash2,
@@ -40,7 +41,7 @@ import {
   taskMatchesFilter,
   type TaskFilter,
 } from '@/domain/taskMachine'
-import type { TaskDeliverable, WorkTask } from '@/domain/workspaceTypes'
+import type { AiDraftModel, TaskDeliverable, WorkTask, WorkTaskMode } from '@/domain/workspaceTypes'
 
 /* ------------------------------------------------------------------ */
 /* Shared bits                                                         */
@@ -299,9 +300,16 @@ function NewTaskForm() {
   const [searchParams] = useSearchParams()
   const createTask = useWorkStore((state) => state.createTask)
   const agents = useAgentsStore((state) => state.agents)
+  const providers = useAppStore((state) => state.providers)
+  const credentials = useAppStore((state) => state.credentials)
+  const setUi = useAppStore((state) => state.setUi)
 
   const [title, setTitle] = useState('')
   const [goal, setGoal] = useState('')
+  const [mode, setMode] = useState<WorkTaskMode>('demo')
+  const [modelKey, setModelKey] = useState<string>('')
+  const [instructions, setInstructions] = useState('')
+  const [contextText, setContextText] = useState('')
   const [deliverable, setDeliverable] = useState<TaskDeliverable>(
     () => {
       const requested = searchParams.get('template') as TaskDeliverable | null
@@ -323,13 +331,59 @@ function NewTaskForm() {
     [agents],
   )
 
+  /** Only models on providers with a connected key can be selected. */
+  const connectedModels = useMemo(() => {
+    const options: AiDraftModel[] = []
+    for (const provider of providers) {
+      const credential = credentials[provider.id]
+      if (credential?.status !== 'connected') continue
+      for (const model of provider.models) {
+        options.push({
+          providerId: provider.id,
+          modelId: model.id,
+          providerLabel: provider.label,
+          modelLabel: model.label,
+        })
+      }
+    }
+    return options
+  }, [providers, credentials])
+
+  // Keep a valid selection as connections change.
+  useEffect(() => {
+    if (mode !== 'ai-draft') return
+    if (modelKey && connectedModels.some((m) => `${m.providerId}:${m.modelId}` === modelKey)) {
+      return
+    }
+    setModelKey(connectedModels[0] ? `${connectedModels[0].providerId}:${connectedModels[0].modelId}` : '')
+  }, [mode, modelKey, connectedModels])
+
   function handleCreate() {
     const trimmed = title.trim()
     if (!trimmed) {
       setError('Give the task a title first.')
       return
     }
-    const id = createTask({ title: trimmed, goal: goal.trim(), deliverable, agentId })
+    if (mode === 'ai-draft' && !modelKey) {
+      setError('Connect a provider in Settings first — AI drafts need a connected model.')
+      return
+    }
+    const selected = connectedModels.find((m) => `${m.providerId}:${m.modelId}` === modelKey)
+    const id = createTask({
+      title: trimmed,
+      goal: goal.trim(),
+      deliverable,
+      agentId,
+      mode,
+      draftConfig:
+        mode === 'ai-draft' && selected
+          ? {
+              model: selected,
+              instructions: instructions.trim(),
+              contextText: contextText.trim(),
+            }
+          : null,
+    })
     navigate(`/work/${id}`)
   }
 
@@ -373,6 +427,137 @@ function NewTaskForm() {
               placeholder="What outcome do you want completed?"
             />
 
+            {/* Execution mode — Demo stays an explicit alternative; the
+                AI draft is a single live BYOK request, never autonomous. */}
+            <fieldset>
+              <legend className="mb-1.5 block text-sm font-medium text-ink">Execution</legend>
+              <div
+                role="radiogroup"
+                aria-label="Execution mode"
+                className="grid gap-2 sm:grid-cols-2"
+              >
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === 'demo'}
+                  onClick={() => setMode('demo')}
+                  className={`min-touch rounded-control border p-3 text-left transition-colors ${
+                    mode === 'demo'
+                      ? 'border-accent bg-accent-soft'
+                      : 'border-line bg-raised hover:bg-subtle'
+                  }`}
+                >
+                  <span className="block text-sm font-medium text-ink">Demo</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-ink-soft">
+                    Simulated steps and example output — local, no key, free.
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={mode === 'ai-draft'}
+                  onClick={() => setMode('ai-draft')}
+                  className={`min-touch rounded-control border p-3 text-left transition-colors ${
+                    mode === 'ai-draft'
+                      ? 'border-accent bg-accent-soft'
+                      : 'border-line bg-raised hover:bg-subtle'
+                  }`}
+                >
+                  <span className="block text-sm font-medium text-ink">AI draft</span>
+                  <span className="mt-0.5 block text-xs leading-relaxed text-ink-soft">
+                    One live drafting request to a connected model you pick.
+                  </span>
+                </button>
+              </div>
+            </fieldset>
+
+            {mode === 'ai-draft' && (
+              <div className="flex flex-col gap-3.5 rounded-[12px] border border-accent/30 bg-accent-soft/40 p-3.5">
+                <div>
+                  <label
+                    htmlFor="draft-model"
+                    className="mb-1.5 block text-sm font-medium text-ink"
+                  >
+                    Connected model
+                  </label>
+                  {connectedModels.length === 0 ? (
+                    <p className="text-sm leading-relaxed text-ink-soft">
+                      No provider is connected yet.{' '}
+                      <button
+                        type="button"
+                        onClick={() => setUi({ settingsOpen: true, settingsSection: 'providers' })}
+                        className="font-medium text-accent hover:text-accent-strong"
+                      >
+                        Connect one in Settings
+                      </button>{' '}
+                      — the draft request uses your own key, straight from this browser.
+                    </p>
+                  ) : (
+                    <select
+                      id="draft-model"
+                      value={modelKey}
+                      onChange={(event) => setModelKey(event.target.value)}
+                      className="min-touch w-full rounded-control border border-line bg-panel px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+                    >
+                      {connectedModels.map((model) => (
+                        <option
+                          key={`${model.providerId}:${model.modelId}`}
+                          value={`${model.providerId}:${model.modelId}`}
+                        >
+                          {model.modelLabel} — {model.providerLabel}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="draft-instructions"
+                    className="mb-1.5 block text-sm font-medium text-ink"
+                  >
+                    Additional instructions <span className="font-normal text-ink-faint">(optional)</span>
+                  </label>
+                  <textarea
+                    id="draft-instructions"
+                    value={instructions}
+                    onChange={(event) => setInstructions(event.target.value)}
+                    rows={3}
+                    placeholder="Tone, length, structure — anything beyond the goal."
+                    className="w-full resize-y rounded-control border border-line bg-panel px-3 py-2 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="draft-context"
+                    className="mb-1.5 block text-sm font-medium text-ink"
+                  >
+                    Context to include <span className="font-normal text-ink-faint">(optional)</span>
+                  </label>
+                  <textarea
+                    id="draft-context"
+                    value={contextText}
+                    onChange={(event) => setContextText(event.target.value)}
+                    rows={4}
+                    placeholder="Paste the exact text the model should work from. Only what you put here is sent."
+                    className="w-full resize-y rounded-control border border-line bg-panel px-3 py-2 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+                  />
+                  <p className="mt-1.5 text-xs leading-relaxed text-ink-faint">
+                    Explicitly selected context only — no files, history, or browsing are
+                    attached automatically.
+                  </p>
+                </div>
+
+                <p className="text-xs leading-relaxed text-ink-soft">
+                  <strong className="font-medium text-ink">Live request:</strong> generating
+                  sends the goal, instructions, and selected context to the provider behind the
+                  chosen model. The provider may charge for this request — nothing is sent until
+                  you explicitly press “Generate draft”.
+                </p>
+              </div>
+            )}
+
             <fieldset>
               <legend className="mb-1.5 block text-sm font-medium text-ink">Deliverable</legend>
               <div className="flex flex-wrap gap-2">
@@ -414,17 +599,28 @@ function NewTaskForm() {
                 ))}
               </select>
               <p className="mt-1.5 text-xs leading-relaxed text-ink-faint">
-                The agent’s instructions are attached to this task’s demo run. Nothing is
-                sent anywhere — execution stays local.
+                {mode === 'demo'
+                  ? "The agent’s instructions are attached to this task’s demo run. Nothing is sent anywhere — execution stays local."
+                  : "The agent’s instructions are included in the drafting request when you generate it."}
               </p>
             </fieldset>
 
             <div className="rounded-[12px] bg-subtle px-3.5 py-2.5">
               <p className="text-xs leading-relaxed text-ink-soft">
-                <strong className="font-medium text-ink">Demo execution:</strong> steps,
-                tool activity, and the example report are simulated on this device. No
-                provider is contacted and no API key is required. You can edit and
-                download the output.
+                {mode === 'demo' ? (
+                  <>
+                    <strong className="font-medium text-ink">Demo execution:</strong> steps,
+                    tool activity, and the example report are simulated on this device. No
+                    provider is contacted and no API key is required. You can edit and
+                    download the output.
+                  </>
+                ) : (
+                  <>
+                    <strong className="font-medium text-ink">AI draft:</strong> one live
+                    drafting request using the connected model above — never run automatically,
+                    only when you press “Generate draft”. Your key stays in this browser.
+                  </>
+                )}
               </p>
             </div>
 
@@ -489,7 +685,10 @@ function TaskWorkspace({ taskId }: { taskId: string }) {
           tone={TASK_STATUS_TONES[task.status]}
           dot={task.status === 'running'}
         />
-        <StatusPill label="Demo" tone="neutral" />
+        <StatusPill
+          label={task.mode === 'ai-draft' ? 'AI draft' : 'Demo'}
+          tone={task.mode === 'ai-draft' ? 'accent' : 'neutral'}
+        />
         <WorkspaceMenu taskId={taskId} onDelete={() => setDeleteOpen(true)} />
       </PageToolbar>
 
@@ -696,7 +895,11 @@ function BriefSection({ taskId }: { taskId: string }) {
             </div>
             <div className="flex items-center gap-1.5">
               <dt className="text-ink-faint">Mode</dt>
-              <dd className="font-medium text-ink">Local demo</dd>
+              <dd className="font-medium text-ink">
+                {task.mode === 'ai-draft' && task.draftConfig
+                  ? `AI draft — ${task.draftConfig.model.modelLabel}`
+                  : 'Local demo'}
+              </dd>
             </div>
           </dl>
         </div>
@@ -741,7 +944,47 @@ function RunSection({ taskId }: { taskId: string }) {
         </div>
       )}
 
-      {task.status === 'draft' && (
+      {task.status === 'draft' && task.mode === 'ai-draft' && (
+        <div className="rounded-group border border-line bg-raised p-4">
+          <p className="text-sm leading-relaxed text-ink-soft">
+            This task sends <strong className="font-medium text-ink">one live drafting
+            request</strong> to a connected model when you explicitly generate — never
+            automatically.
+          </p>
+          {task.draftConfig && (
+            <dl className="mt-2.5 flex flex-col gap-1 text-xs text-ink-soft">
+              <div className="flex items-center gap-1.5">
+                <dt className="text-ink-faint">Model</dt>
+                <dd className="font-medium text-ink">
+                  {task.draftConfig.model.modelLabel} — {task.draftConfig.model.providerLabel}
+                </dd>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <dt className="text-ink-faint">Included</dt>
+                <dd className="font-medium text-ink">
+                  Goal{task.draftConfig.instructions ? ' · instructions' : ''}
+                  {task.draftConfig.contextText ? ' · selected context' : ''}
+                </dd>
+              </div>
+            </dl>
+          )}
+          <p className="mt-2.5 text-xs leading-relaxed text-warning">
+            The provider may charge for this request. Your key stays in this browser.
+          </p>
+          <div className="mt-3">
+            <Button
+              variant="primary"
+              disabled={!task.draftConfig}
+              onClick={() => store.runTask(taskId)}
+            >
+              <Sparkles size={15} />
+              Generate draft
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {task.status === 'draft' && task.mode === 'demo' && (
         <div className="rounded-group border border-line bg-raised p-4">
           <p className="text-sm leading-relaxed text-ink-soft">
             This task has not run yet. Start a <strong className="font-medium text-ink">demo
@@ -764,15 +1007,19 @@ function RunSection({ taskId }: { taskId: string }) {
               className="h-2 w-2 animate-pulse rounded-full bg-accent"
               aria-hidden="true"
             />
-            Running (demo)…
+            {task.mode === 'ai-draft'
+              ? `Generating draft from ${task.draftConfig?.model.modelLabel ?? 'provider'}…`
+              : 'Running (demo)…'}
           </p>
           <p className="mt-1 text-xs text-ink-faint">
-            Steps and results are simulated on this device.
+            {task.mode === 'ai-draft'
+              ? 'One live request — content streams into the output below as it arrives.'
+              : 'Steps and results are simulated on this device.'}
           </p>
           <div className="mt-3 flex gap-2">
             <Button variant="secondary" onClick={() => store.pauseTask(taskId)}>
               <Square size={14} />
-              Pause
+              {task.mode === 'ai-draft' ? 'Stop' : 'Pause'}
             </Button>
             <Button variant="ghost" onClick={() => store.cancelTask(taskId)}>
               Cancel
@@ -786,14 +1033,21 @@ function RunSection({ taskId }: { taskId: string }) {
           <p className="text-sm font-medium text-ink">Paused</p>
           {task.interrupted && (
             <p className="mt-1 text-xs leading-relaxed text-warning">
-              This run was interrupted by a reload — the app does not keep working while
-              closed. Resume to continue from where it stopped.
+              {task.mode === 'ai-draft'
+                ? 'A reload interrupted this request — it did not continue in the background. Generating again starts a new one; the partial draft below is preserved.'
+                : 'This run was interrupted by a reload — the app does not keep working while closed. Resume to continue from where it stopped.'}
+            </p>
+          )}
+          {task.report && task.report.markdown.trim().length > 0 && task.mode === 'ai-draft' && (
+            <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+              The partial draft below is preserved — review, edit, or save it before
+              generating again.
             </p>
           )}
           <div className="mt-3 flex gap-2">
             <Button variant="primary" onClick={() => store.resumeTask(taskId)}>
               <Play size={14} />
-              Resume
+              {task.mode === 'ai-draft' ? 'Generate again' : 'Resume'}
             </Button>
             <Button variant="ghost" onClick={() => store.cancelTask(taskId)}>
               Cancel
@@ -822,8 +1076,16 @@ function RunSection({ taskId }: { taskId: string }) {
         <div className="rounded-group border border-danger/40 bg-danger-soft p-4">
           <p className="text-sm font-medium text-danger">Failed</p>
           <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-            The demo run failed. Retry from the beginning, or reopen as a draft.
+            {task.mode === 'ai-draft'
+              ? task.error ?? 'The drafting request failed.'
+              : 'The demo run failed. Retry from the beginning, or reopen as a draft.'}
           </p>
+          {task.report && task.report.markdown.trim().length > 0 && task.mode === 'ai-draft' && (
+            <p className="mt-1 text-xs leading-relaxed text-ink-soft">
+              Partial content that arrived before the failure is preserved below — edit or
+              save it, or retry explicitly.
+            </p>
+          )}
           <div className="mt-3 flex gap-2">
             <Button variant="secondary" onClick={() => store.retryTask(taskId)}>
               <RotateCcw size={14} />
@@ -865,7 +1127,17 @@ function ReportSection({ taskId }: { taskId: string }) {
     const report = task!.report!
     const library = useLibraryStore.getState()
     const kind =
-      report.template === 'email' ? 'email' : report.template === 'data' ? 'data' : 'report'
+      report.template === 'email'
+        ? 'email'
+        : report.template === 'data'
+          ? 'data'
+          : report.template === 'draft'
+            ? 'document'
+            : 'report'
+    const aiGenerated =
+      report.provenance === 'provider-generated'
+        ? { provenance: 'provider-generated' as const, generatedBy: report.generatedBy }
+        : { provenance: 'demo-simulation' as const, generatedBy: null }
     if (report.artifactId && library.artifacts[report.artifactId]) {
       library.renameArtifact(report.artifactId, task!.title)
       library.updateArtifact(report.artifactId, report.markdown)
@@ -877,7 +1149,7 @@ function ReportSection({ taskId }: { taskId: string }) {
       kind,
       markdown: report.markdown,
       taskId,
-      provenance: 'demo-simulation',
+      ...aiGenerated,
     })
     attachArtifactToReport(taskId, artifactId)
     showToast('Saved to Library', {
@@ -892,8 +1164,13 @@ function ReportSection({ taskId }: { taskId: string }) {
       className="mt-4 rounded-group border border-line bg-raised p-4 sm:p-5"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
-          Output — ready for review
+        <h2 className="text-[13px] font-semibold text-ink-faint">
+          {task.report.provenance === 'provider-generated'
+            ? 'Output — provider-generated draft'
+            : 'Output — ready for review'}
+          {task.report.stoppedPartial && (
+            <span className="ml-1.5 font-medium text-warning">(partial — generation was stopped)</span>
+          )}
         </h2>
         <div className="flex gap-2">
           {editing ? (
@@ -968,8 +1245,23 @@ function ReportSection({ taskId }: { taskId: string }) {
       )}
 
       <p className="mt-3 text-xs leading-relaxed text-ink-faint">
-        Example content — simulated output. Edits are saved locally and included in the
-        download; they never claim an external action was performed.
+        {task.report.provenance === 'provider-generated' ? (
+          <>
+            Provider-generated by{' '}
+            <strong className="font-medium text-ink-soft">
+              {task.report.generatedBy?.modelLabel ?? 'the selected model'}
+            </strong>{' '}
+            via {task.report.generatedBy?.providerLabel ?? 'your provider'}
+            {task.report.contextIncluded ? ' from your goal and selected context' : ' from your goal'}. It is a
+            model draft — verify it before use; no external sources were retrieved, and no
+            citations were added. Edits are saved locally and included in the download.
+          </>
+        ) : (
+          <>
+            Example content — simulated output. Edits are saved locally and included in the
+            download; they never claim an external action was performed.
+          </>
+        )}
       </p>
     </section>
   )
