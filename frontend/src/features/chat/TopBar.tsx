@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   PencilLine,
   Pin,
+  Scale,
   PinOff,
   Trash2,
   Download,
@@ -212,6 +213,15 @@ export function TopBar() {
       )}
 
       <HeaderExtras />
+
+      <Tooltip label="Compare two models side by side on one prompt">
+        <IconButton
+          label="Compare models"
+          onClick={() => setUi({ compareOpen: true })}
+        >
+          <Scale size={18} />
+        </IconButton>
+      </Tooltip>
 
       <Tooltip
         label={

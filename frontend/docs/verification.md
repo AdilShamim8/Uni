@@ -94,3 +94,98 @@ secondary text in dark mode) — recorded, not blocking.
   OpenAI-compatible server; agent system prompts over live SSE are
   typechecked and code-reviewed but not re-run against a real endpoint
   in this record (no paid traffic policy).
+
+---
+
+# Milestone 04 verification — Dynamic workspace & premium features
+
+Branch `feat/dynamic-workspace-premium` · base `bb7be83ef` (main). All checks
+below were run on the final code, not on intermediate states.
+
+## Automated gates
+
+| Check | Result |
+| --- | --- |
+| `npm run lint` (eslint 9 flat) | 0 problems |
+| `npm run typecheck` (tsconfig + node) | pass |
+| `npm run test` (vitest, 27 files) | **182/182 passed** |
+| `npm run build` (tsc + vite production) | pass, ~100 KB gzip app chunk |
+| Regression suites preserved | menu/draft-ownership/drawer suites from M3 still green (composer draft map extracted to `composerDrafts.ts` with test resets) |
+
+New suites this milestone: `artifactVersions` (10), `canvasFlow` (2),
+`contextFlow` (5), `csvAnalysis` (17), `compareFlow` (7), palette rework in
+`search` (8). Every claim below is test-backed, including migration from a
+real pre-v2 artifact fixture and credential-free exports/history.
+
+## Browser QA (production build, headless)
+
+Exercised end to end on `vite preview`:
+
+- Empty chat composition → send → streaming reply; composer sits directly
+  below the greeting (measured 292px gap including the 4 starter tiles —
+  one composition, no dead band).
+- **Save to Canvas** from the reply → inspector panel opens with the
+  document; keyboard resize via separator (aria-valuenow 420 → 452 with two
+  ArrowLeft presses); textarea edit autosaved as a working draft to
+  `universe:library:v1` with **1 version** (no version per keystroke);
+  "Save version" commits version 2.
+- Context tab renders per-conversation selection surface.
+- **Ctrl+K palette**: dialog opens, six scopes listed, "weekend" query →
+  1 chat result.
+- **Compare**: two demo models + prompt → explicit Run → both columns
+  stream labeled demo fixtures; results present with measured durations.
+- **Data analysis**: Tools menu → "Try the labeled sample" → real
+  computation (rows × cols), column table, grouping (sum of checkouts by
+  month) → labeled bar chart + data table.
+- **Focus mode**: sidebar and panel collapse, Escape restores.
+- Destinations: /work, /agents, /library all render with the shared header
+  (activity chip + focus toggle + mobile menu).
+- **Network isolation**: request log contains ONLY same-origin assets —
+  zero external calls in every flow above (BYOK live paths require a user
+  key by construction).
+- **Zero console errors and zero page errors** across the entire session.
+
+Viewports and overflow (`document.scrollWidth > clientWidth`):
+
+| Viewport | Horizontal overflow | Notes |
+| --- | --- | --- |
+| 390 × 844 | none | bottom bar (4 tabs), sidebar hidden, composer visible |
+| 768 × 1024 | none | bottom bar shown below lg |
+| 1440 × 900 | none | sidebar + optional split inspector |
+
+Themes: light and dark both screenshotted; dark uses layered charcoal
+surfaces (not inverted light), single violet accent.
+
+Screenshots: `download/m4-verify/01–18` (empty state, reply, canvas panel,
+context inspector, palette, compare setup/results, data analysis upload/
+sample/grouping, dark chat/canvas, mobile 390, tablet 768, focus mode,
+work/agents/library).
+
+## Vision review (VLM, strict prompt)
+
+| View | Verdict | Score |
+| --- | --- | --- |
+| Empty state 1440 light | PASS | 9/10 |
+| Split workspace (Canvas) | PASS | 8.5/10 |
+| Dark chat | PASS | (reviewed; deep-charcoal dark called out positively) |
+| Command palette | PASS | 8/10 |
+| Compare results | PASS | 8.5/10 |
+| Mobile 390 | PASS | (minor notes below) |
+| Data analysis + chart | PASS | (labeled chart + tables verified) |
+
+Feedback applied from the review: mobile bottom bar now reserves the iOS
+home-indicator safe area (`env(safe-area-inset-bottom)`), and palette
+keyboard hints use higher-contrast styling. Not applied (by design):
+single-line title truncation in headers and panels.
+
+## Honest limits
+
+- No screen-reader (NVDA/VoiceOver) or axe audit yet; keyboard-only paths
+  are tested programmatically but not with a real AT.
+- Real-device Safari (backdrop-filter, dvh, safe areas) untested —
+  verified only in headless Chromium.
+- Live comparison and live chat were exercised against a local
+  OpenAI-compatible test server in earlier milestones; this milestone's
+  automated checks are credential-free by rule and use the demo path.
+- 200% zoom and reduced-motion/transparency were implemented via tokens
+  and media queries but not re-measured in a browser this round.

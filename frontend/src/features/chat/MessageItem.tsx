@@ -19,6 +19,8 @@ import type { Conversation, MessageNode } from '@/domain/types'
 import { siblingsOf } from '@/domain/conversationTree'
 import { formatFullTimestamp } from '@/domain/timestamps'
 import { useAppStore } from '@/state/store'
+import { useLibraryStore } from '@/state/libraryStore'
+import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { UniverseMark } from '@/components/layout/UniverseMark'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -78,6 +80,51 @@ function VariantNav({
         <ChevronRight size={13} />
       </button>
     </span>
+  )
+}
+
+/**
+ * Save-to-Canvas: copies THIS response variant into a new Library document
+ * with its source conversation/message ids. It never overwrites an
+ * existing document — every save is a fresh, versioned copy.
+ */
+function SaveToCanvasButton({
+  content,
+  conversationId,
+}: {
+  content: string
+  conversationId: string
+}) {
+  const showToast = useAppStore((state) => state.showToast)
+  const addArtifact = useLibraryStore((state) => state.addArtifact)
+  const openInspector = useWorkspaceUiStore((state) => state.openInspector)
+
+  function save() {
+    const trimmed = content.trim()
+    if (!trimmed) return
+    const firstLine = trimmed.split('\n')[0].replace(/^#+\s*/, '').trim()
+    const title = (firstLine || 'Saved reply').slice(0, 60)
+    const id = addArtifact({
+      title,
+      kind: 'document',
+      markdown: trimmed,
+      provenance: 'model-output',
+      source: { conversationId, messageId: null, taskId: null },
+    })
+    openInspector({ tab: 'canvas', artifactId: id })
+    showToast('Saved to Canvas as a new document')
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label="Save to Canvas"
+      title="Save this reply to Canvas as a new document"
+      onClick={save}
+      className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+    >
+      <FileText size={14} />
+    </button>
   )
 }
 
@@ -384,6 +431,7 @@ function AssistantMessage({
             />
           )}
           <CopyButton content={node.content} />
+          <SaveToCanvasButton content={node.content} conversationId={conversation.id} />
           <button
             type="button"
             aria-label="Good response"
