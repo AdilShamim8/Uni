@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart3,
+  FileCode2,
   FileText,
   FolderPlus,
   FolderKanban,
@@ -22,6 +23,8 @@ import { TextField } from '@/components/ui/TextField'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Dialog } from '@/components/ui/Dialog'
 import { Menu, MenuItem } from '@/components/ui/Menu'
+import { HeaderExtras } from '@/components/layout/HeaderExtras'
+import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { Markdown } from '@/features/chat/Markdown'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
 import type { Artifact, ArtifactKind } from '@/domain/workspaceTypes'
@@ -37,6 +40,8 @@ const KIND_META: Record<ArtifactKind, { label: string; icon: React.ReactNode }> 
   email: { label: 'Email draft', icon: <Mail size={15} /> },
   data: { label: 'Data review', icon: <BarChart3 size={15} /> },
   notes: { label: 'Notes', icon: <NotebookPen size={15} /> },
+  document: { label: 'Document', icon: <FileText size={15} /> },
+  code: { label: 'Code', icon: <FileCode2 size={15} /> },
 }
 
 const FILTERS: { id: 'all' | ArtifactKind; label: string }[] = [
@@ -71,11 +76,16 @@ export function LibraryPage() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+        <div className="lg:hidden">
+          <MobileMenuButton />
+        </div>
         <h1 className="flex items-center gap-2 text-sm font-semibold text-ink">
           <LibraryIcon size={16} className="text-ink-faint" />
           Library
         </h1>
         <span className="hidden text-xs text-ink-faint sm:inline">Local only</span>
+        <div className="flex-1" />
+        <HeaderExtras />
       </header>
 
       <div className="flex-1 overflow-y-auto">

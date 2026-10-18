@@ -1,28 +1,30 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
-  BarChart3,
   Bot,
+  Check,
   ChevronDown,
   Ghost,
-  Image as ImageIcon,
   Library as LibraryIcon,
-  Mic,
   PanelLeftClose,
   PanelLeftOpen,
-  PenTool,
   Plus,
   Search,
   Settings as SettingsIcon,
   MessageSquare,
   Briefcase,
-  Telescope,
+  Layers,
+  Wrench,
 } from 'lucide-react'
 import { groupConversations } from '@/domain/grouping'
 import { useAppStore } from '@/state/store'
 import { useWorkStore } from '@/state/workStore'
+import { useAgentsStore } from '@/state/agentsStore'
+import { useLibraryStore } from '@/state/libraryStore'
+import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { UniverseMark } from '@/components/layout/UniverseMark'
-import { Badge, Tooltip } from '@/components/ui/Tooltip'
+import { SidebarActivityRow } from '@/components/layout/HeaderExtras'
+import { Tooltip } from '@/components/ui/Tooltip'
 import { IconButton } from '@/components/ui/IconButton'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { Button } from '@/components/ui/Button'
@@ -34,10 +36,10 @@ export interface SidebarProps {
 }
 
 /* ------------------------------------------------------------------ */
-/* Primary destinations                                                */
+/* Destinations                                                        */
 /* ------------------------------------------------------------------ */
 
-type DestinationId = 'chat' | 'work' | 'agents'
+type DestinationId = 'chat' | 'work' | 'agents' | 'library'
 
 interface Destination {
   id: DestinationId
@@ -45,6 +47,8 @@ interface Destination {
   icon: React.ReactNode
   path: string
   match: (pathname: string) => boolean
+  newLabel: string
+  newIcon: React.ReactNode
 }
 
 const DESTINATIONS: Destination[] = [
@@ -54,6 +58,8 @@ const DESTINATIONS: Destination[] = [
     icon: <MessageSquare size={17} />,
     path: '/',
     match: (p) => p === '/' || p.startsWith('/c/'),
+    newLabel: 'New chat',
+    newIcon: <Plus size={16} />,
   },
   {
     id: 'work',
@@ -61,6 +67,8 @@ const DESTINATIONS: Destination[] = [
     icon: <Briefcase size={17} />,
     path: '/work',
     match: (p) => p.startsWith('/work'),
+    newLabel: 'New task',
+    newIcon: <Plus size={16} />,
   },
   {
     id: 'agents',
@@ -68,8 +76,23 @@ const DESTINATIONS: Destination[] = [
     icon: <Bot size={17} />,
     path: '/agents',
     match: (p) => p.startsWith('/agents'),
+    newLabel: 'New agent',
+    newIcon: <Plus size={16} />,
+  },
+  {
+    id: 'library',
+    label: 'Library',
+    icon: <LibraryIcon size={17} />,
+    path: '/library',
+    match: (p) => p.startsWith('/library') || p.startsWith('/projects/'),
+    newLabel: 'New document',
+    newIcon: <Plus size={16} />,
   },
 ]
+
+function activeDestination(pathname: string): Destination {
+  return DESTINATIONS.find((destination) => destination.match(pathname)) ?? DESTINATIONS[0]
+}
 
 /** One obvious active-destination treatment, shared by all entries. */
 function DestinationRow({
@@ -96,84 +119,19 @@ function DestinationRow({
       <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">
         {destination.label}
       </span>
-      {active && (
-        <span
-          aria-hidden="true"
-          className="h-[5px] w-[5px] shrink-0 rounded-full bg-accent"
-        />
-      )}
     </button>
   )
 }
 
-/** Inset grouped card container with hairline separators between rows. */
-function GroupedCard({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="divide-y divide-line/60 overflow-hidden rounded-[12px] border border-line/70 bg-raised/70">
-      {children}
-    </div>
-  )
-}
+/* ------------------------------------------------------------------ */
+/* Tools — occasional utilities in one discoverable control            */
+/* ------------------------------------------------------------------ */
 
-/** Small contextual dot marking a simulated/preview entry. */
-function AvailabilityDot({ label }: { label: string }) {
-  return (
-    <Tooltip label={label}>
-      <span
-        aria-label={label}
-        role="img"
-        className="ml-auto mr-1 inline-block h-[5px] w-[5px] shrink-0 rounded-full bg-ink-faint"
-      />
-    </Tooltip>
-  )
-}
-
-/**
- * Row inside an inset grouped card — iOS sidebar style. The hover wash is
- * full-bleed (no row radius); the card provides the rounding and the
- * hairline separators between rows.
- */
-function GroupedRow({
-  icon,
-  label,
-  note,
-  subdued = false,
-  onClick,
-}: {
-  icon: React.ReactNode
-  label: string
-  note: string
-  subdued?: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex min-touch w-full items-center gap-2.5 px-3 py-[7px] text-left transition-colors duration-[var(--motion-fast)] hover:bg-[var(--c-hover-wash)] active:bg-[var(--c-active-wash)] ${
-        subdued ? 'text-ink-faint hover:text-ink-soft' : 'text-ink'
-      }`}
-    >
-      <span className="shrink-0 text-ink-faint">{icon}</span>
-      <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">{label}</span>
-      <AvailabilityDot label={note} />
-    </button>
-  )
-}
-
-interface ToolEntry {
-  kind: 'research' | 'images' | 'voice' | 'canvas' | 'data'
-  label: string
-  icon: React.ReactNode
-  note: string
-}
-
-const TOOLS: ToolEntry[] = [
-  { kind: 'research', label: 'Research', icon: <Telescope size={16} />, note: 'Simulated — labeled preview' },
-  { kind: 'images', label: 'Images', icon: <ImageIcon size={16} />, note: 'Sample gallery' },
-  { kind: 'voice', label: 'Voice', icon: <Mic size={16} />, note: 'Sample — no microphone access' },
-  { kind: 'canvas', label: 'Canvas', icon: <PenTool size={16} />, note: 'Local session panel' },
-  { kind: 'data', label: 'Data analysis', icon: <BarChart3 size={16} />, note: 'Fixture dataset' },
+const TOOL_ITEMS = [
+  { kind: 'research' as const, label: 'Research', note: 'Simulated preview' },
+  { kind: 'images' as const, label: 'Images', note: 'Sample gallery' },
+  { kind: 'voice' as const, label: 'Voice', note: 'Sample — no microphone' },
+  { kind: 'data' as const, label: 'Data analysis', note: 'Local CSV analysis' },
 ]
 
 export function Sidebar({ forceExpanded = false }: SidebarProps) {
@@ -187,41 +145,78 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
   const updatePreferences = useAppStore((state) => state.updatePreferences)
   const setUi = useAppStore((state) => state.setUi)
   const openPreview = useAppStore((state) => state.openPreview)
+
   const tasks = useWorkStore((state) => state.tasks)
-  // Derived, scope-specific chat status (audit S1): the sidebar badge
-  // follows the same credential source as the top bar instead of a
-  // hard-coded "Demo", and its copy stays mode-specific.
-  const chatLive = useAppStore((state) => {
-    const credential = state.activeProviderId
-      ? state.credentials[state.activeProviderId]
-      : undefined
-    return (
-      !!state.activeModelId &&
-      credential?.status === 'connected' &&
-      !!credential.apiKey
-    )
-  })
+  const agents = useAgentsStore((state) => state.agents)
+  const artifacts = useLibraryStore((state) => state.artifacts)
+  const projects = useLibraryStore((state) => state.projects)
+  const addArtifact = useLibraryStore((state) => state.addArtifact)
+
+  const selectedProjectId = useWorkspaceUiStore((state) => state.selectedProjectId)
+  const setSelectedProject = useWorkspaceUiStore((state) => state.setSelectedProject)
+  const openInspector = useWorkspaceUiStore((state) => state.openInspector)
 
   const collapsed = forceExpanded ? false : collapsedPreference
   const [showArchived, setShowArchived] = useState(false)
-  const [toolsOpen, setToolsOpen] = useState(true)
 
-  const onWorkRoute = location.pathname.startsWith('/work')
+  const destination = activeDestination(location.pathname)
+  const selectedProject = selectedProjectId ? projects[selectedProjectId] ?? null : null
 
+  /* Project scope counts — "the context it actually includes". */
+  const projectCounts = useMemo(() => {
+    if (!selectedProjectId) return null
+    let taskCount = 0
+    for (const task of Object.values(tasks)) {
+      if (task.projectId === selectedProjectId) taskCount += 1
+    }
+    let artifactCount = 0
+    for (const artifact of Object.values(artifacts)) {
+      if (artifact.projectId === selectedProjectId) artifactCount += 1
+    }
+    let agentCount = 0
+    for (const agent of Object.values(agents)) {
+      if (agent.projectIds.includes(selectedProjectId)) agentCount += 1
+    }
+    return { taskCount, artifactCount, agentCount }
+  }, [selectedProjectId, tasks, artifacts, agents])
+
+  /* Context-sensitive recent items, scoped to the selected project. */
   const recentTasks = useMemo(
     () =>
       Object.values(tasks)
+        .filter((task) => !selectedProjectId || task.projectId === selectedProjectId)
         .sort((a, b) => b.updatedAt - a.updatedAt)
         .slice(0, 8),
-    [tasks],
+    [tasks, selectedProjectId],
+  )
+
+  const recentArtifacts = useMemo(
+    () =>
+      Object.values(artifacts)
+        .filter((artifact) => !selectedProjectId || artifact.projectId === selectedProjectId)
+        .sort((a, b) => b.updatedAt - a.updatedAt)
+        .slice(0, 8),
+    [artifacts, selectedProjectId],
+  )
+
+  const visibleAgents = useMemo(
+    () =>
+      Object.values(agents)
+        .filter((agent) => !agent.archived)
+        .filter((agent) => !selectedProjectId || agent.projectIds.includes(selectedProjectId))
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .slice(0, 8),
+    [agents, selectedProjectId],
   )
 
   const visible = useMemo(
     () =>
       Object.values(conversations).filter(
-        (conversation) => conversation.archived === showArchived,
+        (conversation) =>
+          conversation.archived === showArchived &&
+          (!selectedProjectId || !conversation.temporary),
       ),
-    [conversations, showArchived],
+    [conversations, showArchived, selectedProjectId],
   )
   const groups = useMemo(() => groupConversations(visible), [visible])
   const archivedCount = useMemo(
@@ -241,9 +236,41 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
 
   function go(path: string) {
     navigate(path)
-    // Destination changes close the mobile drawer.
     setUi({ mobileSidebarOpen: false })
   }
+
+  /** The one context-aware primary action. */
+  function handleNew() {
+    switch (destination.id) {
+      case 'work':
+        go('/work/new')
+        break
+      case 'agents':
+        go('/agents/new')
+        break
+      case 'library': {
+        const id = addArtifact({
+          title: 'Untitled document',
+          kind: 'document',
+          markdown: '',
+          projectId: selectedProjectId,
+          provenance: 'user-authored',
+        })
+        openInspector({ tab: 'canvas', artifactId: id })
+        if (location.pathname !== '/library') go('/library')
+        break
+      }
+      default:
+        handleNewChat(false)
+        break
+    }
+  }
+
+  function handleSelectProject(projectId: string | null) {
+    setSelectedProject(projectId)
+  }
+
+  /* ---------------- Collapsed rail ---------------- */
 
   if (collapsed) {
     return (
@@ -254,30 +281,21 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         >
           <PanelLeftOpen size={18} />
         </IconButton>
-        {DESTINATIONS.map((destination) => (
+        {DESTINATIONS.map((entry) => (
           <IconButton
-            key={destination.id}
-            label={destination.label}
-            tone={destination.match(location.pathname) ? 'accent' : 'default'}
-            onClick={() => go(destination.path)}
+            key={entry.id}
+            label={entry.label}
+            tone={entry.match(location.pathname) ? 'accent' : 'default'}
+            onClick={() => go(entry.path)}
           >
-            {destination.icon}
+            {entry.icon}
           </IconButton>
         ))}
-        <IconButton label="New chat" tone="accent" onClick={() => handleNewChat(false)}>
+        <IconButton label={destination.newLabel} tone="accent" onClick={handleNew}>
           <Plus size={18} />
         </IconButton>
-        <IconButton label="New temporary chat" onClick={() => handleNewChat(true)}>
-          <Ghost size={18} />
-        </IconButton>
-        <IconButton
-          label="Search conversations"
-          onClick={() => setUi({ searchOpen: true })}
-        >
+        <IconButton label="Search workspace" onClick={() => setUi({ searchOpen: true })}>
           <Search size={18} />
-        </IconButton>
-        <IconButton label="Library" onClick={() => go('/library')}>
-          <LibraryIcon size={18} />
         </IconButton>
         <div className="flex-1" />
         <IconButton label="Settings" onClick={() => setUi({ settingsOpen: true })}>
@@ -287,139 +305,165 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
     )
   }
 
+  /* ---------------- Expanded sidebar ---------------- */
+
   return (
     <div className="material safe-left flex h-full w-sidebar flex-col bg-mat-sidebar">
-      {/* Identity — chat-mode status, honestly derived */}
-      <div className="flex items-center gap-2 px-3 pb-1 pt-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2 px-1">
-          <UniverseMark size={22} className="shrink-0 text-ink" />
-          <span className="truncate text-[15px] font-semibold tracking-tight text-ink">
+      {/* Identity + workspace selector */}
+      <div className="px-2 pb-1 pt-3">
+        <div className="flex items-center gap-2 px-1 pb-1.5">
+          <UniverseMark size={20} className="shrink-0 text-ink" />
+          <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold tracking-tight text-ink">
             Universe
           </span>
-          {chatLive ? (
-            <Tooltip label="Chat is live through your connected provider. Work runs and agent execution stay local demos either way.">
-              <Badge tone="success" className="cursor-help">Live</Badge>
-            </Tooltip>
-          ) : (
-            <Tooltip label="Chat responses are simulated locally. Add a provider in Settings to connect a real model with your own API key.">
-              <Badge className="cursor-help">Demo</Badge>
-            </Tooltip>
+          {!forceExpanded && (
+            <IconButton
+              label="Collapse sidebar"
+              size="sm"
+              onClick={() => updatePreferences({ sidebarCollapsed: true })}
+            >
+              <PanelLeftClose size={15} />
+            </IconButton>
           )}
         </div>
-        {!forceExpanded && (
-          <IconButton
-            label="Collapse sidebar"
-            size="sm"
-            onClick={() => updatePreferences({ sidebarCollapsed: true })}
-          >
-            <PanelLeftClose size={16} />
-          </IconButton>
-        )}
-      </div>
 
-      {/* Primary actions */}
-      <div className="flex flex-col gap-0.5 px-2 pt-2">
-        <Button variant="primary" className="justify-start" onClick={() => handleNewChat(false)}>
-          <Plus size={16} />
-          New chat
-        </Button>
-        <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            className="min-w-0 flex-1 justify-start"
-            aria-label="New temporary chat"
-            onClick={() => handleNewChat(true)}
-          >
-            <Ghost size={16} />
-            Temporary
-          </Button>
-          <Button
-            variant="ghost"
-            className="min-w-0 flex-1 justify-start"
-            aria-label="Search conversations"
-            onClick={() => setUi({ searchOpen: true })}
-          >
-            <Search size={16} />
-            Search
-            <span aria-hidden="true" className="ml-auto hidden text-[11px] text-ink-faint sm:inline">
-              ⌘K
-            </span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Primary destinations */}
-      <nav aria-label="Primary" className="mt-4 px-2">
-        <GroupedCard>
-          {DESTINATIONS.map((destination) => (
-            <DestinationRow
-              key={destination.id}
-              destination={destination}
-              active={destination.match(location.pathname)}
-              onClick={() => go(destination.path)}
-            />
-          ))}
-        </GroupedCard>
-      </nav>
-
-      {/* Library — shared secondary destination */}
-      <div className="mt-3 px-2">
-        <GroupedCard>
-          <GroupedRow
-            icon={<LibraryIcon size={16} />}
-            label="Library"
-            note="Local artifacts and projects"
-            onClick={() => go('/library')}
-          />
-        </GroupedCard>
-      </div>
-
-      {/* Tools — one coherent, collapsible inset group */}
-      <div className="mt-3 px-2">
-        <button
-          type="button"
-          aria-expanded={toolsOpen}
-          onClick={() => setToolsOpen((value) => !value)}
-          className="flex w-full items-center gap-1.5 rounded-control px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint transition-colors hover:text-ink-soft"
+        <Menu
+          width="w-64"
+          label="Select project workspace"
+          trigger={
+            <button
+              type="button"
+              aria-label={
+                selectedProject
+                  ? `Project: ${selectedProject.name}. ${projectCounts ? `${projectCounts.taskCount} tasks, ${projectCounts.artifactCount} artifacts` : ''}`
+                  : 'All workspaces'
+              }
+              className="flex min-touch w-full items-center gap-2 rounded-control px-2 py-1.5 text-left transition-colors duration-[var(--motion-fast)] hover:bg-[var(--c-hover-wash)]"
+            >
+              <Layers
+                size={14}
+                className={`shrink-0 ${selectedProject ? 'text-accent' : 'text-ink-faint'}`}
+              />
+              <span className="min-w-0 flex-1 truncate">
+                {selectedProject ? (
+                  <span className="block truncate text-[12.5px] font-medium text-ink">
+                    {selectedProject.name}
+                  </span>
+                ) : (
+                  <span className="block truncate text-[12.5px] text-ink-faint">
+                    All workspaces
+                  </span>
+                )}
+                {selectedProject && projectCounts && (
+                  <span className="block truncate text-[11px] text-ink-faint">
+                    {projectCounts.taskCount} tasks · {projectCounts.artifactCount} docs ·{' '}
+                    {projectCounts.agentCount} agents
+                  </span>
+                )}
+              </span>
+              <ChevronDown size={13} className="shrink-0 text-ink-faint" />
+            </button>
+          }
         >
-          Tools
-          <ChevronDown
-            size={12}
-            className={`transition-transform duration-[var(--motion-fast)] ${toolsOpen ? '' : '-rotate-90'}`}
+          <MenuItem
+            icon={!selectedProjectId ? <Check size={15} /> : undefined}
+            onClick={() => handleSelectProject(null)}
+          >
+            All workspaces
+          </MenuItem>
+          {Object.values(projects).length > 0 && (
+            <div className="my-1 border-t border-line" />
+          )}
+          {Object.values(projects)
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map((project) => (
+              <MenuItem
+                key={project.id}
+                icon={selectedProjectId === project.id ? <Check size={15} /> : undefined}
+                onClick={() => handleSelectProject(project.id)}
+              >
+                {project.name}
+              </MenuItem>
+            ))}
+          <div className="my-1 border-t border-line" />
+          <MenuItem onClick={() => go('/library')}>New project…</MenuItem>
+        </Menu>
+      </div>
+
+      {/* Global search trigger */}
+      <div className="px-2 pt-1">
+        <Button
+          variant="secondary"
+          className="w-full justify-start text-ink-soft"
+          aria-label="Search workspace"
+          onClick={() => setUi({ searchOpen: true })}
+        >
+          <Search size={15} />
+          Search
+          <span
             aria-hidden="true"
-          />
-        </button>
-        {toolsOpen && (
-          <GroupedCard>
-            {TOOLS.map((tool) => (
-              <GroupedRow
-                key={tool.kind}
-                icon={tool.icon}
-                label={tool.label}
-                note={tool.note}
-                onClick={() => openPreview({ kind: tool.kind })}
+            className="ml-auto hidden text-[11px] font-normal text-ink-faint sm:inline"
+          >
+            ⌘K
+          </span>
+        </Button>
+      </div>
+
+      {/* Navigation — one grouped card (hidden in the mobile drawer,
+          where the bottom destination bar already owns navigation) */}
+      {!forceExpanded && (
+        <nav aria-label="Primary" className="mt-2 px-2">
+          <div className="divide-y divide-line/60 overflow-hidden rounded-[12px] border border-line/70 bg-raised/70">
+            {DESTINATIONS.map((entry) => (
+              <DestinationRow
+                key={entry.id}
+                destination={entry}
+                active={entry.match(location.pathname)}
+                onClick={() => go(entry.path)}
               />
             ))}
-          </GroupedCard>
-        )}
+          </div>
+        </nav>
+      )}
+
+      {/* Context-aware primary action */}
+      <div className="mt-2 px-2">
+        <Button variant="primary" className="w-full justify-start" onClick={handleNew}>
+          {destination.newIcon}
+          {destination.newLabel}
+          {destination.id === 'chat' && (
+            <Tooltip label="Temporary chats stay in memory only and are never saved">
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label="New temporary chat"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  handleNewChat(true)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.stopPropagation()
+                    event.preventDefault()
+                    handleNewChat(true)
+                  }
+                }}
+                className="ml-auto rounded-full p-1 text-ink-soft transition-colors duration-[var(--motion-fast)] hover:bg-[var(--c-hover-wash)] hover:text-ink"
+              >
+                <Ghost size={14} />
+              </span>
+            </Tooltip>
+          )}
+        </Button>
       </div>
 
-      {/* Route-specific history: tasks on Work, conversations elsewhere */}
-      <div className="mt-4 flex min-h-0 flex-1 flex-col px-2">
-        {onWorkRoute ? (
+      {/* Context-sensitive recent items */}
+      <div className="mt-3 flex min-h-0 flex-1 flex-col px-2">
+        {destination.id === 'work' ? (
           <>
-            <div className="flex items-center justify-between px-2 pb-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-                Recent tasks
-              </p>
-              <button
-                type="button"
-                onClick={() => go('/work')}
-                className="rounded px-1 text-[11px] font-medium text-ink-faint transition-colors hover:text-accent"
-              >
-                All tasks
-              </button>
-            </div>
+            <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              {selectedProject ? 'Project tasks' : 'Recent tasks'}
+            </p>
             <div className="min-h-0 flex-1 overflow-y-auto pb-2">
               {recentTasks.length === 0 ? (
                 <p className="px-2 py-6 text-center text-xs leading-relaxed text-ink-faint">
@@ -442,6 +486,67 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
                       }`}
                     >
                       <span className="min-w-0 flex-1 truncate">{task.title}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : destination.id === 'agents' ? (
+          <>
+            <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              Agents
+            </p>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+              {visibleAgents.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs leading-relaxed text-ink-faint">
+                  No agents yet. Create one to reuse instructions.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-0.5">
+                  {visibleAgents.map((agent) => (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      onClick={() => go(`/agents/${agent.id}`)}
+                      aria-current={
+                        location.pathname === `/agents/${agent.id}` ? 'page' : undefined
+                      }
+                      className={`min-touch flex w-full items-center gap-2 rounded-control py-[var(--pad-list-item)] pl-3 pr-1 text-left text-sm transition-colors ${
+                        location.pathname === `/agents/${agent.id}`
+                          ? 'bg-accent-soft font-medium text-accent'
+                          : 'text-ink hover:bg-[var(--c-hover-wash)]'
+                      }`}
+                    >
+                      <span className="min-w-0 flex-1 truncate">{agent.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        ) : destination.id === 'library' ? (
+          <>
+            <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              Recent documents
+            </p>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+              {recentArtifacts.length === 0 ? (
+                <p className="px-2 py-6 text-center text-xs leading-relaxed text-ink-faint">
+                  No documents yet. Save one from a conversation or task.
+                </p>
+              ) : (
+                <div className="flex flex-col gap-0.5">
+                  {recentArtifacts.map((artifact) => (
+                    <button
+                      key={artifact.id}
+                      type="button"
+                      onClick={() => {
+                        openInspector({ tab: 'canvas', artifactId: artifact.id })
+                      }}
+                      className="min-touch flex w-full items-center gap-2 rounded-control py-[var(--pad-list-item)] pl-3 pr-1 text-left text-sm text-ink transition-colors hover:bg-[var(--c-hover-wash)]"
+                    >
+                      <span className="min-w-0 flex-1 truncate">{artifact.title}</span>
                     </button>
                   ))}
                 </div>
@@ -494,8 +599,37 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         )}
       </div>
 
-      {/* Profile / settings */}
-      <div className="p-2">
+      {/* Footer: activity (real tasks only), tools, account */}
+      <div className="border-t border-line/70 p-2">
+        <SidebarActivityRow onNavigate={() => go('/work')} />
+
+        <Menu
+          align="start"
+          direction="up"
+          width="w-60"
+          label="Tools"
+          trigger={
+            <button
+              type="button"
+              className="flex min-touch w-full items-center gap-2.5 rounded-control px-2 py-1.5 text-left text-ink-soft transition-colors duration-[var(--motion-fast)] hover:bg-[var(--c-hover-wash)] hover:text-ink"
+            >
+              <Wrench size={15} className="shrink-0 text-ink-faint" />
+              <span className="min-w-0 flex-1 truncate text-[13px] font-medium">Tools</span>
+              <ChevronDown size={13} className="shrink-0 text-ink-faint" />
+            </button>
+          }
+        >
+          {TOOL_ITEMS.map((tool) => (
+            <MenuItem
+              key={tool.kind}
+              hint={tool.note}
+              onClick={() => openPreview({ kind: tool.kind })}
+            >
+              {tool.label}
+            </MenuItem>
+          ))}
+        </Menu>
+
         <Menu
           align="start"
           direction="up"
