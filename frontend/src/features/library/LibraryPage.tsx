@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import {
   BarChart3,
   FileCode2,
@@ -16,6 +15,7 @@ import {
   Download,
 } from 'lucide-react'
 import { useLibraryStore } from '@/state/libraryStore'
+import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { useWorkStore } from '@/state/workStore'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
@@ -25,7 +25,6 @@ import { Dialog } from '@/components/ui/Dialog'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
-import { Markdown } from '@/features/chat/Markdown'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
 import type { Artifact, ArtifactKind } from '@/domain/workspaceTypes'
 
@@ -53,12 +52,10 @@ const FILTERS: { id: 'all' | ArtifactKind; label: string }[] = [
 ]
 
 export function LibraryPage() {
-  const navigate = useNavigate()
   const artifacts = useLibraryStore((state) => state.artifacts)
   const projects = useLibraryStore((state) => state.projects)
   const tasks = useWorkStore((state) => state.tasks)
   const [filter, setFilter] = useState<'all' | ArtifactKind>('all')
-  const [openId, setOpenId] = useState<string | null>(null)
   const [renameId, setRenameId] = useState<string | null>(null)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [newProjectOpen, setNewProjectOpen] = useState(false)
@@ -71,7 +68,9 @@ export function LibraryPage() {
     () => (filter === 'all' ? ordered : ordered.filter((a) => a.kind === filter)),
     [ordered, filter],
   )
-  const openArtifact = openId ? artifacts[openId] : undefined
+  const openInCanvas = (id: string) => {
+    useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId: id })
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -106,7 +105,7 @@ export function LibraryPage() {
                   kind: 'notes',
                   markdown: '# Untitled note\n\nStart writing…',
                 })
-                setOpenId(id)
+                openInCanvas(id)
               }}
             >
               <Plus size={16} />
@@ -158,7 +157,7 @@ export function LibraryPage() {
                     <div className="flex items-stretch rounded-group border border-line bg-raised transition-colors hover:bg-subtle">
                       <button
                         type="button"
-                        onClick={() => setOpenId(artifact.id)}
+                        onClick={() => openInCanvas(artifact.id)}
                         className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left"
                       >
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-subtle text-ink-faint">
@@ -179,7 +178,7 @@ export function LibraryPage() {
                       </button>
                       <ArtifactMenu
                         artifact={artifact}
-                        onOpen={() => setOpenId(artifact.id)}
+                        onOpen={() => openInCanvas(artifact.id)}
                         onRename={() => setRenameId(artifact.id)}
                         onDelete={() => setDeleteId(artifact.id)}
                       />
@@ -256,16 +255,6 @@ export function LibraryPage() {
         </div>
       </div>
 
-      {/* Viewer / editor */}
-      <ArtifactViewerDialog
-        artifact={openArtifact}
-        onClose={() => setOpenId(null)}
-        onNavigateTask={(taskId) => {
-          setOpenId(null)
-          navigate(`/work/${taskId}`)
-        }}
-      />
-
       {/* Rename */}
       <RenameDialog
         artifact={renameId ? artifacts[renameId] : undefined}
@@ -341,114 +330,6 @@ function ArtifactMenu({
   )
 }
 
-function ArtifactViewerDialog({
-  artifact,
-  onClose,
-  onNavigateTask,
-}: {
-  artifact: Artifact | undefined
-  onClose: () => void
-  onNavigateTask: (taskId: string) => void
-}) {
-  const updateArtifact = useLibraryStore((state) => state.updateArtifact)
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
-
-  // Reset the editor whenever a different artifact opens.
-  const key = artifact?.id ?? 'none'
-  const [lastKey, setLastKey] = useState(key)
-  if (key !== lastKey) {
-    setLastKey(key)
-    setEditing(false)
-    setDraft('')
-  }
-
-  if (!artifact) return null
-
-  return (
-    <Dialog
-      open={!!artifact}
-      onClose={onClose}
-      title={artifact.title}
-      size="lg"
-      footer={
-        <>
-          {artifact.taskId && (
-            <Button
-              variant="ghost"
-              onClick={() => onNavigateTask(artifact.taskId as string)}
-            >
-              Open source task
-            </Button>
-          )}
-          <div className="flex-1" />
-          {editing ? (
-            <>
-              <Button variant="ghost" onClick={() => setEditing(false)}>
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={() => {
-                  updateArtifact(artifact.id, draft)
-                  setEditing(false)
-                }}
-              >
-                Save changes
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setDraft(artifact.markdown)
-                  setEditing(true)
-                }}
-              >
-                <PencilLine size={14} />
-                Edit
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  downloadText(
-                    `universe-${slugifyTitle(artifact.title)}.md`,
-                    artifact.markdown,
-                  )
-                }
-              >
-                <Download size={14} />
-                Download
-              </Button>
-            </>
-          )}
-        </>
-      }
-    >
-      <p className="mb-3 text-xs text-ink-faint">
-        {KIND_META[artifact.kind].label} ·{' '}
-        {artifact.provenance === 'demo-simulation'
-          ? 'simulated output, edited locally'
-          : 'written by you'}{' '}
-        · updated {new Date(artifact.updatedAt).toLocaleDateString()}
-      </p>
-      {editing ? (
-        <textarea
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          rows={14}
-          aria-label="Edit artifact markdown"
-          className="w-full resize-y rounded-[12px] border border-line bg-panel px-3.5 py-3 font-mono text-[13px] leading-relaxed text-ink focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
-        />
-      ) : (
-        <div className="max-h-[55vh] overflow-y-auto rounded-[12px] bg-subtle/60 px-4 py-3">
-          <Markdown content={artifact.markdown} />
-        </div>
-      )}
-    </Dialog>
-  )
-}
 
 function RenameDialog({ artifact, onClose }: { artifact: Artifact | undefined; onClose: () => void }) {
   const renameArtifact = useLibraryStore((state) => state.renameArtifact)

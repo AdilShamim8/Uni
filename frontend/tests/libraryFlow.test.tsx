@@ -79,28 +79,34 @@ describe('Library — artifact collection', () => {
     await userEvent.click(screen.getByRole('tab', { name: 'Notes' }))
     expect(main().getByText('Weekly notes')).toBeTruthy()
 
-    // Open the viewer, edit the content, and download the edited version.
+    // Open in Canvas (the one editing surface), edit, download the edited
+    // version — downloads always match what is on screen.
     await userEvent.click(screen.getByRole('button', { name: /Actions for Weekly notes/ }))
     await userEvent.click(screen.getByRole('menuitem', { name: 'Open' }))
-    await userEvent.click(await screen.findByRole('button', { name: /Edit/ }))
 
-    const editor = screen.getByLabelText('Edit artifact markdown')
+    const editor = await screen.findByLabelText(/Document editor/)
     await userEvent.clear(editor)
-    await userEvent.type(editor, '# Edited title\n\nChanged content.')
-    await userEvent.click(screen.getByRole('button', { name: /Save changes/ }))
+    await userEvent.type(editor, '# Edited title{enter}{enter}Changed content.')
 
     const downloadSpy = vi.mocked(downloadText)
     downloadSpy.mockClear()
-    await userEvent.click(screen.getByRole('button', { name: /Download/ }))
+    await userEvent.click(screen.getByRole('button', { name: /^Download$/ }))
     expect(downloadSpy).toHaveBeenCalledWith(
       expect.stringContaining('weekly-notes'),
       expect.stringContaining('# Edited title'),
+      'text/markdown',
     )
 
-    // Close the viewer, rename the artifact.
-    await userEvent.keyboard('{Escape}')
+    // Saving creates a version; the draft is committed.
+    await userEvent.click(screen.getByRole('button', { name: /Save version/ }))
+    const artifactAfterSave = useLibraryStore.getState().artifacts[id]
+    expect(artifactAfterSave?.markdown).toContain('# Edited title')
+    expect(artifactAfterSave?.versions.length).toBeGreaterThan(1)
+
+    // Close the Canvas panel.
+    await userEvent.click(screen.getByRole('button', { name: 'Close canvas' }))
     await waitFor(() =>
-      expect(screen.queryByRole('dialog', { name: 'Weekly notes' })).toBeNull(),
+      expect(screen.queryByLabelText(/Document editor/)).toBeNull(),
     )
 
     await userEvent.click(screen.getByRole('button', { name: /Actions for Weekly notes/ }))

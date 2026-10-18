@@ -404,10 +404,25 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     })
 
     const previewTool = tools.find(
-      (tool) => tool === 'research' || tool === 'images' || tool === 'voice' || tool === 'canvas',
+      (tool) => tool === 'research' || tool === 'images' || tool === 'voice',
     )
     if (previewTool) {
       get().openPreview({ kind: previewTool, brief: trimmed })
+    }
+    if (tools.includes('canvas')) {
+      // Canvas is a persistent workspace now: the brief seeds a new
+      // versioned document and opens the Canvas panel — no session-only
+      // overlay, no silent overwrites.
+      const { useLibraryStore } = await import('@/state/libraryStore')
+      const { useWorkspaceUiStore } = await import('@/state/workspaceUiStore')
+      const title = trimmed.split('\n')[0].slice(0, 60) || 'Canvas document'
+      const artifactId = useLibraryStore.getState().addArtifact({
+        title,
+        kind: 'document',
+        markdown: `# ${title}\n\n${trimmed}\n`,
+        provenance: 'user-authored',
+      })
+      useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId })
     }
 
     await runAssistantTurn(conversationId, userNode)

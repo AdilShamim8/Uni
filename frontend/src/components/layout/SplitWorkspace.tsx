@@ -49,11 +49,14 @@ export interface SplitWorkspaceProps {
   renderPanel: () => ReactNode
   /** aria-label for the panel region, announced to assistive tech. */
   panelLabel: string
+  /** Override for the persisted open state (e.g. focus mode collapses it). */
+  open?: boolean
 }
 
-export function SplitWorkspace({ children, renderPanel, panelLabel }: SplitWorkspaceProps) {
+export function SplitWorkspace({ children, renderPanel, panelLabel, open: openOverride }: SplitWorkspaceProps) {
   const wide = useSplitBreakpoint()
-  const inspectorOpen = useWorkspaceUiStore((state) => state.inspectorOpen)
+  const storeOpen = useWorkspaceUiStore((state) => state.inspectorOpen)
+  const inspectorOpen = openOverride !== undefined ? openOverride : storeOpen
   const inspectorWidth = useWorkspaceUiStore((state) => state.inspectorWidth)
   const setInspectorWidth = useWorkspaceUiStore((state) => state.setInspectorWidth)
   const resetInspectorWidth = useWorkspaceUiStore((state) => state.resetInspectorWidth)
