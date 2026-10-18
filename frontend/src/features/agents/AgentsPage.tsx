@@ -20,6 +20,7 @@ import { TextField } from '@/components/ui/TextField'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
+import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { TOOL_REGISTRY } from '@/features/chat/toolRegistry'
 import { PersonalAssistantView } from './PersonalAssistantView'
@@ -71,7 +72,7 @@ function AgentDirectory() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
@@ -84,7 +85,7 @@ function AgentDirectory() {
         </span>
         <div className="flex-1" />
         <HeaderExtras />
-      </header>
+      </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
@@ -307,7 +308,7 @@ function AgentDetail({ agentId }: { agentId: string }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <button
           type="button"
           onClick={() => navigate('/agents')}
@@ -318,7 +319,7 @@ function AgentDetail({ agentId }: { agentId: string }) {
         </button>
         <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{agent.name}</h1>
         {agent.archived && <StatusPill label="Archived" tone="neutral" />}
-      </header>
+      </PageToolbar>
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
           <div className="flex items-start justify-between gap-3">
@@ -496,7 +497,7 @@ function AgentBuilder({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="material safe-left safe-right sticky top-0 z-30 flex h-13 shrink-0 items-center gap-2 border-b border-line bg-mat-header px-2 sm:px-4">
+      <PageToolbar>
         <button
           type="button"
           onClick={() => (onDone ? onDone() : navigate('/agents'))}
@@ -508,7 +509,7 @@ function AgentBuilder({
         <h1 className="text-sm font-semibold text-ink">
           {existing ? `Edit ${existing.name}` : 'New agent'}
         </h1>
-      </header>
+      </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
