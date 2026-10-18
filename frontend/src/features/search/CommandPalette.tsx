@@ -433,13 +433,13 @@ export function CommandPalette() {
         ))}
       </div>
 
-      <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-ink-faint">
-        <kbd className="rounded border border-line px-1.5 py-0.5">↑</kbd>
-        <kbd className="rounded border border-line px-1.5 py-0.5">↓</kbd>
+      <p className="mt-2 flex items-center gap-1.5 px-1 text-[11px] text-ink-soft">
+        <kbd className="rounded border border-line bg-raised px-1.5 py-0.5">↑</kbd>
+        <kbd className="rounded border border-line bg-raised px-1.5 py-0.5">↓</kbd>
         to move
-        <kbd className="ml-1 rounded border border-line px-1.5 py-0.5">Enter</kbd>
+        <kbd className="ml-1 rounded border border-line bg-raised px-1.5 py-0.5">Enter</kbd>
         to open
-        <kbd className="ml-1 rounded border border-line px-1.5 py-0.5">Esc</kbd>
+        <kbd className="ml-1 rounded border border-line bg-raised px-1.5 py-0.5">Esc</kbd>
         to close
       </p>
     </Dialog>

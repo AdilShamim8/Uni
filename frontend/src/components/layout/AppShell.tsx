@@ -155,10 +155,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </SplitWorkspace>
       </main>
 
-      {/* Mobile bottom destination bar — the four real destinations, no duplicates */}
+      {/* Mobile bottom destination bar — the four real destinations, no duplicates.
+          Grows to clear the iOS home indicator (safe area). */}
       <nav
         aria-label="Destinations"
-        className="safe-left safe-right material fixed inset-x-0 bottom-0 z-30 flex h-14 shrink-0 items-stretch border-t border-line bg-mat-header lg:hidden"
+        className="safe-left safe-right material fixed inset-x-0 bottom-0 z-30 flex min-h-14 shrink-0 items-stretch border-t border-line bg-mat-header pb-[env(safe-area-inset-bottom)] lg:hidden"
       >
         {BOTTOM_DESTINATIONS.map((destination) => {
           const active = destination.match(location.pathname)
