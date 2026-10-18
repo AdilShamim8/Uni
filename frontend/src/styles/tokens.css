@@ -11,10 +11,13 @@
  */
 
 :root {
-  /* Layout geometry */
-  --w-sidebar: 268px;
+  /* Layout geometry — sidebar 248–264, reading 720–800, inspector 360–560 */
+  --w-sidebar: 256px;
   --w-rail: 64px;
-  --w-column: 760px;
+  --w-column: 768px;
+  --w-inspector: 420px;
+  --w-inspector-min: 360px;
+  --w-inspector-max: 560px;
 
   /* Density (comfortable defaults; compact overrides below) */
   --pad-list-item: 10px;
@@ -61,8 +64,8 @@
 
   /* Ink */
   --c-ink: #1d1d1f;
-  --c-ink-soft: #606067;
-  --c-ink-faint: #8e8e96;
+  --c-ink-soft: #5d5d64;
+  --c-ink-faint: #78787f;
   --c-ink-inverse: #ffffff;
 
   /* Accent */
@@ -125,8 +128,8 @@
   --c-line-strong: #3a3a41;
 
   --c-ink: #f5f5f7;
-  --c-ink-soft: #b0b0b8;
-  --c-ink-faint: #85858e;
+  --c-ink-soft: #b3b3bb;
+  --c-ink-faint: #909099;
   --c-ink-inverse: #141416;
 
   --c-accent: #b5a3ff;
