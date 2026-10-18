@@ -275,7 +275,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
 
   if (collapsed) {
     return (
-      <div className="material flex h-full w-rail flex-col items-center gap-1 border-r border-line bg-mat-sidebar py-3">
+      <div className="glass-float flex h-full w-rail flex-col items-center gap-1 overflow-hidden rounded-float border border-line/70 bg-mat-sidebar py-3">
         <IconButton
           label="Expand sidebar"
           onClick={() => updatePreferences({ sidebarCollapsed: false })}
@@ -309,7 +309,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
   /* ---------------- Expanded sidebar ---------------- */
 
   return (
-    <div className="material safe-left flex h-full w-sidebar flex-col bg-mat-sidebar">
+    <div className="glass-float safe-left flex h-full w-sidebar flex-col overflow-hidden rounded-float border border-line/70 bg-mat-sidebar">
       {/* Identity + workspace selector */}
       <div className="px-2 pb-1 pt-3">
         <div className="flex items-center gap-2 px-1 pb-1.5">
