@@ -18,6 +18,12 @@ import {
   validateFile,
   type PendingAttachment,
 } from './attachments'
+import {
+  loadDraft,
+  markUnmountFocused,
+  saveDraft,
+  takeUnmountWasFocused,
+} from './composerDrafts'
 import { shouldSubmit } from './sendKey'
 import { ToolPicker } from './ToolPicker'
 import { TOOL_REGISTRY } from './toolRegistry'
@@ -26,39 +32,6 @@ export interface ComposerHandle {
   addFiles: (files: File[]) => void
   focus: () => void
   setText: (text: string) => void
-}
-
-/**
- * Per-conversation draft storage (module scope, in-memory only).
- *
- * Drafts typed in one conversation must not leak into another, must
- * survive switching conversations mid-thought, and must never be cleared
- * by the completion of a turn that was submitted earlier (audit D2).
- */
-interface DraftSnapshot {
-  text: string
-  tools: ToolId[]
-  pending: PendingAttachment[]
-}
-
-const drafts = new Map<string, DraftSnapshot>()
-
-function loadDraft(key: string): DraftSnapshot {
-  return drafts.get(key) ?? { text: '', tools: [], pending: [] }
-}
-
-/** Keep the draft map bounded; evicted entries release their object URLs. */
-const MAX_DRAFTS = 24
-
-function pruneDrafts(): void {
-  while (drafts.size > MAX_DRAFTS) {
-    const oldestKey = drafts.keys().next().value as string
-    const evicted = drafts.get(oldestKey)
-    drafts.delete(oldestKey)
-    for (const attachment of evicted?.pending ?? []) {
-      if (attachment.previewUrl) URL.revokeObjectURL(attachment.previewUrl)
-    }
-  }
 }
 
 export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref) {
@@ -96,10 +69,17 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
     return leaf?.role === 'assistant' && leaf.status === 'streaming'
   })
 
-  const [text, setText] = useState('')
-  const [pending, setPending] = useState<PendingAttachment[]>([])
+  // Initialize from the draft map so a remount (e.g. the empty-state
+  // composition ↔ conversation transition) restores the same draft
+  // instead of silently clearing it.
+  const [text, setText] = useState(() => loadDraft(useAppStore.getState().activeConversationId ?? 'new').text)
+  const [pending, setPending] = useState<PendingAttachment[]>(
+    () => loadDraft(useAppStore.getState().activeConversationId ?? 'new').pending,
+  )
   const [errors, setErrors] = useState<string[]>([])
-  const [tools, setTools] = useState<ToolId[]>([])
+  const [tools, setTools] = useState<ToolId[]>(() =>
+    loadDraft(useAppStore.getState().activeConversationId ?? 'new').tools,
+  )
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const pendingRef = useRef<PendingAttachment[]>([])
@@ -126,7 +106,7 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
   // load the incoming conversation's own draft. Drafts never mix.
   useEffect(() => {
     if (draftKeyRef.current === draftKey) return
-    drafts.set(draftKeyRef.current, {
+    saveDraft(draftKeyRef.current, {
       text: textRef.current,
       tools: toolsRef.current,
       pending: pendingRef.current,
@@ -137,19 +117,40 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
     setTools(next.tools)
     setPending(next.pending)
     setErrors([])
-    pruneDrafts()
   }, [draftKey])
 
   // When the composer unmounts (e.g. navigating to Work), keep the draft
   // alive so it comes back on return. Only pruned entries lose their URLs.
   useEffect(() => {
     return () => {
-      drafts.set(draftKeyRef.current, {
+      saveDraft(draftKeyRef.current, {
         text: textRef.current,
         tools: toolsRef.current,
         pending: pendingRef.current,
       })
-      pruneDrafts()
+    }
+  }, [])
+
+  // Focus continuity: capture whether the textarea was focused, restore it
+  // on the next mount if it was (empty-state ↔ conversation transition).
+  const focusedRef = useRef(false)
+  useEffect(() => {
+    if (takeUnmountWasFocused()) {
+      textareaRef.current?.focus({ preventScroll: true })
+    }
+    const textarea = textareaRef.current
+    const markFocused = () => {
+      focusedRef.current = true
+    }
+    const markBlurred = () => {
+      focusedRef.current = false
+    }
+    textarea?.addEventListener('focus', markFocused)
+    textarea?.addEventListener('blur', markBlurred)
+    return () => {
+      textarea?.removeEventListener('focus', markFocused)
+      textarea?.removeEventListener('blur', markBlurred)
+      markUnmountFocused(focusedRef.current)
     }
   }, [])
 
@@ -220,6 +221,11 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
     setText('')
     setPending([])
     setErrors([])
+    // Sync refs immediately: the empty-state → conversation transition can
+    // unmount this composer before the text-sync effect runs, and the
+    // unmount handler must not save the just-submitted text as a draft.
+    textRef.current = ''
+    pendingRef.current = []
     try {
       await sendMessage({ text: submittedText, attachments, tools: submittedTools })
     } finally {
