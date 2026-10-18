@@ -99,7 +99,7 @@ export function ComingSoonPreview({ kind }: { kind: PreviewKind }) {
         </ul>
         {kind === 'projects' && (
           <div className="rounded-xl border border-line bg-raised p-3.5">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="mb-2 text-[12px] font-medium text-ink-faint">
               Fixture — what a project entry may look like
             </p>
             <ul className="flex flex-col gap-1.5 text-sm text-ink-soft">

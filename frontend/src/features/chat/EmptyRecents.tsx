@@ -79,7 +79,7 @@ export function EmptyRecents() {
 
   return (
     <section aria-label="Recent work" className="mt-8">
-      <p className="text-left text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+      <p className="text-left text-[12px] font-medium text-ink-faint">
         Continue where you left off
       </p>
       <ul className="mt-2 grid gap-2 sm:grid-cols-2">

@@ -116,7 +116,7 @@ export function VoicePreview({ brief }: { brief?: string }) {
 
         {phase === 'active' && (
           <div className="w-full" aria-label="Sample transcript">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="mb-2 text-[12px] font-medium text-ink-faint">
               Sample transcript
             </p>
             <ul className="flex max-h-44 flex-col gap-2 overflow-y-auto rounded-xl border border-line bg-raised p-3">

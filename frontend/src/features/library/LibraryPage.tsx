@@ -94,7 +94,7 @@ export function LibraryPage() {
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
-        <h1 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <h1 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink">
           <LibraryIcon size={16} className="text-ink-faint" />
           Library
         </h1>
@@ -528,7 +528,7 @@ function ProjectDetail({ projectId, onBack }: { projectId: string; onBack: () =>
           <ChevronLeft size={15} />
           Library
         </Button>
-        <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">
           {project.name}
         </h1>
         <HeaderExtras />

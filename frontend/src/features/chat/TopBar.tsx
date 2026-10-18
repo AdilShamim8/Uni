@@ -129,7 +129,7 @@ export function TopBar() {
           const connected = liveProviderIds.has(provider.id)
           return (
             <div key={provider.id}>
-              <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[12px] font-medium text-ink-faint">
                 {connected && (
                   <span
                     aria-label="Connected"

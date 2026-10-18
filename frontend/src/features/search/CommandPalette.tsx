@@ -392,7 +392,7 @@ export function CommandPalette() {
 
         {grouped.map((group) => (
           <div key={group.label} className="mb-1">
-            <p className="px-1 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="px-1 pb-1 pt-2 text-[12px] font-medium text-ink-faint">
               {group.label}
             </p>
             {group.items.map((item) => {

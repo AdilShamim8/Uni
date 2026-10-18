@@ -258,7 +258,7 @@ export function DataAnalysisPreview() {
 
           {/* Input preview */}
           <section aria-label="Input preview">
-            <h3 className="text-sm font-semibold text-ink">Input preview</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight text-ink">Input preview</h3>
             <div className="mt-2 overflow-x-auto rounded-xl border border-line">
               <table className="w-full border-collapse text-sm">
                 <thead>
@@ -295,7 +295,7 @@ export function DataAnalysisPreview() {
 
           {/* Column types */}
           <section aria-label="Column types and summaries">
-            <h3 className="text-sm font-semibold text-ink">Columns</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight text-ink">Columns</h3>
             <div className="mt-2 overflow-x-auto rounded-xl border border-line">
               <table className="w-full border-collapse text-sm">
                 <thead>
@@ -370,7 +370,7 @@ export function DataAnalysisPreview() {
           {/* Grouping + chart */}
           {canGroup && (
             <section aria-label="Grouping and chart">
-              <h3 className="text-sm font-semibold text-ink">Group and chart</h3>
+              <h3 className="text-[15px] font-semibold tracking-tight text-ink">Group and chart</h3>
               <div className="mt-2 flex flex-wrap items-end gap-2">
                 <label className="flex flex-col gap-1 text-xs font-medium text-ink-soft">
                   Group by
