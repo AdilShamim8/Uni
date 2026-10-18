@@ -125,7 +125,11 @@ function WorkHome() {
                 Describe an outcome, run it as a local demo, review the output.
               </p>
             </div>
-            <Button variant="primary" onClick={() => navigate('/work/new')}>
+            <Button
+              variant="primary"
+              className="w-full sm:w-auto"
+              onClick={() => navigate('/work/new')}
+            >
               <Plus size={16} />
               New task
             </Button>
@@ -153,11 +157,11 @@ function WorkHome() {
             ))}
           </ul>
 
-          {/* Filters */}
+          {/* Filters — wrap on narrow screens instead of truncating */}
           <div
             role="tablist"
             aria-label="Filter tasks"
-            className="mt-6 -mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="mt-6 flex flex-wrap gap-1.5"
           >
             {FILTERS.map((entry) => {
               const active = filter === entry.id
@@ -182,7 +186,7 @@ function WorkHome() {
 
           {/* Task list */}
           {filtered.length === 0 ? (
-            <div className="mt-4 rounded-group border border-line bg-raised px-6 py-10 text-center">
+            <div className="mt-4 rounded-group border border-line bg-raised px-6 py-8 text-center">
               <Briefcase size={28} className="mx-auto text-ink-faint" aria-hidden="true" />
               <p className="mt-3 text-sm font-medium text-ink">
                 {ordered.length === 0 ? 'No tasks yet' : 'No tasks in this view'}
