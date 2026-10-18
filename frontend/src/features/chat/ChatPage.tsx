@@ -82,7 +82,7 @@ export function ChatPage() {
           }`}
         >
           {!hasMessages && (
-            <div key="empty" className="mx-auto w-full max-w-column px-3 sm:px-4">
+            <div key="empty" className="mx-auto w-full max-w-column px-3.5 sm:px-4">
               <WelcomeHeading />
             </div>
           )}
@@ -91,7 +91,7 @@ export function ChatPage() {
           )}
           <Composer key="composer" ref={composerRef} />
           {!hasMessages && (
-            <div key="starters" className="mx-auto w-full max-w-column px-3 pb-10 sm:px-4">
+            <div key="starters" className="mx-auto w-full max-w-column px-3.5 pb-10 sm:px-4">
               <StarterRow
                 onSuggestion={(text) => {
                   composerRef.current?.setText(text)
