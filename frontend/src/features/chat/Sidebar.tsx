@@ -110,14 +110,16 @@ function DestinationRow({
       type="button"
       onClick={onClick}
       aria-current={active ? 'page' : undefined}
-      className={`flex min-touch w-full items-center gap-2.5 px-3 py-[7px] text-left transition-colors duration-[var(--motion-fast)] ${
+      className={`press flex min-touch w-full items-center gap-2.5 rounded-control px-2.5 py-2 text-left transition-colors duration-[var(--motion-select)] ${
         active
-          ? 'bg-accent-soft font-medium text-accent'
-          : 'text-ink hover:bg-[var(--c-hover-wash)] active:bg-[var(--c-active-wash)]'
+          ? 'bg-accent-soft font-semibold text-accent'
+          : 'font-medium text-ink hover:bg-[var(--c-hover-wash)] active:bg-[var(--c-active-wash)]'
       }`}
     >
-      <span className="shrink-0">{destination.icon}</span>
-      <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium">
+      <span className="shrink-0" aria-hidden="true">
+        {destination.icon}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[14px] leading-tight">
         {destination.label}
       </span>
     </button>
@@ -313,8 +315,8 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
       {/* Identity + workspace selector */}
       <div className="px-2 pb-1 pt-3">
         <div className="flex items-center gap-2 px-1 pb-1.5">
-          <UniverseMark size={20} className="shrink-0 text-ink" />
-          <span className="min-w-0 flex-1 truncate text-[14.5px] font-semibold tracking-tight text-ink">
+          <UniverseMark size={22} className="shrink-0 text-ink" />
+          <span className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">
             Universe
           </span>
           {!forceExpanded && (
@@ -410,59 +412,53 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         </Button>
       </div>
 
-      {/* Navigation — one grouped card (hidden in the mobile drawer,
-          where the bottom destination bar already owns navigation) */}
+      {/* Navigation — a simple icon/label list with one confident
+          selection treatment (no inset settings-list card look) */}
       {!forceExpanded && (
-        <nav aria-label="Primary" className="mt-2 px-2">
-          <div className="divide-y divide-line/60 overflow-hidden rounded-[12px] border border-line/70 bg-raised/70">
-            {DESTINATIONS.map((entry) => (
-              <DestinationRow
-                key={entry.id}
-                destination={entry}
-                active={entry.match(location.pathname)}
-                onClick={() => go(entry.path)}
-              />
-            ))}
-          </div>
+        <nav aria-label="Primary" className="mt-1.5 flex flex-col gap-0.5 px-2">
+          {DESTINATIONS.map((entry) => (
+            <DestinationRow
+              key={entry.id}
+              destination={entry}
+              active={entry.match(location.pathname)}
+              onClick={() => go(entry.path)}
+            />
+          ))}
         </nav>
       )}
 
-      {/* Context-aware primary action */}
-      <div className="mt-2 px-2">
-        <Button variant="primary" className="w-full justify-start" onClick={handleNew}>
-          {destination.newIcon}
-          {destination.newLabel}
+      {/* Context-aware primary action and the separate temporary-chat
+          control — sibling buttons with correct semantics, never a nested
+          interactive element inside the primary action. */}
+      <div className="mt-2.5 px-2">
+        <div className="flex items-stretch gap-1.5">
+          <Button
+            variant="primary"
+            className="h-10 min-w-0 flex-1 justify-center px-3"
+            onClick={handleNew}
+          >
+            {destination.newIcon}
+            <span className="truncate text-[14px]">{destination.newLabel}</span>
+          </Button>
           {destination.id === 'chat' && (
-            <Tooltip label="Temporary chats stay in memory only and are never saved">
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label="New temporary chat"
-                onClick={(event) => {
-                  event.stopPropagation()
-                  handleNewChat(true)
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.stopPropagation()
-                    event.preventDefault()
-                    handleNewChat(true)
-                  }
-                }}
-                className="ml-auto rounded-full p-1 text-ink-soft transition-colors duration-[var(--motion-fast)] hover:bg-[var(--c-hover-wash)] hover:text-ink"
+            <Tooltip label="New temporary chat — stays in memory only, never saved">
+              <IconButton
+                label="New temporary chat"
+                className="!h-10 !w-10 shrink-0"
+                onClick={() => handleNewChat(true)}
               >
-                <Ghost size={14} />
-              </span>
+                <Ghost size={17} />
+              </IconButton>
             </Tooltip>
           )}
-        </Button>
+        </div>
       </div>
 
       {/* Context-sensitive recent items */}
       <div className="mt-3 flex min-h-0 flex-1 flex-col px-2">
         {destination.id === 'work' ? (
           <>
-            <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="px-2 pb-1 text-[12px] font-medium text-ink-faint">
               {selectedProject ? 'Project tasks' : 'Recent tasks'}
             </p>
             <div className="min-h-0 flex-1 overflow-y-auto pb-2">
@@ -495,7 +491,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
           </>
         ) : destination.id === 'agents' ? (
           <>
-            <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="px-2 pb-1 text-[12px] font-medium text-ink-faint">
               Agents
             </p>
             <div className="min-h-0 flex-1 overflow-y-auto pb-2">
@@ -528,7 +524,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
           </>
         ) : destination.id === 'library' ? (
           <>
-            <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="px-2 pb-1 text-[12px] font-medium text-ink-faint">
               Recent documents
             </p>
             <div className="min-h-0 flex-1 overflow-y-auto pb-2">
@@ -557,7 +553,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         ) : (
           <>
             <div className="flex items-center justify-between px-2 pb-1">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <p className="text-[12px] font-medium text-ink-faint">
                 {showArchived ? 'Archived' : 'Recent'}
               </p>
               {archivedCount > 0 && (
@@ -580,7 +576,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
               )}
               {groups.map((group) => (
                 <section key={group.key} className="mb-2">
-                  <p className="px-2 pb-1 pt-2 text-[11px] font-medium text-ink-faint/90">
+                  <p className="px-2 pb-1 pt-2 text-[12px] font-medium text-ink-faint/90">
                     {group.label}
                   </p>
                   <div className="flex flex-col gap-0.5">
