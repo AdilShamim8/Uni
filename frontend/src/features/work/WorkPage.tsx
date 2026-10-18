@@ -107,7 +107,7 @@ function WorkHome() {
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
-        <h1 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <h1 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink">
           <Briefcase size={16} className="text-ink-faint" />
           Work
         </h1>
@@ -340,7 +340,7 @@ function NewTaskForm() {
           <ChevronDown size={15} className="rotate-90" aria-hidden="true" />
           Work
         </button>
-        <h1 className="text-sm font-semibold text-ink">New task</h1>
+        <h1 className="text-[15px] font-semibold tracking-tight text-ink">New task</h1>
       </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
@@ -479,7 +479,7 @@ function TaskWorkspace({ taskId }: { taskId: string }) {
         >
           <ChevronDown size={16} className="rotate-90" aria-hidden="true" />
         </button>
-        <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{task.title}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">{task.title}</h1>
         <StatusPill
           label={TASK_STATUS_LABELS[task.status]}
           tone={TASK_STATUS_TONES[task.status]}
@@ -534,7 +534,7 @@ function TaskWorkspace({ taskId }: { taskId: string }) {
           aria-label="Activity"
         >
           <div className="px-3 py-4">
-            <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="px-1 text-[12px] font-medium text-ink-faint">
               Activity
             </p>
             <ActivityTimeline task={task} />

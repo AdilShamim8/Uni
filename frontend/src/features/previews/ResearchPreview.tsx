@@ -100,7 +100,7 @@ export function ResearchPreview({ brief }: { brief?: string }) {
 
           {phase === 'running' && (
             <ol className="flex flex-col gap-2 rounded-xl border border-line bg-raised p-4" aria-live="polite">
-              <li className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <li className="mb-1 text-[12px] font-medium text-ink-faint">
                 Simulated progress
               </li>
               {RESEARCH_STEPS.map((step, index) => (

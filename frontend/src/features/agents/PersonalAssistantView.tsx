@@ -81,7 +81,7 @@ export function PersonalAssistantView({
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
           <Sparkles size={15} />
         </span>
-        <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{agent.name}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">{agent.name}</h1>
         <Button variant="ghost" size="sm" onClick={onEdit}>
           <PencilLine size={14} />
           <span className="hidden sm:inline">Edit</span>
@@ -232,7 +232,7 @@ function ConversationTab({ agentId }: { agentId: string }) {
 
         {agent?.starters.length > 0 && (
           <div className="mt-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <p className="text-[12px] font-medium text-ink-faint">
               Try asking
             </p>
             <ul className="mt-2 flex flex-col gap-1.5">

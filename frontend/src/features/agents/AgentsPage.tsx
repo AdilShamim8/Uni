@@ -76,7 +76,7 @@ function AgentDirectory() {
         <div className="lg:hidden">
           <MobileMenuButton />
         </div>
-        <h1 className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <h1 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink">
           <Bot size={16} className="text-ink-faint" />
           Agents
         </h1>
@@ -134,7 +134,7 @@ function AgentDirectory() {
             <>
               {personal.length > 0 && (
                 <section className="mt-6" aria-label="Personal assistant">
-                  <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                  <p className="px-1 text-[12px] font-medium text-ink-faint">
                     Personal assistant
                   </p>
                   <ul className="mt-2 flex flex-col gap-2">
@@ -146,7 +146,7 @@ function AgentDirectory() {
               )}
 
               <section className="mt-6" aria-label="Specialists">
-                <p className="px-1 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+                <p className="px-1 text-[12px] font-medium text-ink-faint">
                   Specialists
                 </p>
                 {specialists.length === 0 ? (
@@ -317,7 +317,7 @@ function AgentDetail({ agentId }: { agentId: string }) {
         >
           <ChevronLeft />
         </button>
-        <h1 className="min-w-0 flex-1 truncate text-sm font-semibold text-ink">{agent.name}</h1>
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">{agent.name}</h1>
         {agent.archived && <StatusPill label="Archived" tone="neutral" />}
       </PageToolbar>
       <div className="flex-1 overflow-y-auto">
@@ -338,7 +338,7 @@ function AgentDetail({ agentId }: { agentId: string }) {
           </div>
 
           <section className="mt-5 rounded-group border border-line bg-raised p-4 sm:p-5">
-            <h3 className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+            <h3 className="text-[12px] font-medium text-ink-faint">
               Instructions
             </h3>
             <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
@@ -348,7 +348,7 @@ function AgentDetail({ agentId }: { agentId: string }) {
 
           {agent.tools.length > 0 && (
             <section className="mt-4 rounded-group border border-line bg-raised p-4 sm:p-5">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <h3 className="text-[12px] font-medium text-ink-faint">
                 Tools referenced
               </h3>
               <p className="mt-2 text-sm leading-relaxed text-ink-soft">
@@ -362,7 +362,7 @@ function AgentDetail({ agentId }: { agentId: string }) {
 
           {agent.starters.length > 0 && (
             <section className="mt-4 rounded-group border border-line bg-raised p-4 sm:p-5">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
+              <h3 className="text-[12px] font-medium text-ink-faint">
                 Example starters
               </h3>
               <ul className="mt-2 flex flex-col gap-1.5">
@@ -506,7 +506,7 @@ function AgentBuilder({
         >
           <ChevronLeft />
         </button>
-        <h1 className="text-sm font-semibold text-ink">
+        <h1 className="text-[15px] font-semibold tracking-tight text-ink">
           {existing ? `Edit ${existing.name}` : 'New agent'}
         </h1>
       </PageToolbar>

@@ -19,7 +19,7 @@ export function SettingsGroup({ title, footer, children, className = '' }: Setti
   return (
     <section aria-label={title} className={className}>
       {title && (
-        <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.06em] text-ink-faint">
+        <p className="mb-1.5 px-3 text-[12px] font-medium text-ink-faint">
           {title}
         </p>
       )}
