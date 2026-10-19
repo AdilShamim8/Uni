@@ -113,6 +113,9 @@ const PLANS: Record<TaskDeliverable, RunPlan> = {
 /** Delay between run steps; tests shrink this to keep suites fast. */
 let stepDelayMs = 1100
 
+/** Bounded history of outputs preserved across revisions. */
+const MAX_PREVIOUS_REPORTS = 5
+
 export function setRunnerStepMs(ms: number): void {
   stepDelayMs = Math.max(0, ms)
 }
@@ -504,6 +507,10 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
           mode: raw.mode === 'ai-draft' ? 'ai-draft' : 'demo',
           draftConfig: raw.draftConfig ?? null,
           error: raw.error ?? null,
+          // Milestone-06 conversational fields: old tasks default to empty —
+          // their history is projected, never rewritten or wiped.
+          messages: Array.isArray(raw.messages) ? raw.messages : [],
+          previousReports: Array.isArray(raw.previousReports) ? raw.previousReports : [],
           report: raw.report
             ? {
                 template: raw.report.template,
@@ -513,6 +520,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
                 generatedBy: raw.report.generatedBy ?? null,
                 contextIncluded: raw.report.contextIncluded ?? false,
                 stoppedPartial: raw.report.stoppedPartial ?? false,
+                runId: raw.report.runId ?? null,
               }
             : null,
         }
@@ -582,6 +590,8 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
       report: null,
       inputRequest: null,
       error: null,
+      messages: [],
+      previousReports: [],
     }
     set((state) => ({ tasks: { ...state.tasks, [task.id]: task } }))
     return task.id
@@ -628,6 +638,12 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
     set((state) => {
       const task = state.tasks[id]
       if (!task) return state
+      // A revision archives the previous output (bounded) instead of
+      // silently discarding it; the new run starts from a clean report.
+      const previousReports =
+        task.report && task.report.markdown.trim().length > 0
+          ? [{ ...task.report, savedAt: Date.now() }, ...task.previousReports].slice(0, MAX_PREVIOUS_REPORTS)
+          : task.previousReports
       return {
         tasks: {
           ...state.tasks,
@@ -644,6 +660,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
             // from earlier runs was already preserved until this explicit
             // new request — the user can edit/save it before regenerating).
             report: null,
+            previousReports,
             updatedAt: Date.now(),
             events: [...task.events, nowEvent('status', startLabel)],
           },
@@ -878,6 +895,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
         generatedBy: config?.model ?? null,
         contextIncluded: !!config?.contextText.trim(),
         stoppedPartial: false,
+        runId,
       }
       return {
         tasks: {
@@ -1086,6 +1104,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
               generatedBy: null,
               contextIncluded: false,
               stoppedPartial: false,
+              runId,
             },
             updatedAt: Date.now(),
             events: [
