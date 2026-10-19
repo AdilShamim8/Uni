@@ -640,8 +640,9 @@ export function ProvidersSection() {
                   {isActiveProvider && <Badge tone="accent">Active profile</Badge>}
                   {provider.demo && <Badge>Demo</Badge>}
                 </div>
-                <p className="mt-1 break-all text-xs text-ink-faint">
-                  {KIND_LABELS[provider.kind]} · {provider.endpointUrl}
+                <p className="mt-1 text-xs text-ink-faint">{KIND_LABELS[provider.kind]}</p>
+                <p className="mt-0.5 break-all text-xs text-ink-faint/80">
+                  {provider.endpointUrl}
                 </p>
 
                 <div className="mt-3">

@@ -19,14 +19,14 @@ export function SettingsGroup({ title, footer, children, className = '' }: Setti
   return (
     <section aria-label={title} className={className}>
       {title && (
-        <p className="mb-1.5 px-3 text-[12px] font-medium text-ink-faint">
+        <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-[0.07em] text-ink-faint">
           {title}
         </p>
       )}
       <div className="divide-y divide-line/70 overflow-hidden rounded-[12px] border border-line bg-raised shadow-[var(--shadow-soft)]">
         {children}
       </div>
-      {footer && <p className="mt-1.5 px-3 text-xs leading-relaxed text-ink-faint">{footer}</p>}
+      {footer && <p className="mt-2 px-3 text-xs leading-relaxed text-ink-faint">{footer}</p>}
     </section>
   )
 }
