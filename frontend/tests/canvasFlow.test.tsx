@@ -12,7 +12,7 @@ describe('Canvas — persistent workspace', () => {
     renderApp('/')
 
     // Send a message to get a reply worth saving.
-    const input = screen.getByLabelText('Message Universe')
+    const input = screen.getByLabelText('Message Uni')
     await userEvent.type(input, 'Draft a short poem about routers')
     await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
     await waitFor(() =>

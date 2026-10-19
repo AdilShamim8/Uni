@@ -231,7 +231,7 @@ function fixtureReport(
     'the main points are below, and I am happy to adjust anything.',
     '',
     'Best,',
-    'Universe (example draft)',
+    'Uni (example draft)',
   ].join('\n')
 }
 

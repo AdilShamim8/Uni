@@ -2,7 +2,7 @@ import type { Conversation, MessageNode, Preferences, ProviderProfile } from '@/
 import { makeId } from '@/domain/ids'
 
 /**
- * Deterministic demo data. Everything here is original Universe content,
+ * Deterministic demo data. Everything here is original Uni content,
  * clearly labeled as demo/fixture material in the UI.
  */
 
@@ -68,25 +68,25 @@ export function buildSeedConversations(now = Date.now()): Conversation[] {
   const day = 86_400_000
 
   const welcome = buildConversation({
-    title: 'Welcome to Universe',
+    title: 'Welcome to Uni',
     createdAt: now - 30 * minute,
     updatedAt: now - 24 * minute,
     pinned: true,
     turns: [
       {
         role: 'user',
-        content: 'What is Universe?',
+        content: 'What is Uni?',
       },
       {
         role: 'assistant',
         content:
-          'Universe is an independent, open-source workspace project that aims to bring chat, research, creative tools, coding, work, and email into one place — without subscription gates.\n\nThis build is the **first milestone**: a chat frontend running entirely in your browser. A few honest notes about what you are looking at:\n\n- Responses come from a **local demo adapter** — nothing is sent to any provider.\n- Conversations and settings persist in `localStorage` on this device only.\n- Tools such as Research, Images, Voice, and Canvas open **labeled previews**, not real integrations.\n- There is no account, no backend, and no credentials involved.',
+          'Uni is an independent, open-source workspace project that aims to bring chat, research, creative tools, coding, work, and email into one place — without subscription gates.\n\nThis build is the **first milestone**: a chat frontend running entirely in your browser. A few honest notes about what you are looking at:\n\n- Responses come from a **local demo adapter** — nothing is sent to any provider.\n- Conversations and settings persist in `localStorage` on this device only.\n- Tools such as Research, Images, Voice, and Canvas open **labeled previews**, not real integrations.\n- There is no account, no backend, and no credentials involved.',
       },
       { role: 'user', content: 'What should I try first?' },
       {
         role: 'assistant',
         content:
-          'A quick tour, in rough order:\n\n1. **Send a message** below and stop or retry the response mid-stream.\n2. **Edit one of your earlier messages** — Universe keeps the original branch so nothing is lost, and you can switch between variants with the arrows on a message.\n3. Open **Settings** (bottom of the sidebar) and try the theme, density, and text-size controls.\n4. Look at **Providers** in settings: profiles and models are local configuration concepts, with an explicitly simulated connection test.\n5. Toggle **Temporary chat** in the top bar — that conversation stays in memory and disappears on reload.\n\nEverything you see is labeled honestly: working local UI, simulated workflows, or a clear note about what is deferred.',
+          'A quick tour, in rough order:\n\n1. **Send a message** below and stop or retry the response mid-stream.\n2. **Edit one of your earlier messages** — Uni keeps the original branch so nothing is lost, and you can switch between variants with the arrows on a message.\n3. Open **Settings** (bottom of the sidebar) and try the theme, density, and text-size controls.\n4. Look at **Providers** in settings: profiles and models are local configuration concepts, with an explicitly simulated connection test.\n5. Toggle **Temporary chat** in the top bar — that conversation stays in memory and disappears on reload.\n\nEverything you see is labeled honestly: working local UI, simulated workflows, or a clear note about what is deferred.',
       },
     ],
   })
@@ -150,7 +150,7 @@ export function buildSeedProviders(): ProviderProfile[] {
   return [
     {
       id: 'provider-demo-balanced',
-      label: 'Universe Demo — Balanced',
+      label: 'Uni Demo — Balanced',
       kind: 'openai-compatible',
       endpointUrl: 'https://your-endpoint.example/v1',
       demo: true,

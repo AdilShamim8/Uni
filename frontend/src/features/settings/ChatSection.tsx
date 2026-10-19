@@ -35,13 +35,13 @@ export function ChatSection() {
       >
         <div className="flex flex-col gap-3 px-3.5 py-3">
           <TextField
-            label="What should Universe call you?"
+            label="What should Uni call you?"
             value={preferences.nickname}
             placeholder="A name or nothing at all"
             onChange={(event) => updatePreferences({ nickname: event.target.value })}
           />
           <TextArea
-            label="What traits should Universe have?"
+            label="What traits should Uni have?"
             rows={3}
             value={preferences.traits}
             placeholder="e.g. concise, encouraging, allergic to jargon"

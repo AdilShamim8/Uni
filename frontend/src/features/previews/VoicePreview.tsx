@@ -127,7 +127,7 @@ export function VoicePreview({ brief }: { brief?: string }) {
                       line.speaker === 'you' ? 'text-accent' : 'text-ink-faint'
                     }`}
                   >
-                    {line.speaker === 'you' ? 'You' : 'Universe'}:
+                    {line.speaker === 'you' ? 'You' : 'Uni'}:
                   </span>
                   <span className="text-ink">{line.text}</span>
                 </li>

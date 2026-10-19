@@ -17,7 +17,7 @@ import {
  * drafts. Completely separate from the chat store; persists under its own
  * `universe:agents:v1` slice so it can never disturb chat data.
  *
- * The seeded Universe Assistant is the single personal assistant; the three
+ * The seeded Uni Assistant is the single personal assistant; the three
  * specialist seeds replace the older "assistant presets" preview system.
  */
 

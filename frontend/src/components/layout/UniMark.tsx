@@ -1,10 +1,10 @@
-export interface UniverseMarkProps {
+export interface UniMarkProps {
   size?: number
   className?: string
 }
 
-/** Original Universe mark: a planet with a tilted orbit and an accent moon. */
-export function UniverseMark({ size = 24, className = '' }: UniverseMarkProps) {
+/** Original Uni mark: a planet with a tilted orbit and an accent moon. */
+export function UniMark({ size = 24, className = '' }: UniMarkProps) {
   return (
     <svg
       viewBox="0 0 32 32"
