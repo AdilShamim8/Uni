@@ -18,7 +18,7 @@ function makeSlots(): [CompareSlot, CompareSlot] {
       providerId: 'provider-demo-balanced',
       modelId: 'demo-pro',
       modelLabel: 'Demo Pro',
-      providerLabel: 'Universe Demo — Balanced',
+      providerLabel: 'Uni Demo — Balanced',
     },
     {
       providerId: 'provider-demo-anthropic-style',

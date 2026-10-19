@@ -1,4 +1,4 @@
-/** Core domain types for the Universe chat frontend. */
+/** Core domain types for the Uni chat frontend. */
 
 export type ToolId = 'search' | 'research' | 'images' | 'voice' | 'canvas'
 

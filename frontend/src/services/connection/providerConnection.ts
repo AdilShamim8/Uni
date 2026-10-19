@@ -4,7 +4,7 @@ import type { ProviderProfile } from '@/domain/types'
  * Real provider connection testing and model discovery.
  *
  * Requests go directly from the user's browser to the endpoint the user
- * configured. Nothing is proxied through Universe and no credentials are
+ * configured. Nothing is proxied through Uni and no credentials are
  * stored anywhere except this browser's localStorage (separate key).
  *
  * Wire protocols:

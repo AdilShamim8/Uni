@@ -22,7 +22,7 @@ const COPY: Record<string, ComingSoonCopy> = {
   },
   work: {
     title: 'Work — a later milestone',
-    body: 'Work brings documents, notes, and lightweight task lists into Universe as a local-first surface, reusing this shell and design system.',
+    body: 'Work brings documents, notes, and lightweight task lists into Uni as a local-first surface, reusing this shell and design system.',
     points: [
       'Scheduled for week 3 of the provisional roadmap',
       'Will extend the versioned local persistence schema',

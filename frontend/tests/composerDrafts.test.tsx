@@ -56,7 +56,7 @@ describe('composer draft ownership (audit D2)', () => {
     setChatAdapter(controlled.adapter)
     renderApp('/')
 
-    const input = screen.getByLabelText('Message Universe')
+    const input = screen.getByLabelText('Message Uni')
     await userEvent.type(input, 'First message')
     await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
 
@@ -79,7 +79,7 @@ describe('composer draft ownership (audit D2)', () => {
   it('scopes drafts per conversation and restores them on switch', async () => {
     renderApp('/')
 
-    const input = screen.getByLabelText('Message Universe')
+    const input = screen.getByLabelText('Message Uni')
     const { useAppStore } = await import('@/state/store')
     const ids = Object.keys(useAppStore.getState().conversations)
     const [conversationA, conversationB] = ids

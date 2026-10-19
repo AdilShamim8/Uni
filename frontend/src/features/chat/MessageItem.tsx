@@ -21,7 +21,7 @@ import { formatFullTimestamp } from '@/domain/timestamps'
 import { useAppStore } from '@/state/store'
 import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
-import { UniverseMark } from '@/components/layout/UniverseMark'
+import { UniMark } from '@/components/layout/UniMark'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
@@ -337,7 +337,7 @@ function AssistantMessage({
 
   return (
     <div className="message-in group flex gap-3.5" title={formatFullTimestamp(node.createdAt)}>
-      <UniverseMark size={24} className="mt-0.5 shrink-0 text-ink" />
+      <UniMark size={24} className="mt-0.5 shrink-0 text-ink" />
       <div className="min-w-0 flex-1">
         {node.statusPrefix && (
           <p className="mb-2 flex items-center gap-1.5 text-xs font-medium text-ink-faint">

@@ -340,7 +340,7 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
         )}
 
         <label htmlFor="composer-input" className="sr-only">
-          Message Universe
+          Message Uni
         </label>
         <textarea
           id="composer-input"
@@ -349,7 +349,7 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
           value={text}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message Universe…"
+          placeholder="Message Uni…"
           className="block max-h-[220px] w-full resize-none bg-transparent px-5 pb-2.5 pt-4 text-[16.5px] leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none"
         />
 
