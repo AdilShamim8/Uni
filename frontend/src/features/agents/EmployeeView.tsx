@@ -255,7 +255,7 @@ export function EmployeeView({
                         <button
                           type="button"
                           onClick={() => focusComposerWith(starter)}
-                          className="min-touch rounded-full border border-line bg-panel px-3.5 py-1.5 text-[13px] text-ink-soft transition-colors hover:bg-subtle hover:text-ink"
+                          className="min-touch rounded-full border border-line bg-raised px-3.5 py-1.5 text-[13px] text-ink transition-colors hover:bg-subtle"
                         >
                           {starter}
                         </button>
