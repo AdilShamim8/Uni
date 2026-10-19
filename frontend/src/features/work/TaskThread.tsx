@@ -27,7 +27,10 @@ import { Markdown } from '@/features/chat/Markdown'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
 import { ThreadView } from '@/features/conversation/ThreadView'
 import { ThreadComposer } from '@/features/conversation/ThreadComposer'
-import { projectWorkThread } from '@/features/conversation/threadModel'
+import { mergeThreadEntries, projectWorkThread } from '@/features/conversation/threadModel'
+import { ThreadPluginBar } from '@/features/plugins/ThreadPluginBar'
+import { filterReceiptsForThread, receiptsToEntries } from '@/features/plugins/receiptEntries'
+import { usePluginsStore } from '@/state/pluginsStore'
 import { TASK_STATUS_LABELS, TASK_STATUS_TONES } from '@/domain/taskMachine'
 import { TASK_TEMPLATES } from './taskTemplates'
 import type { WorkTask } from '@/domain/workspaceTypes'
@@ -53,7 +56,14 @@ export function TaskThread({ taskId }: { taskId: string }) {
     if (!task) navigate('/work', { replace: true })
   }, [task, hydrated, navigate])
 
-  const entries = useMemo(() => (task ? projectWorkThread(task) : []), [task])
+  const receipts = usePluginsStore((state) => state.receipts)
+  const entries = useMemo(() => {
+    if (!task) return []
+    const pluginEntries = receiptsToEntries(
+      filterReceiptsForThread(receipts, { kind: 'work', taskId }),
+    )
+    return mergeThreadEntries(projectWorkThread(task), pluginEntries)
+  }, [task, receipts, taskId])
   const busy = task?.status === 'running' || task?.status === 'queued'
 
   if (!task) return null
@@ -151,6 +161,10 @@ export function TaskThread({ taskId }: { taskId: string }) {
           onAnswerClarify={(answer) => answerInput(taskId, answer)}
         />
         <TaskRunStrip taskId={taskId} />
+        <ThreadPluginBar
+          thread={{ kind: 'work', taskId }}
+          agentId={task.agentId}
+        />
         <ThreadComposer
           draftKey={`work:${taskId}`}
           textareaId={`work-composer-${taskId}`}

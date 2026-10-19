@@ -13,12 +13,16 @@ import {
 import { useAgentsStore } from '@/state/agentsStore'
 import { useAppStore } from '@/state/store'
 import { useWorkStore } from '@/state/workStore'
+import { PLUGIN_CATALOG } from '@/features/plugins/registry'
 import { Button } from '@/components/ui/Button'
 import { PageToolbar } from '@/components/layout/PageToolbar'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { ThreadView } from '@/features/conversation/ThreadView'
 import { ThreadComposer } from '@/features/conversation/ThreadComposer'
-import { projectAgentThread } from '@/features/conversation/threadModel'
+import { mergeThreadEntries, projectAgentThread } from '@/features/conversation/threadModel'
+import { ThreadPluginBar } from '@/features/plugins/ThreadPluginBar'
+import { filterReceiptsForThread, receiptsToEntries } from '@/features/plugins/receiptEntries'
+import { usePluginsStore } from '@/state/pluginsStore'
 import { TASK_STATUS_LABELS, TASK_STATUS_TONES } from '@/domain/taskMachine'
 import type { AgentProfile, MemoryNote, ScheduleDraft } from '@/domain/workspaceTypes'
 
@@ -79,10 +83,19 @@ export function EmployeeView({
     [threadEvents, agentId],
   )
 
-  const entries = useMemo(
-    () => projectAgentThread(conversation, events),
-    [conversation, events],
-  )
+  const receipts = usePluginsStore((state) => state.receipts)
+  const entries = useMemo(() => {
+    const pluginEntries = conversation
+      ? receiptsToEntries(
+          filterReceiptsForThread(receipts, {
+            kind: 'agent',
+            agentId,
+            conversationId,
+          }),
+        )
+      : []
+    return mergeThreadEntries(projectAgentThread(conversation, events), pluginEntries)
+  }, [conversation, events, receipts, agentId, conversationId])
 
   const availability = useMemo(
     () => deriveAvailability(agentId, conversation, tasks),
@@ -292,6 +305,11 @@ export function EmployeeView({
           </div>
         )}
 
+        <ThreadPluginBar
+          thread={{ kind: 'agent', agentId, conversationId }}
+          agentId={agentId}
+        />
+
         <ThreadComposer
           draftKey={`agent:${agentId}`}
           textareaId={`agent-composer-${agentId}`}
@@ -482,7 +500,7 @@ function EmployeeInspector({
         {tab === 'profile' && <ProfilePanel agentId={agentId} />}
         {tab === 'memory' && <MemoryPanel agentId={agentId} />}
         {tab === 'work' && <WorkPanel agentId={agentId} />}
-        {tab === 'plugins' && <PluginsPanel />}
+        {tab === 'plugins' && <PluginsPanel agentId={agentId} />}
         {tab === 'routines' && <RoutinesPanel agentId={agentId} />}
       </div>
     </div>
@@ -730,8 +748,17 @@ function WorkPanel({ agentId }: { agentId: string }) {
   )
 }
 
-function PluginsPanel() {
+function PluginsPanel({ agentId }: { agentId: string }) {
   const navigate = useNavigate()
+  const enabled = usePluginsStore((state) => state.enabled)
+  const agentAllowed = usePluginsStore((state) => state.agentAllowed[agentId] ?? [])
+  const setAgentAllowed = usePluginsStore((state) => state.setAgentAllowed)
+  const allowed = new Set(agentAllowed)
+
+  const enabledBuiltins = PLUGIN_CATALOG.filter(
+    (plugin) => plugin.builtin && enabled[plugin.id],
+  )
+
   return (
     <section aria-label="Plugins" className="flex flex-col gap-3">
       <div className="rounded-group border border-line bg-raised p-3.5">
@@ -740,18 +767,67 @@ function PluginsPanel() {
           Plugin access
         </h2>
         <p className="mt-1.5 text-xs leading-relaxed text-ink-soft">
-          Plugins are enabled workspace-wide, then allowed per employee. This employee can
-          only use plugins you explicitly allow.
+          Effective access is the intersection of the workspace, this employee, and the
+          thread grant — the dispatcher enforces all three.
         </p>
-        <Button
-          variant="secondary"
-          size="sm"
-          className="mt-2.5"
-          onClick={() => navigate('/plugins')}
-        >
-          <Puzzle size={13} />
-          Open Plugins
-        </Button>
+        {enabledBuiltins.length === 0 ? (
+          <>
+            <p className="mt-2 text-xs text-ink-faint">
+              No workspace plugins are enabled yet.
+            </p>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mt-2"
+              onClick={() => navigate('/plugins')}
+            >
+              <Puzzle size={13} />
+              Open Plugins
+            </Button>
+          </>
+        ) : (
+          <ul className="mt-2.5 flex flex-col gap-2">
+            {enabledBuiltins.map((plugin) => {
+              const isAllowed = allowed.has(plugin.id)
+              return (
+                <li key={plugin.id} className="flex items-center justify-between gap-2">
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] font-medium text-ink">
+                      {plugin.name}
+                    </span>
+                    <span className="block text-[11px] text-ink-faint">
+                      {isAllowed ? 'Allowed for this employee' : 'Not allowed'}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={isAllowed}
+                    aria-label={`Allow ${plugin.name} for this employee`}
+                    onClick={() =>
+                      setAgentAllowed(
+                        agentId,
+                        isAllowed
+                          ? agentAllowed.filter((id) => id !== plugin.id)
+                          : [...agentAllowed, plugin.id],
+                      )
+                    }
+                    className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${
+                      isAllowed ? 'bg-accent' : 'bg-subtle'
+                    }`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                        isAllowed ? 'left-[18px]' : 'left-0.5'
+                      }`}
+                    />
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        )}
       </div>
     </section>
   )
