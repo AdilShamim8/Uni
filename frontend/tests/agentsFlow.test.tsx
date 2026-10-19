@@ -14,7 +14,7 @@ describe('Agents — directory and builder', () => {
 
   it('seeds the personal assistant and specialists, searchable', async () => {
     renderApp('/agents')
-    expect(await screen.findAllByText('Universe Assistant')).not.toHaveLength(0)
+    expect(await screen.findAllByText('Uni Assistant')).not.toHaveLength(0)
     expect(main().getByText('Research Analyst')).toBeTruthy()
     expect(main().getByText('Writing Assistant')).toBeTruthy()
     expect(main().getByText('Finance Analyst')).toBeTruthy()
@@ -31,19 +31,21 @@ describe('Agents — directory and builder', () => {
     expect(screen.getByText('Write at least one line of instructions.')).toBeTruthy()
   })
 
-  it('creates a specialist, then edits it', async () => {
+  it('creates a specialist, then edits it from the employee view', async () => {
     renderApp('/agents/new')
     await userEvent.type(screen.getByLabelText('Name'), 'My editor')
     await userEvent.type(screen.getByLabelText('Description'), 'Helps with prose')
     await userEvent.type(screen.getByLabelText('Instructions'), 'Tighten the text.')
     await userEvent.click(screen.getByRole('button', { name: 'Create agent' }))
 
-    // Detail page shows the saved profile.
+    // The employee view opens with its conversation directly.
     expect((await screen.findAllByText('My editor')).length).toBeGreaterThan(0)
-    expect(screen.getByText('Tighten the text.')).toBeTruthy()
+    expect(
+      await screen.findByRole('textbox', { name: /Message My editor/i }),
+    ).toBeInTheDocument()
 
     // Edit flow.
-    await userEvent.click(screen.getByRole('button', { name: 'Edit profile' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
     const nameField = screen.getByLabelText('Name')
     await userEvent.clear(nameField)
     await userEvent.type(nameField, 'My editor 2')
@@ -53,45 +55,35 @@ describe('Agents — directory and builder', () => {
 
   it('refuses to delete built-in agents and archives referenced custom agents', async () => {
     renderApp('/agents')
-    await screen.findAllByText('Universe Assistant')
+    await screen.findAllByText('Uni Assistant')
     // Built-ins expose no delete action (archive instead); the personal
     // assistant's menu offers Archive, not Delete.
     expect(screen.queryByRole('menuitem', { name: 'Delete' })).toBeNull()
   })
 })
 
-describe('Agents — chat wiring', () => {
+describe('Employees — direct conversation', () => {
   setupAppTest()
 
-  it('"Chat with agent" opens one scoped conversation that reuses the same thread', async () => {
+  it('opens the conversation immediately and reuses the same thread', async () => {
     renderApp('/agents')
     await screen.findAllByText('Research Analyst')
 
-    // Open the profile, then chat with it.
+    // Selecting the employee opens its conversation — no info-card hop.
     await userEvent.click(main().getByText('Research Analyst'))
-    await userEvent.click(
-      await screen.findByRole('button', { name: /Chat with agent/ }),
-    )
-
-    // The conversation is titled for the agent and shares one thread.
-    await waitFor(() =>
-      expect(screen.getAllByText('Chat with Research Analyst').length).toBeGreaterThan(0),
-    )
+    const input = await screen.findByRole('textbox', {
+      name: /Message Research Analyst/i,
+    })
+    expect(input).toBeInTheDocument()
 
     // Send a message; the demo reply notes the agent instructions.
-    const input = screen.getByLabelText('Message Universe')
     await userEvent.type(input, 'Compare two options')
-    await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
     await waitFor(
-      () => {
-        const replies = Array.from(document.querySelectorAll('[data-node-role="assistant"], .prose'))
-        return replies.length
-      },
+      () =>
+        expect(document.body.textContent).toContain('Working from your agent instructions'),
       { timeout: 4000 },
-    )
-    await waitFor(() =>
-      expect(document.body.textContent).toContain('Working from your agent instructions'),
     )
 
     // Leaving and returning reuses the same conversation, not a new one.
@@ -105,20 +97,74 @@ describe('Agents — chat wiring', () => {
     expect(conversationCountAfter).toBe(conversationCountBefore)
   })
 
-  it('"Assign task" preselects the agent in the Work brief', async () => {
-    renderApp('/agents')
-    await screen.findAllByText('Writing Assistant')
-    await userEvent.click(main().getByText('Writing Assistant'))
-    await userEvent.click(await screen.findByRole('button', { name: /Chat with agent|\.\.\./ }))
+  it('assigns real work from the thread and opens the same task from the card', async () => {
+    renderApp('/agents/agent-research-analyst')
+
+    // /assign opens the inline brief prefilled with the command text;
+    // confirmation creates ONE real task.
+    const input = await screen.findByRole('textbox', {
+      name: /Message Research Analyst/i,
+    })
+    await userEvent.type(input, '/assign Compare two note-taking apps')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    const brief = await screen.findByLabelText('Assignment brief')
+    expect(brief).toHaveValue('Compare two note-taking apps')
+    await userEvent.click(screen.getByRole('button', { name: 'Create task' }))
+
+    // An assignment card links the canonical task.
+    const card = await screen.findByRole('button', { name: /Compare two note-taking apps/ })
+    await userEvent.click(card)
+
+    // Opening it lands on the SAME task thread, not a copy.
+    await waitFor(() => {
+      const tasks = Object.values(useWorkStore.getState().tasks)
+      expect(tasks).toHaveLength(1)
+      expect(tasks[0].agentId).toBe('agent-research-analyst')
+    })
+    expect(await screen.findByRole('textbox', { name: /Send a follow-up/ })).toBeInTheDocument()
+
+    // Returning to the employee keeps its thread and the assignment card.
+    const primaryNav = screen.getByRole('navigation', { name: 'Primary' })
+    await userEvent.click(within(primaryNav).getByRole('button', { name: 'Agents' }))
+    await userEvent.click(
+      await within(screen.getByRole('main')).findByText('Research Analyst'),
+    )
+    expect(
+      await screen.findByRole('textbox', { name: /Message Research Analyst/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Compare two note-taking apps/ })).toBeInTheDocument()
+  })
+
+  it('remembers a note through the explicit /remember command', async () => {
+    renderApp('/agents/agent-universe-assistant')
+    const input = await screen.findByRole('textbox', {
+      name: /Message Uni Assistant/i,
+    })
+
+    await userEvent.type(input, '/remember Prefers concise answers')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    // The thread records the memory confirmation…
+    expect(await screen.findByText('Remembered: Prefers concise answers')).toBeInTheDocument()
+    expect(
+      screen.getByText(/Saved locally to this assistant’s memory/),
+    ).toBeInTheDocument()
+
+    // …and the note itself lives in the Memory inspector.
+    await userEvent.click(screen.getByRole('button', { name: 'Profile' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Memory' }))
+    expect(await screen.findByText('Prefers concise answers')).toBeInTheDocument()
   })
 })
 
-describe('Personal assistant — memory and schedules', () => {
+describe('Employee — inspector panels', () => {
   setupAppTest()
 
   it('adds, edits, and deletes memory notes locally', async () => {
     renderApp('/agents/agent-universe-assistant')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Memory' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Profile' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Memory' }))
 
     const noteInput = screen.getByLabelText('New memory note')
     await userEvent.type(noteInput, 'Prefers morning planning')
@@ -131,7 +177,7 @@ describe('Personal assistant — memory and schedules', () => {
     const editField = screen.getByLabelText('Edit memory note')
     await userEvent.clear(editField)
     await userEvent.type(editField, 'Prefers evening planning')
-    await userEvent.click(screen.getByRole('button', { name: /Save/ }))
+    await userEvent.click(screen.getByRole('button', { name: /^Save$/ }))
 
     await waitFor(() => expect(screen.getByText('Prefers evening planning')).toBeTruthy())
 
@@ -142,25 +188,26 @@ describe('Personal assistant — memory and schedules', () => {
     )
   })
 
-  it('saves schedule drafts with the honest unavailable-execution label', async () => {
+  it('saves routine drafts with the honest unavailable-execution label', async () => {
     renderApp('/agents/agent-universe-assistant')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Schedules' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Profile' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Routines' }))
 
-    expect(
-      screen.getByText('Saved locally — execution unavailable'),
-    ).toBeTruthy()
+    expect(screen.getByText(/Saved locally — execution unavailable/)).toBeTruthy()
 
-    await userEvent.click(screen.getByRole('button', { name: 'New draft' }))
-    await userEvent.type(screen.getByLabelText('Name'), 'Monday summary')
-    await userEvent.type(screen.getByLabelText(/Notify when/), 'When drafted')
+    await userEvent.type(screen.getByLabelText('Routine name'), 'Monday summary')
+    await userEvent.type(
+      screen.getByLabelText('Routine instructions'),
+      'Draft a weekly summary each Monday morning',
+    )
     await userEvent.click(screen.getByRole('button', { name: 'Save draft' }))
 
     expect(await screen.findByText('Monday summary')).toBeTruthy()
-    expect(screen.getByText('Draft saved locally · never runs on its own')).toBeTruthy()
+    expect(screen.getAllByText(/execution unavailable/).length).toBeGreaterThan(0)
     expect(screen.queryByText('Active')).toBeNull()
   })
 
-  it('lists tasks assigned to the assistant from Work', async () => {
+  it('lists tasks assigned to the employee from Work', async () => {
     useAgentsStore.getState().initialize()
     useWorkStore.getState().initialize()
     useWorkStore.getState().createTask({
@@ -171,7 +218,8 @@ describe('Personal assistant — memory and schedules', () => {
     })
 
     renderApp('/agents/agent-universe-assistant')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Assigned work' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Profile' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Work' }))
     expect(await screen.findByText('Plan my week')).toBeTruthy()
   })
 
@@ -181,7 +229,8 @@ describe('Personal assistant — memory and schedules', () => {
     flushAgentsPersistence()
 
     renderApp('/agents/agent-universe-assistant')
-    await userEvent.click(await screen.findByRole('tab', { name: 'Memory' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Profile' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Memory' }))
     expect(await screen.findByText('Persisted preference')).toBeTruthy()
   })
 })

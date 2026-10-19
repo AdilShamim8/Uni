@@ -1,5 +1,10 @@
 import { create } from 'zustand'
-import type { AgentProfile, MemoryNote, ScheduleDraft } from '@/domain/workspaceTypes'
+import type {
+  AgentProfile,
+  AgentThreadEvent,
+  MemoryNote,
+  ScheduleDraft,
+} from '@/domain/workspaceTypes'
 import { makeId } from '@/domain/ids'
 import {
   clearAgentsSlice,
@@ -21,8 +26,8 @@ export function buildSeedAgents(): AgentProfile[] {
   return [
     {
       id: 'agent-universe-assistant',
-      name: 'Universe Assistant',
-      description: 'Your persistent personal assistant in Universe',
+      name: 'Uni Assistant',
+      description: 'Your persistent personal assistant in Uni',
       instructions:
         'You are the user’s personal assistant. Be warm, concise, and practical. ' +
         'Refer to the user’s memory notes when they are relevant. When unsure, ask ' +
@@ -116,6 +121,8 @@ export interface AgentsStore {
   agents: Record<string, AgentProfile>
   memoryNotes: Record<string, MemoryNote>
   schedules: Record<string, ScheduleDraft>
+  /** Structured employee-thread events (milestone 06). */
+  threadEvents: Record<string, AgentThreadEvent>
   /** Set when a load found unreadable data and re-seeded. */
   recoveredFromQuarantine: boolean
 
@@ -140,6 +147,10 @@ export interface AgentsStore {
 
   saveSchedule: (schedule: ScheduleDraft) => void
   deleteSchedule: (id: string) => void
+
+  /** Append a structured entry to an employee's thread. */
+  addThreadEvent: (event: Omit<AgentThreadEvent, 'id' | 'at'>) => string
+  deleteThreadEventsForTask: (taskId: string) => void
 }
 
 export const useAgentsStore = create<AgentsStore>()((set, get) => ({
@@ -147,6 +158,7 @@ export const useAgentsStore = create<AgentsStore>()((set, get) => ({
   agents: {},
   memoryNotes: {},
   schedules: {},
+  threadEvents: {},
   recoveredFromQuarantine: false,
 
   initialize: () => {
@@ -159,7 +171,10 @@ export const useAgentsStore = create<AgentsStore>()((set, get) => ({
       for (const note of loaded.state.memoryNotes) memoryNotes[note.id] = note
       const schedules: Record<string, ScheduleDraft> = {}
       for (const schedule of loaded.state.schedules) schedules[schedule.id] = schedule
-      set({ hydrated: true, agents, memoryNotes, schedules })
+      // Milestone-06 field: older slices default to empty — never a wipe.
+      const threadEvents: Record<string, AgentThreadEvent> = {}
+      for (const event of loaded.state.threadEvents ?? []) threadEvents[event.id] = event
+      set({ hydrated: true, agents, memoryNotes, schedules, threadEvents })
     } else {
       get().resetSeeds()
       if (loaded.recoveredFrom) set({ recoveredFromQuarantine: true })
@@ -292,6 +307,27 @@ export const useAgentsStore = create<AgentsStore>()((set, get) => ({
       return { schedules }
     })
   },
+
+  addThreadEvent: (event) => {
+    const entry: AgentThreadEvent = { ...event, id: makeId('agev'), at: Date.now() }
+    set((state) => ({ threadEvents: { ...state.threadEvents, [entry.id]: entry } }))
+    return entry.id
+  },
+
+  deleteThreadEventsForTask: (taskId) => {
+    set((state) => {
+      let changed = false
+      const threadEvents: Record<string, AgentThreadEvent> = {}
+      for (const [id, event] of Object.entries(state.threadEvents)) {
+        if (event.taskId === taskId) {
+          changed = true
+          continue
+        }
+        threadEvents[id] = event
+      }
+      return changed ? { threadEvents } : state
+    })
+  },
 }))
 
 /* ------------------------------------------------------------------ */
@@ -305,6 +341,7 @@ function serialize(state: AgentsStore) {
     agents: Object.values(state.agents),
     memoryNotes: Object.values(state.memoryNotes),
     schedules: Object.values(state.schedules),
+    threadEvents: Object.values(state.threadEvents),
   }
 }
 
@@ -353,6 +390,7 @@ export function resetAgentsStoreForTests(options: { keepStorage?: boolean } = {}
     agents: {},
     memoryNotes: {},
     schedules: {},
+    threadEvents: {},
     recoveredFromQuarantine: false,
   })
 }
