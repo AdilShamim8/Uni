@@ -78,8 +78,9 @@ export function StarterRow({ onSuggestion }: { onSuggestion: (text: string) => v
  * A modest inline provider-connect action for the empty state — shown only
  * when no provider is connected. Wording stays accurate: Uni supports
  * specific provider protocols (OpenAI, Anthropic, Google, and
- * OpenAI-compatible endpoints such as Groq or OpenRouter, plus local
- * runtimes) — it is not an arbitrary "any provider" bridge.
+ * OpenAI-compatible endpoints such as xAI Grok, DeepSeek, Groq, or
+ * OpenRouter, plus local runtimes) — it is not an arbitrary "any
+ * provider" bridge.
  */
 export function ProviderHint() {
   const setUi = useAppStore((state) => state.setUi)
@@ -99,7 +100,8 @@ export function ProviderHint() {
         <KeyRound size={13} aria-hidden="true" />
         Connect a supported provider
       </button>{' '}
-      — OpenAI, Anthropic, Google, Groq, OpenRouter, or a local runtime.
+      — OpenAI (GPT), xAI (Grok), Anthropic (Claude), Google (Gemini), DeepSeek,
+      Groq, or a local runtime.
     </p>
   )
 }
