@@ -35,6 +35,7 @@ import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { Markdown } from '@/features/chat/Markdown'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
 import { TASK_TEMPLATES } from './taskTemplates'
+import { formatClock } from '@/domain/timestamps'
 import {
   TASK_STATUS_LABELS,
   TASK_STATUS_TONES,
@@ -57,10 +58,6 @@ function formatRelativeTime(timestamp: number): string {
   const days = Math.floor(hours / 24)
   if (days < 7) return `${days}d ago`
   return new Date(timestamp).toLocaleDateString()
-}
-
-function formatClock(timestamp: number): string {
-  return new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 }
 
 /* ------------------------------------------------------------------ */
