@@ -224,3 +224,20 @@ untested; the data-analysis adapter's file-picker path was exercised via
 the jsdom suite and the dispatcher directly rather than a native file
 dialog; live BYOK revision requests were verified with a controlled fake
 adapter (no paid traffic).
+
+## Session 07 — rename, presets, polish (feat/uni-rename-providers-polish)
+
+Gates re-run from scratch at every commit: `tsc --noEmit` clean, `eslint`
+0 problems, `npm test` **242/242** (33 files; +1 preset regression test),
+production build clean.
+
+| Check | Result |
+| --- | --- |
+| Document title / wordmark / composer label read "Uni" everywhere | PASS |
+| No `Universe` branding left in src, tests, index.html, package.json | PASS (storage keys `universe:*` intentionally retained for data continuity) |
+| Existing localStorage data (pre-rename) loads without loss | PASS — keys unchanged |
+| xAI · Grok preset fills `https://api.x.ai/v1`, DeepSeek fills `https://api.deepseek.com/v1` | PASS |
+| Preset chips wrap cleanly; group headers rhythmically consistent | PASS (VLM re-review) |
+| Zero console/page errors on all five destinations | PASS |
+| No horizontal overflow at 390 / 768 / 1440 | PASS |
+| Live BYOK E2E (fake local provider) still streams after rename | PASS |
