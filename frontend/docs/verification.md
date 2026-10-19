@@ -189,3 +189,38 @@ single-line title truncation in headers and panels.
   automated checks are credential-free by rule and use the demo path.
 - 200% zoom and reduced-motion/transparency were implemented via tokens
   and media queries but not re-measured in a browser this round.
+
+
+# Milestone 06 verification (19 October 2026)
+
+Gates on the final feature commit: `npm run lint` 0 problems;
+`npm run typecheck` clean; `npm test` **241/241** (32 files); production
+build clean (≈122 KB gzip for the app chunk).
+
+Browser QA on the production build (headless Chromium, synthetic data,
+zero credentials):
+
+| Journey | Result |
+| --- | --- |
+| Work: goal → auto demo run → clarify card → answer → output + output card | PASS — zero console/page errors |
+| Work: follow-up → revision rerun → prior output archived → new output | PASS |
+| Employee: open → message → live demo reply (agent instructions honored) | PASS |
+| Employee: /remember → thread receipt + Memory panel note; /assign → brief → one real task → card opens the same task | PASS |
+| Plugins: catalogue → enable Documents → detail access preview → disable path | PASS |
+| Plugin action: grant from thread picker → Create Canvas document → real artifact + receipt in thread | PASS |
+| Data analysis: real CSV via dispatcher → computed summary artifact (local-computation provenance); no-file → honest error | PASS (jsdom suite; UI path verified for picker/chip) |
+| Reload an old task → transcript recovered (goal, activity, prior outputs) without rerun or duplication | PASS |
+| Network isolation | PASS — performance entries show same-origin requests only |
+| Overflow at 390 / 768 / 1440 and 200% zoom (Work, Agents, Plugins) | PASS — no horizontal overflow |
+| Dark theme across new destinations | PASS |
+
+VLM strict review of 6 desktop views: 8–9/10; verdict FIX with two notes —
+plugin-detail access-preview contrast and button alignment — both applied
+in the final polish commit, plus catalogue spacing and starter-chip
+contrast.
+
+Honest limits: screen-reader/axe pass and real-device Safari remain
+untested; the data-analysis adapter's file-picker path was exercised via
+the jsdom suite and the dispatcher directly rather than a native file
+dialog; live BYOK revision requests were verified with a controlled fake
+adapter (no paid traffic).

@@ -1,12 +1,19 @@
-# Universe — Frontend (Milestone 3)
+# Uni — Frontend
 
-An independent, open-source AI workspace with four destinations: **Chat**,
-**Work**, **Agents**, and a shared **Library** — all running locally in your
-browser. Out of the box, chat responses come from a deterministic mock
-adapter and Work execution is a clearly-labeled local simulation — and you
-can **connect your own API key** (any supported OpenAI-compatible or
-Anthropic endpoint) in Settings → Providers to chat live, with no backend
-or account in between.
+> Canonical repository: <https://github.com/AdilShamim8/Uni>
+
+An independent, open-source AI workspace with five destinations: **Chat**,
+**Work**, **Agents**, **Plugins**, and a shared **Library** — all running
+locally in your browser. Out of the box, chat responses come from a
+deterministic mock adapter and Work execution is a clearly-labeled local
+simulation — and you can **connect your own API key** (any supported
+OpenAI-compatible or Anthropic endpoint) in Settings → Providers to chat
+live, with no backend or account in between.
+
+Work and Agents are message-first: describing a goal opens a task thread
+you refine by messaging it, and selecting an employee opens its actual
+conversation. Plugins are local tools with per-thread grants and an honest
+receipt for every action.
 
 ## Quick start
 
@@ -35,19 +42,22 @@ src/
   app/            # App root, routing, theme provider
   components/     # ui/ primitives (dialog, menu, fields, toast…) + layout shell
   features/
-    chat/         # sidebar, top bar, composer, messages, search, export
-    work/          # Work home, task brief, workspace, templates
-    agents/        # directory, builder, personal assistant view
+    chat/          # sidebar, top bar, composer, messages, search, export
+    conversation/  # shared thread model, ThreadView, ThreadComposer, cards
+    work/          # goal composer, task threads, expanded brief, templates
+    agents/        # directory, builder, employee conversation view
+    plugins/       # catalogue, detail, thread plugin bar, receipts
     library/       # artifact collection, viewer, projects
-    settings/     # appearance, chat prefs, data tools, provider profiles
-    previews/     # research, images, voice, canvas, data, coming-soon
-  domain/         # conversation tree, workspace types, task machine, adapters
+    settings/      # appearance, chat prefs, data tools, provider profiles
+    previews/      # research, images, voice, canvas, data, coming-soon
+  domain/         # conversation tree, workspace types, task machine, plugin types
   services/
     connection/   # real provider connection testing + model discovery
     live/         # live streaming adapter (OpenAI-compat + Anthropic SSE)
     mock/         # deterministic chat adapter + all fixtures
+    plugins/      # typed dispatcher + built-in local adapters
     storage/      # versioned localStorage slices + private credential store
-  state/          # zustand stores: chat, agents, work, library
+  state/          # zustand stores: chat, agents, work, library, plugins, context, compare
   styles/         # design tokens + base styles
 tests/            # interaction and unit tests
 docs/             # audit, architecture, tokens, verification, status
@@ -78,7 +88,22 @@ Key decisions (full rationale in `docs/`):
   adapter keeps everything fully offline.
 - **Versioned persistence.** One localStorage key, schema version 1, debounced
   writes, quarantine + fresh seed on malformed data. Temporary conversations
-  are filtered from every write and vanish on reload by design.
+  are filtered from every write and vanish on reload by design. Workspace
+  slices (agents, work, library, plugins, context, compare) each persist
+  under their own versioned key; pre-milestone data migrates with defaults
+  and is never wiped.
+- **One conversation surface, projected.** Work threads and employee
+  threads render through the same typed entry model (`features/conversation`)
+  from the stores that own the data — chat messages stay chat messages, work
+  events stay task events, and old tasks project into readable transcripts
+  without reruns or copies.
+- **Plugins are a boundary, not a marketplace.** Built-in plugins enable
+  code that already ships; the dispatcher validates the access intersection
+  (workspace ∩ employee ∩ thread ∩ implemented capability) before anything
+  runs, assigns run ids with AbortSignals, and records honest receipts —
+  cancelled or revoked runs can never be presented as success. External
+  entries (GitHub, Gmail, Drive) stay unconnected descriptions until a real
+  integration exists.
 
 ## Prototype limits (honest labels)
 
@@ -100,6 +125,7 @@ Key decisions (full rationale in `docs/`):
 
 ## Documentation
 
+- `docs/milestone-06-plan.md` — plugins/conversational-work implementation map
 - `docs/reference-audit.md` — what was actually observed vs. designed
 - `docs/design-tokens.md` — colors, geometry, density, motion
 - `docs/conversation-model.md` — branching semantics and persistence schema
@@ -113,5 +139,5 @@ Key decisions (full rationale in `docs/`):
 New original code in this milestone is offered under the MIT license — see
 `LICENSE`. Third-party dependencies retain their own licenses (React, Vite,
 Tailwind CSS, zustand, react-markdown, remark-gfm, rehype-highlight,
-highlight.js, lucide-react, Vitest, Testing Library). Universe is an
+highlight.js, lucide-react, Vitest, Testing Library). Uni is an
 independent project and is not affiliated with OpenAI or Anthropic.

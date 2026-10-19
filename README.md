@@ -1,17 +1,23 @@
 ## Uni ✨
 
-Universe is an independent, open-source, provider-independent AI workspace.
-This repository hosts the **frontend** built with React, TypeScript, and
-Vite, organized into four destinations:
+Uni (formerly Universe) is an independent, open-source, provider-independent
+AI workspace. This repository hosts the **frontend** built with React,
+TypeScript, and Vite, organized into five destinations:
 
 - **Chat** — conversations with models. Bring your own API key to chat
   live with any supported OpenAI-compatible or Anthropic endpoint; without
   one, a clearly-labeled local demo adapter responds.
-- **Work** — outcomes. Describe a task, run it as a local demo, answer the
-  run's questions, review and edit the output, then download it or save it
-  to your Library.
-- **Agents** — reusable instruction profiles, including the persistent
-  Universe Assistant with memory notes and schedule drafts.
+- **Work** — outcomes as a conversation. Describe a goal and the task
+  thread opens immediately: watch the run, answer inline questions, review
+  the output, then refine it with follow-up messages (a real revision for
+  AI drafts; a guided rerun for the local demo).
+- **Agents** — persistent AI employees. Selecting one opens its actual
+  conversation directly, with memory notes, assigned work, plugin access,
+  and routines in a compact inspector.
+- **Plugins** — local tools. Enable built-ins (Documents, Data analysis,
+  Library context), grant them per thread, and see an honest receipt for
+  every action; external entries stay clearly unconnected until a real
+  integration exists.
 - **Library** — one shared local collection of artifacts and lightweight
   projects.
 
