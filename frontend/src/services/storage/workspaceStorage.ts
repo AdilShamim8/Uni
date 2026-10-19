@@ -1,5 +1,6 @@
 import type {
   AgentProfile,
+  AgentThreadEvent,
   Artifact,
   MemoryNote,
   Project,
@@ -42,6 +43,10 @@ function isMemoryNote(value: unknown): value is MemoryNote {
 
 function isSchedule(value: unknown): value is ScheduleDraft {
   return isRecord(value) && typeof value.id === 'string' && typeof value.name === 'string'
+}
+
+function isAgentThreadEvent(value: unknown): value is AgentThreadEvent {
+  return isRecord(value) && typeof value.id === 'string' && typeof value.label === 'string'
 }
 
 function isTask(value: unknown): value is WorkTask {
@@ -130,6 +135,8 @@ export interface AgentsSlice {
   agents: AgentProfile[]
   memoryNotes: MemoryNote[]
   schedules: ScheduleDraft[]
+  /** Optional for pre-milestone-06 slices; defaults to [] on load. */
+  threadEvents?: AgentThreadEvent[]
 }
 
 export function isAgentsSlice(value: unknown): value is AgentsSlice {
@@ -140,7 +147,9 @@ export function isAgentsSlice(value: unknown): value is AgentsSlice {
     Array.isArray(value.memoryNotes) &&
     value.memoryNotes.every(isMemoryNote) &&
     Array.isArray(value.schedules) &&
-    value.schedules.every(isSchedule)
+    value.schedules.every(isSchedule) &&
+    (value.threadEvents === undefined ||
+      (Array.isArray(value.threadEvents) && value.threadEvents.every(isAgentThreadEvent)))
   )
 }
 

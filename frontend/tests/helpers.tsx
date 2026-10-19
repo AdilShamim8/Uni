@@ -10,7 +10,9 @@ import { resetLibraryStoreForTests } from '@/state/libraryStore'
 import { resetWorkspaceUiForTests } from '@/state/workspaceUiStore'
 import { resetContextStoreForTests } from '@/state/contextStore'
 import { resetCompareStoreForTests } from '@/state/compareStore'
+import { resetPluginsStoreForTests, usePluginsStore } from '@/state/pluginsStore'
 import { resetComposerDraftsForTests } from '@/features/chat/composerDrafts'
+import { resetThreadDraftsForTests } from '@/features/conversation/threadDrafts'
 
 /** Render the full app with an in-memory router. */
 export function renderApp(initialEntry = '/'): ReturnType<typeof render> {
@@ -35,10 +37,13 @@ export function setupAppTest(options: { chunkDelay?: number } = {}): void {
     resetContextStoreForTests()
     resetCompareStoreForTests()
     resetComposerDraftsForTests()
+    resetThreadDraftsForTests()
+    resetPluginsStoreForTests()
     setChatAdapter(
       createMockAdapter({ chunkDelay: options.chunkDelay ?? 0, firstTokenDelay: 0 }),
     )
     useAppStore.getState().initialize()
+    usePluginsStore.getState().initialize()
   })
   afterEach(() => {
     cleanup()
@@ -50,6 +55,8 @@ export function setupAppTest(options: { chunkDelay?: number } = {}): void {
     resetContextStoreForTests()
     resetCompareStoreForTests()
     resetComposerDraftsForTests()
+    resetThreadDraftsForTests()
+    resetPluginsStoreForTests()
   })
 }
 

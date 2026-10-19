@@ -195,3 +195,38 @@ Quality gates at every step: eslint 0, tsc clean, full vitest suite green
 (196 tests at the final feature commit), production build clean, no
 horizontal overflow at 390/768/1440px or 200% zoom, zero console errors,
 zero non-local network requests, keyboard pass with visible focus.
+
+
+## Milestone 06 — Plugins, conversational Work, persistent AI employees (19 October 2026)
+
+Delivered on `feat/conversational-work-employees-plugins` (7 commits, each
+pushed individually; see `milestone-06-plan.md` for the audit and
+decisions):
+
+1. Plan document — reuse/migration decisions, no AGENTS.md exists.
+2. Conversation thread model + projections (14 tests).
+3. Shared ThreadView / ThreadComposer / entry cards (7 tests).
+4. Work message-first: goal composer, task threads, follow-ups + AI
+   revision with explicit budgets, archived prior outputs, responsive
+   Details inspector.
+5. Employees: direct conversations, honest availability, inspector
+   (Profile/Memory/Work/Plugins/Routines), explicit commands.
+6. Plugins: typed registry, store, dispatcher (access intersection, run
+   ids, AbortSignal, late-result rejection), catalogue/detail UI, composer
+   picker, per-employee allow list, three real local adapters (Documents,
+   Data analysis, Library context) — one interlocking commit.
+7. QA polish from VLM review + milestone regressions (multi-turn revision
+   context, slice migrations, drafts across surfaces).
+
+Quality: 241/241 tests, lint 0, typecheck clean, build clean; browser QA
+of every journey with zero console errors; no overflow 390/768/1440/200%;
+network-isolated; VLM 8–9/10 with fixes applied.
+
+Next concrete tasks:
+
+- Screen-reader (NVDA/VoiceOver) and axe audit across the new surfaces.
+- Real-device Safari pass (backdrop-filter, dvh, safe areas).
+- Provider-driven tool calling as an explicit opt-in adapter behind the
+  dispatcher boundary (see capability-backlog.md).
+- An external/MCP plugin prototype behind `registerAdapter` with real
+  consent screens — no connection claims until a handshake exists.

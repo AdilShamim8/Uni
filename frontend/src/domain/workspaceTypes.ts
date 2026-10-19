@@ -85,6 +85,26 @@ export interface TaskEvent {
 }
 
 /**
+ * A message-style entry on a Work task's conversational thread
+ * (milestone 06): the original goal is projected from `goal`, follow-ups
+ * and assistant acknowledgments are stored here with stable ids.
+ */
+export interface TaskMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  at: number
+  status: 'complete' | 'streaming' | 'stopped' | 'error'
+  error?: string | null
+  /** Concise prefix like "Revising" or "Noted". */
+  statusPrefix?: string | null
+  /** How an assistant message was produced — never fabricated. */
+  provenance?: 'demo' | 'live' | null
+  /** Effective model label for live messages. */
+  modelLabel?: string | null
+}
+
+/**
  * The editable review deliverable produced at `ready_for_review`.
  *
  * `provenance` records honestly how the content came to exist: demo runs
@@ -104,6 +124,13 @@ export interface TaskReport {
   contextIncluded: boolean
   /** True when this content is a preserved partial from a stopped/failed run. */
   stoppedPartial: boolean
+  /** Run that produced this report; null on reports saved before milestone 06. */
+  runId?: string | null
+}
+
+/** A report archived when a revision replaced it. Bounded history. */
+export interface ArchivedReport extends TaskReport {
+  savedAt: number
 }
 
 export interface WorkTask {
@@ -136,6 +163,14 @@ export interface WorkTask {
   inputRequest: { question: string; options: string[] } | null
   /** Last run failure message (AI-draft requests); cleared on the next run. */
   error: string | null
+  /**
+   * Conversational thread entries (milestone 06). Older tasks default to
+   * `[]` on load — the projection renders their goal/events/report as a
+   * readable transcript without rerunning anything.
+   */
+  messages: TaskMessage[]
+  /** Prior outputs preserved when a revision replaced them (bounded). */
+  previousReports: ArchivedReport[]
 }
 
 /* ------------------------------------------------------------------ */
@@ -170,6 +205,32 @@ export interface MemoryNote {
   text: string
   createdAt: number
   updatedAt: number
+}
+
+export type AgentThreadEventKind =
+  | 'assignment'
+  | 'memory_note'
+  | 'plugin_action'
+  | 'routine'
+  | 'note'
+
+/**
+ * A structured entry on an employee's thread (milestone 06): assignments,
+ * memory confirmations, plugin actions, routines. Links reference the
+ * canonical records — never copies of them.
+ */
+export interface AgentThreadEvent {
+  id: string
+  agentId: string
+  kind: AgentThreadEventKind
+  at: number
+  label: string
+  detail?: string
+  taskId?: string | null
+  noteId?: string | null
+  scheduleId?: string | null
+  /** Dispatcher run id when this event records a plugin action. */
+  pluginRunId?: string | null
 }
 
 export type ScheduleCadence = 'once' | 'recurring' | 'event'

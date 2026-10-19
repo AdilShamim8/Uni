@@ -20,6 +20,10 @@ are relevant.
 | Work task runs (demo) | **Simulated** | deterministic runner in `workStore.ts`, "Demo" pill in the header |
 | Work AI drafts (live) | **Live (BYOK)** | `workStore.ts` AI-draft runner on `liveChatAdapter.ts` — one bounded text-drafting request per explicit Generate; charge warning, context disclosure, provider-generated provenance |
 | Export (conversations, documents, analysis) | **Local** | `exportUtils.ts`, `csvAnalysis.ts` — downloads match what is on screen |
+| Conversational Work threads | **Local** | `features/conversation/` + `workStore.ts` follow-ups/revision — projected transcript, real reruns/requests, archived prior outputs |
+| Persistent AI employees | **Local** | `EmployeeView.tsx` — direct conversation, memory notes, assignments, honest availability |
+| Plugins (built-in local tools) | **Local** | `pluginsStore.ts` + `dispatcher.ts` + `adapters.ts` — typed manifests, per-agent/thread grants, receipts, three real adapters reusing Canvas/CSV/context engines |
+| Plugin actions from threads | **Local (user-invoked)** | `ThreadPluginBar.tsx` — explicit actions only; no provider tool-calls are claimed |
 
 ## Missing integrations — and what completing them would take
 
@@ -52,3 +56,22 @@ are relevant.
 - Workspace slices (`agents`, `work`, `library`, `context`, `compare`,
   `layout`) load and quarantine independently; a new backend sync can adopt
   them one slice at a time.
+
+
+## Plugin boundary (milestone 06)
+
+The dispatcher (`services/plugins/dispatcher.ts`) is a typed, local-only
+execution boundary. What it deliberately does **not** do:
+
+- No remote code execution, dynamic plugin loading, or marketplace installs
+  — enabling a built-in enables code that already ships with the app.
+- No OAuth, token vault, or credential storage beyond the existing BYOK
+  chat credential (which plugins never touch).
+- No provider-driven tool calling — the ChatAdapter streams text; plugin
+  actions are explicit user invocations validated against the capability
+  registry.
+
+A future external/MCP integration would register additional typed adapters
+behind the same `registerAdapter` boundary, with consent screens, scoped
+grants, and connection state that can only be set by a real handshake —
+the store and catalogue already model those states without faking them.
