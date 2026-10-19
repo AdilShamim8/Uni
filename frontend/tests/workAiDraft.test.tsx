@@ -327,8 +327,11 @@ describe('work AI-draft UI', () => {
       expect(useWorkStore.getState().tasks[id].status).toBe('ready_for_review')
     })
 
-    // Honest labeling on the output section.
-    expect(await screen.findByText(/Output — provider-generated draft/i)).toBeInTheDocument()
+    // Honest labeling in the thread and in Details → Outputs.
+    expect(await screen.findByText(/Draft from Demo Standard/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+    await user.click(screen.getByRole('tab', { name: 'Outputs' }))
+    expect(screen.getByText(/Output — provider-generated draft/i)).toBeInTheDocument()
     expect(screen.getByText(/no external sources were retrieved/i)).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Save to Library/i }))
