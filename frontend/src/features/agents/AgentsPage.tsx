@@ -18,12 +18,11 @@ import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
 import { Menu, MenuItem } from '@/components/ui/Menu'
-import { StatusPill } from '@/components/ui/StatusPill'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
 import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { TOOL_REGISTRY } from '@/features/chat/toolRegistry'
-import { PersonalAssistantView } from './PersonalAssistantView'
+import { EmployeeView } from './EmployeeView'
 import type { AgentProfile } from '@/domain/workspaceTypes'
 import type { ToolId } from '@/domain/types'
 
@@ -297,105 +296,18 @@ function AgentDetail({ agentId }: { agentId: string }) {
     return null
   }
 
-  // The personal assistant gets its own dedicated experience.
-  if (agent.category === 'personal' && !editMode) {
-    return <PersonalAssistantView agentId={agentId} onEdit={() => setEditMode(true)} />
-  }
-
   if (editMode) {
     return <AgentBuilder existing={agent} onDone={() => setEditMode(false)} />
   }
 
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <PageToolbar>
-        <button
-          type="button"
-          onClick={() => navigate('/agents')}
-          aria-label="Back to Agents"
-          className="min-touch -ml-1 rounded-control p-1.5 text-ink-soft transition-colors hover:text-ink"
-        >
-          <ChevronLeft />
-        </button>
-        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">{agent.name}</h1>
-        {agent.archived && <StatusPill label="Archived" tone="neutral" />}
-      </PageToolbar>
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent">
-                <Bot size={20} />
-              </span>
-              <div>
-                <h2 className="text-lg font-semibold tracking-tight text-ink">{agent.name}</h2>
-                <p className="text-sm text-ink-soft">{agent.description}</p>
-              </div>
-            </div>
-            <Button variant="secondary" onClick={() => setEditMode(true)}>
-              Edit profile
-            </Button>
-          </div>
-
-          <section className="mt-5 rounded-group border border-line bg-raised p-4 sm:p-5">
-            <h3 className="text-[12px] font-medium text-ink-faint">
-              Instructions
-            </h3>
-            <p className="mt-2 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
-              {agent.instructions}
-            </p>
-          </section>
-
-          {agent.tools.length > 0 && (
-            <section className="mt-4 rounded-group border border-line bg-raised p-4 sm:p-5">
-              <h3 className="text-[12px] font-medium text-ink-faint">
-                Tools referenced
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-ink-soft">
-                {agent.tools
-                  .map((tool) => TOOL_REGISTRY.find((entry) => entry.id === tool)?.label ?? tool)
-                  .join(' · ')}{' '}
-                — available in chat; Work execution remains a local demo.
-              </p>
-            </section>
-          )}
-
-          {agent.starters.length > 0 && (
-            <section className="mt-4 rounded-group border border-line bg-raised p-4 sm:p-5">
-              <h3 className="text-[12px] font-medium text-ink-faint">
-                Example starters
-              </h3>
-              <ul className="mt-2 flex flex-col gap-1.5">
-                {agent.starters.map((starter) => (
-                  <li key={starter} className="text-sm text-ink">
-                    {starter}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Button
-              variant="primary"
-              onClick={() => {
-                const id = useAppStore.getState().openAgentConversation(agentId)
-                navigate(`/c/${id}`)
-              }}
-            >
-              <MessageSquare size={15} />
-              Chat with agent
-            </Button>
-            <Button variant="secondary" onClick={() => navigate(`/work/new?agent=${agentId}`)}>
-              <Plus size={15} />
-              Assign task
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+  // Every employee opens its actual conversation directly — the profile
+  // is a secondary inspector, never a hop before the thread.
+  return <EmployeeView agentId={agentId} onEdit={() => setEditMode(true)} />
 }
+
+/* ------------------------------------------------------------------ */
+/* Builder — create / edit                                             */
+/* ------------------------------------------------------------------ */
 
 function ChevronLeft() {
   return (
@@ -414,10 +326,6 @@ function ChevronLeft() {
     </svg>
   )
 }
-
-/* ------------------------------------------------------------------ */
-/* Builder — create / edit                                             */
-/* ------------------------------------------------------------------ */
 
 function AgentBuilder({
   existing,
