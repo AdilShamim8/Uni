@@ -2,47 +2,34 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   Briefcase,
-  Check,
-  ChevronDown,
-  ClipboardList,
   Download,
   FileText,
-  FolderPlus,
-  MessageSquareWarning,
   MoreHorizontal,
-  PencilLine,
-  Play,
-  Plus,
-  RotateCcw,
+  Settings2,
   Sparkles,
-  Square,
-  Telescope,
   Trash2,
-  Undo2,
 } from 'lucide-react'
 import { useWorkStore } from '@/state/workStore'
 import { useAgentsStore } from '@/state/agentsStore'
-import { useLibraryStore } from '@/state/libraryStore'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
 import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
-import { Markdown } from '@/features/chat/Markdown'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
-import { TASK_TEMPLATES } from './taskTemplates'
-import { formatClock } from '@/domain/timestamps'
+import { ThreadComposer } from '@/features/conversation/ThreadComposer'
+import { TaskThread } from './TaskThread'
+import { TASK_TEMPLATES, inferDeliverable } from './taskTemplates'
 import {
   TASK_STATUS_LABELS,
   TASK_STATUS_TONES,
   taskMatchesFilter,
   type TaskFilter,
 } from '@/domain/taskMachine'
-import type { AiDraftModel, TaskDeliverable, WorkTask, WorkTaskMode } from '@/domain/workspaceTypes'
+import type { AiDraftModel, TaskDeliverable, WorkTaskMode } from '@/domain/workspaceTypes'
 
 /* ------------------------------------------------------------------ */
 /* Shared bits                                                         */
@@ -61,7 +48,23 @@ function formatRelativeTime(timestamp: number): string {
 }
 
 /* ------------------------------------------------------------------ */
-/* Work home                                                           */
+/* Router                                                              */
+/* ------------------------------------------------------------------ */
+
+export function WorkPage() {
+  const { taskId } = useParams()
+
+  if (taskId === 'new') {
+    return <NewTaskForm />
+  }
+  if (taskId) {
+    return <TaskThread taskId={taskId} />
+  }
+  return <WorkHome />
+}
+
+/* ------------------------------------------------------------------ */
+/* Work home — a goal composer plus recent and active work             */
 /* ------------------------------------------------------------------ */
 
 const FILTERS: { id: TaskFilter; label: string }[] = [
@@ -71,18 +74,6 @@ const FILTERS: { id: TaskFilter; label: string }[] = [
   { id: 'ready-for-review', label: 'Ready for review' },
   { id: 'completed', label: 'Completed' },
 ]
-
-export function WorkPage() {
-  const { taskId } = useParams()
-
-  if (taskId === 'new') {
-    return <NewTaskForm />
-  }
-  if (taskId) {
-    return <TaskWorkspace taskId={taskId} />
-  }
-  return <WorkHome />
-}
 
 function WorkHome() {
   const navigate = useNavigate()
@@ -99,6 +90,44 @@ function WorkHome() {
     [ordered, filter],
   )
 
+  function startTask(goal: string, mode: WorkTaskMode, model: AiDraftModel | null) {
+    const trimmed = goal.trim()
+    if (!trimmed) return
+    const createTask = useWorkStore.getState().createTask
+    const title = trimmed.length > 60 ? `${trimmed.slice(0, 57)}…` : trimmed
+    const id = createTask({
+      title,
+      goal: trimmed,
+      deliverable: inferDeliverable(trimmed),
+      mode,
+      draftConfig:
+        mode === 'ai-draft' && model
+          ? { model, instructions: '', contextText: '' }
+          : null,
+    })
+    // Demo tasks run immediately — that is the point of typing a goal.
+    // AI-draft tasks wait for the explicit "Generate draft" in the thread.
+    // The goal itself is the thread's opening message (projected), so the
+    // acknowledgment is the only stored message at creation.
+    if (mode === 'demo') {
+      useWorkStore.getState().appendTaskMessage(id, {
+        role: 'assistant',
+        content:
+          'Got it — starting a local demo run. Steps and the example output are simulated on this device; nothing is sent anywhere.',
+        statusPrefix: 'Starting demo run',
+        provenance: 'demo',
+      })
+      useWorkStore.getState().runTask(id)
+    } else {
+      useWorkStore.getState().appendTaskMessage(id, {
+        role: 'assistant',
+        content: `Task ready — generate the draft whenever you're ready. One live request to ${model?.modelLabel ?? 'the connected model'}; your key stays in this browser.`,
+        statusPrefix: 'AI draft task',
+      })
+    }
+    navigate(`/work/${id}`)
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       <PageToolbar>
@@ -114,89 +143,90 @@ function WorkHome() {
         <HeaderExtras />
       </PageToolbar>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight text-ink">Tasks</h2>
-              <p className="mt-0.5 text-sm text-ink-soft">
-                Describe an outcome, run it as a local demo, review the output.
-              </p>
-            </div>
-            <Button
-              variant="primary"
-              className="w-full sm:w-auto"
+      <div className="flex-1 overflow-y-auto welcome-wash">
+        <div className="mx-auto w-full max-w-column px-3 py-8 sm:px-4">
+          {/* Goal composer — typing an outcome starts a task, no form. */}
+          <h2 className="text-center text-[28px] font-semibold tracking-tight text-ink sm:text-[32px]">
+            What needs doing?
+          </h2>
+          <p className="mx-auto mt-1.5 max-w-md text-center text-sm leading-relaxed text-ink-soft">
+            Describe an outcome. Uni starts a task you can run as a local demo or draft with a
+            connected model — then refine it by messaging the thread.
+          </p>
+          <div className="mt-5">
+            <GoalComposer onSend={startTask} />
+          </div>
+
+          {/* Expanded brief — for precise setup, never a required step. */}
+          <p className="mt-3 text-center text-xs text-ink-faint">
+            Need precise setup?{' '}
+            <button
+              type="button"
               onClick={() => navigate('/work/new')}
+              className="font-medium text-accent transition-colors hover:text-accent-strong"
             >
-              <Plus size={16} />
-              New task
-            </Button>
+              Use the expanded brief
+            </button>
+          </p>
+
+          {/* Recent & active work */}
+          <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="text-[15px] font-semibold tracking-tight text-ink">
+              {ordered.length === 0 ? 'Your tasks will appear here' : 'Recent work'}
+            </h3>
           </div>
 
-          {/* Starter templates */}
-          <ul className="mt-5 grid gap-2 sm:grid-cols-3" aria-label="Task templates">
-            {TASK_TEMPLATES.map((template) => (
-              <li key={template.id}>
-                <button
-                  type="button"
-                  onClick={() => navigate(`/work/new?template=${template.id}`)}
-                  className="flex h-full w-full flex-col gap-1.5 rounded-group border border-line bg-raised p-3.5 text-left transition-colors hover:bg-subtle"
-                >
-                  <span className="flex items-center gap-2 text-ink">
-                    <span className="text-accent">{template.icon}</span>
-                    <span className="text-sm font-medium">{template.label}</span>
-                  </span>
-                  <span className="text-xs leading-relaxed text-ink-soft">{template.blurb}</span>
-                  <span className="mt-auto pt-1 text-[11px] text-ink-faint">
-                    Local simulation — no key needed
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {ordered.length > 0 && (
+            <div
+              role="tablist"
+              aria-label="Filter tasks"
+              className="mt-3 flex flex-wrap gap-1.5"
+            >
+              {FILTERS.map((entry) => {
+                const active = filter === entry.id
+                return (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setFilter(entry.id)}
+                    className={`min-touch shrink-0 rounded-full border px-3 py-1 text-[13px] transition-colors ${
+                      active
+                        ? 'border-accent bg-accent-soft font-medium text-accent'
+                        : 'border-line text-ink-soft hover:bg-subtle'
+                    }`}
+                  >
+                    {entry.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
 
-          {/* Filters — wrap on narrow screens instead of truncating */}
-          <div
-            role="tablist"
-            aria-label="Filter tasks"
-            className="mt-6 flex flex-wrap gap-1.5"
-          >
-            {FILTERS.map((entry) => {
-              const active = filter === entry.id
-              return (
-                <button
-                  key={entry.id}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setFilter(entry.id)}
-                  className={`min-touch shrink-0 rounded-full border px-3 py-1 text-[13px] transition-colors ${
-                    active
-                      ? 'border-accent bg-accent-soft font-medium text-accent'
-                      : 'border-line text-ink-soft hover:bg-subtle'
-                  }`}
-                >
-                  {entry.label}
-                </button>
-              )
-            })}
-          </div>
-
-          {/* Task list */}
-          {filtered.length === 0 ? (
-            <div className="mt-4 rounded-group border border-line bg-raised px-6 py-8 text-center">
-              <Briefcase size={28} className="mx-auto text-ink-faint" aria-hidden="true" />
-              <p className="mt-3 text-sm font-medium text-ink">
-                {ordered.length === 0 ? 'No tasks yet' : 'No tasks in this view'}
-              </p>
+          {ordered.length === 0 ? (
+            <ul className="mt-3 grid gap-2 sm:grid-cols-3" aria-label="Task examples">
+              {TASK_TEMPLATES.map((template) => (
+                <li key={template.id}>
+                  <div className="flex h-full flex-col gap-1.5 rounded-group border border-line bg-raised p-3.5">
+                    <span className="flex items-center gap-2 text-ink">
+                      <span className="text-accent">{template.icon}</span>
+                      <span className="text-sm font-medium">{template.label}</span>
+                    </span>
+                    <span className="text-xs leading-relaxed text-ink-soft">{template.blurb}</span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : filtered.length === 0 ? (
+            <div className="mt-3 rounded-group border border-line bg-raised px-6 py-8 text-center">
+              <p className="text-sm font-medium text-ink">No tasks in this view</p>
               <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-ink-soft">
-                {ordered.length === 0
-                  ? 'Start from a template above — the run and its output stay on this device.'
-                  : 'Try a different filter, or create a new task.'}
+                Try a different filter, or describe a new outcome above.
               </p>
             </div>
           ) : (
-            <ul className="mt-4 flex flex-col gap-2">
+            <ul className="mt-3 flex flex-col gap-2">
               {filtered.map((task) => {
                 const agent = task.agentId ? agents[task.agentId] : null
                 return (
@@ -238,6 +268,122 @@ function WorkHome() {
   )
 }
 
+/* ------------------------------------------------------------------ */
+/* Goal composer with an execution-mode selector                       */
+/* ------------------------------------------------------------------ */
+
+function GoalComposer({
+  onSend,
+}: {
+  onSend: (goal: string, mode: WorkTaskMode, model: AiDraftModel | null) => void
+}) {
+  const providers = useAppStore((state) => state.providers)
+  const credentials = useAppStore((state) => state.credentials)
+  const setUi = useAppStore((state) => state.setUi)
+  const [mode, setMode] = useState<WorkTaskMode>('demo')
+  const [modelKey, setModelKey] = useState('')
+
+  const connectedModels = useMemo(() => {
+    const options: AiDraftModel[] = []
+    for (const provider of providers) {
+      const credential = credentials[provider.id]
+      if (credential?.status !== 'connected') continue
+      for (const model of provider.models) {
+        options.push({
+          providerId: provider.id,
+          modelId: model.id,
+          providerLabel: provider.label,
+          modelLabel: model.label,
+        })
+      }
+    }
+    return options
+  }, [providers, credentials])
+
+  const selected =
+    connectedModels.find((entry) => `${entry.providerId}:${entry.modelId}` === modelKey) ??
+    connectedModels[0] ??
+    null
+
+  return (
+    <>
+      <div className="mb-2 flex flex-wrap items-center justify-center gap-1.5" role="radiogroup" aria-label="Execution mode">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === 'demo'}
+          onClick={() => setMode('demo')}
+          className={`min-touch rounded-full border px-3.5 py-1.5 text-[13px] transition-colors ${
+            mode === 'demo'
+              ? 'border-accent bg-accent-soft font-medium text-accent'
+              : 'border-line bg-raised text-ink-soft hover:bg-subtle'
+          }`}
+        >
+          Demo
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={mode === 'ai-draft'}
+          onClick={() => setMode('ai-draft')}
+          disabled={connectedModels.length === 0}
+          title={
+            connectedModels.length === 0
+              ? 'Connect a provider in Settings to draft with a live model'
+              : undefined
+          }
+          className={`min-touch rounded-full border px-3.5 py-1.5 text-[13px] transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+            mode === 'ai-draft'
+              ? 'border-accent bg-accent-soft font-medium text-accent'
+              : 'border-line bg-raised text-ink-soft hover:bg-subtle'
+          }`}
+        >
+          AI draft
+        </button>
+        {mode === 'ai-draft' && connectedModels.length > 0 && (
+          <select
+            aria-label="Draft model"
+            value={selected ? `${selected.providerId}:${selected.modelId}` : ''}
+            onChange={(event) => setModelKey(event.target.value)}
+            className="min-touch max-w-[14rem] rounded-full border border-line bg-raised px-3 py-1.5 text-[13px] text-ink focus:border-accent focus:outline-none"
+          >
+            {connectedModels.map((model) => (
+              <option key={`${model.providerId}:${model.modelId}`} value={`${model.providerId}:${model.modelId}`}>
+                {model.modelLabel}
+              </option>
+            ))}
+          </select>
+        )}
+        {mode === 'ai-draft' && connectedModels.length === 0 && (
+          <button
+            type="button"
+            onClick={() => setUi({ settingsOpen: true, settingsSection: 'providers' })}
+            className="min-touch rounded-full px-2 py-1.5 text-[13px] font-medium text-accent transition-colors hover:text-accent-strong"
+          >
+            Connect a provider
+          </button>
+        )}
+      </div>
+      <ThreadComposer
+        draftKey="work:new"
+        textareaId="work-goal-composer"
+        ariaLabel="Describe an outcome"
+        placeholder="e.g. Draft a launch update from these notes…"
+        statusLabel={
+          mode === 'ai-draft' && selected
+            ? `AI draft with ${selected.modelLabel} — the send button creates the task; the live request happens only when you press “Generate draft”.`
+            : 'Demo execution — sending starts a local run with simulated steps and an example output.'
+        }
+        onSend={(goal) => onSend(goal, mode, selected)}
+      />
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Task row menu                                                       */
+/* ------------------------------------------------------------------ */
+
 function TaskRowMenu({ taskId }: { taskId: string }) {
   const navigate = useNavigate()
   const deleteTask = useWorkStore((state) => state.deleteTask)
@@ -247,7 +393,7 @@ function TaskRowMenu({ taskId }: { taskId: string }) {
 
   function handleDownload() {
     if (!task.report) return
-    downloadText(`universe-task-${slugifyTitle(task.title)}.md`, task.report.markdown)
+    downloadText(`uni-task-${slugifyTitle(task.title)}.md`, task.report.markdown)
     showToast('Task report downloaded as Markdown')
   }
 
@@ -289,7 +435,7 @@ function TaskRowMenu({ taskId }: { taskId: string }) {
 }
 
 /* ------------------------------------------------------------------ */
-/* New task brief                                                      */
+/* Expanded brief — precise setup, also edits existing draft tasks     */
 /* ------------------------------------------------------------------ */
 
 function NewTaskForm() {
@@ -301,23 +447,37 @@ function NewTaskForm() {
   const credentials = useAppStore((state) => state.credentials)
   const setUi = useAppStore((state) => state.setUi)
 
-  const [title, setTitle] = useState('')
-  const [goal, setGoal] = useState('')
-  const [mode, setMode] = useState<WorkTaskMode>('demo')
-  const [modelKey, setModelKey] = useState<string>('')
-  const [instructions, setInstructions] = useState('')
-  const [contextText, setContextText] = useState('')
+  // Editing an existing (draft) task arrives as ?edit=<taskId>.
+  const editId = searchParams.get('edit')
+  const editingTask = editId ? useWorkStore.getState().tasks[editId] : undefined
+
+  const [title, setTitle] = useState(editingTask?.title ?? '')
+  const [goal, setGoal] = useState(editingTask?.goal ?? '')
+  const [mode, setMode] = useState<WorkTaskMode>(editingTask?.mode ?? 'demo')
+  const [modelKey, setModelKey] = useState<string>(
+    editingTask?.draftConfig
+      ? `${editingTask.draftConfig.model.providerId}:${editingTask.draftConfig.model.modelId}`
+      : '',
+  )
+  const [instructions, setInstructions] = useState(editingTask?.draftConfig?.instructions ?? '')
+  const [contextText, setContextText] = useState(editingTask?.draftConfig?.contextText ?? '')
   const [deliverable, setDeliverable] = useState<TaskDeliverable>(
-    () => {
-      const requested = searchParams.get('template') as TaskDeliverable | null
-      return TASK_TEMPLATES.some((t) => t.id === requested) ? (requested as TaskDeliverable) : 'research-report'
-    },
+    editingTask?.deliverable ??
+      (() => {
+        const requested = searchParams.get('template') as TaskDeliverable | null
+        return TASK_TEMPLATES.some((t) => t.id === requested)
+          ? (requested as TaskDeliverable)
+          : 'research-report'
+      })(),
   )
   // Preselect an agent when arriving via “Assign task” on a profile.
-  const [agentId, setAgentId] = useState<string | null>(() => {
-    const requested = searchParams.get('agent')
-    return requested && useAgentsStore.getState().agents[requested] ? requested : null
-  })
+  const [agentId, setAgentId] = useState<string | null>(
+    editingTask?.agentId ??
+      (() => {
+        const requested = searchParams.get('agent')
+        return requested && useAgentsStore.getState().agents[requested] ? requested : null
+      })(),
+  )
   const [error, setError] = useState<string | null>(null)
 
   const activeAgents = useMemo(
@@ -346,7 +506,8 @@ function NewTaskForm() {
     return options
   }, [providers, credentials])
 
-  // Keep a valid selection as connections change.
+  // Keep a valid selection as connections change (or when switching into
+  // AI-draft mode): default to the first connected model.
   useEffect(() => {
     if (mode !== 'ai-draft') return
     if (modelKey && connectedModels.some((m) => `${m.providerId}:${m.modelId}` === modelKey)) {
@@ -366,6 +527,23 @@ function NewTaskForm() {
       return
     }
     const selected = connectedModels.find((m) => `${m.providerId}:${m.modelId}` === modelKey)
+    if (editingTask) {
+      useWorkStore.getState().updateTask(editingTask.id, {
+        title: trimmed,
+        goal: goal.trim(),
+        deliverable,
+        agentId,
+      })
+      if (mode === 'ai-draft' && selected && editingTask.status === 'draft') {
+        useWorkStore.getState().updateDraftConfig(editingTask.id, {
+          model: selected,
+          instructions: instructions.trim(),
+          contextText: contextText.trim(),
+        })
+      }
+      navigate(`/work/${editingTask.id}`)
+      return
+    }
     const id = createTask({
       title: trimmed,
       goal: goal.trim(),
@@ -392,10 +570,12 @@ function NewTaskForm() {
           onClick={() => navigate('/work')}
           className="min-touch -ml-1 flex items-center gap-1 rounded-control px-1.5 text-sm font-medium text-ink-soft transition-colors hover:text-ink"
         >
-          <ChevronDown size={15} className="rotate-90" aria-hidden="true" />
+          <Settings2 size={15} className="rotate-180" aria-hidden="true" />
           Work
         </button>
-        <h1 className="text-[15px] font-semibold tracking-tight text-ink">New task</h1>
+        <h1 className="text-[15px] font-semibold tracking-tight text-ink">
+          {editingTask ? 'Edit task' : 'Expanded brief'}
+        </h1>
       </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
@@ -428,11 +608,7 @@ function NewTaskForm() {
                 AI draft is a single live BYOK request, never autonomous. */}
             <fieldset>
               <legend className="mb-1.5 block text-sm font-medium text-ink">Execution</legend>
-              <div
-                role="radiogroup"
-                aria-label="Execution mode"
-                className="grid gap-2 sm:grid-cols-2"
-              >
+              <div role="radiogroup" aria-label="Execution mode" className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
                   role="radio"
@@ -471,10 +647,7 @@ function NewTaskForm() {
             {mode === 'ai-draft' && (
               <div className="flex flex-col gap-3.5 rounded-[12px] border border-accent/30 bg-accent-soft/40 p-3.5">
                 <div>
-                  <label
-                    htmlFor="draft-model"
-                    className="mb-1.5 block text-sm font-medium text-ink"
-                  >
+                  <label htmlFor="draft-model" className="mb-1.5 block text-sm font-medium text-ink">
                     Connected model
                   </label>
                   {connectedModels.length === 0 ? (
@@ -497,10 +670,7 @@ function NewTaskForm() {
                       className="min-touch w-full rounded-control border border-line bg-panel px-3 py-2 text-sm text-ink focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
                     >
                       {connectedModels.map((model) => (
-                        <option
-                          key={`${model.providerId}:${model.modelId}`}
-                          value={`${model.providerId}:${model.modelId}`}
-                        >
+                        <option key={`${model.providerId}:${model.modelId}`} value={`${model.providerId}:${model.modelId}`}>
                           {model.modelLabel} — {model.providerLabel}
                         </option>
                       ))}
@@ -509,11 +679,9 @@ function NewTaskForm() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="draft-instructions"
-                    className="mb-1.5 block text-sm font-medium text-ink"
-                  >
-                    Additional instructions <span className="font-normal text-ink-faint">(optional)</span>
+                  <label htmlFor="draft-instructions" className="mb-1.5 block text-sm font-medium text-ink">
+                    Additional instructions{' '}
+                    <span className="font-normal text-ink-faint">(optional)</span>
                   </label>
                   <textarea
                     id="draft-instructions"
@@ -526,10 +694,7 @@ function NewTaskForm() {
                 </div>
 
                 <div>
-                  <label
-                    htmlFor="draft-context"
-                    className="mb-1.5 block text-sm font-medium text-ink"
-                  >
+                  <label htmlFor="draft-context" className="mb-1.5 block text-sm font-medium text-ink">
                     Context to include <span className="font-normal text-ink-faint">(optional)</span>
                   </label>
                   <textarea
@@ -541,16 +706,16 @@ function NewTaskForm() {
                     className="w-full resize-y rounded-control border border-line bg-panel px-3 py-2 text-sm leading-relaxed text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
                   />
                   <p className="mt-1.5 text-xs leading-relaxed text-ink-faint">
-                    Explicitly selected context only — no files, history, or browsing are
-                    attached automatically.
+                    Explicitly selected context only — no files, history, or browsing are attached
+                    automatically.
                   </p>
                 </div>
 
                 <p className="text-xs leading-relaxed text-ink-soft">
-                  <strong className="font-medium text-ink">Live request:</strong> generating
-                  sends the goal, instructions, and selected context to the provider behind the
-                  chosen model. The provider may charge for this request — nothing is sent until
-                  you explicitly press “Generate draft”.
+                  <strong className="font-medium text-ink">Live request:</strong> generating sends
+                  the goal, instructions, and selected context to the provider behind the chosen
+                  model. The provider may charge for this request — nothing is sent until you
+                  explicitly press “Generate draft”.
                 </p>
               </div>
             )}
@@ -597,724 +762,23 @@ function NewTaskForm() {
               </select>
               <p className="mt-1.5 text-xs leading-relaxed text-ink-faint">
                 {mode === 'demo'
-                  ? "The agent’s instructions are attached to this task’s demo run. Nothing is sent anywhere — execution stays local."
-                  : "The agent’s instructions are included in the drafting request when you generate it."}
+                  ? 'The agent’s instructions are attached to this task’s demo run. Nothing is sent anywhere — execution stays local.'
+                  : 'The agent’s instructions are included in the drafting request when you generate it.'}
               </p>
             </fieldset>
-
-            <div className="rounded-[12px] bg-subtle px-3.5 py-2.5">
-              <p className="text-xs leading-relaxed text-ink-soft">
-                {mode === 'demo' ? (
-                  <>
-                    <strong className="font-medium text-ink">Demo execution:</strong> steps,
-                    tool activity, and the example report are simulated on this device. No
-                    provider is contacted and no API key is required. You can edit and
-                    download the output.
-                  </>
-                ) : (
-                  <>
-                    <strong className="font-medium text-ink">AI draft:</strong> one live
-                    drafting request using the connected model above — never run automatically,
-                    only when you press “Generate draft”. Your key stays in this browser.
-                  </>
-                )}
-              </p>
-            </div>
 
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => navigate('/work')}>
                 Cancel
               </Button>
               <Button variant="primary" onClick={handleCreate}>
-                Create task
+                <Sparkles size={15} />
+                {editingTask ? 'Save changes' : 'Create task'}
               </Button>
             </div>
           </div>
         </div>
       </div>
     </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Task workspace                                                      */
-/* ------------------------------------------------------------------ */
-
-type WorkspaceTab = 'overview' | 'activity' | 'outputs'
-
-function TaskWorkspace({ taskId }: { taskId: string }) {
-  const navigate = useNavigate()
-  const task = useWorkStore((state) => state.tasks[taskId])
-  const hydrated = useWorkStore((state) => state.hydrated)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [tab, setTab] = useState<WorkspaceTab>('overview')
-
-  // Unknown or deleted id → recover to the Work home — but only after
-  // hydration, or a direct load would redirect before tasks exist
-  // (audit R3).
-  useEffect(() => {
-    if (!hydrated) return
-    if (!task) navigate('/work', { replace: true })
-  }, [task, hydrated, navigate])
-
-  if (!task) return null
-
-  const tabs: { id: WorkspaceTab; label: string }[] = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'activity', label: 'Activity' },
-    { id: 'outputs', label: 'Outputs' },
-  ]
-
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <PageToolbar>
-        <button
-          type="button"
-          onClick={() => navigate('/work')}
-          aria-label="Back to Work"
-          className="min-touch -ml-1 rounded-control p-1.5 text-ink-soft transition-colors hover:text-ink"
-        >
-          <ChevronDown size={16} className="rotate-90" aria-hidden="true" />
-        </button>
-        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">{task.title}</h1>
-        <StatusPill
-          label={TASK_STATUS_LABELS[task.status]}
-          tone={TASK_STATUS_TONES[task.status]}
-          dot={task.status === 'running'}
-        />
-        <StatusPill
-          label={task.mode === 'ai-draft' ? 'AI draft' : 'Demo'}
-          tone={task.mode === 'ai-draft' ? 'accent' : 'neutral'}
-        />
-        <WorkspaceMenu taskId={taskId} onDelete={() => setDeleteOpen(true)} />
-      </PageToolbar>
-
-      {/* Mobile tabs */}
-      <div className="flex gap-1 border-b border-line px-2 py-1.5 lg:hidden" role="tablist" aria-label="Task sections">
-        {tabs.map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            role="tab"
-            aria-selected={tab === entry.id}
-            onClick={() => setTab(entry.id)}
-            className={`min-touch flex-1 rounded-control px-2 py-1 text-[13px] font-medium transition-colors ${
-              tab === entry.id ? 'bg-accent-soft text-accent' : 'text-ink-soft hover:bg-subtle'
-            }`}
-          >
-            {entry.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex min-h-0 flex-1">
-        {/* Main column — brief, run state, and outputs. On mobile each
-            section lands in its tab; on desktop everything shows at once. */}
-        <div
-          className={`min-h-0 flex-1 overflow-y-auto ${
-            tab === 'activity' ? 'hidden lg:block' : ''
-          }`}
-        >
-          <div className="mx-auto w-full max-w-column px-3 py-5 sm:px-4">
-            <div className={tab === 'outputs' ? 'hidden lg:block' : ''}>
-              <BriefSection taskId={taskId} />
-            </div>
-            <RunSection taskId={taskId} />
-            <div className={tab === 'overview' ? 'hidden lg:block' : ''}>
-              <ReportSection taskId={taskId} />
-            </div>
-          </div>
-        </div>
-
-        {/* Activity panel — desktop right column, mobile tab */}
-        <aside
-          className={`min-h-0 w-[19rem] shrink-0 overflow-y-auto border-l border-line bg-mat-sidebar/60 ${
-            tab === 'activity' ? '' : 'hidden lg:block'
-          }`}
-          aria-label="Activity"
-        >
-          <div className="px-3 py-4">
-            <p className="px-1 text-[12px] font-medium text-ink-faint">
-              Activity
-            </p>
-            <ActivityTimeline task={task} />
-          </div>
-        </aside>
-      </div>
-
-      <ConfirmDialog
-        open={deleteOpen}
-        onClose={() => setDeleteOpen(false)}
-        title="Delete task?"
-        body={`“${task.title}” and its activity log will be removed from this device. This cannot be undone.`}
-        confirmLabel="Delete"
-        destructive
-        onConfirm={() => {
-          useWorkStore.getState().deleteTask(taskId)
-          navigate('/work')
-        }}
-      />
-    </div>
-  )
-}
-
-function WorkspaceMenu({ taskId, onDelete }: { taskId: string; onDelete: () => void }) {
-  const task = useWorkStore((state) => state.tasks[taskId])
-  const showToast = useAppStore((state) => state.showToast)
-  if (!task) return null
-
-  function handleDownload() {
-    if (!task.report) return
-    downloadText(`universe-task-${slugifyTitle(task.title)}.md`, task.report.markdown)
-    showToast('Task report downloaded as Markdown')
-  }
-
-  return (
-    <Menu
-      label="Task actions"
-      trigger={
-        <button
-          type="button"
-          aria-label="Task actions"
-          className="min-touch rounded-control p-1.5 text-ink-soft transition-colors hover:bg-[var(--c-hover-wash)] hover:text-ink"
-        >
-          <MoreHorizontal size={17} />
-        </button>
-      }
-    >
-      {task.report && (
-        <MenuItem icon={<Download size={15} />} onClick={handleDownload}>
-          Download report
-        </MenuItem>
-      )}
-      {(task.status === 'completed' || task.status === 'cancelled') && (
-        <MenuItem
-          icon={<Undo2 size={15} />}
-          onClick={() => useWorkStore.getState().reopenTask(taskId)}
-        >
-          Reopen as draft
-        </MenuItem>
-      )}
-      {task.status === 'failed' && (
-        <MenuItem
-          icon={<RotateCcw size={15} />}
-          onClick={() => useWorkStore.getState().retryTask(taskId)}
-        >
-          Retry run
-        </MenuItem>
-      )}
-      <MenuItem icon={<Trash2 size={15} />} danger onClick={onDelete}>
-        Delete
-      </MenuItem>
-    </Menu>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Brief                                                               */
-/* ------------------------------------------------------------------ */
-
-function BriefSection({ taskId }: { taskId: string }) {
-  const task = useWorkStore((state) => state.tasks[taskId])
-  const agents = useAgentsStore((state) => state.agents)
-  const updateTask = useWorkStore((state) => state.updateTask)
-  const [editing, setEditing] = useState(false)
-  const [draftGoal, setDraftGoal] = useState('')
-  if (!task) return null
-
-  const agent = task.agentId ? agents[task.agentId] : null
-  const template = TASK_TEMPLATES.find((t) => t.id === task.deliverable)
-  const editable = task.status === 'draft'
-
-  return (
-    <section
-      aria-label="Task brief"
-      className="rounded-group border border-line bg-raised p-4 sm:p-5"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-faint">
-          Brief
-        </h2>
-        {editable && !editing && (
-          <Button variant="ghost" size="sm" onClick={() => setEditing(true)}>
-            <PencilLine size={14} />
-            Edit
-          </Button>
-        )}
-      </div>
-
-      {editing ? (
-        <div className="mt-3 flex flex-col gap-3">
-          <TextField
-            label="Goal"
-            value={draftGoal}
-            onChange={(event) => setDraftGoal(event.target.value)}
-            placeholder="What outcome do you want?"
-          />
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setEditing(false)
-                setDraftGoal('')
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={() => {
-                updateTask(taskId, { goal: draftGoal.trim() })
-                setEditing(false)
-              }}
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-2 space-y-2.5">
-          <p className="text-[15px] leading-relaxed text-ink">
-            {task.goal || <span className="text-ink-faint">No goal described.</span>}
-          </p>
-          <dl className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-ink-soft">
-            <div className="flex items-center gap-1.5">
-              <dt className="text-ink-faint">Deliverable</dt>
-              <dd className="font-medium text-ink">{template?.label ?? task.deliverable}</dd>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <dt className="text-ink-faint">Agent</dt>
-              <dd className="font-medium text-ink">
-                {agent ? agent.name : 'None'}
-              </dd>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <dt className="text-ink-faint">Mode</dt>
-              <dd className="font-medium text-ink">
-                {task.mode === 'ai-draft' && task.draftConfig
-                  ? `AI draft — ${task.draftConfig.model.modelLabel}`
-                  : 'Local demo'}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      )}
-    </section>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Run controls + input requests                                       */
-/* ------------------------------------------------------------------ */
-
-function RunSection({ taskId }: { taskId: string }) {
-  const task = useWorkStore((state) => state.tasks[taskId])
-  if (!task) return null
-  const store = useWorkStore.getState()
-
-  return (
-    <section aria-label="Execution" className="mt-4">
-      {task.status === 'needs_input' && task.inputRequest && (
-        <div className="rounded-group border border-warning/40 bg-warning-soft p-4">
-          <p className="flex items-center gap-2 text-sm font-medium text-warning">
-            <MessageSquareWarning size={16} aria-hidden="true" />
-            The run needs your answer
-          </p>
-          <p className="mt-1.5 text-sm leading-relaxed text-ink">{task.inputRequest.question}</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {task.inputRequest.options.map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => store.answerInput(taskId, option)}
-                className="min-touch rounded-full border border-line bg-raised px-3.5 py-1.5 text-sm text-ink transition-colors hover:bg-subtle"
-              >
-                {option}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2.5 text-xs text-ink-faint">
-            Answering continues the simulated run — nothing is sent anywhere.
-          </p>
-        </div>
-      )}
-
-      {task.status === 'draft' && task.mode === 'ai-draft' && (
-        <div className="rounded-group border border-line bg-raised p-4">
-          <p className="text-sm leading-relaxed text-ink-soft">
-            This task sends <strong className="font-medium text-ink">one live drafting
-            request</strong> to a connected model when you explicitly generate — never
-            automatically.
-          </p>
-          {task.draftConfig && (
-            <dl className="mt-2.5 flex flex-col gap-1 text-xs text-ink-soft">
-              <div className="flex items-center gap-1.5">
-                <dt className="text-ink-faint">Model</dt>
-                <dd className="font-medium text-ink">
-                  {task.draftConfig.model.modelLabel} — {task.draftConfig.model.providerLabel}
-                </dd>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <dt className="text-ink-faint">Included</dt>
-                <dd className="font-medium text-ink">
-                  Goal{task.draftConfig.instructions ? ' · instructions' : ''}
-                  {task.draftConfig.contextText ? ' · selected context' : ''}
-                </dd>
-              </div>
-            </dl>
-          )}
-          <p className="mt-2.5 text-xs leading-relaxed text-warning">
-            The provider may charge for this request. Your key stays in this browser.
-          </p>
-          <div className="mt-3">
-            <Button
-              variant="primary"
-              disabled={!task.draftConfig}
-              onClick={() => store.runTask(taskId)}
-            >
-              <Sparkles size={15} />
-              Generate draft
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {task.status === 'draft' && task.mode === 'demo' && (
-        <div className="rounded-group border border-line bg-raised p-4">
-          <p className="text-sm leading-relaxed text-ink-soft">
-            This task has not run yet. Start a <strong className="font-medium text-ink">demo
-            run</strong> to watch the plan, tool activity, and example output being
-            produced locally.
-          </p>
-          <div className="mt-3">
-            <Button variant="primary" onClick={() => store.runTask(taskId)}>
-              <Play size={15} />
-              Run demo
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {(task.status === 'running' || task.status === 'queued') && (
-        <div className="rounded-group border border-line bg-raised p-4">
-          <p className="flex items-center gap-2 text-sm font-medium text-ink">
-            <span
-              className="h-2 w-2 animate-pulse rounded-full bg-accent"
-              aria-hidden="true"
-            />
-            {task.mode === 'ai-draft'
-              ? `Generating draft from ${task.draftConfig?.model.modelLabel ?? 'provider'}…`
-              : 'Running (demo)…'}
-          </p>
-          <p className="mt-1 text-xs text-ink-faint">
-            {task.mode === 'ai-draft'
-              ? 'One live request — content streams into the output below as it arrives.'
-              : 'Steps and results are simulated on this device.'}
-          </p>
-          <div className="mt-3 flex gap-2">
-            <Button variant="secondary" onClick={() => store.pauseTask(taskId)}>
-              <Square size={14} />
-              {task.mode === 'ai-draft' ? 'Stop' : 'Pause'}
-            </Button>
-            <Button variant="ghost" onClick={() => store.cancelTask(taskId)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {task.status === 'paused' && (
-        <div className="rounded-group border border-line bg-raised p-4">
-          <p className="text-sm font-medium text-ink">Paused</p>
-          {task.interrupted && (
-            <p className="mt-1 text-xs leading-relaxed text-warning">
-              {task.mode === 'ai-draft'
-                ? 'A reload interrupted this request — it did not continue in the background. Generating again starts a new one; the partial draft below is preserved.'
-                : 'This run was interrupted by a reload — the app does not keep working while closed. Resume to continue from where it stopped.'}
-            </p>
-          )}
-          {task.report && task.report.markdown.trim().length > 0 && task.mode === 'ai-draft' && (
-            <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-              The partial draft below is preserved — review, edit, or save it before
-              generating again.
-            </p>
-          )}
-          <div className="mt-3 flex gap-2">
-            <Button variant="primary" onClick={() => store.resumeTask(taskId)}>
-              <Play size={14} />
-              {task.mode === 'ai-draft' ? 'Generate again' : 'Resume'}
-            </Button>
-            <Button variant="ghost" onClick={() => store.cancelTask(taskId)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {task.status === 'cancelled' && (
-        <div className="rounded-group border border-line bg-raised p-4">
-          <p className="text-sm font-medium text-ink">Cancelled</p>
-          <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-            Late events from the cancelled run are rejected. Reopen the task as a draft
-            to plan it again.
-          </p>
-          <div className="mt-3">
-            <Button variant="secondary" onClick={() => store.reopenTask(taskId)}>
-              <Undo2 size={14} />
-              Reopen as draft
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {task.status === 'failed' && (
-        <div className="rounded-group border border-danger/40 bg-danger-soft p-4">
-          <p className="text-sm font-medium text-danger">Failed</p>
-          <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-            {task.mode === 'ai-draft'
-              ? task.error ?? 'The drafting request failed.'
-              : 'The demo run failed. Retry from the beginning, or reopen as a draft.'}
-          </p>
-          {task.report && task.report.markdown.trim().length > 0 && task.mode === 'ai-draft' && (
-            <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-              Partial content that arrived before the failure is preserved below — edit or
-              save it, or retry explicitly.
-            </p>
-          )}
-          <div className="mt-3 flex gap-2">
-            <Button variant="secondary" onClick={() => store.retryTask(taskId)}>
-              <RotateCcw size={14} />
-              Retry
-            </Button>
-            <Button variant="ghost" onClick={() => store.reopenTask(taskId)}>
-              Reopen as draft
-            </Button>
-          </div>
-        </div>
-      )}
-    </section>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Report / outputs                                                    */
-/* ------------------------------------------------------------------ */
-
-function ReportSection({ taskId }: { taskId: string }) {
-  const navigate = useNavigate()
-  const task = useWorkStore((state) => state.tasks[taskId])
-  const updateReport = useWorkStore((state) => state.updateReport)
-  const attachArtifactToReport = useWorkStore((state) => state.attachArtifactToReport)
-  const completeTask = useWorkStore((state) => state.completeTask)
-  const showToast = useAppStore((state) => state.showToast)
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
-  if (!task?.report) return null
-
-  function handleDownload() {
-    // The download always matches the CURRENT (possibly edited) report.
-    downloadText(`universe-task-${slugifyTitle(task!.title)}.md`, task!.report!.markdown)
-    showToast('Task report downloaded as Markdown')
-  }
-
-  /** Save the current report content into the shared Library. */
-  function handleSaveToLibrary() {
-    const report = task!.report!
-    const library = useLibraryStore.getState()
-    const kind =
-      report.template === 'email'
-        ? 'email'
-        : report.template === 'data'
-          ? 'data'
-          : report.template === 'draft'
-            ? 'document'
-            : 'report'
-    const aiGenerated =
-      report.provenance === 'provider-generated'
-        ? { provenance: 'provider-generated' as const, generatedBy: report.generatedBy }
-        : { provenance: 'demo-simulation' as const, generatedBy: null }
-    if (report.artifactId && library.artifacts[report.artifactId]) {
-      library.renameArtifact(report.artifactId, task!.title)
-      library.updateArtifact(report.artifactId, report.markdown)
-      showToast('Library copy updated')
-      return
-    }
-    const artifactId = library.addArtifact({
-      title: task!.title,
-      kind,
-      markdown: report.markdown,
-      taskId,
-      ...aiGenerated,
-    })
-    attachArtifactToReport(taskId, artifactId)
-    showToast('Saved to Library', {
-      actionLabel: 'Open',
-      onAction: () => navigate('/library'),
-    })
-  }
-
-  return (
-    <section
-      aria-label="Output report"
-      className="mt-4 rounded-group border border-line bg-raised p-4 sm:p-5"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-[13px] font-semibold text-ink-faint">
-          {task.report.provenance === 'provider-generated'
-            ? 'Output — provider-generated draft'
-            : 'Output — ready for review'}
-          {task.report.stoppedPartial && (
-            <span className="ml-1.5 font-medium text-warning">(partial — generation was stopped)</span>
-          )}
-        </h2>
-        <div className="flex gap-2">
-          {editing ? (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setEditing(false)
-                  setDraft('')
-                }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => {
-                  updateReport(taskId, draft)
-                  setEditing(false)
-                  showToast('Report updated')
-                }}
-              >
-                <Check size={14} />
-                Save changes
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setDraft(task.report?.markdown ?? '')
-                  setEditing(true)
-                }}
-              >
-                <PencilLine size={14} />
-                Edit
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleDownload}>
-                <Download size={14} />
-                Download
-              </Button>
-              <Button variant="ghost" size="sm" onClick={handleSaveToLibrary}>
-                <FolderPlus size={14} />
-                {task.report.artifactId ? 'Update library copy' : 'Save to Library'}
-              </Button>
-              {task.status === 'ready_for_review' && (
-                <Button variant="primary" size="sm" onClick={() => completeTask(taskId)}>
-                  <Check size={14} />
-                  Mark complete
-                </Button>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      {editing ? (
-        <textarea
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          rows={16}
-          aria-label="Edit report markdown"
-          className="mt-3 w-full resize-y rounded-[12px] border border-line bg-panel px-3.5 py-3 font-mono text-[13px] leading-relaxed text-ink focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
-        />
-      ) : (
-        <div className="mt-3 rounded-[12px] bg-subtle/60 px-4 py-3">
-          <Markdown content={task.report.markdown} />
-        </div>
-      )}
-
-      <p className="mt-3 text-xs leading-relaxed text-ink-faint">
-        {task.report.provenance === 'provider-generated' ? (
-          <>
-            Provider-generated by{' '}
-            <strong className="font-medium text-ink-soft">
-              {task.report.generatedBy?.modelLabel ?? 'the selected model'}
-            </strong>{' '}
-            via {task.report.generatedBy?.providerLabel ?? 'your provider'}
-            {task.report.contextIncluded ? ' from your goal and selected context' : ' from your goal'}. It is a
-            model draft — verify it before use; no external sources were retrieved, and no
-            citations were added. Edits are saved locally and included in the download.
-          </>
-        ) : (
-          <>
-            Example content — simulated output. Edits are saved locally and included in the
-            download; they never claim an external action was performed.
-          </>
-        )}
-      </p>
-    </section>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Activity timeline                                                   */
-/* ------------------------------------------------------------------ */
-
-const EVENT_ICONS: Record<string, React.ReactNode> = {
-  created: <ClipboardList size={13} />,
-  status: <Check size={13} />,
-  plan: <ClipboardList size={13} />,
-  tool: <Telescope size={13} />,
-  info: <FileText size={13} />,
-  input_request: <MessageSquareWarning size={13} />,
-  input_response: <Check size={13} />,
-  output: <FileText size={13} />,
-  note: <FileText size={13} />,
-}
-
-function ActivityTimeline({ task }: { task: WorkTask }) {
-  const events = useMemo(
-    () => [...task.events].sort((a, b) => a.at - b.at),
-    [task.events],
-  )
-
-  return (
-    <ol className="mt-2 flex flex-col">
-      {events.map((event, index) => (
-        <li key={event.id} className="flex gap-2.5">
-          <div className="flex flex-col items-center">
-            <span
-              className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
-                event.kind === 'input_request'
-                  ? 'bg-warning-soft text-warning'
-                  : event.kind === 'input_response' || event.kind === 'output'
-                    ? 'bg-success-soft text-success'
-                    : 'bg-subtle text-ink-faint'
-              }`}
-            >
-              {EVENT_ICONS[event.kind] ?? <FileText size={13} />}
-            </span>
-            {index < events.length - 1 && (
-              <span aria-hidden="true" className="w-px flex-1 bg-line" />
-            )}
-          </div>
-          <div className="min-w-0 flex-1 pb-4">
-            <p className="text-[13px] leading-snug text-ink">{event.label}</p>
-            {event.detail && (
-              <p className="mt-0.5 text-xs leading-relaxed text-ink-faint">{event.detail}</p>
-            )}
-            <p className="mt-0.5 text-[11px] text-ink-faint/80">{formatClock(event.at)}</p>
-          </div>
-        </li>
-      ))}
-    </ol>
   )
 }

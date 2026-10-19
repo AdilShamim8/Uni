@@ -16,82 +16,124 @@ vi.mock('@/features/chat/exportUtils', async (importOriginal) => {
 })
 
 /**
- * The milestone's single complete demonstration, end to end:
- * create a Research brief task → choose an agent → Run demo → inspect
- * activity → answer the input request → review the editable fixture
- * report → edit it → mark complete → download Markdown that matches the
- * edited visible report.
+ * The milestone's complete demonstration, end to end on the message-first
+ * surface: type a goal on the Work home → the task thread opens and the
+ * demo runs → answer the inline clarification → review the fixture output
+ * in the thread → edit it in Details → Outputs → download Markdown that
+ * matches the edited visible report → mark complete.
  */
 describe('Work — complete local demo flow', () => {
   setupAppTest()
 
-  it('runs the research template from creation to download', async () => {
+  it('runs a typed goal from the composer to a completed, downloadable thread', async () => {
     setRunnerStepMs(10)
     renderApp('/work')
 
-    // Start from the Research brief template card.
-    await userEvent.click(await screen.findByRole('button', { name: /Research brief/ }))
+    // Type a goal — no form in the way.
+    const composer = screen.getByLabelText('Describe an outcome')
+    await userEvent.type(composer, 'Pick a router for the new apartment')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-    // Brief form: title, goal, agent.
-    const titleInput = screen.getByLabelText('Title')
-    await userEvent.type(titleInput, 'Compare two routers')
+    // The thread opens and the demo run starts automatically.
+    expect(await screen.findByText(/Starting demo run/i)).toBeTruthy()
 
-    const goalInput = screen.getByLabelText('Goal')
-    await userEvent.type(goalInput, 'Pick a router for the new apartment')
-
-    const agentSelect = screen.getByLabelText('Agent')
-    await userEvent.selectOptions(agentSelect, 'agent-research-analyst')
-
-    await userEvent.click(screen.getByRole('button', { name: 'Create task' }))
-
-    // Task workspace: brief shows the agent and demo mode. The title
-    // appears both in the sidebar's recent-tasks list and the workspace.
-    expect((await screen.findAllByText('Compare two routers')).length).toBeGreaterThan(1)
-    expect(screen.getByText('Research Analyst')).toBeTruthy()
-    expect(screen.getByText('Local demo')).toBeTruthy()
-
-    // Run the demo.
-    await userEvent.click(screen.getByRole('button', { name: /Run demo/ }))
-
-    // The run asks for input.
+    // The run asks for input — an inline clarify card in the thread.
     const question = await screen.findByText(/quick comparison or a deeper dive/i)
     expect(question).toBeTruthy()
     await userEvent.click(screen.getByRole('button', { name: 'Quick comparison' }))
 
-    // The activity timeline records the plan and tool steps.
+    // The run completes; the toolbar reflects Ready for review.
     await waitFor(
-      () => expect(screen.getByText('Ready for review')).toBeTruthy(),
+      () => expect(screen.getAllByText('Ready for review').length).toBeGreaterThan(0),
       { timeout: 8000 },
     )
+
+    // The activity card (open while live) records the plan and tool steps.
     expect(screen.getByText(/Searching sources \(simulated\)/)).toBeTruthy()
     expect(screen.getByText(/Drafting the comparison \(simulated\)/)).toBeTruthy()
 
-    // The report renders as fixture content, honestly labeled.
-    expect(screen.getByText(/Example report — simulated output/)).toBeTruthy()
+    // The report renders in the thread as an assistant message, honestly
+    // labeled, with an output card underneath.
+    expect(screen.getByText(/Example output — simulated/i)).toBeTruthy()
+    expect(screen.getByText(/Output — ready to review/i)).toBeTruthy()
 
-    // Edit the visible report.
+    // Edit the visible report from Details → Outputs.
+    await userEvent.click(screen.getByRole('button', { name: 'Details' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Outputs' }))
     await userEvent.click(screen.getByRole('button', { name: 'Edit' }))
     const editor = screen.getByLabelText('Edit report markdown')
     await userEvent.clear(editor)
     await userEvent.type(editor, '# My edited findings\n\nAll mine.')
 
-    await userEvent.click(screen.getByRole('button', { name: /Save changes/ }))
-    await waitFor(() => expect(screen.getByText('My edited findings')).toBeTruthy())
+    await userEvent.click(screen.getByRole('button', { name: /^Save$/ }))
+    // The edited content now renders both in the thread and in Outputs.
+    await waitFor(() =>
+      expect(screen.getAllByText('My edited findings').length).toBeGreaterThan(0),
+    )
 
     // Download must match the EDITED report.
     const downloadSpy = vi.mocked(downloadText)
     downloadSpy.mockClear()
-    await userEvent.click(screen.getByRole('button', { name: /Download/ }))
+    await userEvent.click(screen.getByRole('button', { name: /^Download$/ }))
     expect(downloadSpy).toHaveBeenCalledWith(
-      expect.stringContaining('compare-two-routers'),
+      expect.stringContaining('pick-a-router-for-the-new-apartment'),
       expect.stringContaining('# My edited findings'),
     )
 
-    // Mark complete from the review panel.
+    // Mark complete from the run strip.
     await userEvent.click(screen.getByRole('button', { name: /Mark complete/ }))
-    await waitFor(() => expect(screen.getByText('Completed')).toBeTruthy())
+    await waitFor(() => expect(screen.getAllByText('Completed').length).toBeGreaterThan(0))
     setRunnerStepMs(1100)
   }, 20000)
+
+  it('sends a follow-up that reruns the demo with the guidance included', async () => {
+    setRunnerStepMs(10)
+    renderApp('/work')
+
+    await userEvent.type(
+      screen.getByLabelText('Describe an outcome'),
+      'Draft a quick note about the launch',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    const question = await screen.findByText(/quick comparison or a deeper dive/i)
+    expect(question).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Quick comparison' }))
+    await waitFor(
+      () => expect(screen.getAllByText('Ready for review').length).toBeGreaterThan(0),
+      { timeout: 8000 },
+    )
+
+    // The first output is preserved as a prior version when a follow-up
+    // triggers the revision rerun.
+    await userEvent.type(
+      screen.getByLabelText('Send a follow-up about this task'),
+      'Make it shorter and friendlier',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(await screen.findByText(/Revising \(demo\)/i)).toBeTruthy()
+
+    // The demo script asks its question again on the rerun.
+    const secondQuestion = await screen.findByText(/quick comparison or a deeper dive/i)
+    expect(secondQuestion).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Quick comparison' }))
+
+    await waitFor(
+      () => expect(screen.getAllByText('Ready for review').length).toBeGreaterThan(0),
+      { timeout: 8000 },
+    )
+
+    const task = Object.values(useWorkStore.getState().tasks)[0]
+    expect(task.previousReports).toHaveLength(1)
+    expect(task.previousReports[0].markdown).toContain('Example report')
+    // The rerun fixture includes the follow-up guidance.
+    expect(task.report?.markdown).toContain('Make it shorter and friendlier')
+    // Both the user follow-up and the acknowledgment are on the thread.
+    expect(
+      task.messages.filter((message) => message.role === 'user').map((m) => m.content),
+    ).toContain('Make it shorter and friendlier')
+    setRunnerStepMs(1100)
+  }, 25000)
 
   it('filters tasks by status on the Work home', async () => {
     setRunnerStepMs(5)
@@ -144,9 +186,7 @@ describe('Work — routing resilience (audit R3)', () => {
 
   it('recovers an unknown task id to the Work home', async () => {
     renderApp('/work/task-does-not-exist')
-    await waitFor(() =>
-      expect(screen.getByText('Describe an outcome, run it as a local demo, review the output.')).toBeTruthy(),
-    )
+    await waitFor(() => expect(screen.getByText('What needs doing?')).toBeTruthy())
   })
 
   it('links an agent into the task and keeps the reference readable', () => {
@@ -166,6 +206,7 @@ describe('Work — routing resilience (audit R3)', () => {
     })
     flushWorkPersistence()
     renderApp(`/work/${id}`)
-    expect(screen.getAllByText('My researcher').length).toBeGreaterThan(0)
+    // The agent reference stays visible in the honest composer status line.
+    expect(screen.getAllByText(/My researcher/).length).toBeGreaterThan(0)
   })
 })
