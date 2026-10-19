@@ -1,4 +1,4 @@
-# Progress Log — Universe Frontend
+# Progress Log — Uni Frontend
 
 Living document. Updated per milestone stage so any agent can continue from here.
 
@@ -230,3 +230,29 @@ Next concrete tasks:
   dispatcher boundary (see capability-backlog.md).
 - An external/MCP plugin prototype behind `registerAdapter` with real
   consent screens — no connection claims until a handshake exists.
+
+## Session 07 — Uni rename, Grok/DeepSeek presets, settings polish
+
+Scope (three commits, delivered one at a time on
+`feat/uni-rename-providers-polish`):
+
+1. **Universe → Uni rename** across the whole product surface: wordmark,
+   composer label/placeholder, seeded conversations, demo provider label,
+   assistant system prompt, export headers, CSV footers, settings and
+   preview copy, `<title>`/meta, package name, `UniverseMark` → `UniMark`.
+   Storage keys (`universe:*`) intentionally untouched so existing local
+   data keeps loading; routes unchanged.
+2. **Provider presets**: xAI · Grok (`api.x.ai/v1`) and DeepSeek added;
+   labels now lead with model families (OpenAI · GPT, Anthropic · Claude,
+   Google AI Studio · Gemini) so the list reads like a model picker.
+   Kind label, helper copy, and the empty-state provider hint updated.
+   Regression test locks the new presets in.
+3. **Settings polish**: SettingsGroup headers render as iOS small-caps
+   labels with consistent rhythm (fixes the floating "Display" header
+   from visual QA); provider cards stack kind + endpoint on separate
+   lines so long URLs break cleanly.
+
+Quality at each commit: typecheck clean, eslint clean, vitest green
+(242/242 after the new preset test), production build clean. Browser
+re-verification on the production build: zero console/page errors, no
+horizontal overflow, VLM confirms header rhythm and clean chip wrapping.
