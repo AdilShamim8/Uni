@@ -334,14 +334,14 @@ function PluginDetail({ plugin, onBack }: { plugin: PluginManifest; onBack: () =
                 ))}
               </ul>
 
-              <p className="mt-4 rounded-[12px] bg-subtle px-3.5 py-2.5 text-xs leading-relaxed text-ink-soft">
+              <p className="mt-4 rounded-[12px] bg-subtle px-3.5 py-2.5 text-xs leading-relaxed text-ink">
                 <strong className="font-medium text-ink">Access preview:</strong> after enabling,
                 {plugin.name} still needs to be allowed per employee and granted per thread
                 before any action runs — the dispatcher enforces all three, not just the button.
                 Disabling cancels in-flight actions and rejects their late results.
               </p>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap items-center gap-2">
                 {isEnabled ? (
                   confirmDisable ? (
                     <>
