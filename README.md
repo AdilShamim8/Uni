@@ -1,4 +1,4 @@
-## Universe ✨
+## Uni ✨
 
 Universe is an independent, open-source, provider-independent AI workspace.
 This repository hosts the **frontend** built with React, TypeScript, and
