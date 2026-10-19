@@ -155,3 +155,53 @@ real request to a provider the user configured with their own API key.
 | Copy / Continue in chat / Save to Canvas | Working | Provenance preserved ("Continued from a comparison") |
 | Neutral presentation | Working | Measured durations only; no invented scores, costs, or latencies |
 | Credential-free history | Working | `universe:compare:v1` stores no keys (tested) |
+
+
+# Milestone 06 — Plugins, conversational Work, AI employees
+
+## Shared conversation surface
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Typed thread model with dedup/ordering | Working | `features/conversation/threadModel.ts` — stable entry ids; pure projections, tested |
+| Work → thread projection (backward compatible) | Working | Old tasks render goal/events/report as a transcript without reruns or duplication; missing fields default |
+| Employee → thread projection | Working | Real agent conversation + structured events (assignments, memory, routines) |
+| Shared ThreadView + ThreadComposer | Working | 720–800px reading column, auto-scroll, jump-to-latest, per-thread drafts (`universe:thread-drafts`, kept out of exports) |
+| Entry cards: activity / task / clarify / output / plugin receipt / status note | Working | Honest tones, live statuses, canonical links only |
+
+## Work — message-first
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Goal composer on /work | Working | Demo auto-runs; AI draft waits for explicit Generate; deliverable inferred and editable |
+| Task thread as the task page | Working | Brief/Activity/Outputs in one responsive inspector (sheet on mobile) |
+| Follow-ups drive real runs | Working | Stored as task messages; demo reruns include guidance; AI drafts issue a revision request |
+| Revision context + budgets | Working | Goal + agent instructions + selected context + bounded thread (6000 chars) + previous draft (6000 chars); "included" preview in the inspector |
+| Prior outputs preserved | Working | Archived on revision (max 5) with download links |
+| Expanded brief | Working | `/work/new` — precise setup; edits existing draft tasks (`?edit=`) |
+
+## Employees
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Direct conversation on /agents/:agentId | Working | No info-card hop; same canonical chat thread, full message actions |
+| Honest availability | Working | Responding / working on a task / waiting for input / available in this app — derived from real state only |
+| Inspector: Profile / Memory / Work / Plugins / Routines | Working | Editable profile, notes with explicit inclusion wording, canonical tasks, per-employee allow list, schedule drafts ("Saved locally — execution unavailable") |
+| /assign, /remember, /task, /routine, /plugin commands | Working | Explicit commands only; free text is chat — nothing executes silently |
+| Assignment cards link the canonical task | Working | One real Work task, no copies, history intact both ways |
+| Seeded Uni Assistant | Working | Fresh installs seed "Uni Assistant"; existing stored profiles keep their names |
+
+## Plugins
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Catalogue + detail (Discover/Enabled, search, categories) | Working | Honest states: available built-in / enabled locally / integration required; external entries can never show Connected |
+| Enable/Disable | Working | No install fiction; disable cancels in-flight runs and rejects late results |
+| Typed dispatcher with access intersection | Working | workspace enabled ∩ employee allowed ∩ thread granted ∩ implemented — enforced before execution |
+| Run ids, AbortSignal, receipts | Working | Bounded history (100); cancelled/revoked receipts never upgrade to success (tested) |
+| Composer plugin picker + chips | Working | Per-thread grants, revoke with cancellation, actions return to the same draft |
+| Documents adapter (create/save) | Working | Reuses Library + Canvas records; task-linked artifacts update in place |
+| Data analysis adapter | Working | The real CSV engine on a user-selected file; honest no-file error; local-computation provenance |
+| Library context adapter | Working | Explicit selection into the existing context store, within its limits |
+| External plugins (GitHub, Gmail, Drive) | Integration required | Descriptions only — no OAuth, no tokens, no connection claims |
+| Plugin storage | Working | `universe:plugins:v1` — no tokens, keys, or message text (tested) |

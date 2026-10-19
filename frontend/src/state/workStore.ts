@@ -4,6 +4,7 @@ import type {
   TaskDeliverable,
   TaskEvent,
   TaskEventKind,
+  TaskMessage,
   WorkTask,
   WorkTaskMode,
 } from '@/domain/workspaceTypes'
@@ -113,6 +114,21 @@ const PLANS: Record<TaskDeliverable, RunPlan> = {
 /** Delay between run steps; tests shrink this to keep suites fast. */
 let stepDelayMs = 1100
 
+/** Bounded history of outputs preserved across revisions. */
+const MAX_PREVIOUS_REPORTS = 5
+
+/** Character budgets for revision requests — explicit, user-visible limits. */
+export const FOLLOW_UP_BUDGET_CHARS = 6000
+export const PREVIOUS_OUTPUT_BUDGET_CHARS = 6000
+
+function boundChars(text: string, budget: number, keep: 'head' | 'tail'): string {
+  if (text.length <= budget) return text
+  const marker = '…[truncated to fit the request budget]…'
+  return keep === 'head'
+    ? `${text.slice(0, budget)}\n${marker}`
+    : `${marker}\n${text.slice(text.length - budget)}`
+}
+
 export function setRunnerStepMs(ms: number): void {
   stepDelayMs = Math.max(0, ms)
 }
@@ -135,8 +151,16 @@ function fixtureReport(
   template: RunPlan['template'],
   answers: string[],
 ): string {
+  // Guidance combines the run's recorded answers with the task's follow-up
+  // messages — a demo rerun reflects what the user actually asked for.
+  const guidanceParts = [
+    ...answers,
+    ...(task.messages ?? [])
+      .filter((message) => message.role === 'user' && message.status === 'complete')
+      .map((message) => message.content),
+  ]
   const guidance =
-    answers.length > 0 ? `\n**Your guidance:** ${answers.join(' · ')}\n` : '\n'
+    guidanceParts.length > 0 ? `\n**Your guidance:** ${guidanceParts.join(' · ')}\n` : '\n'
   if (template === 'research') {
     return [
       `# ${task.title}`,
@@ -319,10 +343,14 @@ export function aiRunCount(): number {
 }
 
 /** Compose the single drafting request from the task's own configuration. */
-function buildDraftRequest(task: WorkTask, agentInstructions: string) {
+function buildDraftRequest(
+  task: WorkTask,
+  agentInstructions: string,
+  revision?: { previousMarkdown: string },
+) {
   const config = task.draftConfig!
   const system = [
-    'You are drafting a work document for the Universe workspace.',
+    'You are drafting a work document for the Uni workspace.',
     agentInstructions.trim()
       ? `Agent instructions for this task:\n${agentInstructions.trim()}`
       : '',
@@ -334,17 +362,38 @@ function buildDraftRequest(task: WorkTask, agentInstructions: string) {
     .filter(Boolean)
     .join('\n\n')
 
+  // Follow-ups are the task's real message thread, bounded to an explicit
+  // budget so a long thread can never silently grow the request.
+  const followUps = (task.messages ?? [])
+    .filter((message) => message.status === 'complete')
+    .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.content}`)
+    .join('\n\n')
+
   return {
     prompt: [
-      `Write the draft deliverable for this task.`,
+      revision
+        ? 'This is a REVISION request: the user reviewed the previous draft and gave follow-up instructions. Write a complete, updated draft that reflects them.'
+        : 'Write the draft deliverable for this task.',
       `Title: ${task.title}`,
       `Goal: ${task.goal.trim() || '(none provided)'}`,
-    ].join('\n\n'),
+      followUps
+        ? `Conversation with the user about this task (oldest first, most recent last):\n\n${boundChars(followUps, FOLLOW_UP_BUDGET_CHARS, 'tail')}`
+        : '',
+      revision && revision.previousMarkdown.trim()
+        ? `Previous draft to revise (may be truncated):\n\n${boundChars(revision.previousMarkdown, PREVIOUS_OUTPUT_BUDGET_CHARS, 'head')}`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n'),
     system,
   }
 }
 
-async function executeAiDraft(taskId: string, runId: string): Promise<void> {
+async function executeAiDraft(
+  taskId: string,
+  runId: string,
+  revision?: { previousMarkdown: string },
+): Promise<void> {
   const handle: AiRunHandle = { runId, abort: new AbortController() }
   aiRuns.set(taskId, handle)
 
@@ -378,7 +427,7 @@ async function executeAiDraft(taskId: string, runId: string): Promise<void> {
     const agent = task.agentId
       ? (await import('@/state/agentsStore')).useAgentsStore.getState().agents[task.agentId]
       : null
-    const { prompt, system } = buildDraftRequest(task, agent?.instructions ?? '')
+    const { prompt, system } = buildDraftRequest(task, agent?.instructions ?? '', revision)
 
     await adapter.stream(
       {
@@ -454,6 +503,21 @@ export interface WorkStore {
   completeTask: (id: string) => void
   answerInput: (id: string, answer: string) => void
 
+  /** Append a message to the task's conversational thread. */
+  appendTaskMessage: (
+    taskId: string,
+    message: Pick<TaskMessage, 'role' | 'content'> &
+      Partial<Pick<TaskMessage, 'status' | 'statusPrefix' | 'provenance' | 'modelLabel' | 'error'>>,
+  ) => string | null
+  /**
+   * Send a follow-up in the task thread. Depending on the task's state
+   * this stores the message, starts the first run, or triggers a real
+   * revision run — never a decorative bubble over an unchanged task.
+   */
+  sendFollowUp: (taskId: string, text: string) => 'stored' | 'started' | 'revising' | 'rejected'
+  /** Start a revision run that includes follow-ups and the previous output. */
+  reviseTask: (id: string) => void
+
   /** Update the AI-draft configuration of a draft task. */
   updateDraftConfig: (id: string, patch: Partial<AiDraftConfig>) => void
 
@@ -504,6 +568,10 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
           mode: raw.mode === 'ai-draft' ? 'ai-draft' : 'demo',
           draftConfig: raw.draftConfig ?? null,
           error: raw.error ?? null,
+          // Milestone-06 conversational fields: old tasks default to empty —
+          // their history is projected, never rewritten or wiped.
+          messages: Array.isArray(raw.messages) ? raw.messages : [],
+          previousReports: Array.isArray(raw.previousReports) ? raw.previousReports : [],
           report: raw.report
             ? {
                 template: raw.report.template,
@@ -513,6 +581,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
                 generatedBy: raw.report.generatedBy ?? null,
                 contextIncluded: raw.report.contextIncluded ?? false,
                 stoppedPartial: raw.report.stoppedPartial ?? false,
+                runId: raw.report.runId ?? null,
               }
             : null,
         }
@@ -582,6 +651,8 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
       report: null,
       inputRequest: null,
       error: null,
+      messages: [],
+      previousReports: [],
     }
     set((state) => ({ tasks: { ...state.tasks, [task.id]: task } }))
     return task.id
@@ -628,6 +699,12 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
     set((state) => {
       const task = state.tasks[id]
       if (!task) return state
+      // A revision archives the previous output (bounded) instead of
+      // silently discarding it; the new run starts from a clean report.
+      const previousReports =
+        task.report && task.report.markdown.trim().length > 0
+          ? [{ ...task.report, savedAt: Date.now() }, ...task.previousReports].slice(0, MAX_PREVIOUS_REPORTS)
+          : task.previousReports
       return {
         tasks: {
           ...state.tasks,
@@ -644,6 +721,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
             // from earlier runs was already preserved until this explicit
             // new request — the user can edit/save it before regenerating).
             report: null,
+            previousReports,
             updatedAt: Date.now(),
             events: [...task.events, nowEvent('status', startLabel)],
           },
@@ -847,6 +925,147 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
     }
   },
 
+  appendTaskMessage: (taskId, message) => {
+    const task = get().tasks[taskId]
+    if (!task) return null
+    const entry: TaskMessage = {
+      id: makeId('tm'),
+      role: message.role,
+      content: message.content,
+      at: Date.now(),
+      status: message.status ?? 'complete',
+      statusPrefix: message.statusPrefix ?? null,
+      provenance: message.provenance ?? null,
+      modelLabel: message.modelLabel ?? null,
+      error: message.error ?? null,
+    }
+    set((state) => ({
+      tasks: {
+        ...state.tasks,
+        [taskId]: {
+          ...task,
+          messages: [...task.messages, entry],
+          updatedAt: entry.at,
+        },
+      },
+    }))
+    return entry.id
+  },
+
+  sendFollowUp: (taskId, text) => {
+    const task = get().tasks[taskId]
+    const trimmed = text.trim()
+    if (!task || !trimmed) return 'rejected'
+
+    const send = get().appendTaskMessage
+    send(taskId, { role: 'user', content: trimmed })
+
+    switch (task.status) {
+      case 'draft': {
+        if (task.mode === 'demo') {
+          send(taskId, {
+            role: 'assistant',
+            content:
+              'Got it — starting a local demo run. Steps and the example output are simulated on this device; nothing is sent anywhere.',
+            statusPrefix: 'Starting demo run',
+            provenance: 'demo',
+          })
+          get().runTask(taskId)
+          return 'started'
+        }
+        send(taskId, {
+          role: 'assistant',
+          content: `Added to the brief. Generate the draft whenever you're ready — one live request to ${task.draftConfig?.model.modelLabel ?? 'the connected model'}, and your key stays in this browser.`,
+          statusPrefix: 'Noted',
+        })
+        return 'stored'
+      }
+      case 'ready_for_review':
+      case 'paused': {
+        if (task.mode === 'demo') {
+          send(taskId, {
+            role: 'assistant',
+            content:
+              'Revising — rerunning the local demo with your guidance included in the example output. The previous output is kept below.',
+            statusPrefix: 'Revising (demo)',
+            provenance: 'demo',
+          })
+        } else {
+          send(taskId, {
+            role: 'assistant',
+            content:
+              `Revising with your changes — one new live request to ${task.draftConfig?.model.modelLabel ?? 'the connected model'} that includes the original goal, this conversation (bounded), and the previous draft. The previous output is kept below.`,
+            statusPrefix: 'Revising',
+          })
+        }
+        get().reviseTask(taskId)
+        return 'revising'
+      }
+      case 'failed': {
+        send(taskId, {
+          role: 'assistant',
+          content:
+            'Retrying with your follow-up included — the previous attempt failed, and any partial content it produced is preserved below.',
+          statusPrefix: 'Retrying',
+        })
+        get().retryTask(taskId)
+        return 'revising'
+      }
+      case 'running':
+      case 'queued': {
+        send(taskId, {
+          role: 'assistant',
+          content:
+            'Noted — this message is saved with the task and will be included in the next request or run.',
+          statusPrefix: 'Noted',
+        })
+        return 'stored'
+      }
+      case 'needs_input': {
+        send(taskId, {
+          role: 'assistant',
+          content:
+            'Noted — answer the question above to continue the current run; this message stays with the thread either way.',
+          statusPrefix: 'Noted',
+        })
+        return 'stored'
+      }
+      case 'completed':
+      case 'cancelled': {
+        send(taskId, {
+          role: 'assistant',
+          content:
+            'This task is closed — the message is saved with its history. Reopen it as a draft from the task menu to run a revision.',
+          statusPrefix: 'Saved with history',
+        })
+        return 'stored'
+      }
+      default:
+        return 'stored'
+    }
+  },
+
+  reviseTask: (id) => {
+    const task = get().tasks[id]
+    if (!task) return
+    // ready_for_review → running and paused → running are legal; failed
+    // must route through retry (failed → queued).
+    if (task.status === 'failed') {
+      get().retryTask(id)
+      return
+    }
+    if (!canTransition(task.status, 'running')) return
+    const previousMarkdown = task.report?.markdown ?? ''
+    const runId = makeId('run')
+    if (task.mode === 'ai-draft') {
+      get().startRun(id, runId, 'Revision started — new live request with your follow-ups')
+      void executeAiDraft(id, runId, { previousMarkdown })
+      return
+    }
+    get().startRun(id, runId, 'Revision started — demo run with your guidance')
+    void executeRun(id, runId)
+  },
+
   updateDraftConfig: (id, patch) => {
     set((state) => {
       const task = state.tasks[id]
@@ -878,6 +1097,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
         generatedBy: config?.model ?? null,
         contextIncluded: !!config?.contextText.trim(),
         stoppedPartial: false,
+        runId,
       }
       return {
         tasks: {
@@ -1086,6 +1306,7 @@ export const useWorkStore = create<WorkStore>()((set, get) => ({
               generatedBy: null,
               contextIncluded: false,
               stoppedPartial: false,
+              runId,
             },
             updatedAt: Date.now(),
             events: [

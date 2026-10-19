@@ -10,6 +10,7 @@ import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { useContextStore } from '@/state/contextStore'
 import { useCompareStore } from '@/state/compareStore'
+import { usePluginsStore } from '@/state/pluginsStore'
 import { ChatPage } from '@/features/chat/ChatPage'
 import { CommandPalette } from '@/features/search/CommandPalette'
 import { CompareDialog } from '@/features/compare/CompareDialog'
@@ -18,6 +19,7 @@ import { SettingsDialog } from '@/features/settings/SettingsDialog'
 import { WorkPage } from '@/features/work/WorkPage'
 import { AgentsPage } from '@/features/agents/AgentsPage'
 import { LibraryPage } from '@/features/library/LibraryPage'
+import { PluginsPage } from '@/features/plugins/PluginsPage'
 
 export function App() {
   const initialize = useAppStore((state) => state.initialize)
@@ -37,6 +39,7 @@ export function App() {
     useWorkspaceUiStore.getState().initialize()
     useContextStore.getState().initialize()
     useCompareStore.getState().initialize()
+    usePluginsStore.getState().initialize()
   }, [initialize])
 
   // Apply display preferences to the document root.
@@ -97,6 +100,8 @@ export function App() {
           <Route path="/agents/:agentId" element={<AgentsPage />} />
           {/* Library — shared local artifacts and projects */}
           <Route path="/library" element={<LibraryPage />} />
+          {/* Plugins — enable and inspect local tools (calm destination) */}
+          <Route path="/plugins" element={<PluginsPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AppShell>

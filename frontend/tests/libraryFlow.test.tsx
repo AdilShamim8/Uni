@@ -46,6 +46,9 @@ describe('Library — artifact collection', () => {
     flushWorkPersistence()
 
     renderApp(`/work/${taskId}`)
+    // The save action lives in the task's Details → Outputs inspector.
+    await userEvent.click(await screen.findByRole('button', { name: 'Details' }))
+    await userEvent.click(screen.getByRole('tab', { name: 'Outputs' }))
     await userEvent.click(await screen.findByRole('button', { name: /Save to Library/ }))
 
     // The artifact now exists, linked to its task, honestly labeled.

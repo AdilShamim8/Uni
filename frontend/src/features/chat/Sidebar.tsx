@@ -624,6 +624,9 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
               {tool.label}
             </MenuItem>
           ))}
+          <MenuItem hint="Enable local tools" onClick={() => go('/plugins')}>
+            Plugins
+          </MenuItem>
         </Menu>
 
         <Menu

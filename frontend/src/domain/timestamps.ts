@@ -63,6 +63,11 @@ export function formatFullTimestamp(timestamp: number): string {
   })
 }
 
+/** Formats a short clock time ("3:14 PM") for thread/activity lines. */
+export function formatClock(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
 export interface TimestampedNode {
   node: MessageNode
   /** Separator label to render above this message, if any. */
