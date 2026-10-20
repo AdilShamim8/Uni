@@ -8,6 +8,7 @@ import { useLibraryStore } from '@/state/libraryStore'
 import { dispatch, revokeAndCancelThreadRuns, type DispatchRequest } from '@/services/plugins/dispatcher'
 import { registerBuiltInAdapters } from '@/services/plugins/adapters'
 import { Menu, MenuItem } from '@/components/ui/Menu'
+import { Dialog } from '@/components/ui/Dialog'
 import '@/services/plugins/adapters'
 import { PLUGIN_ACTIONS } from './pluginActions'
 import type { PluginActionSpec } from './pluginActions'
@@ -241,6 +242,7 @@ function LibraryContextDialog({
   onClose: () => void
 }) {
   const artifacts = useLibraryStore((state) => state.artifacts)
+  const searchRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const normalized = query.trim().toLowerCase()
   const list = useMemo(
@@ -272,65 +274,50 @@ function LibraryContextDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-scrim" onClick={onClose} aria-hidden="true" />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Attach Library context"
-        className="relative flex w-full max-w-md flex-col overflow-hidden rounded-[20px] border border-line bg-mat-sidebar shadow-float"
-      >
-        <div className="flex items-center justify-between px-4 pb-2 pt-3.5">
-          <p className="text-[14px] font-semibold text-ink">Attach Library context</p>
-          <button
-            type="button"
-            aria-label="Close"
-            onClick={onClose}
-            className="min-touch rounded-full p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        <p className="px-4 text-xs leading-relaxed text-ink-soft">
-          Only the document you pick is attached, within the thread’s explicit context limits.
-          Nothing is attached automatically.
-        </p>
-        <input
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search your documents"
-          aria-label="Search your documents"
-          className="mx-4 mt-3 min-touch rounded-control border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
-        />
-        <ul className="flex max-h-72 flex-col gap-1 overflow-y-auto p-3">
-          {list.length === 0 ? (
-            <li className="px-2 py-6 text-center text-sm text-ink-faint">
-              No local documents{normalized ? ' match that search' : ' yet'}.
-            </li>
-          ) : (
-            list.map((artifact) => (
-              <li key={artifact.id}>
-                <button
-                  type="button"
-                  onClick={() => void attach(artifact.id)}
-                  className="flex w-full items-center gap-3 rounded-control px-2.5 py-2 text-left transition-colors hover:bg-subtle"
-                >
-                  <FileText size={15} className="shrink-0 text-ink-faint" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium text-ink">
-                      {artifact.title}
-                    </span>
-                    <span className="block text-xs text-ink-faint">
-                      {artifact.kind} · ≈{artifact.markdown.length} characters
-                    </span>
+    <Dialog
+      open
+      onClose={onClose}
+      title="Attach Library context"
+      description="Only the document you pick is attached, within the thread’s explicit context limits. Nothing is attached automatically."
+      size="sm"
+      initialFocusRef={searchRef}
+    >
+      <input
+        ref={searchRef}
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder="Search your documents"
+        aria-label="Search your documents"
+        className="mb-3 min-touch w-full rounded-control border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+      />
+      <ul className="flex max-h-72 flex-col gap-1">
+        {list.length === 0 ? (
+          <li className="px-2 py-6 text-center text-sm text-ink-faint">
+            No local documents{normalized ? ' match that search' : ' yet'}.
+          </li>
+        ) : (
+          list.map((artifact) => (
+            <li key={artifact.id}>
+              <button
+                type="button"
+                onClick={() => void attach(artifact.id)}
+                className="flex w-full items-center gap-3 rounded-control px-2.5 py-2 text-left transition-colors hover:bg-subtle"
+              >
+                <FileText size={15} className="shrink-0 text-ink-faint" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-ink">
+                    {artifact.title}
                   </span>
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      </div>
-    </div>
+                  <span className="block text-xs text-ink-faint">
+                    {artifact.kind} · ≈{artifact.markdown.length} characters
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))
+        )}
+      </ul>
+    </Dialog>
   )
 }
