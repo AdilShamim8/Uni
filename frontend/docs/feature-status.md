@@ -70,6 +70,9 @@ real request to a provider the user configured with their own API key.
 | Demo adapter | Simulated (labeled) | Default without a key; agent conversations surface instruction scoping |
 | Composer draft ownership | Working | Submitted snapshot cleared at submit; drafts scoped per conversation and preserved during streaming |
 | Timestamps, delete-with-undo, honest live/demo status | Working | Status derived from credentials, never hard-coded |
+| Plugins in ordinary Chat | Working | Conversation-scoped grants + receipt strip; employee conversations keep agent rules; chat grants session-only; temporary receipts never persist (m07) |
+| Canonical Work save | Working | ONE artifact per report shared by Outputs panel and plugin; provenance preserved; deleted links recreate (m07) |
+| Workspace backup/restore | Working | Versioned, validated, previewed, snapshotted; excludes credentials and temporary chats (m07) |
 | Search (Ctrl+K), settings (Ctrl+,), themes, reduced transparency | Working | Unchanged from earlier milestones |
 
 ## Honesty rules maintained everywhere
