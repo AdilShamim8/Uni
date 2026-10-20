@@ -34,6 +34,9 @@ export function filterReceiptsForThread(
       if (receipt.thread.kind === 'agent' && thread.kind === 'agent') {
         return receipt.thread.conversationId === thread.conversationId
       }
+      if (receipt.thread.kind === 'chat' && thread.kind === 'chat') {
+        return receipt.thread.conversationId === thread.conversationId
+      }
       return false
     })
     .sort((a, b) => a.at - b.at)

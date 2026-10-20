@@ -6,6 +6,9 @@ import { WelcomeHeading, StarterRow, ProviderHint } from './EmptyState'
 import { EmptyRecents } from './EmptyRecents'
 import { MessageList } from './MessageList'
 import { Composer, type ComposerHandle } from './Composer'
+import { ThreadPluginBar } from '@/features/plugins/ThreadPluginBar'
+import { ChatReceiptStrip } from '@/features/plugins/ChatReceiptStrip'
+import type { PluginThreadRef } from '@/domain/pluginTypes'
 
 export function ChatPage() {
   const { conversationId } = useParams()
@@ -44,6 +47,17 @@ export function ChatPage() {
     () => !!conversation && Object.keys(conversation.nodes).length > 0,
     [conversation],
   )
+
+  // Plugin scope for this surface (m07/F09): ordinary chats get a
+  // conversation-scoped thread; an employee conversation opened through
+  // a chat route keeps its agent identity, access rules, and receipts.
+  const pluginThread = useMemo<PluginThreadRef | null>(() => {
+    if (!conversation) return null
+    if (conversation.agentId) {
+      return { kind: 'agent', agentId: conversation.agentId, conversationId: conversation.id }
+    }
+    return { kind: 'chat', conversationId: conversation.id, temporary: conversation.temporary }
+  }, [conversation])
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -90,6 +104,15 @@ export function ChatPage() {
             <MessageList key={conversation.id} conversation={conversation} />
           )}
           <Composer key="composer" ref={composerRef} />
+          {pluginThread && (
+            <div className="pb-1">
+              <ChatReceiptStrip thread={pluginThread} />
+              <ThreadPluginBar
+                thread={pluginThread}
+                agentId={conversation?.agentId ?? null}
+              />
+            </div>
+          )}
           {!hasMessages && (
             <div key="starters" className="mx-auto w-full max-w-column px-3.5 pb-10 sm:px-4">
               <StarterRow
