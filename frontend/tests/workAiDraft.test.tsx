@@ -334,7 +334,7 @@ describe('work AI-draft UI', () => {
     expect(screen.getByText(/Output — provider-generated draft/i)).toBeInTheDocument()
     expect(screen.getByText(/no external sources were retrieved/i)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /Save to Library/i }))
+    await user.click(screen.getAllByRole('button', { name: /Save to Library/i })[0])
 
     await waitFor(() => {
       const artifacts = Object.values(useLibraryStore.getState().artifacts)

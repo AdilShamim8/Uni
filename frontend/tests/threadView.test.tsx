@@ -77,7 +77,7 @@ describe('ThreadView', () => {
     expect(screen.getByText(/Compare two routers for the new apartment/)).toBeInTheDocument()
 
     // Activity card lists the run's steps (collapsed initially — expand)
-    await userEvent.click(screen.getByRole('button', { name: /Run activity/i }))
+    await userEvent.click(screen.getByRole('button', { name: /^Activity/i }))
     expect(screen.getByText('Read the brief and set the scope')).toBeInTheDocument()
 
     // Clarify card with options
