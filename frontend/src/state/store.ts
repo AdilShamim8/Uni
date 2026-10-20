@@ -286,7 +286,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     })
   },
 
-  exportAllData: () => JSON.stringify(serialize(get()), null, 2),
+  exportAllData: () => JSON.stringify(serializeAppState(get()), null, 2),
 
   newConversation: (options) => {
     const now = Date.now()
@@ -822,7 +822,7 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
 /* Persistence wiring                                                  */
 /* ------------------------------------------------------------------ */
 
-function serialize(state: AppStore): PersistedState {
+export function serializeAppState(state: AppStore): PersistedState {
   return {
     version: 1,
     savedAt: Date.now(),
@@ -843,7 +843,7 @@ export function flushPersistence(): void {
   }
   const state = useAppStore.getState()
   if (!state.hydrated) return
-  savePersisted(serialize(state))
+  savePersisted(serializeAppState(state))
 }
 
 useAppStore.subscribe(() => {
