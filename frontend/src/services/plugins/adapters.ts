@@ -8,10 +8,13 @@ import {
 } from '@/domain/csvAnalysis'
 import { registerAdapter, type AdapterContext, type AdapterResult } from './dispatcher'
 import { useLibraryStore } from '@/state/libraryStore'
-import { useWorkStore } from '@/state/workStore'
-import { useAppStore } from '@/state/store'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { useContextStore } from '@/state/contextStore'
+import {
+  saveTaskReportToLibrary,
+  saveActiveReplyToLibrary,
+  CanonicalSaveError,
+} from '@/services/work/canonicalSave'
 
 /**
  * Built-in plugin adapters (milestone 06) — thin, typed wrappers around
@@ -65,77 +68,39 @@ async function documentsSaveAdapter(
   input: DocumentsSaveInput | undefined,
   context: AdapterContext,
 ): Promise<AdapterResult> {
-  const library = useLibraryStore.getState()
-  let title = 'Saved output'
-  let markdown = ''
-
+  // The canonical save operation (milestone 07): one artifact per source,
+  // linked back, provenance preserved — identical to the Outputs panel.
   const taskId = input?.taskId ?? (context.thread?.kind === 'work' ? context.thread.taskId : null)
-  if (taskId) {
-    const task = useWorkStore.getState().tasks[taskId]
-    if (!task?.report || task.report.markdown.trim().length === 0) {
-      throw new Error('This task has no output to save yet — run it first.')
-    }
-    title = task.title
-    markdown = task.report.markdown
-    if (task.report.artifactId && library.artifacts[task.report.artifactId]) {
-      // The task already links an artifact: update the same record.
-      library.updateArtifact(task.report.artifactId, markdown)
-      useWorkspaceUiStore
-        .getState()
-        .openInspector({ tab: 'canvas', artifactId: task.report.artifactId })
+  try {
+    if (taskId) {
+      const result = saveTaskReportToLibrary(taskId)
+      const summary = result.recreated
+        ? `The previously saved document was deleted — recreated “${result.title}” and re-linked it to this task.`
+        : result.created
+          ? `Saved “${result.title}” to the Library and opened it in Canvas.`
+          : `Updated the Library copy of “${result.title}” — no duplicate was created.`
       return {
-        summary: `Updated the Library copy of “${title}”.`,
-        detail: 'The existing artifact was updated in place — no duplicate was created.',
-        artifactId: task.report.artifactId,
+        summary,
+        detail: result.recreated
+          ? 'A fresh artifact now holds this task’s output; the task link is restored.'
+          : 'The task, its Library document, and Canvas stay in sync through one canonical save.',
+        artifactId: result.artifactId,
       }
     }
-  } else if (context.thread?.kind === 'agent') {
-    // Save the latest assistant message from the employee thread.
-    const conversation =
-      useAppStore.getState().conversations[context.thread.conversationId] ?? null
-    const assistant = conversation
-      ? Object.values(conversation.nodes)
-          .filter((node) => node.role === 'assistant' && node.content.trim().length > 0)
-          .sort((a, b) => b.createdAt - a.createdAt)[0]
-      : null
-    if (!assistant) {
-      throw new Error('This thread has no assistant output to save yet.')
+    if (context.thread?.kind === 'agent') {
+      const result = saveActiveReplyToLibrary(context.thread.conversationId)
+      return {
+        summary: result.created
+          ? `Saved the latest reply as “${result.title}”.`
+          : `Updated the saved copy of “${result.title}” — no duplicate was created.`,
+        detail: 'Saved from the reply currently visible in this thread, with its live/demo origin kept.',
+        artifactId: result.artifactId,
+      }
     }
-    title = assistant.content.trim().split('\n')[0].replace(/^#+\s*/, '').slice(0, 60) || 'Saved reply'
-    markdown = assistant.content
-    const artifactId = library.addArtifact({
-      title,
-      kind: 'document',
-      markdown,
-      provenance: 'model-output',
-      source: {
-        conversationId: context.thread.conversationId,
-        messageId: assistant.id,
-        taskId: null,
-      },
-    })
-    useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId })
-    return {
-      summary: `Saved the latest reply as “${title}”.`,
-      detail: 'A new versioned Library document — the original message is untouched.',
-      artifactId,
-    }
-  } else {
-    throw new Error('Save needs a thread with output to save.')
-  }
-
-  const artifactId = library.addArtifact({
-    title,
-    kind: 'document',
-    markdown,
-    provenance: 'user-authored',
-    source: { conversationId: null, messageId: null, taskId: taskId ?? null },
-  })
-  useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId })
-  return {
-    summary: `Saved “${title}” to the Library and opened it in Canvas.`,
-    detail: 'A new versioned Library document created from this task’s current output.',
-    artifactId,
+    throw new CanonicalSaveError('Save needs a thread with output to save.')
+  } catch (error) {
+    if (error instanceof CanonicalSaveError) throw error
+    throw new Error('The save could not be completed.')
   }
 }
 
