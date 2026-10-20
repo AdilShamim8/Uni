@@ -27,7 +27,7 @@ import type { AgentProfile } from '@/domain/workspaceTypes'
 import type { ToolId } from '@/domain/types'
 
 /**
- * Agents — reusable instruction profiles. The seeded Universe Assistant is
+ * Agents — reusable instruction profiles. The seeded Uni Assistant is
  * the personal assistant (its own view); specialists are clearly-labeled
  * local profiles. Create/edit/duplicate/archive are real local actions;
  * profiles never claim external access.

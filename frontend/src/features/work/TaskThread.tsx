@@ -16,7 +16,6 @@ import {
 } from 'lucide-react'
 import { useWorkStore } from '@/state/workStore'
 import { useAgentsStore } from '@/state/agentsStore'
-import { useLibraryStore } from '@/state/libraryStore'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
 import { StatusPill } from '@/components/ui/StatusPill'
@@ -30,6 +29,7 @@ import { ThreadComposer } from '@/features/conversation/ThreadComposer'
 import { mergeThreadEntries, projectWorkThread } from '@/features/conversation/threadModel'
 import { ThreadPluginBar } from '@/features/plugins/ThreadPluginBar'
 import { filterReceiptsForThread, receiptsToEntries } from '@/features/plugins/receiptEntries'
+import { saveTaskReportToLibrary } from '@/services/work/canonicalSave'
 import { usePluginsStore } from '@/state/pluginsStore'
 import { TASK_STATUS_LABELS, TASK_STATUS_TONES } from '@/domain/taskMachine'
 import { TASK_TEMPLATES } from './taskTemplates'
@@ -573,45 +573,31 @@ function OutputsPanel({ taskId }: { taskId: string }) {
   const navigate = useNavigate()
   const task = useWorkStore((state) => state.tasks[taskId])
   const updateReport = useWorkStore((state) => state.updateReport)
-  const attachArtifactToReport = useWorkStore((state) => state.attachArtifactToReport)
   const showToast = useAppStore((state) => state.showToast)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   if (!task) return null
 
   function handleSaveToLibrary() {
-    const report = task!.report!
-    const library = useLibraryStore.getState()
-    const kind =
-      report.template === 'email'
-        ? 'email'
-        : report.template === 'data'
-          ? 'data'
-          : report.template === 'draft'
-            ? 'document'
-            : 'report'
-    const aiGenerated =
-      report.provenance === 'provider-generated'
-        ? { provenance: 'provider-generated' as const, generatedBy: report.generatedBy }
-        : { provenance: 'demo-simulation' as const, generatedBy: null }
-    if (report.artifactId && library.artifacts[report.artifactId]) {
-      library.renameArtifact(report.artifactId, task!.title)
-      library.updateArtifact(report.artifactId, report.markdown)
-      showToast('Library copy updated')
-      return
+    // The canonical save operation — the exact same code path the
+    // Documents plugin uses, so the panel and the plugin can never
+    // disagree about what "saved" means.
+    try {
+      const result = saveTaskReportToLibrary(taskId)
+      showToast(
+        result.recreated
+          ? 'The saved document was deleted — recreated and re-linked'
+          : result.created
+            ? 'Saved to Library'
+            : 'Library copy updated',
+        {
+          actionLabel: 'Open',
+          onAction: () => navigate('/library'),
+        },
+      )
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'The save could not be completed.')
     }
-    const artifactId = library.addArtifact({
-      title: task!.title,
-      kind,
-      markdown: report.markdown,
-      taskId,
-      ...aiGenerated,
-    })
-    attachArtifactToReport(taskId, artifactId)
-    showToast('Saved to Library', {
-      actionLabel: 'Open',
-      onAction: () => navigate('/library'),
-    })
   }
 
   return (

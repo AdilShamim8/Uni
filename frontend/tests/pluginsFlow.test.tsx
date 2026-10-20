@@ -110,15 +110,22 @@ describe('plugins — dispatcher authorization (enforced, not hidden)', () => {
     usePluginsStore.getState().grantThread('work:task-1', 'documents')
     const result = await dispatch(request, {})
     expect(result).toMatchObject({ ok: false, code: 'not-enabled' })
-    // Nothing ran, so nothing was even recorded as running.
-    expect(usePluginsStore.getState().receipts).toHaveLength(0)
+    // Nothing ran — and the rejection itself is recorded honestly (m07):
+    // an 'error' receipt marked "Not executed", never a success.
+    const receipts = usePluginsStore.getState().receipts
+    expect(receipts).toHaveLength(1)
+    expect(receipts[0].status).toBe('error')
+    expect(receipts[0].error).toMatch(/Not executed/)
   })
 
   it('rejects when the employee is not allowed', async () => {
     fullyGrant('documents', { agentId: 'agent-1' })
     const result = await dispatch({ ...request, agentId: 'agent-2' }, {})
     expect(result).toMatchObject({ ok: false, code: 'not-allowed-for-agent' })
-    expect(usePluginsStore.getState().receipts).toHaveLength(0)
+    const receipts = usePluginsStore.getState().receipts
+    expect(receipts).toHaveLength(1)
+    expect(receipts[0].status).toBe('error')
+    expect(receipts[0].error).toMatch(/Not executed/)
   })
 
   it('rejects when the thread has no grant', async () => {
@@ -326,7 +333,9 @@ describe('plugins — end-to-end journeys through the UI', () => {
       expect(artifacts).toHaveLength(1)
       expect(artifacts[0].kind).toBe('document')
     })
-    expect(await screen.findByText(/Created “New document”/)).toBeInTheDocument()
+    // The summary renders twice by design (m07): once as the thread
+    // receipt, once as the success toast.
+    expect((await screen.findAllByText(/Created “New document”/)).length).toBeGreaterThanOrEqual(1)
     // The composer draft survived the whole flow.
     expect(screen.getByLabelText('Send a follow-up about this task')).toHaveValue(
       'unfinished draft',
@@ -409,7 +418,7 @@ describe('plugins — end-to-end journeys through the UI', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/Attached “Launch notes” to this thread’s context/),
+        screen.getAllByText(/Attached “Launch notes” to this thread’s context/)[0],
       ).toBeInTheDocument()
     })
     // The context store now carries the explicit selection for this task.

@@ -62,7 +62,7 @@ export function AboutSection() {
         <h3 className="text-sm font-medium text-ink">Independence and attribution</h3>
         <div className="mt-1 flex flex-col gap-2 text-sm leading-relaxed text-ink-soft">
           <p>
-            Universe is an independent, open-source project. It is not
+            Uni is an independent, open-source project. It is not
             affiliated with, endorsed by, or connected to OpenAI or Anthropic;
             provider names appear in settings only as configuration concepts.
           </p>

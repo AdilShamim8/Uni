@@ -12,7 +12,7 @@ describe('chat flow', () => {
   it('sends a message and streams a deterministic response', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    const composer = screen.getByLabelText('Message Universe')
+    const composer = screen.getByLabelText('Message Uni')
     await user.type(composer, 'Help me brainstorm ideas for a weekend plan')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
@@ -33,7 +33,7 @@ describe('chat flow', () => {
     setChatAdapter(createMockAdapter({ chunkDelay: 90, firstTokenDelay: 0 }))
     const user = userEvent.setup()
     renderApp('/')
-    await user.type(screen.getByLabelText('Message Universe'), 'Give me ideas for a plan')
+    await user.type(screen.getByLabelText('Message Uni'), 'Give me ideas for a plan')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
     const stop = await screen.findByRole('button', { name: 'Stop generating' })
@@ -45,14 +45,14 @@ describe('chat flow', () => {
     const send = screen.getByRole('button', { name: 'Send message' })
     expect(send).toBeInTheDocument()
     expect(send).toBeDisabled()
-    await user.type(screen.getByLabelText('Message Universe'), 'more ideas')
+    await user.type(screen.getByLabelText('Message Uni'), 'more ideas')
     expect(screen.getByRole('button', { name: 'Send message' })).toBeEnabled()
   })
 
   it('simulates an error with /fail and offers retry', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    await user.type(screen.getByLabelText('Message Universe'), '/fail this one please')
+    await user.type(screen.getByLabelText('Message Uni'), '/fail this one please')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
     const alert = await screen.findByRole('alert')
@@ -64,7 +64,7 @@ describe('chat flow', () => {
   it('edits an earlier message into a branch and preserves the original', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    await user.type(screen.getByLabelText('Message Universe'), 'First topic: brainstorm ideas')
+    await user.type(screen.getByLabelText('Message Uni'), 'First topic: brainstorm ideas')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
     await screen.findByText(/Start with the smallest useful slice/)
 
@@ -88,7 +88,7 @@ describe('chat flow', () => {
   it('regenerates a response and switches between variants', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    await user.type(screen.getByLabelText('Message Universe'), 'Give me ideas for a plan')
+    await user.type(screen.getByLabelText('Message Uni'), 'Give me ideas for a plan')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
     await screen.findByText(/Start with the smallest useful slice/)
 
@@ -105,7 +105,7 @@ describe('chat flow', () => {
   it('persists conversations locally and restores them after reload', async () => {
     const user = userEvent.setup()
     renderApp('/')
-    await user.type(screen.getByLabelText('Message Universe'), 'remember this hippopotamus')
+    await user.type(screen.getByLabelText('Message Uni'), 'remember this hippopotamus')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
     await screen.findByText(/Here is a take on/i)
 
@@ -136,7 +136,7 @@ describe('chat flow', () => {
       'true',
     )
 
-    await user.type(screen.getByLabelText('Message Universe'), 'ephemeral brainstorm ideas')
+    await user.type(screen.getByLabelText('Message Uni'), 'ephemeral brainstorm ideas')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
     await screen.findByText(/Start with the smallest useful slice/)
 
@@ -151,7 +151,7 @@ describe('chat flow', () => {
 
     reloadForTests()
     renderApp('/')
-    await screen.findByText('Welcome to Universe')
+    await screen.findByText('Welcome to Uni')
     expect(screen.queryByText(/ephemeral brainstorm ideas/)).not.toBeInTheDocument()
   })
 })

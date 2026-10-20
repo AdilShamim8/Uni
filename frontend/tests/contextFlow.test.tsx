@@ -23,7 +23,7 @@ describe('project context — selection, scoping, and cleanup', () => {
 
     renderApp('/')
     // Start a conversation so it becomes the context target.
-    const input = screen.getByLabelText('Message Universe')
+    const input = screen.getByLabelText('Message Uni')
     await userEvent.type(input, 'Summarize my product notes')
     await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
     await waitFor(() =>

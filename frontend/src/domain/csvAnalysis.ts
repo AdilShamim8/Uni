@@ -441,7 +441,7 @@ export function summarizeToMarkdown(input: {
     }
   }
   lines.push('')
-  lines.push('_Computed locally by Universe from the uploaded file; the file itself was not uploaded anywhere._')
+  lines.push('_Computed locally by Uni from the uploaded file; the file itself was not uploaded anywhere._')
   return lines.join('\n')
 }
 

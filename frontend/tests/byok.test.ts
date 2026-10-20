@@ -323,7 +323,7 @@ describe('live chat adapter', () => {
       messages: Array<{ role: string; content: string }>
     }
     expect(body.messages.map((m) => `${m.role}:${m.content}`)).toEqual([
-      'system:You are Universe, a helpful assistant. Address the user as Ada. Persona notes: Be concise. The user attached these files (names only, contents are not available in this build): notes.txt.',
+      'system:You are Uni, a helpful assistant. Address the user as Ada. Persona notes: Be concise. The user attached these files (names only, contents are not available in this build): notes.txt.',
       'user:old question',
       'assistant:old answer',
       'user:new question',
@@ -401,7 +401,7 @@ describe('live routing through the store', () => {
 
     const user = userEvent.setup()
     renderApp('/')
-    await user.type(screen.getByLabelText('Message Universe'), 'anybody out there')
+    await user.type(screen.getByLabelText('Message Uni'), 'anybody out there')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
     expect(await screen.findByText('Live hello!')).toBeInTheDocument()
@@ -427,7 +427,7 @@ describe('live routing through the store', () => {
 
     const user = userEvent.setup()
     renderApp('/')
-    await user.type(screen.getByLabelText('Message Universe'), 'Help me brainstorm ideas')
+    await user.type(screen.getByLabelText('Message Uni'), 'Help me brainstorm ideas')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
     expect(await screen.findByText(/Start with the smallest useful slice/)).toBeInTheDocument()

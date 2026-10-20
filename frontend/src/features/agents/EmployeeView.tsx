@@ -11,7 +11,8 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useAgentsStore } from '@/state/agentsStore'
-import { useAppStore } from '@/state/store'
+import { useAppStore, AGENT_MEMORY_MAX_NOTES, AGENT_MEMORY_MAX_CHARS } from '@/state/store'
+import { InspectorPanel } from '@/components/ui/InspectorPanel'
 import { useWorkStore } from '@/state/workStore'
 import { PLUGIN_CATALOG } from '@/features/plugins/registry'
 import { Button } from '@/components/ui/Button'
@@ -327,41 +328,15 @@ export function EmployeeView({
         />
       </div>
 
-      {/* Inspector — one responsive panel (bottom sheet / docked right). */}
-      {inspectorOpen && (
-        <div className="fixed inset-0 z-40">
-          <div
-            className="absolute inset-0 bg-scrim lg:hidden"
-            onClick={() => setInspectorOpen(false)}
-            aria-hidden="true"
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${agent.name} details`}
-            className="safe-left safe-right absolute bottom-0 left-0 right-0 flex max-h-[80dvh] flex-col overflow-hidden rounded-t-[22px] border border-line/70 bg-mat-sidebar shadow-float lg:bottom-3 lg:left-auto lg:right-3 lg:top-3 lg:max-h-none lg:w-[21rem] lg:rounded-[22px]"
-          >
-            <div className="flex items-center justify-between px-4 pb-1 pt-3">
-              <p className="text-[13px] font-semibold text-ink">{agent.name}</p>
-              <button
-                type="button"
-                aria-label="Close details"
-                onClick={() => setInspectorOpen(false)}
-                className="min-touch rounded-full p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
-              >
-                <ChevronDown size={18} />
-              </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <EmployeeInspector
-                agentId={agentId}
-                tab={inspectorTab}
-                onTab={setInspectorTab}
-              />
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Inspector — modal sheet on mobile, non-modal docked panel on
+          desktop (real focus behavior in both, F07). */}
+      <InspectorPanel
+        open={inspectorOpen}
+        onClose={() => setInspectorOpen(false)}
+        label={`${agent.name} details`}
+      >
+        <EmployeeInspector agentId={agentId} tab={inspectorTab} onTab={setInspectorTab} />
+      </InspectorPanel>
     </div>
   )
 
@@ -446,7 +421,9 @@ function AgentStatusLine({
     return (
       <>
         Live with your connected model — this employee’s instructions scope every request.
-        Memory notes for {agent.name} are included when relevant.
+        Memory notes for {agent.name} are included in every request to this thread (up
+        to 20 notes, about 4,000 characters — the Memory panel shows exactly what is
+        saved).
       </>
     )
   }
@@ -613,8 +590,11 @@ function MemoryPanel({ agentId }: { agentId: string }) {
         </h2>
         <p className="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
           Notes you add are saved locally for {agent?.name ?? 'this assistant'} and are
-          included in future requests to this thread. Nothing is collected automatically,
-          and no cross-app or cross-device memory is claimed.
+          included in every request to this thread — up to {AGENT_MEMORY_MAX_NOTES} notes
+          and about {AGENT_MEMORY_MAX_CHARS.toLocaleString()} characters, newest first.
+          Notes belong to this employee only; ordinary Chat and other employees never
+          see them. Nothing is collected automatically. Removing a note stops it from
+          being included — past messages keep showing what was originally sent.
         </p>
         <div className="mt-2.5 flex gap-2">
           <input
@@ -680,7 +660,12 @@ function MemoryPanel({ agentId }: { agentId: string }) {
                     <button
                       type="button"
                       aria-label="Delete note"
-                      onClick={() => useAgentsStore.getState().deleteMemoryNote(note.id)}
+                      onClick={() => {
+                        useAgentsStore.getState().deleteMemoryNote(note.id)
+                        useAppStore.getState().showToast(
+                          'Removed from future requests. Earlier messages in this thread still show the text as it was originally sent.',
+                        )
+                      }}
                       className="min-touch rounded-control p-1 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
                     >
                       <Trash2 size={13} />

@@ -1,9 +1,11 @@
 import { useNavigate } from 'react-router-dom'
-import { Archive, Download, FileWarning, FolderOpen, PenTool } from 'lucide-react'
+import { Archive, Copy, Download, FileWarning, FolderOpen, PenTool, Save } from 'lucide-react'
 import { useAppStore } from '@/state/store'
 import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
+import { useWorkStore } from '@/state/workStore'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
+import { saveTaskReportToLibrary } from '@/services/work/canonicalSave'
 import type { OutputCardEntry } from '../threadModel'
 
 /**
@@ -34,6 +36,38 @@ export function OutputCard({ entry }: { entry: OutputCardEntry }) {
     showToast('Downloaded the saved library copy')
   }
 
+  // m07: routine actions live next to the output — no detour through
+  // Details. Save/Update goes through the SAME canonical operation as
+  // the Outputs panel and the Documents plugin.
+  function handleSave() {
+    try {
+      const result = saveTaskReportToLibrary(entry.taskId)
+      showToast(
+        result.created ? 'Saved to Library' : 'Library copy updated',
+        {
+          actionLabel: 'Open',
+          onAction: () => navigate('/library'),
+        },
+      )
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'The save could not be completed.')
+    }
+  }
+
+  async function handleCopy() {
+    const markdown =
+      artifact?.markdown ??
+      useWorkStore.getState().tasks[entry.taskId]?.report?.markdown ??
+      ''
+    if (!markdown) return
+    try {
+      await navigator.clipboard.writeText(markdown)
+      showToast('Output copied to the clipboard')
+    } catch {
+      showToast('The clipboard was blocked by the browser — copy is unavailable.')
+    }
+  }
+
   return (
     <div
       className={`flex flex-wrap items-center gap-2.5 rounded-group border px-4 py-3 ${
@@ -57,6 +91,24 @@ export function OutputCard({ entry }: { entry: OutputCardEntry }) {
           {entry.archived && ' · kept from a previous revision'}
         </span>
       </span>
+      {!entry.archived && (
+        <button
+          type="button"
+          onClick={handleSave}
+          className="min-touch inline-flex items-center gap-1.5 rounded-control border border-line bg-panel px-3 py-1.5 text-[13px] font-medium text-ink transition-colors hover:bg-subtle"
+        >
+          <Save size={13} />
+          {artifact ? 'Update library copy' : 'Save to Library'}
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => void handleCopy()}
+        aria-label="Copy the output"
+        className="min-touch rounded-control p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+      >
+        <Copy size={14} />
+      </button>
       {artifact ? (
         <>
           <button

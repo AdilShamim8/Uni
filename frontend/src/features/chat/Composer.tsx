@@ -246,44 +246,54 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
 
   return (
     <div className="mx-auto w-full max-w-column px-3 pb-[max(var(--pad-compose),env(safe-area-inset-bottom,0px))] pt-1 sm:px-4">
-      {/* Attachment chips */}
+      {/* Attachment chips — with the honest capability statement (F12):
+          general chat attachments are described by NAME ONLY; the model
+          never receives their contents. The local CSV analyzer is the
+          exception and reads the file on this device. */}
       {pending.length > 0 && (
-        <ul className="mb-2 flex flex-wrap gap-2" aria-label="Attachments">
-          {pending.map((attachment) => (
-            <li
-              key={attachment.id}
-              className="relative flex items-center gap-2 rounded-group border border-line bg-raised py-1.5 pl-1.5 pr-7"
-            >
-              {attachment.previewUrl ? (
-                <img
-                  src={attachment.previewUrl}
-                  alt=""
-                  className="h-9 w-9 shrink-0 rounded-[10px] object-cover"
-                />
-              ) : (
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-subtle text-ink-faint">
-                  <FileText size={16} />
-                </span>
-              )}
-              <span className="max-w-[9rem]">
-                <span className="block truncate text-xs font-medium text-ink">
-                  {attachment.name}
-                </span>
-                <span className="block text-[11px] text-ink-faint">
-                  {humanSize(attachment.size)}
-                </span>
-              </span>
-              <button
-                type="button"
-                aria-label={`Remove ${attachment.name}`}
-                onClick={() => removeAttachment(attachment.id)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+        <div className="mb-2">
+          <ul className="flex flex-wrap gap-2" aria-label="Attachments">
+            {pending.map((attachment) => (
+              <li
+                key={attachment.id}
+                className="relative flex items-center gap-2 rounded-group border border-line bg-raised py-1.5 pl-1.5 pr-7"
               >
-                <X size={13} />
-              </button>
-            </li>
-          ))}
-        </ul>
+                {attachment.previewUrl ? (
+                  <img
+                    src={attachment.previewUrl}
+                    alt=""
+                    className="h-9 w-9 shrink-0 rounded-[10px] object-cover"
+                  />
+                ) : (
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-subtle text-ink-faint">
+                    <FileText size={16} />
+                  </span>
+                )}
+                <span className="max-w-[9rem]">
+                  <span className="block truncate text-xs font-medium text-ink">
+                    {attachment.name}
+                  </span>
+                  <span className="block text-[11px] text-ink-faint">
+                    {humanSize(attachment.size)}
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  aria-label={`Remove ${attachment.name}`}
+                  onClick={() => removeAttachment(attachment.id)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+                >
+                  <X size={13} />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-faint">
+            Names and sizes only — file contents are not sent to the model in this
+            build. CSV analysis is the exception: it reads the selected file locally
+            on this device.
+          </p>
+        </div>
       )}
 
       {/* Validation errors */}
@@ -340,7 +350,7 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
         )}
 
         <label htmlFor="composer-input" className="sr-only">
-          Message Universe
+          Message Uni
         </label>
         <textarea
           id="composer-input"
@@ -349,7 +359,7 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
           value={text}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message Universe…"
+          placeholder="Message Uni…"
           className="block max-h-[220px] w-full resize-none bg-transparent px-5 pb-2.5 pt-4 text-[16.5px] leading-relaxed text-ink placeholder:text-ink-faint focus:outline-none"
         />
 

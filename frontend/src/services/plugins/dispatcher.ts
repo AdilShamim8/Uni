@@ -70,6 +70,10 @@ interface ActiveRun {
   runId: string
   pluginId: string
   capability: PluginCapability
+  /** Thread the run belongs to — revocation is scoped to it (F05). */
+  threadKey: string | null
+  /** Employee in scope, when the run came from an agent thread. */
+  agentId: string | null
   abort: AbortController
 }
 
@@ -80,12 +84,24 @@ export function activeRunCount(): number {
 }
 
 /**
- * Cancel every in-flight run for a plugin (disable/revoke path). Receipts
- * were already recorded as running; the rejection below finalizes them.
+ * Cancel every in-flight run for a plugin (global disable path).
+ * Receipts were already recorded as running; the rejection below
+ * finalizes them.
  */
 export function cancelRunsForPlugin(pluginId: string): void {
   for (const run of activeRuns.values()) {
     if (run.pluginId === pluginId) run.abort.abort()
+  }
+}
+
+/**
+ * Cancel only the runs of one plugin that belong to one employee —
+ * used when the employee's allow-list access is removed. Runs in other
+ * threads, and runs of other employees, keep going (F05/F06).
+ */
+export function cancelRunsForAgent(pluginId: string, agentId: string): void {
+  for (const run of activeRuns.values()) {
+    if (run.pluginId === pluginId && run.agentId === agentId) run.abort.abort()
   }
 }
 
@@ -122,9 +138,11 @@ export interface DispatchRequest {
   agentId?: string | null
 }
 
-function threadKeyOf(thread: PluginThreadRef | null | undefined): string | null {
+export function threadKeyOf(thread: PluginThreadRef | null | undefined): string | null {
   if (!thread) return null
-  return thread.kind === 'work' ? `work:${thread.taskId}` : `agent:${thread.conversationId}`
+  if (thread.kind === 'work') return `work:${thread.taskId}`
+  if (thread.kind === 'agent') return `agent:${thread.conversationId}`
+  return `chat:${thread.conversationId}`
 }
 
 /**
@@ -191,10 +209,20 @@ export function checkAccess(request: DispatchRequest): DispatchOutcome {
   return { ok: true, runId: '' }
 }
 
+const ACCESS_REJECTION_CODES: readonly DispatchFailureCode[] = [
+  'not-enabled',
+  'not-allowed-for-agent',
+  'not-granted-for-thread',
+]
+
 /**
  * Execute a plugin action through the validated boundary. The promise
  * resolves when the run settles (or is rejected before starting); it
  * never throws — outcomes are values.
+ *
+ * Access rejections are recorded as bounded receipts (status 'error',
+ * never 'success') so a blocked attempt stays part of the thread's honest
+ * history — the visible rejection contract every caller shares.
  */
 export async function dispatch(
   request: DispatchRequest,
@@ -202,7 +230,22 @@ export async function dispatch(
   externalSignal?: AbortSignal,
 ): Promise<DispatchOutcome> {
   const precheck = checkAccess(request)
-  if (!precheck.ok) return precheck
+  if (!precheck.ok) {
+    if (ACCESS_REJECTION_CODES.includes(precheck.code)) {
+      usePluginsStore.getState().recordReceipt({
+        id: `plugrej-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        pluginId: request.pluginId,
+        capability: request.capability,
+        actionLabel: request.actionLabel,
+        status: 'error',
+        at: Date.now(),
+        finishedAt: Date.now(),
+        thread: request.thread ?? null,
+        error: `Not executed — ${precheck.message}`,
+      })
+    }
+    return precheck
+  }
 
   const runId = `plugrun-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
   const abort = new AbortController()
@@ -210,6 +253,8 @@ export async function dispatch(
     runId,
     pluginId: request.pluginId,
     capability: request.capability,
+    threadKey: threadKeyOf(request.thread),
+    agentId: request.agentId ?? null,
     abort,
   }
   activeRuns.set(runId, run)
@@ -315,10 +360,12 @@ export async function dispatch(
 export function revokeAndCancelThreadRuns(thread: PluginThreadRef, pluginId: string): void {
   const key = threadKeyOf(thread)
   if (key) usePluginsStore.getState().revokeThread(key, pluginId)
+  // Thread-scoped cancellation (F05): only runs belonging to THIS thread
+  // are aborted. Concurrent runs of the same plugin in other threads —
+  // and other employees — are untouched.
   for (const run of activeRuns.values()) {
     if (run.pluginId !== pluginId) continue
-    // Abort; the dispatcher marks receipts cancelled, and if the plugin
-    // was disabled outright the disable path handles the rest.
+    if (key !== null && run.threadKey !== key) continue
     run.abort.abort()
   }
   // Mark any still-open receipts for this thread+plugin as revoked (a

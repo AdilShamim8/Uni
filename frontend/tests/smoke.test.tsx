@@ -14,11 +14,11 @@ describe('scaffold smoke test', () => {
       </MemoryRouter>,
     )
     // Empty state shows the welcome composition; the sidebar carries the
-    // Universe wordmark, so the top bar no longer duplicates it.
+    // Uni wordmark, so the top bar no longer duplicates it.
     expect(
       screen.getByRole('heading', { name: /what would you like to create\?/i }),
     ).toBeInTheDocument()
-    expect(screen.getByText('Universe')).toBeInTheDocument()
+    expect(screen.getByText('Uni')).toBeInTheDocument()
   })
 
   it('primary action and temporary chat are separate sibling controls', () => {

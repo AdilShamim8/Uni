@@ -1,10 +1,10 @@
 {
-  "name": "universe-frontend",
+  "name": "uni-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "license": "MIT",
-  "description": "Universe — independent, open-source AI workspace. Chat frontend (local demo prototype).",
+  "description": "Uni — independent, open-source AI workspace. Chat frontend (local demo prototype).",
   "engines": {
     "node": ">=20"
   },

@@ -1,6 +1,6 @@
 import { Coffee, KeyRound, Lightbulb, Mail, Sparkles } from 'lucide-react'
 import { useAppStore } from '@/state/store'
-import { UniverseMark } from '@/components/layout/UniverseMark'
+import { UniMark } from '@/components/layout/UniMark'
 
 const SUGGESTIONS = [
   {
@@ -37,7 +37,7 @@ const SUGGESTIONS = [
 export function WelcomeHeading() {
   return (
     <section className="pb-7 pt-[max(9vh,3.25rem)] text-center">
-      <UniverseMark size={36} className="mx-auto text-ink" />
+      <UniMark size={36} className="mx-auto text-ink" />
       <h2 className="mx-auto mt-4 max-w-[15ch] text-balance text-[clamp(2rem,4.1vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.022em] text-ink">
         What would you like to create?
       </h2>
@@ -76,10 +76,11 @@ export function StarterRow({ onSuggestion }: { onSuggestion: (text: string) => v
 
 /**
  * A modest inline provider-connect action for the empty state — shown only
- * when no provider is connected. Wording stays accurate: Universe supports
+ * when no provider is connected. Wording stays accurate: Uni supports
  * specific provider protocols (OpenAI, Anthropic, Google, and
- * OpenAI-compatible endpoints such as Groq or OpenRouter, plus local
- * runtimes) — it is not an arbitrary "any provider" bridge.
+ * OpenAI-compatible endpoints such as xAI Grok, DeepSeek, Groq, or
+ * OpenRouter, plus local runtimes) — it is not an arbitrary "any
+ * provider" bridge.
  */
 export function ProviderHint() {
   const setUi = useAppStore((state) => state.setUi)
@@ -99,7 +100,8 @@ export function ProviderHint() {
         <KeyRound size={13} aria-hidden="true" />
         Connect a supported provider
       </button>{' '}
-      — OpenAI, Anthropic, Google, Groq, OpenRouter, or a local runtime.
+      — OpenAI (GPT), xAI (Grok), Anthropic (Claude), Google (Gemini), DeepSeek,
+      Groq, or a local runtime.
     </p>
   )
 }

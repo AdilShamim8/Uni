@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { AlertTriangle, Check, Copy, Info } from 'lucide-react'
 import { Markdown } from '@/features/chat/Markdown'
 import { MessageItem } from '@/features/chat/MessageItem'
-import { UniverseMark } from '@/components/layout/UniverseMark'
+import { UniMark } from '@/components/layout/UniMark'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatFullTimestamp } from '@/domain/timestamps'
 import type { ThreadEntry, StatusNoteEntry, WorkMessageEntry } from './threadModel'
@@ -58,7 +58,7 @@ function WorkAssistantMessage({ message }: { message: WorkMessageEntry['message'
   const streaming = message.status === 'streaming'
   return (
     <div className="message-in group flex gap-3.5" title={formatFullTimestamp(message.at)}>
-      <UniverseMark size={24} className="mt-0.5 shrink-0 text-ink" />
+      <UniMark size={24} className="mt-0.5 shrink-0 text-ink" />
       <div className="min-w-0 flex-1">
         {message.statusPrefix && (
           <p className="mb-2 text-xs font-medium text-ink-faint">{message.statusPrefix}</p>
