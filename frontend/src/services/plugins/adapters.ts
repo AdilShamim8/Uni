@@ -125,6 +125,7 @@ function readFileText(file: File): Promise<string> {
 
 async function dataAnalyzeAdapter(
   input: DataAnalyzeInput | undefined,
+  context: AdapterContext,
 ): Promise<AdapterResult> {
   const file = input?.file ?? null
   if (!file) {
@@ -133,7 +134,12 @@ async function dataAnalyzeAdapter(
   if (file.size > MAX_FILE_BYTES) {
     throw new Error(`That file is larger than the ${MAX_FILE_BYTES / 1024} KB local limit.`)
   }
+  // Async read — the signal is checked again AFTER it resolves, so a
+  // revocation during the read never reaches the Library write (F06).
   const text = await readFileText(file)
+  if (context.signal.aborted) {
+    throw new DOMException('The run was cancelled.', 'AbortError')
+  }
   const parsed = parseCsvText(text)
   if (parsed.rows.length === 0) {
     throw new Error('No rows were found in that file — nothing was analyzed.')
@@ -148,6 +154,11 @@ async function dataAnalyzeAdapter(
     summaries,
     grouping: null,
   })
+  // Commit point: authorization is re-checked immediately before the
+  // Library mutation, so a cancelled run can never write an artifact.
+  if (context.signal.aborted) {
+    throw new DOMException('The run was cancelled.', 'AbortError')
+  }
   const library = useLibraryStore.getState()
   const artifactId = library.addArtifact({
     title: `Analysis — ${file.name}`,
