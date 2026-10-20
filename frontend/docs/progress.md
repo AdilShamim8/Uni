@@ -328,3 +328,33 @@ work to"):
 Quality: 273/273 tests (40 files), lint 0, typecheck clean, build clean.
 Browser journeys green (migration + fresh install, starter prefill,
 settings deep-link, mobile 390, light + dark) with zero console errors.
+
+## Session 09 — the teammate renamed to Uni
+
+User report: "Change name — it is not Grok Bot, it will be maybe named Uni."
+
+The featured teammate added in session 08 is now **Uni**, the app's own
+headline bot. Changes, all on the open QA branch before its merge:
+
+- Seed renamed (`buildUniBotSeed`): name "Uni", instructions now open
+  "You are Uni, …". The profile id stays `agent-grok-bot` so every stored
+  reference — work tasks, employee threads, saved slices — survives the
+  rename untouched (same continuity rule as the `universe:*` storage keys
+  through the product rename).
+- One-time rename migration for installs that ran the interim build: an
+  unedited "Grok Bot" profile becomes "Uni" with refreshed seed
+  instructions; a user-edited name is never touched, and custom
+  instructions survive even when the name still read "Grok Bot".
+- The featured hero now renders the live profile (name, description,
+  starters, "Chat with {name}") instead of hardcoded strings, so a renamed
+  bot shows its real name on the Agents page.
+- The add-migration flag key keeps its historical "grok-bot" spelling —
+  changing it would resurrect a removed bot on interim-build installs.
+
+Quality: 274/274 tests (40 files, +1 rename-migration suite with three
+edit-respect scenarios), lint 0, typecheck clean, build clean. Browser
+journeys on the production build: fresh install seeds "Uni"; a persisted
+legacy "Grok Bot" slice migrates to "Uni" with the flag set; a bot
+renamed through the builder ("My own bot") keeps its name across reload
+and the hero follows it; zero console/page errors; desktop light + dark
+and 390px mobile screenshots captured.
