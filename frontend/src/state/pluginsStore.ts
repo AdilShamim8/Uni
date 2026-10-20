@@ -65,14 +65,26 @@ function loadPersisted(): PersistedPlugins | null {
 
 function persist(state: PluginsStore): boolean {
   try {
+    // Ordinary-chat grants are session-only by design (m07/F09): a chat
+    // thread's grants live and die with the browsing session. Temporary
+    // chats are stricter still — their receipts are never persisted, so
+    // no temporary conversation reference or content survives a reload.
+    const threadGrants: Record<string, string[]> = {}
+    for (const [key, grants] of Object.entries(state.threadGrants)) {
+      if (key.startsWith('chat:')) continue
+      threadGrants[key] = grants
+    }
+    const receipts = state.receipts.filter(
+      (receipt) => !(receipt.thread?.kind === 'chat' && receipt.thread.temporary),
+    )
     const payload: PersistedPlugins = {
       version: 1,
       savedAt: Date.now(),
       payload: {
         enabled: Object.keys(state.enabled),
         agentAllowed: state.agentAllowed,
-        threadGrants: state.threadGrants,
-        receipts: state.receipts,
+        threadGrants,
+        receipts,
       },
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
@@ -234,6 +246,9 @@ export const usePluginsStore = create<PluginsStore>()((set, get) => ({
           return receipt.thread.taskId === thread.taskId
         }
         if (receipt.thread.kind === 'agent' && thread.kind === 'agent') {
+          return receipt.thread.conversationId === thread.conversationId
+        }
+        if (receipt.thread.kind === 'chat' && thread.kind === 'chat') {
           return receipt.thread.conversationId === thread.conversationId
         }
         return false

@@ -5,7 +5,12 @@ import type { PluginManifest, PluginThreadRef } from '@/domain/pluginTypes'
 import { PLUGIN_CATALOG, findPlugin } from './registry'
 import { usePluginsStore } from '@/state/pluginsStore'
 import { useLibraryStore } from '@/state/libraryStore'
-import { dispatch, revokeAndCancelThreadRuns, type DispatchRequest } from '@/services/plugins/dispatcher'
+import {
+  dispatch,
+  revokeAndCancelThreadRuns,
+  threadKeyOf,
+  type DispatchRequest,
+} from '@/services/plugins/dispatcher'
 import { registerBuiltInAdapters } from '@/services/plugins/adapters'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { Dialog } from '@/components/ui/Dialog'
@@ -21,10 +26,6 @@ import { reportDispatchOutcome } from './dispatchFeedback'
  * dispatcher still enforces every check at execution time.
  */
 
-
-function threadKeyOf(thread: PluginThreadRef): string {
-  return thread.kind === 'work' ? `work:${thread.taskId}` : `agent:${thread.conversationId}`
-}
 
 export function ThreadPluginBar({
   thread,
@@ -42,7 +43,7 @@ export function ThreadPluginBar({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [libraryPickerOpen, setLibraryPickerOpen] = useState(false)
 
-  const key = threadKeyOf(thread)
+  const key = threadKeyOf(thread) ?? ''
   const granted = threadGrants[key] ?? []
   const enabledBuiltins = useMemo(
     () => PLUGIN_CATALOG.filter((plugin) => plugin.builtin && enabled[plugin.id]),

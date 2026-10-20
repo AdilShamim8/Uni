@@ -138,9 +138,11 @@ export interface DispatchRequest {
   agentId?: string | null
 }
 
-function threadKeyOf(thread: PluginThreadRef | null | undefined): string | null {
+export function threadKeyOf(thread: PluginThreadRef | null | undefined): string | null {
   if (!thread) return null
-  return thread.kind === 'work' ? `work:${thread.taskId}` : `agent:${thread.conversationId}`
+  if (thread.kind === 'work') return `work:${thread.taskId}`
+  if (thread.kind === 'agent') return `agent:${thread.conversationId}`
+  return `chat:${thread.conversationId}`
 }
 
 /**
