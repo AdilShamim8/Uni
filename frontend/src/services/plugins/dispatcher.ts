@@ -70,6 +70,10 @@ interface ActiveRun {
   runId: string
   pluginId: string
   capability: PluginCapability
+  /** Thread the run belongs to — revocation is scoped to it (F05). */
+  threadKey: string | null
+  /** Employee in scope, when the run came from an agent thread. */
+  agentId: string | null
   abort: AbortController
 }
 
@@ -80,12 +84,24 @@ export function activeRunCount(): number {
 }
 
 /**
- * Cancel every in-flight run for a plugin (disable/revoke path). Receipts
- * were already recorded as running; the rejection below finalizes them.
+ * Cancel every in-flight run for a plugin (global disable path).
+ * Receipts were already recorded as running; the rejection below
+ * finalizes them.
  */
 export function cancelRunsForPlugin(pluginId: string): void {
   for (const run of activeRuns.values()) {
     if (run.pluginId === pluginId) run.abort.abort()
+  }
+}
+
+/**
+ * Cancel only the runs of one plugin that belong to one employee —
+ * used when the employee's allow-list access is removed. Runs in other
+ * threads, and runs of other employees, keep going (F05/F06).
+ */
+export function cancelRunsForAgent(pluginId: string, agentId: string): void {
+  for (const run of activeRuns.values()) {
+    if (run.pluginId === pluginId && run.agentId === agentId) run.abort.abort()
   }
 }
 
@@ -235,6 +251,8 @@ export async function dispatch(
     runId,
     pluginId: request.pluginId,
     capability: request.capability,
+    threadKey: threadKeyOf(request.thread),
+    agentId: request.agentId ?? null,
     abort,
   }
   activeRuns.set(runId, run)
@@ -340,10 +358,12 @@ export async function dispatch(
 export function revokeAndCancelThreadRuns(thread: PluginThreadRef, pluginId: string): void {
   const key = threadKeyOf(thread)
   if (key) usePluginsStore.getState().revokeThread(key, pluginId)
+  // Thread-scoped cancellation (F05): only runs belonging to THIS thread
+  // are aborted. Concurrent runs of the same plugin in other threads —
+  // and other employees — are untouched.
   for (const run of activeRuns.values()) {
     if (run.pluginId !== pluginId) continue
-    // Abort; the dispatcher marks receipts cancelled, and if the plugin
-    // was disabled outright the disable path handles the rest.
+    if (key !== null && run.threadKey !== key) continue
     run.abort.abort()
   }
   // Mark any still-open receipts for this thread+plugin as revoked (a

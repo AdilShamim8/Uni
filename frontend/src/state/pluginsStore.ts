@@ -5,7 +5,7 @@ import type {
 } from '@/domain/pluginTypes'
 import { MAX_PLUGIN_RECEIPTS } from '@/domain/pluginTypes'
 import { findPlugin } from '@/features/plugins/registry'
-import { cancelRunsForPlugin } from '@/services/plugins/dispatcher'
+import { cancelRunsForAgent, cancelRunsForPlugin } from '@/services/plugins/dispatcher'
 
 /**
  * Plugins store — enabled set, per-agent allow lists, per-thread grants,
@@ -169,6 +169,12 @@ export const usePluginsStore = create<PluginsStore>()((set, get) => ({
   },
 
   setAgentAllowed: (agentId, pluginIds) => {
+    // Cancelling in-flight runs whose access is being removed (F06):
+    // only THIS employee's runs of the removed plugins stop.
+    const previous = get().agentAllowed[agentId] ?? []
+    for (const removed of previous) {
+      if (!pluginIds.includes(removed)) cancelRunsForAgent(removed, agentId)
+    }
     set((state) => ({
       agentAllowed: { ...state.agentAllowed, [agentId]: pluginIds },
     }))
