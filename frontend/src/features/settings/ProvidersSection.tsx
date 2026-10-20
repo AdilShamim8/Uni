@@ -37,8 +37,10 @@ const KIND_LABELS: Record<ProviderKind, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   google: 'Google — OpenAI-compatible endpoint',
-  'openai-compatible': 'OpenAI-compatible — xAI Grok, DeepSeek, Groq, OpenRouter, …',
-  local: 'Local server — LM Studio, Ollama, vLLM, …',
+  // Wrap-safe wording: a trailing "…" can land alone on its own line when
+  // the card copy wraps (verified in browser QA), which reads as a break.
+  'openai-compatible': 'OpenAI-compatible — xAI Grok, DeepSeek, Groq, OpenRouter, and more',
+  local: 'Local server — LM Studio, Ollama, vLLM, and more',
 }
 
 /** Suggested base URLs, used to prefill the form when the kind changes. */
@@ -52,7 +54,8 @@ const KIND_ENDPOINTS: Record<ProviderKind, string> = {
 
 /** One-tap templates for popular providers — label, kind, and endpoint.
  * Labels lead with the model family users actually know (GPT, Grok, Claude,
- * Gemini) so the list reads like a model picker, not a company directory. */
+ * Gemini) so the list reads like a model picker, not a company directory.
+ * xAI · Grok leads the list — it pairs with the featured Grok Bot teammate. */
 const PRESETS: { label: string; kind: ProviderKind; endpointUrl: string }[] = [
   { label: 'OpenAI · GPT', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },
   { label: 'xAI · Grok', kind: 'openai-compatible', endpointUrl: 'https://api.x.ai/v1' },
@@ -281,7 +284,7 @@ function ProviderForm({
         </select>
         <p className="mt-1 text-xs leading-relaxed text-ink-faint">
           Any OpenAI-compatible endpoint works (xAI Grok, DeepSeek, Groq, OpenRouter, Mistral,
-          LM Studio, Ollama, …). Anthropic uses its native protocol. The type only decides
+          LM Studio, Ollama, and more). Anthropic uses its native protocol. The type only decides
           headers and URL paths — the key and endpoint stay yours.
         </p>
       </div>

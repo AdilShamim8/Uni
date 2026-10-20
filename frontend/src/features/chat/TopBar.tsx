@@ -108,11 +108,11 @@ export function TopBar() {
             type="button"
             className="flex min-touch items-center gap-2 rounded-control px-2.5 py-1.5 text-sm font-medium text-ink transition-colors hover:bg-[var(--c-hover-wash)]"
           >
-            <span className="max-w-[9rem] truncate">
+            <span className="max-w-[12rem] truncate">
               {activeModel?.model.label ?? 'Select model'}
             </span>
             {activeModel && (
-              <span className="hidden max-w-[8rem] truncate text-xs font-normal text-ink-faint sm:inline">
+              <span className="hidden max-w-[12rem] truncate text-xs font-normal text-ink-faint sm:inline">
                 {activeModel.provider.label}
               </span>
             )}

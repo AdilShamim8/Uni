@@ -69,9 +69,13 @@ export function Dialog({
     document.body.style.overflow = 'hidden'
 
     const panel = panelRef.current
-    const focusables = getFocusable(panel)
-    const initialTarget = initialFocusRef?.current ?? focusables[0] ?? panel
-    initialTarget?.focus()
+    // Without an explicit target, focus the panel surface itself (tabIndex
+    // -1) rather than the first focusable: the first focusable is usually
+    // the header's close button, and a visible ring on the X at open time
+    // reads as a random highlighted box. Tab moves into the content from
+    // here, so keyboard users lose nothing.
+    const initialTarget = initialFocusRef?.current ?? panel
+    initialTarget?.focus({ preventScroll: true })
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
