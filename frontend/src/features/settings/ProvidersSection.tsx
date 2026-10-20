@@ -37,7 +37,7 @@ const KIND_LABELS: Record<ProviderKind, string> = {
   openai: 'OpenAI',
   anthropic: 'Anthropic',
   google: 'Google — OpenAI-compatible endpoint',
-  'openai-compatible': 'OpenAI-compatible — Groq, OpenRouter, Together, Mistral, …',
+  'openai-compatible': 'OpenAI-compatible — xAI Grok, DeepSeek, Groq, OpenRouter, …',
   local: 'Local server — LM Studio, Ollama, vLLM, …',
 }
 
@@ -50,15 +50,19 @@ const KIND_ENDPOINTS: Record<ProviderKind, string> = {
   local: 'http://localhost:1234/v1',
 }
 
-/** One-tap templates for popular providers — label, kind, and endpoint. */
+/** One-tap templates for popular providers — label, kind, and endpoint.
+ * Labels lead with the model family users actually know (GPT, Grok, Claude,
+ * Gemini) so the list reads like a model picker, not a company directory. */
 const PRESETS: { label: string; kind: ProviderKind; endpointUrl: string }[] = [
-  { label: 'OpenAI', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },
-  { label: 'Anthropic', kind: 'anthropic', endpointUrl: 'https://api.anthropic.com' },
+  { label: 'OpenAI · GPT', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },
+  { label: 'xAI · Grok', kind: 'openai-compatible', endpointUrl: 'https://api.x.ai/v1' },
+  { label: 'Anthropic · Claude', kind: 'anthropic', endpointUrl: 'https://api.anthropic.com' },
   {
-    label: 'Google AI Studio',
+    label: 'Google AI Studio · Gemini',
     kind: 'google',
     endpointUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
   },
+  { label: 'DeepSeek', kind: 'openai-compatible', endpointUrl: 'https://api.deepseek.com/v1' },
   { label: 'Groq', kind: 'openai-compatible', endpointUrl: 'https://api.groq.com/openai/v1' },
   {
     label: 'OpenRouter',
@@ -276,9 +280,9 @@ function ProviderForm({
           ))}
         </select>
         <p className="mt-1 text-xs leading-relaxed text-ink-faint">
-          Any OpenAI-compatible endpoint works (Groq, OpenRouter, Together, Mistral, LM Studio,
-          Ollama, …). Anthropic uses its native protocol. The type only decides headers and URL
-          paths — the key and endpoint stay yours.
+          Any OpenAI-compatible endpoint works (xAI Grok, DeepSeek, Groq, OpenRouter, Mistral,
+          LM Studio, Ollama, …). Anthropic uses its native protocol. The type only decides
+          headers and URL paths — the key and endpoint stay yours.
         </p>
       </div>
       <TextField
@@ -636,8 +640,9 @@ export function ProvidersSection() {
                   {isActiveProvider && <Badge tone="accent">Active profile</Badge>}
                   {provider.demo && <Badge>Demo</Badge>}
                 </div>
-                <p className="mt-1 break-all text-xs text-ink-faint">
-                  {KIND_LABELS[provider.kind]} · {provider.endpointUrl}
+                <p className="mt-1 text-xs text-ink-faint">{KIND_LABELS[provider.kind]}</p>
+                <p className="mt-0.5 break-all text-xs text-ink-faint/80">
+                  {provider.endpointUrl}
                 </p>
 
                 <div className="mt-3">

@@ -1,6 +1,6 @@
 /**
  * Fixture content for the advanced workflow previews. Everything here is
- * original Universe content, explicitly labeled as simulated in the UI.
+ * original Uni content, explicitly labeled as simulated in the UI.
  */
 
 export const RESEARCH_STEPS = [
@@ -18,7 +18,7 @@ _Simulated research output. The steps, findings, and sources below are fixture c
 
 ## Summary
 
-This report demonstrates the shape of a Universe research result: a short synthesis, structured findings with numbered citations, open questions, and a transparent source list. In a later milestone the same interface will be driven by a real provider adapter, with the evidence trail kept equally explicit.
+This report demonstrates the shape of a Uni research result: a short synthesis, structured findings with numbered citations, open questions, and a transparent source list. In a later milestone the same interface will be driven by a real provider adapter, with the evidence trail kept equally explicit.
 
 ## Key findings
 

@@ -53,10 +53,13 @@ export type PluginAvailability =
   | 'integration-required'
   | 'error'
 
-/** Where a plugin run happened — receipts render inside that thread. */
+/** Where a plugin run happened — receipts render inside that thread.
+ * `chat` covers ordinary conversations; `temporary` marks session-only
+ * threads whose grants and receipts are never persisted (m07). */
 export type PluginThreadRef =
   | { kind: 'work'; taskId: string }
   | { kind: 'agent'; agentId: string; conversationId: string }
+  | { kind: 'chat'; conversationId: string; temporary: boolean }
 
 export type PluginRunStatus =
   | 'proposed'

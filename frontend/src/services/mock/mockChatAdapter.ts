@@ -205,7 +205,7 @@ export function createMockAdapter(options: MockAdapterOptions = {}): ChatAdapter
 
   return {
     id: 'universe-mock-adapter',
-    label: 'Universe local demo adapter',
+    label: 'Uni local demo adapter',
 
     async stream(
       request: ChatRequest,

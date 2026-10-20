@@ -224,3 +224,53 @@ untested; the data-analysis adapter's file-picker path was exercised via
 the jsdom suite and the dispatcher directly rather than a native file
 dialog; live BYOK revision requests were verified with a controlled fake
 adapter (no paid traffic).
+
+## Session 07 — rename, presets, polish (feat/uni-rename-providers-polish)
+
+Gates re-run from scratch at every commit: `tsc --noEmit` clean, `eslint`
+0 problems, `npm test` **242/242** (33 files; +1 preset regression test),
+production build clean.
+
+| Check | Result |
+| --- | --- |
+| Document title / wordmark / composer label read "Uni" everywhere | PASS |
+| No `Universe` branding left in src, tests, index.html, package.json | PASS (storage keys `universe:*` intentionally retained for data continuity) |
+| Existing localStorage data (pre-rename) loads without loss | PASS — keys unchanged |
+| xAI · Grok preset fills `https://api.x.ai/v1`, DeepSeek fills `https://api.deepseek.com/v1` | PASS |
+| Preset chips wrap cleanly; group headers rhythmically consistent | PASS (VLM re-review) |
+| Zero console/page errors on all five destinations | PASS |
+| No horizontal overflow at 390 / 768 / 1440 | PASS |
+| Live BYOK E2E (fake local provider) still streams after rename | PASS |
+
+## Milestone 07 — dependable, coherent, premium (feat/m07-dependable-coherent-premium)
+
+Gates after every commit: `tsc --noEmit` clean, `eslint` 0 problems, targeted
+suites before push, full suite **271/271** (40 files; +19 tests across six
+new suites), production build clean.
+
+| Audit finding | Disposition | Evidence |
+| --- | --- | --- |
+| F01 duplicate artifacts on repeated plugin save | Fixed | Browser: saved a Work report twice through Documents → exactly one artifact, `taskId` linked; unit: triple save keeps one id |
+| F02 wrong provenance | Fixed | Browser: saved artifact shows `demo-simulation`; provider-generated keeps model snapshot |
+| F03 silent denial | Fixed | Browser: employee-thread Create shows toast + "Allow for this employee"; one-tap fix; retry succeeds; rejection receipts recorded |
+| F04 memory not in requests | Fixed | Adapter-payload tests: A's note for A only; edit/remove propagate; UI states real bounds |
+| F05 cross-thread cancellation | Fixed | Unit: revoke thread A, B succeeds; receipts revoked/success respectively |
+| F06 CSV side effects after cancel | Fixed | Unit: revocation during delayed read writes zero artifacts |
+| F07 fake aria-modal | Fixed | Unit + browser: mobile sheet traps focus/Escape/return; desktop docked panel is complementary, not modal |
+| F08 export scope dishonest | Fixed | Export relabeled; versioned workspace backup/restore with validation, preview, snapshot; round-trip test |
+| F09 plugins absent from Chat | Fixed | Browser: ordinary chat grant → create → receipt strip → reload intact; picker empty state links to Manage Plugins; temporary receipts never persist |
+| F10 split activity cards | Fixed | Browser: one "Activity · 6 steps" card; unit: single merged chronological entry |
+| F11 Universe naming | Fixed on branch base | Rename branch (PR #17) |
+| F12 attachment capability unstated | Fixed | Composer states names-only + local CSV exception beside chips |
+| F13 SSE defects | Fixed | 6-fixture suite: boundary splits, CRLF/multiline, trailing event, terminal errors both protocols |
+
+Browser journeys (fresh origin, production build, zero console/page errors):
+ordinary-chat plugin round-trip incl. reload; Work double-save single record
+with in-place update action; employee memory + denial/recovery; keyboard
+modal checks at 1440/390; dark-mode Library/Plugins; no horizontal overflow
+at 390/1440.
+
+Remaining limitations (honest): no screen-reader/axe pass, no real-device
+Safari pass, plugin picker menu items are keyboard-confirmed (pointer-event
+automation quirk in the QA tool, not an app defect — jsdom click tests cover
+the wiring), backup restore requires a reload by design.

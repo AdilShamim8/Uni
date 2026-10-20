@@ -259,7 +259,7 @@ describe('drafts survive switching between Chat, Work, and an employee', () => {
     renderApp('/')
 
     // Chat draft
-    await userEvent.type(screen.getByLabelText(/Message Universe/i), 'chat draft thought')
+    await userEvent.type(screen.getByLabelText(/Message Uni/i), 'chat draft thought')
 
     // Work draft
     const primaryNav = screen.getByRole('navigation', { name: 'Primary' })

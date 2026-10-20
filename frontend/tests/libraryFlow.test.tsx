@@ -49,7 +49,10 @@ describe('Library — artifact collection', () => {
     // The save action lives in the task's Details → Outputs inspector.
     await userEvent.click(await screen.findByRole('button', { name: 'Details' }))
     await userEvent.click(screen.getByRole('tab', { name: 'Outputs' }))
-    await userEvent.click(await screen.findByRole('button', { name: /Save to Library/ }))
+    // The output card and the Outputs panel both offer Save (m07) —
+    // they run the same canonical operation.
+    const saveButtons = await screen.findAllByRole('button', { name: /Save to Library/ })
+    await userEvent.click(saveButtons[0])
 
     // The artifact now exists, linked to its task, honestly labeled.
     const artifacts = Object.values(useLibraryStore.getState().artifacts)
@@ -59,7 +62,7 @@ describe('Library — artifact collection', () => {
     expect(artifacts[0]?.provenance).toBe('demo-simulation')
 
     // Saving again updates the same artifact instead of duplicating.
-    await userEvent.click(screen.getByRole('button', { name: /Update library copy/ }))
+    await userEvent.click((screen.getAllByRole('button', { name: /Update library copy/ }))[0])
     expect(Object.keys(useLibraryStore.getState().artifacts)).toHaveLength(1)
     setRunnerStepMs(1100)
   }, 15000)

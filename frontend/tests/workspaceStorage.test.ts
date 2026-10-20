@@ -9,7 +9,7 @@ import type { AgentProfile, MemoryNote, ScheduleDraft } from '@/domain/workspace
 
 const agent: AgentProfile = {
   id: 'ag-universe',
-  name: 'Universe Assistant',
+  name: 'Uni Assistant',
   description: 'Personal assistant',
   instructions: 'Be helpful.',
   category: 'personal',
@@ -54,7 +54,7 @@ describe('workspace slice storage', () => {
     expect(saveAgentsSlice({ agents: [agent], memoryNotes: [note], schedules: [schedule] })).toBe(true)
     const result = loadAgentsSlice()
     expect(result.state).not.toBeNull()
-    expect(result.state?.agents[0]?.name).toBe('Universe Assistant')
+    expect(result.state?.agents[0]?.name).toBe('Uni Assistant')
     expect(result.state?.memoryNotes[0]?.text).toBe('Prefers concise answers')
     expect(result.state?.schedules[0]?.cadence).toBe('recurring')
   })

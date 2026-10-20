@@ -24,11 +24,11 @@ export function conversationToMarkdown(conversation: Conversation): string {
   const lines: string[] = [
     `# ${conversation.title}`,
     '',
-    `_Exported from Universe (local prototype) on ${new Date().toLocaleString()}_`,
+    `_Exported from Uni (local prototype) on ${new Date().toLocaleString()}_`,
     '',
   ]
   for (const node of path) {
-    lines.push(node.role === 'user' ? '## You' : '## Universe (demo)')
+    lines.push(node.role === 'user' ? '## You' : '## Uni (demo)')
     lines.push('')
     lines.push(node.content.trim() || '_(empty)_')
     lines.push('')

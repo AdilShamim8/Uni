@@ -22,7 +22,7 @@ import { useWorkStore } from '@/state/workStore'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
-import { UniverseMark } from '@/components/layout/UniverseMark'
+import { UniMark } from '@/components/layout/UniMark'
 import { SidebarActivityRow } from '@/components/layout/HeaderExtras'
 import { searchShortcutLabel } from '@/features/search/platform'
 import { Tooltip } from '@/components/ui/Tooltip'
@@ -314,9 +314,9 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
       {/* Identity + workspace selector */}
       <div className="px-2 pb-1 pt-3">
         <div className="flex items-center gap-2 px-1 pb-1.5">
-          <UniverseMark size={22} className="shrink-0 text-ink" />
+          <UniMark size={22} className="shrink-0 text-ink" />
           <span className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">
-            Universe
+            Uni
           </span>
           {!forceExpanded && (
             <IconButton

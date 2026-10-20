@@ -164,6 +164,27 @@ describe('provider quick setup', () => {
     // A Groq profile card now exists in the list.
     expect(await dialog.findByRole('heading', { name: 'Groq' })).toBeInTheDocument()
   })
+
+  it('offers xAI Grok and DeepSeek as one-tap presets', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+
+    await user.click(
+      screen.getByRole('button', { name: /Connect a supported provider/i }),
+    )
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
+    await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))
+
+    // The model-family labels users actually search for are present…
+    expect(dialog.getByRole('button', { name: 'xAI · Grok' })).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: 'DeepSeek' })).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: 'OpenAI · GPT' })).toBeInTheDocument()
+
+    // …and tapping the Grok preset fills kind + endpoint.
+    await user.click(dialog.getByRole('button', { name: 'xAI · Grok' }))
+    expect(dialog.getByLabelText('Endpoint base URL')).toHaveValue('https://api.x.ai/v1')
+    expect(dialog.getByRole('button', { name: 'Add profile' })).toBeEnabled()
+  })
 })
 
 describe('settings keyboard shortcut', () => {
