@@ -24,6 +24,29 @@ describe('Agents — directory and builder', () => {
     expect(main().getByText('Finance Analyst')).toBeTruthy()
   })
 
+  it('features the Grok Bot as a hero with working chat and starters', async () => {
+    renderApp('/agents')
+
+    // The hero renders in its own Featured section, above the directory.
+    const hero = await screen.findByRole('heading', { level: 3, name: 'Grok Bot' })
+    expect(hero).toBeTruthy()
+    expect(main().getByText(/AI teammate you give real work to/i)).toBeTruthy()
+
+    // The honest provider hint deep-links the Providers settings section.
+    await userEvent.click(main().getByRole('button', { name: 'xAI · Grok' }))
+    const settings = await screen.findByRole('dialog', { name: 'Settings' })
+    expect(within(settings).getByRole('button', { name: 'Providers & models' })).toHaveAttribute(
+      'aria-current',
+      'true',
+    )
+    await userEvent.click(within(settings).getByRole('button', { name: 'Close dialog' }))
+
+    // A starter chip opens the bot's conversation with the draft prefilled.
+    await userEvent.click(main().getByRole('button', { name: 'Take this task end to end' }))
+    const composer = await screen.findByRole('textbox', { name: /Message Grok Bot/i })
+    expect(composer).toHaveValue('Take this task end to end')
+  })
+
   it('validates the builder: empty name and instructions are rejected', async () => {
     renderApp('/agents/new')
     await userEvent.click(screen.getByRole('button', { name: 'Create agent' }))

@@ -19,11 +19,49 @@ import {
  *
  * The seeded Uni Assistant is the single personal assistant; the three
  * specialist seeds replace the older "assistant presets" preview system.
+ * The Grok Bot seed (featured on the Agents page) is modeled on xAI's
+ * Grok Bot positioning — an AI teammate you give real work to. It is an
+ * honest local instruction profile: it runs on whatever provider the user
+ * connects (xAI · Grok included) and never claims xAI's cloud product.
  */
+
+export const GROK_BOT_AGENT_ID = 'agent-grok-bot'
+
+export function buildGrokBotSeed(createdAt: number): AgentProfile {
+  return {
+    id: GROK_BOT_AGENT_ID,
+    name: 'Grok Bot',
+    description: 'The AI teammate you give real work to',
+    instructions:
+      'You are Grok Bot, the user\u2019s AI teammate. Treat every message as real ' +
+      'work to own end to end: clarify the goal in one question if it is ambiguous, ' +
+      'then produce the deliverable \u2014 not a plan to produce it. Be direct, sharp, ' +
+      'and a little wry; never pad answers. Show your reasoning where it changes the ' +
+      'outcome, state assumptions explicitly, and flag anything you could not ' +
+      'verify. When a task needs several steps, report progress like a colleague ' +
+      'would \u2014 short, concrete updates, no ceremony.',
+    category: 'specialist',
+    providerId: null,
+    modelId: null,
+    tools: ['research'],
+    projectIds: [],
+    starters: [
+      'Take this task end to end',
+      'Review this plan and tell me what\u2019s broken',
+      'Turn these notes into a finished draft',
+    ],
+    archived: false,
+    builtin: true,
+    createdAt,
+    updatedAt: createdAt,
+  }
+}
 
 export function buildSeedAgents(): AgentProfile[] {
   const now = Date.now()
   return [
+    // Featured first: the Grok Bot reads as the headline teammate.
+    buildGrokBotSeed(now),
     {
       id: 'agent-universe-assistant',
       name: 'Uni Assistant',
@@ -116,6 +154,51 @@ export function buildSeedAgents(): AgentProfile[] {
   ]
 }
 
+/* ------------------------------------------------------------------ */
+/* Grok Bot one-time migration                                         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Existing installs saved their agents slice before the Grok Bot seed
+ * existed, and seeds only run on a empty store — so without this
+ * migration they would never see it. The flag makes the addition
+ * one-time: a user who archives or edits the bot afterwards keeps that
+ * choice on every reload.
+ */
+const GROK_BOT_MIGRATION_FLAG = 'universe:migrated:grok-bot:v1'
+
+function migrateGrokBotSeed(agents: Record<string, AgentProfile>): void {
+  if (agents[GROK_BOT_AGENT_ID]) {
+    // Already present (fresh seed or a previous migration) — just make sure
+    // the flag is set so a later manual removal is respected.
+    try {
+      localStorage.setItem(GROK_BOT_MIGRATION_FLAG, '1')
+    } catch {
+      /* privacy mode: retry on next load, harmless */
+    }
+    return
+  }
+  let alreadyMigrated = false
+  try {
+    alreadyMigrated = localStorage.getItem(GROK_BOT_MIGRATION_FLAG) === '1'
+  } catch {
+    /* treat as not migrated — adding the seed again is idempotent */
+  }
+  if (alreadyMigrated) return
+  // Sort first in every createdAt-ordered surface (Agents page, pickers).
+  const earliest = Object.values(agents).reduce(
+    (min, agent) => Math.min(min, agent.createdAt),
+    Number.POSITIVE_INFINITY,
+  )
+  const seed = buildGrokBotSeed(Number.isFinite(earliest) ? earliest - 1 : Date.now())
+  agents[seed.id] = seed
+  try {
+    localStorage.setItem(GROK_BOT_MIGRATION_FLAG, '1')
+  } catch {
+    /* best effort */
+  }
+}
+
 export interface AgentsStore {
   hydrated: boolean
   agents: Record<string, AgentProfile>
@@ -167,6 +250,7 @@ export const useAgentsStore = create<AgentsStore>()((set, get) => ({
     if (loaded.state) {
       const agents: Record<string, AgentProfile> = {}
       for (const agent of loaded.state.agents) agents[agent.id] = agent
+      migrateGrokBotSeed(agents)
       const memoryNotes: Record<string, MemoryNote> = {}
       for (const note of loaded.state.memoryNotes) memoryNotes[note.id] = note
       const schedules: Record<string, ScheduleDraft> = {}
@@ -397,7 +481,16 @@ if (typeof window !== 'undefined') {
 
 /** Test-only: wipe agents state (and optionally storage). */
 export function resetAgentsStoreForTests(options: { keepStorage?: boolean } = {}): void {
-  if (!options.keepStorage) clearAgentsSlice()
+  if (!options.keepStorage) {
+    clearAgentsSlice()
+    // Migration state is part of storage: clear it too so a test that seeds
+    // an old pre-Grok-Bot slice exercises the real first-load path.
+    try {
+      localStorage.removeItem(GROK_BOT_MIGRATION_FLAG)
+    } catch {
+      /* ignore */
+    }
+  }
   if (saveTimer) {
     clearTimeout(saveTimer)
     saveTimer = undefined

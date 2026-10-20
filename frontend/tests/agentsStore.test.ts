@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   flushAgentsPersistence,
+  GROK_BOT_AGENT_ID,
   resetAgentsStoreForTests,
   useAgentsStore,
 } from '@/state/agentsStore'
@@ -14,11 +15,15 @@ describe('agents store', () => {
     resetAgentsStoreForTests()
   })
 
-  it('seeds the personal assistant and three specialists', () => {
+  it('seeds the personal assistant, the featured Grok Bot, and three specialists', () => {
     const agents = Object.values(useAgentsStore.getState().agents)
     expect(agents.filter((a) => a.category === 'personal')).toHaveLength(1)
-    expect(agents.filter((a) => a.category === 'specialist')).toHaveLength(3)
+    expect(agents.filter((a) => a.category === 'specialist')).toHaveLength(4)
     expect(agents.every((a) => a.builtin)).toBe(true)
+
+    const grokBot = useAgentsStore.getState().agents[GROK_BOT_AGENT_ID]
+    expect(grokBot?.name).toBe('Grok Bot')
+    expect(grokBot?.starters.length).toBeGreaterThan(0)
   })
 
   it('saves and updates profiles without touching run history', () => {
@@ -121,5 +126,43 @@ describe('agents store', () => {
     useAgentsStore.getState().initialize()
     const notes = Object.values(useAgentsStore.getState().memoryNotes)
     expect(notes.some((n) => n.text === 'Persisted note')).toBe(true)
+  })
+
+  it('migrates the Grok Bot into a pre-existing saved slice exactly once', () => {
+    // An install from before the Grok Bot: persisted agents without it.
+    useAgentsStore.setState((state) => {
+      const agents = { ...state.agents }
+      delete agents[GROK_BOT_AGENT_ID]
+      return { agents }
+    })
+    flushAgentsPersistence()
+
+    // First reload after the update: the bot is added and sorts first.
+    resetAgentsStoreForTests({ keepStorage: true })
+    useAgentsStore.getState().initialize()
+    const migrated = useAgentsStore.getState().agents[GROK_BOT_AGENT_ID]
+    expect(migrated?.name).toBe('Grok Bot')
+    const others = Object.values(useAgentsStore.getState().agents).filter(
+      (a) => a.id !== GROK_BOT_AGENT_ID,
+    )
+    expect(others.every((a) => a.createdAt > (migrated?.createdAt ?? 0))).toBe(true)
+
+    // The user archives it: a reload must keep that choice (no re-add).
+    useAgentsStore.getState().archiveAgent(GROK_BOT_AGENT_ID, true)
+    flushAgentsPersistence()
+    resetAgentsStoreForTests({ keepStorage: true })
+    useAgentsStore.getState().initialize()
+    expect(useAgentsStore.getState().agents[GROK_BOT_AGENT_ID]?.archived).toBe(true)
+
+    // Once the one-time flag is set, a slice without the bot is respected.
+    useAgentsStore.setState((state) => {
+      const agents = { ...state.agents }
+      delete agents[GROK_BOT_AGENT_ID]
+      return { agents }
+    })
+    flushAgentsPersistence()
+    resetAgentsStoreForTests({ keepStorage: true })
+    useAgentsStore.getState().initialize()
+    expect(useAgentsStore.getState().agents[GROK_BOT_AGENT_ID]).toBeUndefined()
   })
 })

@@ -57,8 +57,8 @@ const KIND_ENDPOINTS: Record<ProviderKind, string> = {
  * Gemini) so the list reads like a model picker, not a company directory.
  * xAI · Grok leads the list — it pairs with the featured Grok Bot teammate. */
 const PRESETS: { label: string; kind: ProviderKind; endpointUrl: string }[] = [
-  { label: 'OpenAI · GPT', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },
   { label: 'xAI · Grok', kind: 'openai-compatible', endpointUrl: 'https://api.x.ai/v1' },
+  { label: 'OpenAI · GPT', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },
   { label: 'Anthropic · Claude', kind: 'anthropic', endpointUrl: 'https://api.anthropic.com' },
   {
     label: 'Google AI Studio · Gemini',

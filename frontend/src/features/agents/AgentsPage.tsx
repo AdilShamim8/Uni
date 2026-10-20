@@ -12,8 +12,9 @@ import {
   Search,
   Sparkles,
   Wrench,
+  Zap,
 } from 'lucide-react'
-import { useAgentsStore } from '@/state/agentsStore'
+import { useAgentsStore, GROK_BOT_AGENT_ID } from '@/state/agentsStore'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
@@ -22,6 +23,7 @@ import { HeaderExtras } from '@/components/layout/HeaderExtras'
 import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { TOOL_REGISTRY } from '@/features/chat/toolRegistry'
+import { saveThreadDraft } from '@/features/conversation/threadDrafts'
 import { EmployeeView } from './EmployeeView'
 import type { AgentProfile } from '@/domain/workspaceTypes'
 import type { ToolId } from '@/domain/types'
@@ -67,7 +69,13 @@ function AgentDirectory() {
   }, [agents, query])
 
   const personal = visible.filter((agent) => agent.category === 'personal')
-  const specialists = visible.filter((agent) => agent.category === 'specialist')
+  const specialists = visible.filter(
+    (agent) => agent.category === 'specialist' && agent.id !== GROK_BOT_AGENT_ID,
+  )
+  // The featured teammate surfaces as its own hero when it matches the
+  // current filter (and is not archived) — otherwise it simply does not
+  // appear, exactly like any other filtered-out profile.
+  const featured = visible.find((agent) => agent.id === GROK_BOT_AGENT_ID) ?? null
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -90,9 +98,9 @@ function AgentDirectory() {
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold tracking-tight text-ink">Agents</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-ink">Your AI teammates</h2>
               <p className="mt-0.5 text-sm text-ink-soft">
-                Persistent instructions you can chat with or assign work to.
+                Persistent profiles you can chat with or assign real work to.
               </p>
             </div>
             <Button variant="primary" onClick={() => navigate('/agents/new')}>
@@ -131,6 +139,13 @@ function AgentDirectory() {
             </div>
           ) : (
             <>
+              {featured && (
+                <section className="mt-6" aria-label="Featured teammate">
+                  <p className="px-1 text-[12px] font-medium text-ink-faint">Featured</p>
+                  <GrokBotHero agent={featured} />
+                </section>
+              )}
+
               {personal.length > 0 && (
                 <section className="mt-6" aria-label="Personal assistant">
                   <p className="px-1 text-[12px] font-medium text-ink-faint">
@@ -163,6 +178,94 @@ function AgentDirectory() {
             </>
           )}
         </div>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Featured Grok Bot hero                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The Grok Bot gets a hero presentation (xAI positions it as "the AI
+ * teammate you give real work to"). The card keeps the app's honesty
+ * rules: it is a local instruction profile, clearly labeled, that runs
+ * on whichever provider the user connects — xAI · Grok included.
+ */
+function GrokBotHero({ agent }: { agent: AgentProfile }) {
+  const navigate = useNavigate()
+  const setUi = useAppStore((state) => state.setUi)
+
+  /** Open the bot's own thread (EmployeeView opens the conversation
+   * directly); an optional starter prefills the thread composer. */
+  function openWith(startedWith?: string) {
+    if (startedWith) saveThreadDraft(`agent:${agent.id}`, startedWith)
+    navigate(`/agents/${agent.id}`)
+  }
+
+  return (
+    <div className="mt-2 overflow-hidden rounded-group border-2 border-ink/85 bg-raised">
+      <div className="flex flex-wrap items-start gap-4 p-4 sm:p-5">
+        <span
+          aria-hidden="true"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ink text-canvas"
+        >
+          <Zap size={20} strokeWidth={2.2} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-2">
+            <h3 className="text-[17px] font-semibold tracking-tight text-ink">Grok Bot</h3>
+            <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10.5px] font-semibold text-accent">
+              New
+            </span>
+            <span className="rounded-full bg-subtle px-1.5 py-0.5 text-[10px] font-medium text-ink-faint">
+              Built-in
+            </span>
+          </span>
+          <p className="mt-1 text-balance text-sm font-medium text-ink">
+            The AI teammate you give real work to.
+          </p>
+          <p className="mt-0.5 text-balance text-sm leading-relaxed text-ink-soft">
+            Message it like a colleague — it owns the task end to end.
+          </p>
+          {agent.starters.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Grok Bot starters">
+              {agent.starters.map((starter) => (
+                <button
+                  key={starter}
+                  type="button"
+                  onClick={() => openWith(starter)}
+                  className="press min-touch rounded-full border border-line bg-canvas/60 px-3 py-1.5 text-[13px] font-medium text-ink-soft transition-colors hover:border-ink/40 hover:text-ink"
+                >
+                  {starter}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 border-t border-line bg-canvas/40 px-4 py-3 sm:px-5">
+        <Button variant="primary" size="sm" onClick={() => openWith()}>
+          <MessageSquare size={14} />
+          Chat with Grok Bot
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => navigate(`/work/new?agent=${agent.id}`)}>
+          <Plus size={14} />
+          Assign task
+        </Button>
+        <span className="min-w-0 flex-1" />
+        <p className="w-full text-xs leading-relaxed text-ink-faint sm:w-auto sm:text-right">
+          Local profile — connect{' '}
+          <button
+            type="button"
+            onClick={() => setUi({ settingsOpen: true, settingsSection: 'providers' })}
+            className="press inline-flex min-touch items-center rounded-control font-medium text-accent transition-colors hover:text-accent-strong"
+          >
+            xAI · Grok
+          </button>{' '}
+          (or any provider) for live replies.
+        </p>
       </div>
     </div>
   )
