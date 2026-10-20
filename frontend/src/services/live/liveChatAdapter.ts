@@ -55,16 +55,45 @@ function buildSystemPrompt(request: ChatRequest): string | undefined {
 
 interface OpenAiChunk {
   choices?: Array<{ delta?: { content?: string | null } }>
+  /** Providers stream errors as data payloads — terminal, never "complete". */
+  error?: { message?: string }
 }
 
 interface AnthropicEvent {
   type?: string
   delta?: { text?: string }
+  error?: { message?: string }
+}
+
+/** One parsed SSE event: joined multiline data + optional event name. */
+interface SseEvent {
+  event?: string
+  data: string
+}
+
+function parseSseBlock(block: string): SseEvent | null {
+  const dataLines: string[] = []
+  let eventName: string | undefined
+  for (const rawLine of block.split('\n')) {
+    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine
+    if (line.startsWith(':')) continue // comment / keep-alive
+    if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''))
+    else if (line.startsWith('event:')) eventName = line.slice(6).replace(/^ /, '').trim()
+  }
+  if (dataLines.length === 0) return null
+  // The SSE spec joins multiple data lines with newlines.
+  return { event: eventName, data: dataLines.join('\n') }
+}
+
+function findEventBoundary(buffer: string): { end: number } | null {
+  const match = buffer.match(/\r?\n\r?\n/)
+  if (!match || match.index === undefined) return null
+  return { end: match.index + match[0].length }
 }
 
 async function readSseStream(
   response: Response,
-  onEvent: (payload: string) => void,
+  onEvent: (payload: string, eventName?: string) => void,
   signal: AbortSignal,
 ): Promise<void> {
   const body = response.body
@@ -80,16 +109,28 @@ async function readSseStream(
         return
       }
       const { done, value } = await reader.read()
-      if (done) return
+      if (done) break
       buffer += decoder.decode(value, { stream: true })
-      const lines = buffer.split('\n')
-      buffer = lines.pop() ?? ''
-      for (const line of lines) {
-        const trimmed = line.trim()
-        if (!trimmed.startsWith('data:')) continue
-        const payload = trimmed.slice(5).trim()
-        if (payload.length > 0 && payload !== '[DONE]') onEvent(payload)
+      // Dispatch only COMPLETE events (blank-line terminated); CRLF and
+      // LF boundaries both count. This is the m07 SSE hardening (F13):
+      // chunk boundaries can no longer split an event in half.
+      for (;;) {
+        const boundary = findEventBoundary(buffer)
+        if (!boundary) break
+        const block = buffer.slice(0, boundary.end)
+        buffer = buffer.slice(boundary.end)
+        const parsed = parseSseBlock(block)
+        if (parsed && parsed.data.length > 0 && parsed.data !== '[DONE]') {
+          onEvent(parsed.data, parsed.event)
+        }
       }
+    }
+    // Flush the decoder, then a trailing event that arrived WITHOUT a
+    // final blank line — previously silently dropped (F13).
+    buffer += decoder.decode()
+    const trailing = parseSseBlock(buffer)
+    if (trailing && trailing.data.length > 0 && trailing.data !== '[DONE]') {
+      onEvent(trailing.data, trailing.event)
     }
   } finally {
     reader.releaseLock()
@@ -192,6 +233,7 @@ export function createLiveAdapter(
       }
 
       let receivedAny = false
+      let errored = false
 
       function emitDelta(text: string) {
         if (!text) return
@@ -202,19 +244,50 @@ export function createLiveAdapter(
         handlers.onDelta(text)
       }
 
+      function emitProviderError(message: string) {
+        if (errored) return
+        errored = true
+        handlers.onError({ code: 'provider_error', message })
+      }
+
       try {
         await readSseStream(
           response,
-          (payload) => {
+          (payload, eventName) => {
+            // Protocol-level error frames are terminal (F13): an upstream
+            // error can never end the turn as "complete".
+            if (eventName === 'error') {
+              try {
+                const parsed = JSON.parse(payload) as AnthropicEvent
+                emitProviderError(
+                  parsed.error?.message ?? 'The provider reported an error mid-stream — the reply may be incomplete.',
+                )
+              } catch {
+                emitProviderError('The provider reported an error mid-stream — the reply may be incomplete.')
+              }
+              return
+            }
             try {
               const parsed: unknown = JSON.parse(payload)
               if (anthropic) {
                 const event = parsed as AnthropicEvent
+                if (event.type === 'error') {
+                  emitProviderError(
+                    event.error?.message ?? 'The provider reported an error mid-stream — the reply may be incomplete.',
+                  )
+                  return
+                }
                 if (event.type === 'content_block_delta' && typeof event.delta?.text === 'string') {
                   emitDelta(event.delta.text)
                 }
               } else {
                 const chunk = parsed as OpenAiChunk
+                if (chunk.error) {
+                  emitProviderError(
+                    chunk.error.message ?? 'The provider reported an error mid-stream — the reply may be incomplete.',
+                  )
+                  return
+                }
                 const delta = chunk.choices?.[0]?.delta?.content
                 if (typeof delta === 'string') emitDelta(delta)
               }
@@ -224,6 +297,7 @@ export function createLiveAdapter(
           },
           signal,
         )
+        if (errored) return
         if (!receivedAny && !signal.aborted) {
           handlers.onError({
             code: 'provider_error',
