@@ -106,7 +106,7 @@ function PluginCatalogue({ onOpen }: { onOpen: (id: string) => void }) {
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="text-xl font-semibold tracking-tight text-ink">Plugins</h2>
+              <h2 className="text-xl font-semibold tracking-tight text-ink">Tools that stay local</h2>
               <p className="mt-0.5 text-sm text-ink-soft">
                 Enable local tools for threads and employees. Nothing here connects to an
                 external service on its own.
