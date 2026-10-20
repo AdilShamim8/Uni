@@ -81,6 +81,8 @@ export interface OutputCardEntry extends ThreadEntryBase {
   kind: 'output_card'
   title: string
   artifactId: string | null
+  /** Owning task — powers save/update/copy actions on the card (m07). */
+  taskId: string
   provenance: TaskReport['provenance']
   generatedByLabel: string | null
   stoppedPartial: boolean
@@ -253,28 +255,21 @@ export function projectWorkThread(task: WorkTask): ThreadEntry[] {
     }
   }
 
-  for (const [runId, lines] of runs) {
-    if (lines.length === 0) continue
-    const live = task.currentRunId === runId && task.status === 'running'
+  // ONE unified activity presentation (m07, F10): run-scoped and manual
+  // events merge into a single chronological card. Run ids stay internal
+  // to the events (late-event rejection is unchanged); the user sees one
+  // understandable summary instead of two near-identical ones.
+  const allLines = [...runs.values()].flat().concat(manual).sort((a, b) => a.at - b.at)
+  if (allLines.length > 0) {
+    const live = task.status === 'running'
     entries.push({
       kind: 'activity',
-      entryId: `work:run:${runId}`,
-      at: lines[0].at,
-      runId,
-      title: live ? 'Working…' : 'Run activity',
-      lines,
+      entryId: 'work:activity',
+      at: allLines[0].at,
+      runId: task.currentRunId ?? null,
+      title: live ? 'Working…' : 'Activity',
+      lines: allLines,
       live,
-    })
-  }
-  if (manual.length > 0) {
-    entries.push({
-      kind: 'activity',
-      entryId: 'work:run:manual',
-      at: manual[0].at,
-      runId: null,
-      title: 'Activity',
-      lines: manual,
-      live: false,
     })
   }
 
@@ -298,6 +293,7 @@ export function projectWorkThread(task: WorkTask): ThreadEntry[] {
       at: previous.savedAt,
       title: 'Previous output',
       artifactId: previous.artifactId,
+      taskId: task.id,
       provenance: previous.provenance,
       generatedByLabel: reportModelLabel(previous),
       stoppedPartial: previous.stoppedPartial,
@@ -342,6 +338,7 @@ export function projectWorkThread(task: WorkTask): ThreadEntry[] {
       at: task.updatedAt + 1,
       title: 'Output — ready to review',
       artifactId: report.artifactId,
+      taskId: task.id,
       provenance: report.provenance,
       generatedByLabel: reportModelLabel(report),
       stoppedPartial: report.stoppedPartial,

@@ -159,7 +159,8 @@ describe('projectWorkThread', () => {
     // created + output are represented by the goal message / report entries
     expect(activity.lines.map((line) => line.id)).toEqual(['e2', 'e3', 'e4'])
     expect(activity.live).toBe(false)
-    expect(activity.runId).toBe('run-1')
+    // m07/F10: one unified task-level activity card (run ids stay internal).
+    expect(activity.title).toBe('Activity')
   })
 
   it('renders a pending input request as a clarify card, not an activity line', () => {
@@ -334,9 +335,15 @@ describe('projectWorkThread', () => {
     })
     const entries = projectWorkThread(task)
     const ids = entries.map((entry) => entry.entryId)
-    expect(ids.indexOf('work:msg:f1')).toBeGreaterThan(ids.indexOf('work:run:run-1'))
-    expect(ids.indexOf('work:msg:f1')).toBeLessThan(ids.indexOf('work:run:run-2'))
+    // m07/F10: run-scoped and manual activity merged into ONE card
+    // ('work:activity'), still ordered before the follow-up messages
+    // that arrived after its first event.
+    expect(ids).toContain('work:activity')
+    expect(ids.indexOf('work:msg:f1')).toBeGreaterThan(ids.indexOf('work:activity'))
     expect(ids.indexOf('work:msg:f2')).toBeGreaterThan(ids.indexOf('work:msg:f1'))
+    const activity = entries.find((entry) => entry.entryId === 'work:activity')
+    if (!activity || activity.kind !== 'activity') throw new Error('expected activity card')
+    expect(activity.lines.map((line) => line.id)).toEqual(['e1', 'e2'])
   })
 })
 
