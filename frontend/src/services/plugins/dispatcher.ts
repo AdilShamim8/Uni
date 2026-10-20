@@ -191,10 +191,20 @@ export function checkAccess(request: DispatchRequest): DispatchOutcome {
   return { ok: true, runId: '' }
 }
 
+const ACCESS_REJECTION_CODES: readonly DispatchFailureCode[] = [
+  'not-enabled',
+  'not-allowed-for-agent',
+  'not-granted-for-thread',
+]
+
 /**
  * Execute a plugin action through the validated boundary. The promise
  * resolves when the run settles (or is rejected before starting); it
  * never throws — outcomes are values.
+ *
+ * Access rejections are recorded as bounded receipts (status 'error',
+ * never 'success') so a blocked attempt stays part of the thread's honest
+ * history — the visible rejection contract every caller shares.
  */
 export async function dispatch(
   request: DispatchRequest,
@@ -202,7 +212,22 @@ export async function dispatch(
   externalSignal?: AbortSignal,
 ): Promise<DispatchOutcome> {
   const precheck = checkAccess(request)
-  if (!precheck.ok) return precheck
+  if (!precheck.ok) {
+    if (ACCESS_REJECTION_CODES.includes(precheck.code)) {
+      usePluginsStore.getState().recordReceipt({
+        id: `plugrej-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+        pluginId: request.pluginId,
+        capability: request.capability,
+        actionLabel: request.actionLabel,
+        status: 'error',
+        at: Date.now(),
+        finishedAt: Date.now(),
+        thread: request.thread ?? null,
+        error: `Not executed — ${precheck.message}`,
+      })
+    }
+    return precheck
+  }
 
   const runId = `plugrun-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
   const abort = new AbortController()
