@@ -55,7 +55,7 @@ const KIND_ENDPOINTS: Record<ProviderKind, string> = {
 /** One-tap templates for popular providers — label, kind, and endpoint.
  * Labels lead with the model family users actually know (GPT, Grok, Claude,
  * Gemini) so the list reads like a model picker, not a company directory.
- * xAI · Grok leads the list — it pairs with the featured Grok Bot teammate. */
+ * xAI · Grok leads the list — it pairs with the featured Uni teammate. */
 const PRESETS: { label: string; kind: ProviderKind; endpointUrl: string }[] = [
   { label: 'xAI · Grok', kind: 'openai-compatible', endpointUrl: 'https://api.x.ai/v1' },
   { label: 'OpenAI · GPT', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },

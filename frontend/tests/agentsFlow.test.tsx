@@ -24,11 +24,11 @@ describe('Agents — directory and builder', () => {
     expect(main().getByText('Finance Analyst')).toBeTruthy()
   })
 
-  it('features the Grok Bot as a hero with working chat and starters', async () => {
+  it('features the Uni bot as a hero with working chat and starters', async () => {
     renderApp('/agents')
 
     // The hero renders in its own Featured section, above the directory.
-    const hero = await screen.findByRole('heading', { level: 3, name: 'Grok Bot' })
+    const hero = await screen.findByRole('heading', { level: 3, name: 'Uni' })
     expect(hero).toBeTruthy()
     expect(main().getByText(/AI teammate you give real work to/i)).toBeTruthy()
 
@@ -43,7 +43,7 @@ describe('Agents — directory and builder', () => {
 
     // A starter chip opens the bot's conversation with the draft prefilled.
     await userEvent.click(main().getByRole('button', { name: 'Take this task end to end' }))
-    const composer = await screen.findByRole('textbox', { name: /Message Grok Bot/i })
+    const composer = await screen.findByRole('textbox', { name: /Message Uni$/i })
     expect(composer).toHaveValue('Take this task end to end')
   })
 
