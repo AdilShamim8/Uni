@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FileText, Puzzle, X } from 'lucide-react'
 import type { PluginManifest, PluginThreadRef } from '@/domain/pluginTypes'
 import { PLUGIN_CATALOG, findPlugin } from './registry'
@@ -10,6 +11,7 @@ import { Menu, MenuItem } from '@/components/ui/Menu'
 import '@/services/plugins/adapters'
 import { PLUGIN_ACTIONS } from './pluginActions'
 import type { PluginActionSpec } from './pluginActions'
+import { reportDispatchOutcome } from './dispatchFeedback'
 
 /**
  * The composer plugin bar (milestone 06): granted-plugin chips with their
@@ -31,7 +33,9 @@ export function ThreadPluginBar({
   agentId: string | null
 }) {
   registerBuiltInAdapters()
+  const navigate = useNavigate()
   const enabled = usePluginsStore((state) => state.enabled)
+  const agentAllowed = usePluginsStore((state) => state.agentAllowed)
   const threadGrants = usePluginsStore((state) => state.threadGrants)
   const grantThread = usePluginsStore((state) => state.grantThread)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -69,9 +73,12 @@ export function ThreadPluginBar({
       spec.capability === 'documents.save' && thread.kind === 'work'
         ? { taskId: thread.taskId }
         : spec.capability === 'documents.create'
-          ? { title: thread.kind === 'work' ? 'New document' : 'New document' }
+          ? { title: 'New document' }
           : undefined
-    await dispatch(requestFor(spec, plugin), input)
+    // Every outcome is reported — success, denial, cancellation, error.
+    // Denials carry a recovery path (enable / allow / grant).
+    const outcome = await dispatch(requestFor(spec, plugin), input)
+    reportDispatchOutcome(outcome, { navigate, agentId, pluginId: plugin.id })
   }
 
   return (
@@ -98,10 +105,7 @@ export function ThreadPluginBar({
             },
             { file },
           )
-          if (!result.ok) {
-            const { useAppStore } = await import('@/state/store')
-            useAppStore.getState().showToast(result.message)
-          }
+          reportDispatchOutcome(result, { navigate, agentId, pluginId: plugin.id })
         }}
       />
 
@@ -170,16 +174,32 @@ export function ThreadPluginBar({
           }
         >
           {enabledBuiltins.length === 0 ? (
-            <MenuItem disabled hint="Enable built-ins in Plugins first">
-              No enabled plugins
-            </MenuItem>
+            <>
+              <MenuItem disabled hint="Enable built-ins in Plugins first">
+                No enabled plugins
+              </MenuItem>
+              <MenuItem
+                hint="Opens the plugin catalogue"
+                onClick={() => navigate('/plugins')}
+              >
+                Manage Plugins…
+              </MenuItem>
+            </>
           ) : (
             enabledBuiltins.map((plugin) => {
               const isGranted = granted.includes(plugin.id)
+              // Surface the same intersection the dispatcher enforces:
+              // workspace enabled vs employee allowed vs thread granted.
+              const notAllowedForAgent = !!agentId && !(agentAllowed[agentId] ?? []).includes(plugin.id)
+              const hint = notAllowedForAgent
+                ? 'Enabled, but not allowed for this employee yet'
+                : isGranted
+                  ? 'Granted to this thread'
+                  : plugin.description
               return (
                 <MenuItem
                   key={plugin.id}
-                  hint={isGranted ? 'Granted to this thread' : plugin.description}
+                  hint={hint}
                   onClick={() => {
                     if (isGranted) {
                       revokeAndCancelThreadRuns(thread, plugin.id)
@@ -238,7 +258,7 @@ function LibraryContextDialog({
     const plugin = findPlugin('library-context')
     if (!plugin) return
     onClose()
-    await dispatch(
+    const result = await dispatch(
       {
         pluginId: plugin.id,
         capability: 'library.attach',
@@ -248,6 +268,7 @@ function LibraryContextDialog({
       },
       { artifactId, thread },
     )
+    reportDispatchOutcome(result, { agentId, pluginId: plugin.id })
   }
 
   return (
