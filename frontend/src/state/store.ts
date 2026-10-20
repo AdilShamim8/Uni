@@ -125,6 +125,41 @@ export interface AppStore {
 let activeAdapter: ChatAdapter = createMockAdapter()
 let activeAbort: AbortController | null = null
 
+/** Bounds for the employee memory block (mirrors the UI's stated limits). */
+export const AGENT_MEMORY_MAX_NOTES = 20
+export const AGENT_MEMORY_MAX_CHARS = 4000
+
+/**
+ * Build the employee memory block for a request (m07, F04). Scoped to one
+ * agent's own notes, most recent first, bounded by note count and total
+ * characters — matching what the Memory panel tells the user. Returns
+ * null when the employee has no notes.
+ */
+export function buildAgentMemoryBlock(agentId: string): string | null {
+  const { memoryNotes } = useAgentsStore.getState()
+  const notes = Object.values(memoryNotes)
+    .filter((note) => note.agentId === agentId)
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+  if (notes.length === 0) return null
+
+  const lines: string[] = []
+  let total = 0
+  let count = 0
+  let truncated = false
+  for (const note of notes) {
+    if (count >= AGENT_MEMORY_MAX_NOTES || total + note.text.length > AGENT_MEMORY_MAX_CHARS) {
+      truncated = true
+      break
+    }
+    lines.push(`- ${note.text}`)
+    total += note.text.length
+    count += 1
+  }
+  if (lines.length === 0) return null
+  const scope = `Known facts and preferences the user asked this employee to remember (up to ${AGENT_MEMORY_MAX_NOTES} notes, ~${AGENT_MEMORY_MAX_CHARS} characters; oldest beyond the limit are dropped${truncated ? ' — some notes were left out this time' : ''}):`
+  return `${scope}\n${lines.join('\n')}`
+}
+
 /** Replace the chat adapter (used by tests; the UI never needs this). */
 export function setChatAdapter(adapter: ChatAdapter): void {
   activeAdapter = adapter
@@ -702,6 +737,17 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
     ? useAgentsStore.getState().agents[conversation.agentId]
     : null
   let system = agent?.instructions.trim() ? agent.instructions.trim() : undefined
+
+  // Employee memory (m07, F04): the agent's own notes are resolved into
+  // the request at this explicit-send moment — scoped to this employee
+  // only, bounded, and never collected automatically. Ordinary Chat and
+  // other employees never see them.
+  if (agent && conversation.agentId) {
+    const memoryBlock = buildAgentMemoryBlock(conversation.agentId)
+    if (memoryBlock) {
+      system = system ? `${system}\n\n---\n\n${memoryBlock}` : memoryBlock
+    }
+  }
 
   // Explicit context selection: resolved and included only at this moment
   // (a real user send), never on mount or selection. The user previews the

@@ -11,7 +11,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useAgentsStore } from '@/state/agentsStore'
-import { useAppStore } from '@/state/store'
+import { useAppStore, AGENT_MEMORY_MAX_NOTES, AGENT_MEMORY_MAX_CHARS } from '@/state/store'
 import { useWorkStore } from '@/state/workStore'
 import { PLUGIN_CATALOG } from '@/features/plugins/registry'
 import { Button } from '@/components/ui/Button'
@@ -446,7 +446,9 @@ function AgentStatusLine({
     return (
       <>
         Live with your connected model — this employee’s instructions scope every request.
-        Memory notes for {agent.name} are included when relevant.
+        Memory notes for {agent.name} are included in every request to this thread (up
+        to 20 notes, about 4,000 characters — the Memory panel shows exactly what is
+        saved).
       </>
     )
   }
@@ -613,8 +615,11 @@ function MemoryPanel({ agentId }: { agentId: string }) {
         </h2>
         <p className="mt-1.5 text-[11px] leading-relaxed text-ink-soft">
           Notes you add are saved locally for {agent?.name ?? 'this assistant'} and are
-          included in future requests to this thread. Nothing is collected automatically,
-          and no cross-app or cross-device memory is claimed.
+          included in every request to this thread — up to {AGENT_MEMORY_MAX_NOTES} notes
+          and about {AGENT_MEMORY_MAX_CHARS.toLocaleString()} characters, newest first.
+          Notes belong to this employee only; ordinary Chat and other employees never
+          see them. Nothing is collected automatically. Removing a note stops it from
+          being included — past messages keep showing what was originally sent.
         </p>
         <div className="mt-2.5 flex gap-2">
           <input
@@ -680,7 +685,12 @@ function MemoryPanel({ agentId }: { agentId: string }) {
                     <button
                       type="button"
                       aria-label="Delete note"
-                      onClick={() => useAgentsStore.getState().deleteMemoryNote(note.id)}
+                      onClick={() => {
+                        useAgentsStore.getState().deleteMemoryNote(note.id)
+                        useAppStore.getState().showToast(
+                          'Removed from future requests. Earlier messages in this thread still show the text as it was originally sent.',
+                        )
+                      }}
                       className="min-touch rounded-control p-1 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
                     >
                       <Trash2 size={13} />
