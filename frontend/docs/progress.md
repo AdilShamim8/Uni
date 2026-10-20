@@ -290,3 +290,41 @@ browser journeys green with zero console errors.
 Next concrete tasks: screen-reader + axe audit, real-device Safari pass,
 provider-driven tool calling behind the dispatcher boundary, MCP plugin
 prototype with real consent screens.
+
+## Session 08 — QA polish + the Grok Bot teammate
+
+User report: "Still UI has some bugs — fix them all — and add the Grok
+Bot (https://x.ai/bot), it must be important."
+
+Browser audit of every destination at 390/768/1440, light + dark, zero
+console errors. Confirmed defects fixed (VLM flags that measured as
+false positives were left alone):
+
+1. Dialogs without an explicit initial focus put a visible ring on the
+   header close button at open time (focus now lands on the panel
+   surface; Tab still reaches content, Escape/close behavior unchanged).
+2. Provider kind label wrapped with an orphaned "…" alone on its second
+   line — copy is now wrap-safe ("and more").
+3. Top-bar model chip cut the provider label at 8rem
+   ("Uni Demo — Balan…") — max widths raised to 12rem.
+4. Agents and Plugins pages showed the same title twice (toolbar h1 +
+   content h2) — content headings now read "Your AI teammates" and
+   "Tools that stay local".
+
+Grok Bot (modeled on xAI's positioning: "AI teammates you can give real
+work to"):
+
+- Seeded builtin profile (direct, end-to-end, no-ceremony instructions)
+  with three starters and the research tool.
+- One-time migration adds it to installs that saved an agents slice
+  before it existed; a flag keeps the addition one-time so a user who
+  archives or removes it keeps that choice.
+- Featured hero card on the Agents page: monochrome emblem, "New" +
+  "Built-in" badges, balanced tagline, starter chips that open the
+  bot's thread with the composer prefilled, Chat/Assign actions, and an
+  honest provider hint that deep-links the Providers settings.
+- xAI · Grok now leads the provider preset list.
+
+Quality: 273/273 tests (40 files), lint 0, typecheck clean, build clean.
+Browser journeys green (migration + fresh install, starter prefill,
+settings deep-link, mobile 390, light + dark) with zero console errors.

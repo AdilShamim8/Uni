@@ -41,10 +41,11 @@ real request to a provider the user configured with their own API key.
 
 | Feature | Status | Notes |
 | --- | --- | --- |
-| Directory with search + categories | Working | Personal assistant + specialists |
+| Directory with search + categories | Working | Featured Grok Bot hero + personal assistant + specialists |
 | Builder (name, description, instructions, provider/model, tools, starters) | Working | Validates empty name/instructions, dead provider refs, unknown models |
 | Duplicate / archive / delete | Working | Built-ins cannot be deleted; referenced profiles archive instead of orphaning tasks |
 | Chat with agent | Working | One scoped, reused conversation per agent; instructions sent as the system prompt |
+| Grok Bot teammate | Working | Seeded builtin modeled on xAI's Grok Bot positioning ("the AI teammate you give real work to"); featured hero with starter-prefilled threads; one-time migration adds it to existing installs and respects later archive/removal; honest labeling — runs on the user's connected provider (xAI · Grok preset leads the list) or the local demo |
 | Agent model preference | Working | Resolved explicitly and shown as the effective configuration |
 | Personal assistant view (Conversation / Assigned work / Memory / Schedules) | Working | Tabs over the same underlying data, no duplicate histories |
 | Memory notes | Working | Local add/edit/delete with scope + timestamps; user-authored only |
