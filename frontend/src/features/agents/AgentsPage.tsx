@@ -14,7 +14,7 @@ import {
   Wrench,
   Zap,
 } from 'lucide-react'
-import { useAgentsStore, GROK_BOT_AGENT_ID } from '@/state/agentsStore'
+import { useAgentsStore, UNI_BOT_AGENT_ID } from '@/state/agentsStore'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
 import { TextField } from '@/components/ui/TextField'
@@ -70,12 +70,12 @@ function AgentDirectory() {
 
   const personal = visible.filter((agent) => agent.category === 'personal')
   const specialists = visible.filter(
-    (agent) => agent.category === 'specialist' && agent.id !== GROK_BOT_AGENT_ID,
+    (agent) => agent.category === 'specialist' && agent.id !== UNI_BOT_AGENT_ID,
   )
   // The featured teammate surfaces as its own hero when it matches the
   // current filter (and is not archived) — otherwise it simply does not
   // appear, exactly like any other filtered-out profile.
-  const featured = visible.find((agent) => agent.id === GROK_BOT_AGENT_ID) ?? null
+  const featured = visible.find((agent) => agent.id === UNI_BOT_AGENT_ID) ?? null
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -142,7 +142,7 @@ function AgentDirectory() {
               {featured && (
                 <section className="mt-6" aria-label="Featured teammate">
                   <p className="px-1 text-[12px] font-medium text-ink-faint">Featured</p>
-                  <GrokBotHero agent={featured} />
+                  <UniBotHero agent={featured} />
                 </section>
               )}
 
@@ -184,16 +184,16 @@ function AgentDirectory() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Featured Grok Bot hero                                              */
+/* Featured Uni hero                                                   */
 /* ------------------------------------------------------------------ */
 
 /**
- * The Grok Bot gets a hero presentation (xAI positions it as "the AI
- * teammate you give real work to"). The card keeps the app's honesty
- * rules: it is a local instruction profile, clearly labeled, that runs
- * on whichever provider the user connects — xAI · Grok included.
+ * Uni gets a hero presentation — it is the app's own headline teammate,
+ * the AI you give real work to. The card keeps the app's honesty rules:
+ * it is a local instruction profile, clearly labeled, that runs on
+ * whichever provider the user connects — xAI · Grok included.
  */
-function GrokBotHero({ agent }: { agent: AgentProfile }) {
+function UniBotHero({ agent }: { agent: AgentProfile }) {
   const navigate = useNavigate()
   const setUi = useAppStore((state) => state.setUi)
 
@@ -215,7 +215,7 @@ function GrokBotHero({ agent }: { agent: AgentProfile }) {
         </span>
         <div className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
-            <h3 className="text-[17px] font-semibold tracking-tight text-ink">Grok Bot</h3>
+            <h3 className="text-[17px] font-semibold tracking-tight text-ink">{agent.name}</h3>
             <span className="rounded-full bg-accent-soft px-2 py-0.5 text-[10.5px] font-semibold text-accent">
               New
             </span>
@@ -224,13 +224,13 @@ function GrokBotHero({ agent }: { agent: AgentProfile }) {
             </span>
           </span>
           <p className="mt-1 text-balance text-sm font-medium text-ink">
-            The AI teammate you give real work to.
+            {agent.description || 'The AI teammate you give real work to'}
           </p>
           <p className="mt-0.5 text-balance text-sm leading-relaxed text-ink-soft">
             Message it like a colleague — it owns the task end to end.
           </p>
           {agent.starters.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-1.5" aria-label="Grok Bot starters">
+            <div className="mt-3 flex flex-wrap gap-1.5" aria-label={`${agent.name} starters`}>
               {agent.starters.map((starter) => (
                 <button
                   key={starter}
@@ -248,7 +248,7 @@ function GrokBotHero({ agent }: { agent: AgentProfile }) {
       <div className="flex flex-wrap items-center gap-2 border-t border-line bg-canvas/40 px-4 py-3 sm:px-5">
         <Button variant="primary" size="sm" onClick={() => openWith()}>
           <MessageSquare size={14} />
-          Chat with Grok Bot
+          Chat with {agent.name}
         </Button>
         <Button variant="ghost" size="sm" onClick={() => navigate(`/work/new?agent=${agent.id}`)}>
           <Plus size={14} />

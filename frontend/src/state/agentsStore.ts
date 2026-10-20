@@ -19,21 +19,24 @@ import {
  *
  * The seeded Uni Assistant is the single personal assistant; the three
  * specialist seeds replace the older "assistant presets" preview system.
- * The Grok Bot seed (featured on the Agents page) is modeled on xAI's
- * Grok Bot positioning — an AI teammate you give real work to. It is an
- * honest local instruction profile: it runs on whatever provider the user
- * connects (xAI · Grok included) and never claims xAI's cloud product.
+ * The seeded Uni bot (featured on the Agents page) is the app's headline
+ * AI teammate — the one you give real work to. It is an honest local
+ * instruction profile: it runs on whatever provider the user connects
+ * (xAI · Grok included) and never claims any cloud product.
  */
 
-export const GROK_BOT_AGENT_ID = 'agent-grok-bot'
+// The id still says "grok-bot" from the bot's interim name on the preview
+// branch; keeping it preserves every stored reference — work tasks,
+// employee threads, and saved slices — across the rename.
+export const UNI_BOT_AGENT_ID = 'agent-grok-bot'
 
-export function buildGrokBotSeed(createdAt: number): AgentProfile {
+export function buildUniBotSeed(createdAt: number): AgentProfile {
   return {
-    id: GROK_BOT_AGENT_ID,
-    name: 'Grok Bot',
+    id: UNI_BOT_AGENT_ID,
+    name: 'Uni',
     description: 'The AI teammate you give real work to',
     instructions:
-      'You are Grok Bot, the user\u2019s AI teammate. Treat every message as real ' +
+      'You are Uni, the user\u2019s AI teammate. Treat every message as real ' +
       'work to own end to end: clarify the goal in one question if it is ambiguous, ' +
       'then produce the deliverable \u2014 not a plan to produce it. Be direct, sharp, ' +
       'and a little wry; never pad answers. Show your reasoning where it changes the ' +
@@ -60,8 +63,8 @@ export function buildGrokBotSeed(createdAt: number): AgentProfile {
 export function buildSeedAgents(): AgentProfile[] {
   const now = Date.now()
   return [
-    // Featured first: the Grok Bot reads as the headline teammate.
-    buildGrokBotSeed(now),
+    // Featured first: Uni reads as the headline teammate.
+    buildUniBotSeed(now),
     {
       id: 'agent-universe-assistant',
       name: 'Uni Assistant',
@@ -155,24 +158,28 @@ export function buildSeedAgents(): AgentProfile[] {
 }
 
 /* ------------------------------------------------------------------ */
-/* Grok Bot one-time migration                                         */
+/* Uni bot one-time migration                                          */
 /* ------------------------------------------------------------------ */
 
 /**
- * Existing installs saved their agents slice before the Grok Bot seed
+ * Existing installs saved their agents slice before the Uni bot seed
  * existed, and seeds only run on a empty store — so without this
  * migration they would never see it. The flag makes the addition
  * one-time: a user who archives or edits the bot afterwards keeps that
  * choice on every reload.
+ *
+ * The flag key still says "grok-bot" from the bot's interim name on the
+ * preview branch; changing it would resurrect a removed bot on any
+ * install that already ran that build, so it stays.
  */
-const GROK_BOT_MIGRATION_FLAG = 'universe:migrated:grok-bot:v1'
+const UNI_BOT_MIGRATION_FLAG = 'universe:migrated:grok-bot:v1'
 
-function migrateGrokBotSeed(agents: Record<string, AgentProfile>): void {
-  if (agents[GROK_BOT_AGENT_ID]) {
+function migrateUniBotSeed(agents: Record<string, AgentProfile>): void {
+  if (agents[UNI_BOT_AGENT_ID]) {
     // Already present (fresh seed or a previous migration) — just make sure
     // the flag is set so a later manual removal is respected.
     try {
-      localStorage.setItem(GROK_BOT_MIGRATION_FLAG, '1')
+      localStorage.setItem(UNI_BOT_MIGRATION_FLAG, '1')
     } catch {
       /* privacy mode: retry on next load, harmless */
     }
@@ -180,7 +187,7 @@ function migrateGrokBotSeed(agents: Record<string, AgentProfile>): void {
   }
   let alreadyMigrated = false
   try {
-    alreadyMigrated = localStorage.getItem(GROK_BOT_MIGRATION_FLAG) === '1'
+    alreadyMigrated = localStorage.getItem(UNI_BOT_MIGRATION_FLAG) === '1'
   } catch {
     /* treat as not migrated — adding the seed again is idempotent */
   }
@@ -190,12 +197,72 @@ function migrateGrokBotSeed(agents: Record<string, AgentProfile>): void {
     (min, agent) => Math.min(min, agent.createdAt),
     Number.POSITIVE_INFINITY,
   )
-  const seed = buildGrokBotSeed(Number.isFinite(earliest) ? earliest - 1 : Date.now())
+  const seed = buildUniBotSeed(Number.isFinite(earliest) ? earliest - 1 : Date.now())
   agents[seed.id] = seed
   try {
-    localStorage.setItem(GROK_BOT_MIGRATION_FLAG, '1')
+    localStorage.setItem(UNI_BOT_MIGRATION_FLAG, '1')
   } catch {
     /* best effort */
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Interim-name rename (Grok Bot → Uni)                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The bot shipped to the preview branch as "Grok Bot" before its rename
+ * to "Uni". Any install that ran that build has the old name (and old
+ * seed instructions) persisted. This one-time rename touches only an
+ * unedited profile: a user who changed the name keeps their change, and
+ * custom instructions survive even when the name still reads "Grok Bot".
+ */
+const UNI_BOT_RENAME_FLAG = 'universe:migrated:uni-bot-rename:v1'
+const LEGACY_GROK_BOT_NAME = 'Grok Bot'
+
+/** Frozen seed text from the interim build — exported for migration tests. */
+export const LEGACY_GROK_BOT_INSTRUCTIONS =
+  'You are Grok Bot, the user\u2019s AI teammate. Treat every message as real ' +
+  'work to own end to end: clarify the goal in one question if it is ambiguous, ' +
+  'then produce the deliverable \u2014 not a plan to produce it. Be direct, sharp, ' +
+  'and a little wry; never pad answers. Show your reasoning where it changes the ' +
+  'outcome, state assumptions explicitly, and flag anything you could not ' +
+  'verify. When a task needs several steps, report progress like a colleague ' +
+  'would \u2014 short, concrete updates, no ceremony.'
+
+function renameLegacyGrokBot(agents: Record<string, AgentProfile>): void {
+  const bot = agents[UNI_BOT_AGENT_ID]
+  if (!bot) return
+  let renamed = false
+  try {
+    renamed = localStorage.getItem(UNI_BOT_RENAME_FLAG) === '1'
+  } catch {
+    /* privacy mode: retry on next load — the name check below is idempotent */
+  }
+  if (renamed) return
+  if (bot.name !== LEGACY_GROK_BOT_NAME) {
+    // The user already made this profile their own — record the rename as
+    // done and never touch their choice again.
+    try {
+      localStorage.setItem(UNI_BOT_RENAME_FLAG, '1')
+    } catch {
+      /* best effort */
+    }
+    return
+  }
+  agents[UNI_BOT_AGENT_ID] = {
+    ...bot,
+    name: 'Uni',
+    instructions:
+      bot.instructions === LEGACY_GROK_BOT_INSTRUCTIONS
+        ? buildUniBotSeed(bot.createdAt).instructions
+        : bot.instructions,
+    updatedAt: Date.now(),
+  }
+  try {
+    localStorage.setItem(UNI_BOT_RENAME_FLAG, '1')
+  } catch {
+    /* best effort — idempotent on the next load */
   }
 }
 
@@ -250,7 +317,8 @@ export const useAgentsStore = create<AgentsStore>()((set, get) => ({
     if (loaded.state) {
       const agents: Record<string, AgentProfile> = {}
       for (const agent of loaded.state.agents) agents[agent.id] = agent
-      migrateGrokBotSeed(agents)
+      migrateUniBotSeed(agents)
+      renameLegacyGrokBot(agents)
       const memoryNotes: Record<string, MemoryNote> = {}
       for (const note of loaded.state.memoryNotes) memoryNotes[note.id] = note
       const schedules: Record<string, ScheduleDraft> = {}
@@ -484,9 +552,10 @@ export function resetAgentsStoreForTests(options: { keepStorage?: boolean } = {}
   if (!options.keepStorage) {
     clearAgentsSlice()
     // Migration state is part of storage: clear it too so a test that seeds
-    // an old pre-Grok-Bot slice exercises the real first-load path.
+    // an old pre-Uni-bot slice exercises the real first-load path.
     try {
-      localStorage.removeItem(GROK_BOT_MIGRATION_FLAG)
+      localStorage.removeItem(UNI_BOT_MIGRATION_FLAG)
+      localStorage.removeItem(UNI_BOT_RENAME_FLAG)
     } catch {
       /* ignore */
     }
