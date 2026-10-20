@@ -290,7 +290,24 @@ export const useAgentsStore = create<AgentsStore>()((set, get) => ({
     set((state) => {
       const memoryNotes = { ...state.memoryNotes }
       delete memoryNotes[id]
-      return { memoryNotes }
+      // Retention honesty (m07): the note stops being included in future
+      // requests, but history is not silently rewritten. Structured
+      // memory events lose the stale text (redacted marker), while past
+      // user/assistant messages keep showing what was actually sent.
+      const threadEvents: Record<string, AgentThreadEvent> = {}
+      for (const event of Object.values(state.threadEvents)) {
+        if (event.noteId === id) {
+          threadEvents[event.id] = {
+            ...event,
+            label: 'Remembered: (note removed)',
+            detail:
+              'This note was removed from memory — it is no longer included in future requests. Earlier messages still show the text as it was originally sent.',
+          }
+        } else {
+          threadEvents[event.id] = event
+        }
+      }
+      return { memoryNotes, threadEvents }
     })
   },
 
