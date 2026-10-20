@@ -256,3 +256,37 @@ Quality at each commit: typecheck clean, eslint clean, vitest green
 (242/242 after the new preset test), production build clean. Browser
 re-verification on the production build: zero console/page errors, no
 horizontal overflow, VLM confirms header rhythm and clean chip wrapping.
+
+## Milestone 07 — dependable, coherent, premium
+
+Branch `feat/m07-dependable-coherent-premium` (stacked on the rename branch):
+eleven commits, each gated and pushed individually.
+
+1. Audit doc — all 13 findings reproduced or source-confirmed.
+2. Canonical save (F01/F02) — one operation shared by Outputs panel and
+   plugin adapter; provenance preserved; no-op saves; recreate path;
+   active-branch employee saves.
+3. Dispatch feedback (F03) — every outcome reported; one-tap Allow
+   recovery; rejection receipts.
+4. Cancellation correctness (F05/F06) — thread/agent-scoped aborts; signal
+   checks around async reads and before Library writes.
+5. Employee memory (F04) — notes resolved into requests at send time,
+   bounded and scoped; retention wording; redacted event labels.
+6. Real modals (F07) — InspectorPanel (mobile modal sheet / desktop
+   complementary dock); Library picker on shared Dialog.
+7. Honest export + workspace backup (F08) — truthful scope labels;
+   versioned backup/restore with validation, preview, snapshot.
+8. Plugins in ordinary Chat (F09) — chat thread kind; receipt strip;
+   session-only chat grants; temporary receipts never persist.
+9. SSE hardening + attachment honesty (F12/F13) — event-buffered parser,
+   CRLF/multiline, trailing flush, terminal error frames.
+10. Unified activity + output actions (F10/Phase 4) — one chronological
+    Activity card; Save/Update + Copy beside the output.
+11. Docs (this commit).
+
+Quality: 271/271 tests (40 files), lint 0, typecheck clean, build clean;
+browser journeys green with zero console errors.
+
+Next concrete tasks: screen-reader + axe audit, real-device Safari pass,
+provider-driven tool calling behind the dispatcher boundary, MCP plugin
+prototype with real consent screens.
