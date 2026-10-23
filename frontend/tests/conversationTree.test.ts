@@ -9,6 +9,8 @@ import {
   deriveTitle,
   siblingsOf,
   switchToNode,
+  variantInfoFor,
+  variantPositions,
 } from '@/domain/conversationTree'
 
 function node(
@@ -100,5 +102,40 @@ describe('conversation tree operations', () => {
     const derived = deriveTitle(long)
     expect(derived.length).toBeLessThanOrEqual(50)
     expect(derived.endsWith('…')).toBe(true)
+  })
+
+  it('computes variant positions for every node in one pass', () => {
+    const conversation = buildTree()
+    const positions = variantPositions(conversation)
+
+    // Every node is covered exactly once.
+    expect(positions.size).toBe(6)
+
+    // The edited branch: u2 and u2b are siblings of a1.
+    expect(positions.get('u2')).toEqual({ index: 0, count: 2 })
+    expect(positions.get('u2b')).toEqual({ index: 1, count: 2 })
+
+    // Nodes without siblings.
+    expect(positions.get('u1')).toEqual({ index: 0, count: 1 })
+    expect(positions.get('a1')).toEqual({ index: 0, count: 1 })
+    expect(positions.get('a2')).toEqual({ index: 0, count: 1 })
+    expect(positions.get('a2b')).toEqual({ index: 0, count: 1 })
+  })
+
+  it('agrees with siblingsOf ordering (creation order)', () => {
+    const conversation = buildTree()
+    const positions = variantPositions(conversation)
+    for (const node of Object.values(conversation.nodes)) {
+      const siblings = siblingsOf(conversation, node.id)
+      const position = positions.get(node.id)
+      expect(position?.index).toBe(siblings.findIndex((s) => s.id === node.id))
+      expect(position?.count).toBe(siblings.length)
+    }
+  })
+
+  it('variantInfoFor resolves a single node against the same map', () => {
+    const conversation = buildTree()
+    expect(variantInfoFor(conversation, 'u2b')).toEqual({ index: 1, count: 2 })
+    expect(variantInfoFor(conversation, 'missing')).toBeUndefined()
   })
 })

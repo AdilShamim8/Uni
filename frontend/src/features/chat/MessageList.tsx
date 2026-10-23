@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { Conversation } from '@/domain/types'
-import { activePath } from '@/domain/conversationTree'
+import { activePath, variantPositions } from '@/domain/conversationTree'
 import { withSeparators } from '@/domain/timestamps'
 import { MessageItem } from './MessageItem'
 
@@ -13,6 +13,10 @@ import { MessageItem } from './MessageItem'
 export function MessageList({ conversation }: { conversation: Conversation }) {
   const path = useMemo(() => activePath(conversation), [conversation])
   const timedPath = useMemo(() => withSeparators(path), [path])
+  // One O(N log N) pass replaces the per-item sibling scans (F14b) and
+  // keeps MessageItem's props stable so its memo bails unchanged messages
+  // during streaming (F14).
+  const positions = useMemo(() => variantPositions(conversation), [conversation])
   const containerRef = useRef<HTMLDivElement>(null)
   const nearBottomRef = useRef(true)
   const [nearBottom, setNearBottom] = useState(true)
@@ -56,23 +60,28 @@ export function MessageList({ conversation }: { conversation: Conversation }) {
         <div
           className="mx-auto flex w-full max-w-column flex-col gap-[var(--gap-chat)] px-4 py-6"
         >
-          {timedPath.map(({ node, separator }, index) => (
-            <Fragment key={node.id}>
-              {separator && (
-                <p
-                  aria-hidden="true"
-                  className="select-none self-center rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-ink-faint/90"
-                >
-                  {separator}
-                </p>
-              )}
-              <MessageItem
-                node={node}
-                conversation={conversation}
-                isLast={index === timedPath.length - 1}
-              />
-            </Fragment>
-          ))}
+          {timedPath.map(({ node, separator }, index) => {
+            const variant = positions.get(node.id)
+            return (
+              <Fragment key={node.id}>
+                {separator && (
+                  <p
+                    aria-hidden="true"
+                    className="select-none self-center rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-ink-faint/90"
+                  >
+                    {separator}
+                  </p>
+                )}
+                <MessageItem
+                  node={node}
+                  conversationId={conversation.id}
+                  isLast={index === timedPath.length - 1}
+                  variantIndex={variant?.index ?? 0}
+                  variantCount={variant?.count ?? 1}
+                />
+              </Fragment>
+            )
+          })}
         </div>
       </div>
 

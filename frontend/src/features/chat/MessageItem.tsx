@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import {
   BookOpen,
   Check,
@@ -15,8 +15,7 @@ import {
   ThumbsUp,
   Trash2,
 } from 'lucide-react'
-import type { Conversation, MessageNode } from '@/domain/types'
-import { siblingsOf } from '@/domain/conversationTree'
+import type { MessageNode } from '@/domain/types'
 import { formatFullTimestamp } from '@/domain/timestamps'
 import { useAppStore } from '@/state/store'
 import { useLibraryStore } from '@/state/libraryStore'
@@ -28,18 +27,45 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Markdown } from './Markdown'
 import { TOOL_REGISTRY } from './toolRegistry'
 
+/**
+ * Stable, primitive-only inputs so the memo below is effective: during
+ * streaming the store patches one node per token and every other message
+ * keeps identical props, so unchanged messages bail before any
+ * reconciliation work. Variant index/count arrive precomputed (see
+ * `variantPositions`) instead of each item rescanning all nodes.
+ */
 export interface MessageItemProps {
   node: MessageNode
-  conversation: Conversation
+  conversationId: string
   isLast: boolean
+  /** 0-based position among this message's edit/regenerate variants. */
+  variantIndex: number
+  /** Sibling count including this message (1 = no variants). */
+  variantCount: number
 }
 
-export function MessageItem({ node, conversation, isLast }: MessageItemProps) {
+export const MessageItem = memo(function MessageItem({
+  node,
+  conversationId,
+  isLast,
+  variantIndex,
+  variantCount,
+}: MessageItemProps) {
   if (node.role === 'user') {
-    return <UserMessage node={node} conversation={conversation} />
+    return (
+      <UserMessage node={node} variantIndex={variantIndex} variantCount={variantCount} />
+    )
   }
-  return <AssistantMessage node={node} conversation={conversation} isLast={isLast} />
-}
+  return (
+    <AssistantMessage
+      node={node}
+      conversationId={conversationId}
+      isLast={isLast}
+      variantIndex={variantIndex}
+      variantCount={variantCount}
+    />
+  )
+})
 
 /* ------------------------------------------------------------------ */
 /* Variant switcher                                                    */
@@ -167,17 +193,21 @@ function ActionRow({ children, align = 'left' }: { children: React.ReactNode; al
 /* User message                                                        */
 /* ------------------------------------------------------------------ */
 
-function UserMessage({ node, conversation }: { node: MessageNode; conversation: Conversation }) {
+function UserMessage({
+  node,
+  variantIndex,
+  variantCount,
+}: {
+  node: MessageNode
+  variantIndex: number
+  variantCount: number
+}) {
   const editUserMessage = useAppStore((state) => state.editUserMessage)
   const switchSibling = useAppStore((state) => state.switchSibling)
   const deleteMessage = useAppStore((state) => state.deleteMessage)
   const [editing, setEditing] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [draft, setDraft] = useState(node.content)
-
-  const siblings = siblingsOf(conversation, node.id)
-  const index = siblings.findIndex((sibling) => sibling.id === node.id)
-  const variantCount = siblings.length
 
   if (editing) {
     return (
@@ -264,7 +294,7 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
       <ActionRow align="right">
         {variantCount > 1 && (
           <VariantNav
-            index={index}
+            index={variantIndex}
             count={variantCount}
             onPrev={() => switchSibling(node.id, -1)}
             onNext={() => switchSibling(node.id, 1)}
@@ -316,12 +346,16 @@ function UserMessage({ node, conversation }: { node: MessageNode; conversation: 
 
 function AssistantMessage({
   node,
-  conversation,
+  conversationId,
   isLast,
+  variantIndex,
+  variantCount,
 }: {
   node: MessageNode
-  conversation: Conversation
+  conversationId: string
   isLast: boolean
+  variantIndex: number
+  variantCount: number
 }) {
   const regenerate = useAppStore((state) => state.regenerate)
   const switchSibling = useAppStore((state) => state.switchSibling)
@@ -329,10 +363,6 @@ function AssistantMessage({
   const deleteMessage = useAppStore((state) => state.deleteMessage)
   const [sourcesOpen, setSourcesOpen] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-
-  const siblings = siblingsOf(conversation, node.id)
-  const index = siblings.findIndex((sibling) => sibling.id === node.id)
-  const variantCount = siblings.length
   const streaming = node.status === 'streaming'
 
   return (
@@ -424,14 +454,14 @@ function AssistantMessage({
         <ActionRow>
           {variantCount > 1 && (
             <VariantNav
-              index={index}
+              index={variantIndex}
               count={variantCount}
               onPrev={() => switchSibling(node.id, -1)}
               onNext={() => switchSibling(node.id, 1)}
             />
           )}
           <CopyButton content={node.content} />
-          <SaveToCanvasButton content={node.content} conversationId={conversation.id} />
+          <SaveToCanvasButton content={node.content} conversationId={conversationId} />
           <button
             type="button"
             aria-label="Good response"
