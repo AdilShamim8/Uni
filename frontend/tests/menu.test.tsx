@@ -66,6 +66,101 @@ describe('Menu collision handling (audit D1)', () => {
 })
 
 /* ------------------------------------------------------------------ */
+/* Body-level portal — menus escape clipped glass ancestors             */
+/* ------------------------------------------------------------------ */
+
+describe('Menu portal escape (UI clipping fix)', () => {
+  setupAppTest()
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('renders the open panel as a child of document.body, outside any ancestor', async () => {
+    // The floating sidebar and mobile drawer use backdrop-filter with
+    // overflow-hidden, which turns them into containing blocks that trap
+    // and clip a position:fixed panel — slicing menu text mid-letter. The
+    // panel must therefore live at the body level, where fixed coordinates
+    // are true viewport coordinates and nothing can clip it.
+    render(
+      <Menu label="Test menu" trigger={<button type="button">Open</button>}>
+        <MenuItem>Item one</MenuItem>
+      </Menu>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    const panel = await screen.findByRole('menu')
+    expect(panel.parentElement).toBe(document.body)
+  })
+
+  it('keeps the menu open for clicks inside the portaled panel and closes on item select', async () => {
+    const onClick = vi.fn()
+    render(
+      <Menu label="Test menu" trigger={<button type="button">Open</button>}>
+        <MenuItem onClick={onClick}>Item one</MenuItem>
+      </Menu>,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    const item = await screen.findByRole('menuitem', { name: 'Item one' })
+    // The mousedown phase must not treat the portaled panel as "outside".
+    await userEvent.click(item)
+    expect(onClick).toHaveBeenCalledOnce()
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+  })
+
+  it('does not phantom-flip an upward menu that fits above its trigger', async () => {
+    // Regression for the first-placement measure: the panel used to be
+    // measured at its temporary (0,0) origin, where rect.top < 8 always
+    // held, so every direction="up" menu flipped down in real browsers —
+    // landing below the footer trigger and past the viewport bottom. The
+    // mock below derives geometry from the inline styles like a layout
+    // engine would, so the panel is measured where it actually lands.
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+    spy.mockImplementation(function (this: HTMLElement) {
+      const style = this.style
+      if (this.getAttribute('role') === 'menu') {
+        const width = 200
+        const height = 250
+        let top = 0
+        if (style.top) {
+          top = parseFloat(style.top)
+        } else if (style.bottom) {
+          top = window.innerHeight - parseFloat(style.bottom) - height
+        }
+        return {
+          x: 0, y: top, top, bottom: top + height, left: 0, right: width,
+          width, height, toJSON: () => ({}),
+        }
+      }
+      if (this.getAttribute('aria-haspopup') === 'menu') {
+        // Trigger (40px tall) ends just below the panel's bottom edge.
+        return {
+          x: 0, y: 716, top: 716, bottom: 756, left: 0, right: 120,
+          width: 120, height: 40, toJSON: () => ({}),
+        }
+      }
+      return { x: 0, y: 0, top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, toJSON: () => ({}) }
+    })
+
+    render(
+      <Menu
+        label="Test menu"
+        direction="up"
+        trigger={<button type="button">Open</button>}
+      >
+        <MenuItem>Item one</MenuItem>
+      </Menu>,
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open' }))
+    const panel = await screen.findByRole('menu')
+    // Placed 6px above the trigger's top edge — comfortably inside the
+    // 768px viewport — so it must keep opening upward.
+    expect(panel.className).toContain('pop-in-up')
+    expect(panel.style.bottom).toBe('58px')
+  })
+})
+
+/* ------------------------------------------------------------------ */
 /* R1 regression — selectable menu items use proper ARIA roles          */
 /* ------------------------------------------------------------------ */
 
