@@ -33,9 +33,25 @@ Notes:
 - Live deployed URL was not browser-retested this session (no rendered
   desktop/mobile audit performed); no claim is made about it.
 
-## B01 — running backend and contracts
+## B01 — running backend and contracts (2026-10-23)
 
-(pending — record commands and results when the gate lands)
+Environment note: this sandbox has no Docker daemon and no system
+PostgreSQL; integration tests use the `embedded-postgres` package (real
+PostgreSQL 18 binaries, disposable data dir under gitignored `.tmp/`).
+`infra/docker-compose.yml` remains the documented path for a persistent
+development database on normal machines.
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm install && npm run build` | **Pass** — dist emitted; `API_ROOT`/schemas importable |
+| `cd backend && npm install` | **Pass** — installs deps; `@uni/contracts` built via its `prepare` script |
+| `cd backend && npm run typecheck` | **Pass** — 0 errors (src + tests) |
+| `cd backend && npx drizzle-kit generate` | **Pass** — migration `0000` for `db_metadata` committed under `backend/drizzle/` |
+| `cd backend && npm test` (vitest run) | **11/11 tests pass across 2 files**: 7 app tests (liveness, readiness 503/200, error envelope incl. 404/AppError/zod-400/no-leak, x-request-id echo, CORS allow/deny) + 4 embedded-PG integration tests (migrations apply, idempotent re-run, Drizzle CRUD round-trip, readiness up/down with no connection-string leak) |
+| `cd backend && npm run dev` (manual smoke) | API starts on 127.0.0.1:4000; `/health/live` 200; `/health/ready` 503 without DATABASE_URL (expected, honest) |
+
+Frontend API base/proxy wiring: recorded here when committed (see
+`frontend/vite.config.ts` dev proxy + `frontend/src/services/api/client.ts`).
 
 ## B02 — identity, persistence, deliberate import
 
