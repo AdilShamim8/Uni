@@ -2,12 +2,15 @@ import { ArrowDown } from 'lucide-react'
 import type { ThreadEntry } from './threadModel'
 import { ThreadEntryView } from './ThreadEntryView'
 import { useThreadScroll } from './useThreadScroll'
+import { useTranscriptWindow } from './useTranscriptWindow'
 
 /**
  * The shared thread container used by Work and employee surfaces: a
  * 720–800px reading column, reader-friendly auto-scroll, a jump-to-latest
  * affordance, and time-gap separators between quiet stretches — the same
- * reading behaviors as the Chat transcript.
+ * reading behaviors as the Chat transcript. Long threads render through
+ * the shared windowing hook so a long employee conversation costs a
+ * bounded mount too (milestone 08, F15).
  */
 export function ThreadView({
   entries,
@@ -22,6 +25,7 @@ export function ThreadView({
 }) {
   const lastKey = entries.length > 0 ? entries[entries.length - 1].entryId : 'empty'
   const { containerRef, nearBottom, handleScroll, jumpToLatest } = useThreadScroll(lastKey)
+  const { start } = useTranscriptWindow({ containerRef, total: entries.length })
 
   if (entries.length === 0 && emptyState) {
     return <div className="min-h-0 flex-1 overflow-y-auto">{emptyState}</div>
@@ -33,19 +37,29 @@ export function ThreadView({
         ref={containerRef}
         onScroll={handleScroll}
         className="min-h-0 flex-1 overflow-y-auto"
+        // Native scroll anchoring would also compensate prepended history,
+        // doubling the hook's own compensation; the hook owns anchoring.
+        style={{ overflowAnchor: 'none' }}
         role="log"
         aria-label={ariaLabel}
       >
         <ol className="mx-auto flex w-full max-w-column flex-col gap-[var(--gap-chat)] px-4 py-6">
-          {entries.map((entry, index) => (
-            <li key={entry.entryId} className="message-in">
-              <ThreadEntryView
-                entry={entry}
-                isLast={index === entries.length - 1}
-                onAnswerClarify={onAnswerClarify}
-              />
-            </li>
-          ))}
+          {entries.slice(start).map((entry, offset) => {
+            const index = start + offset
+            return (
+              <li
+                key={entry.entryId}
+                data-window-item={index}
+                className="message-in"
+              >
+                <ThreadEntryView
+                  entry={entry}
+                  isLast={index === entries.length - 1}
+                  onAnswerClarify={onAnswerClarify}
+                />
+              </li>
+            )
+          })}
         </ol>
       </div>
 
