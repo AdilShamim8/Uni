@@ -46,6 +46,11 @@ provides the persistent development database instead.
 | `POST /api/v1/conversations/:id/nodes` | Append a user/assistant node (parent + idempotency validated) |
 | `POST /api/v1/import/preview` | Dry-run backup import — counts, errors, unsupported sections; stores nothing |
 | `POST /api/v1/import/commit` | Transactional, idempotent backup import (checksum replay; temporary chats skipped) |
+| `GET/POST /api/v1/providers` | List / create provider connections (metadata + redacted credential view) |
+| `PATCH/DELETE /api/v1/providers/:id` | Update / delete a provider (deleting removes the credential) |
+| `PUT/DELETE /api/v1/providers/:id/credential` | Set / remove the encrypted API key (server-side only; never returned) |
+| `POST /api/v1/providers/:id/test` | SSRF-guarded connection check with the stored key |
+| `POST /api/v1/providers/:id/models` | Discover and persist the model list (guarded) |
 
 Authentication uses Better Auth with the Drizzle adapter. Sessions are
 HttpOnly cookies (`uni-auth-session_token`), Secure in production,

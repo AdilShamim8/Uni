@@ -19,6 +19,9 @@ export interface TestApp {
 
 export const TRUSTED_ORIGIN = 'http://localhost:5173'
 
+/** Deterministic 32-byte test master key (base64) for credential envelopes. */
+export const TEST_CREDENTIAL_MASTER_KEY = Buffer.alloc(32, 7).toString('base64')
+
 export async function startTestApp(): Promise<TestApp> {
   const scratch = await ensureScratchRoot()
   const dataDir = await mkdtemp(join(scratch, 'uni-pg-'))
@@ -47,6 +50,12 @@ export async function startTestApp(): Promise<TestApp> {
     CORS_ORIGINS: `${TRUSTED_ORIGIN},http://127.0.0.1:5173`,
     APP_URL: 'http://127.0.0.1:4000',
     AUTH_REGISTRATION: 'open',
+    CREDENTIAL_MASTER_KEY: TEST_CREDENTIAL_MASTER_KEY,
+    CREDENTIAL_KEY_ID: 'test-key-1',
+    // Integration tests run a fake provider on loopback — this is the
+    // documented operator setting for self-hosted local models.
+    ALLOW_LOCAL_MODEL_ENDPOINTS: 'true',
+    LOCAL_MODEL_ENDPOINT_ALLOWLIST: '',
   }
   const app = await buildApp({ env })
 
