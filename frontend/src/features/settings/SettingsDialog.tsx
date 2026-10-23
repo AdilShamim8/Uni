@@ -46,7 +46,7 @@ export function SettingsDialog() {
       <div className="flex flex-col gap-5 sm:flex-row">
         <nav
           aria-label="Settings sections"
-          className="flex gap-1 overflow-x-auto pb-1 sm:w-48 sm:shrink-0 sm:flex-col sm:overflow-visible sm:pb-0"
+          className="flex flex-wrap gap-1 sm:w-48 sm:shrink-0 sm:flex-col sm:overflow-visible"
         >
           {SECTIONS.map((entry) => {
             const active = section === entry.id
