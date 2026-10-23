@@ -210,3 +210,18 @@ real request to a provider the user configured with their own API key.
 | Library context adapter | Working | Explicit selection into the existing context store, within its limits |
 | External plugins (GitHub, Gmail, Drive) | Integration required | Descriptions only — no OAuth, no tokens, no connection claims |
 | Plugin storage | Working | `universe:plugins:v1` — no tokens, keys, or message text (tested) |
+
+---
+
+# Milestone 08 — long-conversation performance
+
+## Transcript rendering
+
+| Feature | Status | Notes |
+| --- | --- | --- |
+| Memoized transcript updates | Working | One node patched per streamed token; every other message bails at the memo boundary with zero reconciliation work (`variantPositions` + primitive props + `React.memo`) |
+| Windowed transcript rendering (Chat + Work/employee threads) | Working | Tail window (120) mounts first; upward scroll materializes history block-by-block (40) with measured scroll compensation; rendered cap (320) collapses blocks that pass above the viewport; `overflow-anchor: none` keeps compensation single |
+| Fail-open in non-measuring environments | Working | jsdom and hidden containers render the full transcript; transcripts ≤ 80 items never window |
+| Bounded mount cost | Working | 600-message conversation: 1691 → 524 ms mount, longest block 1356 → 321 ms, DOM 19,506 → 4,025 nodes, heap 74 → 11 MB (see `verification.md`) |
+| 60 fps streaming in long transcripts | Working | 0 long tasks / 16.7 ms median frame during a streamed reply (was 69 long tasks / 83.3 ms ≈ 12 fps) |
+| Off-screen history accessibility | Honest limit | Not in the accessibility tree while windowed (virtualized-transcript tradeoff); reachable by scrolling, and never removed while the reader is near the bottom of what is rendered |

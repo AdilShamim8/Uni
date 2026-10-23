@@ -358,3 +358,47 @@ legacy "Grok Bot" slice migrates to "Uni" with the flag set; a bot
 renamed through the builder ("My own bot") keeps its name across reload
 and the hero follows it; zero console/page errors; desktop light + dark
 and 390px mobile screenshots captured.
+
+## Milestone 08 — long-conversation performance
+
+Branch `feat/m08-long-conversation-performance` (on `main` after PR #19):
+five commits, each gated and pushed individually. Roadmap Week-2 item —
+"performance pass on long conversations (windowed rendering if
+measurements justify it)".
+
+1. Audit (`milestone-08-audit.md`) with a committed, reproducible Chromium
+   benchmark (`scripts/perf_long_conversation.py`): a 600-message
+   conversation mounted in 1691 ms with a single 1356 ms main-thread block,
+   19,506 DOM nodes, 66–74 MB heap; streaming one reply blocked the main
+   thread for 5.0 s (69 long tasks, median frame 83.3 ms ≈ 12 fps); each
+   item also rescanned all nodes per update (quadratic).
+2. Lockfile regeneration caught by `npm install` (chore commit).
+3. F14 mechanism correction (docs) — `Markdown` was already memoized; the
+   measured cost is per-token reconciliation of all 600 unmemoized
+   MessageItems, not markdown re-parsing.
+4. Memoized transcript updates (F14/F14b): domain `variantPositions`
+   computes variant index/count in one O(N log N) pass; `MessageItem`
+   takes stable primitive props + `React.memo`; the employee-thread
+   projection feeds the same primitives. Streaming: 0 long tasks, 16.7 ms
+   median frame (60 fps); scroll long tasks 30 → 0.
+5. Windowed transcript rendering (F15): pure `domain/windowing.ts` (tail
+   120, block 40, cap 320, fail-open below 80) + `useTranscriptWindow`
+   hook; MessageList and ThreadView render through it. Mount 1691 →
+   524 ms, longest block 1356 → 321 ms, DOM nodes 19,506 → 4,025, heap
+   74 → 11 MB. A full upward traversal materializes all 600 and the
+   return trip collapses back to the 320-item cap. Scroll containers set
+   `overflow-anchor: none` — native anchoring would double-compensate
+   prepended history.
+
+Quality at each commit: typecheck clean, eslint clean, vitest green
+(295/295 across 43 files after the new suites: transcriptMemo,
+windowing, windowedTranscript, +3 domain cases), production build clean.
+Browser verification re-ran the milestone-08 benchmark on the production
+build after each change; the debug probe that validated the up/down
+lifecycle (materialize → compensate → collapse) was run locally and not
+committed.
+
+Next concrete tasks: screen-reader + axe audit on the windowed
+transcript, real-device Safari pass (no overflow-anchor there — the hook
+owns compensation either way), provider-driven tool calling behind the
+dispatcher boundary, MCP plugin prototype with real consent screens.
