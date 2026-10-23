@@ -402,3 +402,53 @@ Next concrete tasks: screen-reader + axe audit on the windowed
 transcript, real-device Safari pass (no overflow-anchor there — the hook
 owns compensation either way), provider-driven tool calling behind the
 dispatcher boundary, MCP plugin prototype with real consent screens.
+
+## Session 10 — dropdown clipping fix: menu panels escape the glass
+
+User report (screenshot): the sidebar Tools dropdown on mobile showed
+every hint cut mid-word at the panel's right edge — "Sample galler",
+"no microphor", "Local CSV analys", "Enable local too" — with no
+ellipsis.
+
+Root cause, reproduced in Chromium at 390×844 before any change: the
+`Menu` panel positions itself with `position: fixed` using viewport
+coordinates, but the floating sidebar and the mobile drawer apply
+`backdrop-filter` (the drawer also animates a `transform`), which per
+spec makes them the containing block for fixed descendants. The
+sidebar's `overflow-hidden` then clipped the panel at its 240px edge:
+the DOM rect said x=36..276 while the visible panel stopped at x=251.
+The in-code claim that "fixed positioning means no overflow-hidden
+ancestor can ever clip a menu" does not survive backdrop-filter or
+transform ancestors. Three commits, each gated and pushed individually:
+
+1. Portal the open panel to `document.body` (`createPortal`), so fixed
+   coordinates are true viewport coordinates and no ancestor's
+   overflow, stacking context, or containing block can reach it. The
+   outside-pointer/focusin checks now accept the portaled panel itself.
+   `place()` also learned an honest first measurement — style the panel
+   at its preferred direction's would-be position, then measure, then
+   flip — because measuring at the temporary (0,0) origin always read
+   `rect.top < 8` and phantom-flipped every direction="up" menu below
+   its footer trigger once the portal made coordinates real.
+2. Widen the sidebar Tools menu `w-60 → w-64` so the "Data analysis"
+   label (95px of text in 84px of room) keeps full room next to its
+   "Local CSV analysis" hint; the 256px panel still fits a 270px
+   viewport inside the 8px clamp margins.
+3. Three regression tests: the open panel is a body-level child; clicks
+   inside the portaled panel keep it open and close it via selection;
+   a style-aware rect mock proves a fitting upward menu no longer
+   phantom-flips (it stays `pop-in-up` with `bottom: 58px`).
+
+Quality: 298/298 tests (43 files, +3 menu regressions), eslint 0,
+typecheck clean. Browser verification at 390×844 and 1280×800: all
+five Tools rows render label and hint in full (`scrollWidth` never
+exceeds `clientWidth`), the panel opens upward fully inside the
+viewport, and the account, project, and composer-tools menus were spot-
+checked as body-level children. The same trap awaits any future
+surface that both transforms and clips — the portal removes the class
+of bug, not just this instance.
+
+Next concrete tasks: axe/screen-reader audit over the portaled panels
+(focus order across a body-level portal deserves a dedicated pass),
+and a decision on whether ToolPicker's `w-72` should clamp on
+sub-300px viewports.
