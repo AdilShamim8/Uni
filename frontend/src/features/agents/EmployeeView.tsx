@@ -58,12 +58,20 @@ export function EmployeeView({
 
   // Open (or take over) the agent's one ongoing conversation. This is the
   // same conversation the Chat surface renders — one thread, no copies.
-  const conversationId = useMemo(() => {
+  // Resolution runs in an effect, never during render: opening mutates
+  // store state (sidebar selection and conversation records), and React
+  // forbids updating other components (Sidebar) while rendering this one.
+  // openAgentConversation is idempotent — repeat calls reuse the agent's
+  // one ongoing thread — so Strict Mode's double-invoked effects cannot
+  // duplicate threads.
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  useEffect(() => {
     const id = useAppStore.getState().openAgentConversation(agentId)
-    return id
+    setConversationId(id)
   }, [agentId])
 
-  const conversation = conversations[conversationId] ?? null
+  const conversation =
+    conversationId === null ? null : (conversations[conversationId] ?? null)
 
   useEffect(() => {
     // Keep the store's active selection in sync so sends from this surface
@@ -86,15 +94,16 @@ export function EmployeeView({
 
   const receipts = usePluginsStore((state) => state.receipts)
   const entries = useMemo(() => {
-    const pluginEntries = conversation
-      ? receiptsToEntries(
-          filterReceiptsForThread(receipts, {
-            kind: 'agent',
-            agentId,
-            conversationId,
-          }),
-        )
-      : []
+    const pluginEntries =
+      conversation && conversationId !== null
+        ? receiptsToEntries(
+            filterReceiptsForThread(receipts, {
+              kind: 'agent',
+              agentId,
+              conversationId,
+            }),
+          )
+        : []
     return mergeThreadEntries(projectAgentThread(conversation, events), pluginEntries)
   }, [conversation, events, receipts, agentId, conversationId])
 
@@ -306,26 +315,37 @@ export function EmployeeView({
           </div>
         )}
 
-        <ThreadPluginBar
-          thread={{ kind: 'agent', agentId, conversationId }}
-          agentId={agentId}
-        />
+        {conversationId === null ? (
+          <div
+            role="status"
+            className="px-4 py-3 text-center text-[13px] text-ink-faint"
+          >
+            Opening {agent.name}&#39;s conversation…
+          </div>
+        ) : (
+          <>
+            <ThreadPluginBar
+              thread={{ kind: 'agent', agentId, conversationId }}
+              agentId={agentId}
+            />
 
-        <ThreadComposer
-          draftKey={`agent:${agentId}`}
-          textareaId={`agent-composer-${agentId}`}
-          ariaLabel={`Message ${agent.name}`}
-          placeholder={`Message ${agent.name}… or /assign, /remember, /task`}
-          statusLabel={<AgentStatusLine agent={agent} conversationId={conversationId} />}
-          busy={busy}
-          onStop={() => useAppStore.getState().stopGeneration()}
-          onSend={handleSend}
-          actions={quickActions.map((action) => ({
-            id: action.id,
-            label: action.label,
-            onRun: action.run,
-          }))}
-        />
+            <ThreadComposer
+              draftKey={`agent:${agentId}`}
+              textareaId={`agent-composer-${agentId}`}
+              ariaLabel={`Message ${agent.name}`}
+              placeholder={`Message ${agent.name}… or /assign, /remember, /task`}
+              statusLabel={<AgentStatusLine agent={agent} conversationId={conversationId} />}
+              busy={busy}
+              onStop={() => useAppStore.getState().stopGeneration()}
+              onSend={handleSend}
+              actions={quickActions.map((action) => ({
+                id: action.id,
+                label: action.label,
+                onRun: action.run,
+              }))}
+            />
+          </>
+        )}
       </div>
 
       {/* Inspector — modal sheet on mobile, non-modal docked panel on
