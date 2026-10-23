@@ -155,6 +155,37 @@ export const conversationNodes = pgTable(
 )
 
 /* ------------------------------------------------------------------ */
+/* Provider connections (B03)                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Workspace-scoped provider connections. `credentialEnvelope` holds the
+ * AES-256-GCM secret envelope (see lib/secretBox.ts) — it is never
+ * returned by any API and never logged.
+ */
+export const providerConnections = pgTable(
+  'provider_connection',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    label: text('label').notNull(),
+    kind: text('kind').notNull(),
+    endpointUrl: text('endpoint_url').notNull(),
+    modelId: text('model_id'),
+    models: jsonb('models').$type<string[]>(),
+    credentialEnvelope: text('credential_envelope'),
+    credentialStatus: text('credential_status').notNull().default('untested'),
+    credentialLastCheckedAt: timestamp('credential_last_checked_at', { withTimezone: true }),
+    credentialLastError: text('credential_last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('provider_connection_workspace_idx').on(table.workspaceId, table.createdAt)],
+)
+
+/* ------------------------------------------------------------------ */
 /* Deliberate import batches (B02)                                     */
 /* ------------------------------------------------------------------ */
 

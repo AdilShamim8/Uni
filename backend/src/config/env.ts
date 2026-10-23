@@ -21,6 +21,14 @@ const envSchema = z.object({
   APP_URL: z.string().url().default('http://127.0.0.1:4000'),
   /** Explicit registration policy: open (dev default) or closed (hosted without email verification). */
   AUTH_REGISTRATION: z.enum(['open', 'closed']).default('open'),
+  /** Base64 (32 bytes) master key for credential encryption. Required to store credentials. */
+  CREDENTIAL_MASTER_KEY: z.string().min(1).optional(),
+  /** Key id recorded in credential envelopes (rotation marker). */
+  CREDENTIAL_KEY_ID: z.string().min(1).max(100).default('key-1'),
+  /** Operator opt-in for self-hosted local model endpoints (loopback/private ranges). */
+  ALLOW_LOCAL_MODEL_ENDPOINTS: z.enum(['true', 'false']).default('false'),
+  /** Comma-separated hostnames/IPs explicitly allowed for local model endpoints. */
+  LOCAL_MODEL_ENDPOINT_ALLOWLIST: z.string().default(''),
 })
 
 export type Env = z.infer<typeof envSchema>

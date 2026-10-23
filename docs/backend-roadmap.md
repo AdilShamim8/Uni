@@ -21,7 +21,7 @@ Kubernetes, no second backend.
 | B00 | Baseline evidence, EmployeeView render-mutation fix, docs, stack decision | **Complete** (23 Oct 2026) |
 | B01 | Running backend, health endpoints, DB wiring, contracts package | **Complete** (23 Oct 2026) — backend + contracts + embedded-PG integration tests + docker-compose + frontend API client/dev-proxy wiring |
 | B02 | Better Auth identity, workspaces, conversation persistence, importer | **Complete** (23 Oct 2026) — backend (auth 6, conversations 7, importer 6 integration tests) + frontend Account section (sign-in/out, deliberate import, read-only server conversations; 7 tests) |
-| B03 | Server BYOK providers, encrypted credentials, streamed chat runs | Not started |
+| B03 | Server BYOK providers, encrypted credentials, streamed chat runs | **In progress** — providers slice complete (encrypted credentials, SSRF guard, connection tests); chat runs next |
 | B04 | Library, employee memory, shared context on the server | Not started |
 | B05 | Server-side plugins with enforced grants | Not started |
 | B06 | Durable Work (pg-boss worker) | Not started |
