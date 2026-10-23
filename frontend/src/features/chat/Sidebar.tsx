@@ -602,7 +602,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
         <Menu
           align="start"
           direction="up"
-          width="w-60"
+          width="w-64"
           label="Tools"
           trigger={
             <button
