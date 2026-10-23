@@ -13,6 +13,8 @@ const envWithoutDb: Env = {
   LOG_LEVEL: 'fatal',
   DATABASE_URL: undefined,
   CORS_ORIGINS: 'http://localhost:5173',
+  APP_URL: 'http://127.0.0.1:4000',
+  AUTH_REGISTRATION: 'open',
 }
 
 describe('app factory — health endpoints and error envelope', () => {

@@ -17,6 +17,7 @@ lockfiles) is generated and reviewed at B08 — see
 | pg (node-postgres) | 8.23.1 | MIT | `third_party/licenses/pg/LICENSE` |
 | pino | 9.14.0 | MIT | `third_party/licenses/pino/LICENSE` |
 | dotenv | 18.0.9 | BSD-2-Clause | `third_party/licenses/dotenv/LICENSE` |
+| better-auth | 1.7.12 | MIT | `third_party/licenses/better-auth/LICENSE` |
 | @uni/contracts | 0.1.0 (local) | MIT (Uni's own) | repository source |
 
 ## Backend development/test dependencies
@@ -45,6 +46,10 @@ alongside the backend's.
   preserved; no NOTICE files are shipped by these packages at the
   versions in use.
 - BSD-2-Clause component (dotenv): license text preserved.
-- No third-party code has been adapted or vendored into Uni source yet;
-  adapted files (if any) will be recorded in `docs/opensource-reuse.md`
-  with upstream commit, path, and modifications.
+- One upstream example has been adapted: the Better Auth Fastify
+  integration example (`docs/content/docs/integrations/fastify.mdx`,
+  MIT) → `backend/src/modules/auth/auth.routes.ts`; modifications and
+  validation are recorded in `docs/opensource-reuse.md` Section 2.
+  No other third-party code has been adapted or vendored into Uni
+  source; any future adaptation will be recorded there with upstream
+  commit, path, and modifications.

@@ -1,12 +1,17 @@
-import Fastify, { type FastifyBaseLogger, type FastifyInstance } from 'fastify'
+import Fastify, { type FastifyBaseLogger, type FastifyInstance, type FastifyPluginAsync } from 'fastify'
 import { randomUUID } from 'node:crypto'
 import cors from '@fastify/cors'
 import type { Logger } from 'pino'
+import type { Auth } from 'better-auth'
 import { loadEnv, parseCorsOrigins, type Env } from './config/env.js'
 import { createLogger } from './lib/logger.js'
 import { registerErrorHandler } from './middleware/errorHandler.js'
 import { attachDatabase } from './db/client.js'
 import { healthRoutes } from './modules/health/health.routes.js'
+import { buildAuth } from './modules/auth/auth.service.js'
+import { authRoutes } from './modules/auth/auth.routes.js'
+import { registerSessionScope } from './modules/auth/session.middleware.js'
+import { meRoutes } from './modules/me/me.routes.js'
 
 export interface BuildAppOptions {
   env?: Env
@@ -33,6 +38,24 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   app.decorate('env', env)
   await attachDatabase(app)
 
+  // Error handling must be registered before routes so every route —
+  // including hook-thrown errors — surfaces the contract envelope.
+  registerErrorHandler(app)
+
+  // Identity: Better Auth instance + its Fastify bridge. Auth requires
+  // the database; without DATABASE_URL (dev-only) the API serves health
+  // only and /api/v1 stays unregistered (honest degradation).
+  if (app.database) {
+    app.decorate('auth', buildAuth(app))
+    await app.register(authRoutes, { prefix: '/api/auth' })
+
+    const apiV1: FastifyPluginAsync = async (api) => {
+      registerSessionScope(api)
+      await api.register(meRoutes)
+    }
+    await app.register(apiV1, { prefix: '/api/v1' })
+  }
+
   // Echo the effective request id so clients can correlate errors and logs.
   app.addHook('onRequest', async (_request, reply) => {
     reply.header('x-request-id', reply.request.id)
@@ -51,8 +74,6 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
   })
-
-  registerErrorHandler(app)
 
   await app.register(healthRoutes)
 

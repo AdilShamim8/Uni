@@ -23,6 +23,8 @@ const baseEnv: Env = {
   LOG_LEVEL: 'fatal',
   DATABASE_URL: undefined,
   CORS_ORIGINS: '',
+  APP_URL: 'http://127.0.0.1:4000',
+  AUTH_REGISTRATION: 'open',
 }
 
 describe('database integration — migrations, CRUD, readiness', () => {
