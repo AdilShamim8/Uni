@@ -331,3 +331,44 @@ mount/stream/scroll phases it was derived from.
 - A transcript that grows past the threshold mid-session starts windowing
   only once the reader returns near the bottom, so content under the
   reader's eyes is never removed by activation.
+
+## Session 10 — dropdown clipping fix (main, session 10)
+
+### Automated gates (fresh run, final commit)
+
+| Gate | Result |
+| --- | --- |
+| `tsc --noEmit` (app + node configs) | clean |
+| `eslint .` | 0 problems |
+| `vitest run` | **298/298** across 43 files (+3 menu regressions) |
+
+### Panel geometry (Chromium, before → after)
+
+Measured on the sidebar Tools menu, mobile drawer open at 390×844,
+before any fix / after the portal + flip + width commits:
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Panel parent | sidebar (backdrop-filter containing block) | **document.body** |
+| Panel DOM rect | x 36..276 (clipped) | **x 22..278, fully painted** |
+| Visible panel right edge | 251 px (cut at sidebar edge) | **278 px (panel right edge)** |
+| Open direction | — | **up, `pop-in-up`, bottom 720 of 844** |
+| Hint texts | "Sample galler", "no microphon(e)", "Enable local tool(s)" — cut mid-letter, no ellipsis | **all five complete** |
+| Label truncation | "Data analysis" → ellipsis (95 px text in 84 px) | **none — `scrollWidth ≤ clientWidth` on every row** |
+
+Desktop 1280×800 spot-checks after the fix: sidebar account menu
+(x 23..263) and Tools menu (x 23..279) open upward fully visible as
+body-level children — the account menu had also been losing ~8px to
+the 240px sidebar edge before the portal. Composer tools (w-72) opens
+upward at x 459..747, fully visible.
+
+### Honest limits
+
+- jsdom has no layout, so the clipping itself is not directly
+  testable there; the regression tests pin the observable contract
+  (body-level parent, in-portal click behavior, style-aware flip) and
+  the geometry table above is the Chromium evidence.
+- The style-aware rect mock in `menu.test.tsx` approximates a layout
+  engine from inline `top`/`bottom`; it does not model `maxHeight`
+  capping or horizontal clamping, which remain covered only by the
+  browser checks.
