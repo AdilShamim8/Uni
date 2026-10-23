@@ -57,7 +57,7 @@ function CodePre({ children, ...props }: ComponentPropsWithoutRef<'pre'>) {
           type="button"
           aria-label="Copy code"
           onClick={() => void handleCopy()}
-          className="rounded-md p-1 text-ink-faint transition-colors hover:bg-raised hover:text-ink focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
+          className="min-touch rounded-md p-1 text-ink-faint transition-colors hover:bg-raised hover:text-ink focus-visible:opacity-100 [@media(hover:none)]:opacity-100"
         >
           {copied ? <Check size={13} className="text-success" /> : <Copy size={13} />}
         </button>

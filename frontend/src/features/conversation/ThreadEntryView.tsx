@@ -33,7 +33,7 @@ function CopyButton({ content }: { content: string }) {
       type="button"
       aria-label={copied ? 'Copied' : 'Copy message'}
       onClick={() => void handleCopy()}
-      className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+      className="min-touch rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
     >
       {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
     </button>
