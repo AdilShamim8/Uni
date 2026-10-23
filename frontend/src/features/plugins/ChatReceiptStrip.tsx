@@ -73,7 +73,7 @@ export function ChatReceiptStrip({ thread }: { thread: PluginThreadRef }) {
                     onClick={() =>
                       openInspector({ tab: 'canvas', artifactId: artifact.id })
                     }
-                    className="font-medium text-accent underline-offset-2 hover:underline"
+                    className="inline-flex min-touch items-center font-medium text-accent underline-offset-2 hover:underline"
                   >
                     Open “{artifact.title}”
                   </button>

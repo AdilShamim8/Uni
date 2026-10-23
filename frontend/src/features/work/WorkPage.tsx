@@ -163,7 +163,7 @@ function WorkHome() {
             <button
               type="button"
               onClick={() => navigate('/work/new')}
-              className="font-medium text-accent transition-colors hover:text-accent-strong"
+              className="inline-flex min-touch items-center font-medium text-accent transition-colors hover:text-accent-strong"
             >
               Use the expanded brief
             </button>
@@ -656,7 +656,7 @@ function NewTaskForm() {
                       <button
                         type="button"
                         onClick={() => setUi({ settingsOpen: true, settingsSection: 'providers' })}
-                        className="font-medium text-accent hover:text-accent-strong"
+                        className="inline-flex min-touch items-center font-medium text-accent hover:text-accent-strong"
                       >
                         Connect one in Settings
                       </button>{' '}
