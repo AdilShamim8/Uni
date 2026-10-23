@@ -354,13 +354,13 @@ function ModelPicker({
   onChange: (value: string | null) => void
 }) {
   return (
-    <label className="flex flex-col gap-1.5 text-sm font-medium text-ink">
+    <label className="flex min-w-0 flex-col gap-1.5 text-sm font-medium text-ink">
       {label}
       <select
         aria-label={`${label} selection`}
         value={value ?? ''}
         onChange={(event) => onChange(event.target.value === '' ? null : event.target.value)}
-        className="rounded-control border border-line bg-raised px-2.5 py-2 text-sm font-normal text-ink focus:border-accent focus:outline-none"
+        className="w-full min-w-0 rounded-control border border-line bg-raised px-2.5 py-2 text-sm font-normal text-ink focus:border-accent focus:outline-none"
       >
         <option value="">Choose a model…</option>
         {options.map((option) => (
