@@ -38,6 +38,12 @@ provides the persistent development database instead.
 | `POST /api/auth/sign-out` | Invalidate the current session |
 | `GET /api/auth/get-session` | Session introspection (Better Auth) |
 | `GET /api/v1/me` | Signed-in user + resolved workspace (session required) |
+| `GET /api/v1/conversations` | Paginated conversation list (cursor, archived filter) |
+| `POST /api/v1/conversations` | Create a conversation |
+| `GET /api/v1/conversations/:id` | Full conversation incl. message-tree nodes |
+| `PATCH /api/v1/conversations/:id` | Rename/pin/archive/active-branch switch; optimistic concurrency via `expectedUpdatedAt` |
+| `DELETE /api/v1/conversations/:id` | Delete conversation (nodes cascade) |
+| `POST /api/v1/conversations/:id/nodes` | Append a user/assistant node (parent + idempotency validated) |
 
 Authentication uses Better Auth with the Drizzle adapter. Sessions are
 HttpOnly cookies (`uni-auth-session_token`), Secure in production,

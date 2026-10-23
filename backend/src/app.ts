@@ -12,6 +12,7 @@ import { buildAuth } from './modules/auth/auth.service.js'
 import { authRoutes } from './modules/auth/auth.routes.js'
 import { registerSessionScope } from './modules/auth/session.middleware.js'
 import { meRoutes } from './modules/me/me.routes.js'
+import { conversationsRoutes } from './modules/conversations/conversations.routes.js'
 
 export interface BuildAppOptions {
   env?: Env
@@ -52,6 +53,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
     const apiV1: FastifyPluginAsync = async (api) => {
       registerSessionScope(api)
       await api.register(meRoutes)
+      await api.register(conversationsRoutes)
     }
     await app.register(apiV1, { prefix: '/api/v1' })
   }

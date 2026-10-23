@@ -15,6 +15,13 @@
       "when": 1792732306211,
       "tag": "0001_amused_kylun",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792733096096,
+      "tag": "0002_slimy_nehzno",
+      "breakpoints": true
     }
   ]
 }
