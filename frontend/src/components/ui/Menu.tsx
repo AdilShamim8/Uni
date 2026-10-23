@@ -10,6 +10,7 @@ import {
   type ReactElement,
   type ReactNode,
 } from 'react'
+import { createPortal } from 'react-dom'
 import { Check } from 'lucide-react'
 
 interface MenuContextValue {
@@ -44,6 +45,15 @@ interface TriggerWiring {
  * panel would overflow the viewport, and the panel scrolls internally past a
  * max height, so opening a menu can never push content out of view.
  *
+ * The panel is portaled to document.body. A plain `position: fixed` panel is
+ * only viewport-relative when no ancestor establishes a containing block for
+ * it — but the floating sidebar and the mobile drawer use backdrop-filter
+ * (and the drawer animates a transform), which per spec makes them the
+ * containing block for fixed descendants. Combined with their overflow-hidden,
+ * that trapped and clipped the panel at the sidebar's edge, slicing menu hint
+ * text mid-letter. Rendering at the body level restores true viewport
+ * positioning and escapes every ancestor's overflow and stacking context.
+ *
  * The panel uses the translucent menu material (opaque fallback built in)
  * and closes itself when another surface (e.g. a dialog) opens on top.
  */
@@ -64,8 +74,13 @@ export function Menu({
 
   useEffect(() => {
     if (!open) return
+    // The panel lives in a portal at the body level, so "inside" means the
+    // trigger's container OR the panel itself — neither may close the menu.
+    const isInside = (target: Node | null) =>
+      (containerRef.current?.contains(target as Node) ?? false) ||
+      (menuRef.current?.contains(target as Node) ?? false)
     const onPointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
+      if (!isInside(event.target as Node)) {
         setOpen(false)
       }
     }
@@ -76,9 +91,10 @@ export function Menu({
       }
     }
     // Close when focus moves into a modal surface (e.g. a dialog opened
-    // from this menu) so interactive layers never stack visually.
+    // from this menu) so interactive layers never stack visually. Focus
+    // inside the portaled panel itself must keep the menu open.
     const onFocusIn = (event: FocusEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
+      if (!isInside(event.target as Node)) {
         setOpen(false)
       }
     }
@@ -95,18 +111,36 @@ export function Menu({
   // Collision handling: the panel is viewport-positioned (fixed) from the
   // trigger's rect, then measured before paint to flip its direction when
   // it would extend past the viewport edge, clamp it horizontally, and cap
-  // its height so long menus scroll instead of leaving the screen. Fixed
-  // positioning also means no rounded/overflow-hidden ancestor (floating
-  // sidebar, dialogs) can ever clip a menu.
+  // its height so long menus scroll instead of leaving the screen. The
+  // body-level portal guarantees those viewport coordinates are real: no
+  // overflow-hidden, transformed, or backdrop-filtered ancestor can contain
+  // or clip the panel (the floating sidebar and mobile drawer all do).
   useLayoutEffect(() => {
     if (!open || !menuRef.current || !triggerRef.current) return
     const panel = menuRef.current
     const triggerRect = triggerRef.current.getBoundingClientRect()
 
     const place = () => {
-      const rect = panel.getBoundingClientRect()
       const viewportH = window.innerHeight
       const viewportW = window.innerWidth
+      const style = panel.style
+
+      // Place at the preferred direction FIRST, then measure. Measuring at
+      // the would-be position (instead of the temporary top-left origin)
+      // keeps the flip check honest on the first placement: a panel that
+      // starts life at (0,0) would otherwise look like it "overflows the
+      // top" and flip down even when it fits perfectly above its trigger.
+      style.left = ''
+      style.right = ''
+      style.top = ''
+      style.bottom = ''
+      if (direction === 'up') {
+        style.bottom = `${Math.max(8, viewportH - triggerRect.top + 6)}px`
+      } else {
+        style.top = `${Math.max(8, triggerRect.bottom + 6)}px`
+      }
+
+      const rect = panel.getBoundingClientRect()
       // Environments without layout (jsdom) report all-zero rects — keep
       // the preferred direction instead of "flipping" on fake geometry.
       const hasLayout =
@@ -124,7 +158,6 @@ export function Menu({
       }
       setEffectiveDirection(next)
 
-      const style = panel.style
       style.left = ''
       style.right = ''
       style.top = ''
@@ -209,20 +242,22 @@ export function Menu({
       {/* The trigger is always one of our own button components, which
           forward refs and spread the wiring props onto a native button. */}
       {cloneElement(trigger, wiring)}
-      {open && (
-        <div
-          ref={menuRef}
-          role="menu"
-          aria-label={label}
-          onKeyDown={handleMenuKeyDown}
-          style={{ visibility: 'hidden', left: 0, top: 0 }}
-          className={`material pop-in z-50 ${
-            effectiveDirection === 'up' ? 'pop-in-up' : ''
-          } fixed ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
-        >
-          <MenuContext.Provider value={{ close }}>{children}</MenuContext.Provider>
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={label}
+            onKeyDown={handleMenuKeyDown}
+            style={{ visibility: 'hidden', left: 0, top: 0 }}
+            className={`material pop-in z-50 ${
+              effectiveDirection === 'up' ? 'pop-in-up' : ''
+            } fixed ${width} rounded-group border border-line bg-mat-menu p-1.5 shadow-raised`}
+          >
+            <MenuContext.Provider value={{ close }}>{children}</MenuContext.Provider>
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
