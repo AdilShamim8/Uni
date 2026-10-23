@@ -27,12 +27,25 @@ Tests boot a real embedded PostgreSQL (downloaded once into node_modules)
 on a random port — no Docker needed for `npm test`. `infra/docker-compose.yml`
 provides the persistent development database instead.
 
-## Endpoints (B01)
+## Endpoints
 
 | Route | Purpose |
 | --- | --- |
 | `GET /health/live` | Process liveness — no dependencies touched |
 | `GET /health/ready` | Readiness — bounded database check, no sensitive details |
+| `POST /api/auth/sign-up/email` | Create account + personal workspace (policy-gated) |
+| `POST /api/auth/sign-in/email` | Password sign-in → HttpOnly session cookie |
+| `POST /api/auth/sign-out` | Invalidate the current session |
+| `GET /api/auth/get-session` | Session introspection (Better Auth) |
+| `GET /api/v1/me` | Signed-in user + resolved workspace (session required) |
+
+Authentication uses Better Auth with the Drizzle adapter. Sessions are
+HttpOnly cookies (`uni-auth-session_token`), Secure in production,
+SameSite Lax. Untrusted origins are rejected on auth state changes
+(CSRF). Registration policy: `AUTH_REGISTRATION=open|closed`. No email
+service is configured in this milestone, so email verification and
+password recovery are honestly unavailable; hosted deployments should
+close registration or configure email before exposing sign-up.
 
 Errors always use the contract envelope from `@uni/contracts`:
 `{ code, message, requestId, details? }`. Responses carry `x-request-id`

@@ -21,6 +21,7 @@
   "dependencies": {
     "@fastify/cors": "^11.3.1",
     "@uni/contracts": "file:../packages/contracts",
+    "better-auth": "^1.7.12",
     "dotenv": "^18.0.9",
     "drizzle-orm": "^0.45.4",
     "fastify": "^5.12.7",
@@ -35,6 +36,6 @@
     "embedded-postgres": "^18.4.0-beta.17",
     "tsx": "^4.23.15",
     "typescript": "^5.6.3",
-    "vitest": "^2.1.9"
+    "vitest": "^5.0.5"
   }
 }

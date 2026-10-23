@@ -17,6 +17,10 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1).optional(),
   /** Comma-separated list of allowed browser origins (no wildcard with credentials). */
   CORS_ORIGINS: z.string().default('http://localhost:5173,http://127.0.0.1:5173'),
+  /** Public base URL of this API deployment (Better Auth baseURL + trusted origin). */
+  APP_URL: z.string().url().default('http://127.0.0.1:4000'),
+  /** Explicit registration policy: open (dev default) or closed (hosted without email verification). */
+  AUTH_REGISTRATION: z.enum(['open', 'closed']).default('open'),
 })
 
 export type Env = z.infer<typeof envSchema>

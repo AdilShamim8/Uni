@@ -27,7 +27,7 @@ resolved versions in `backend/package-lock.json` as of B01 (2026-10-23).
 | tsx (dev) | 4.23.15 | MIT | B01 | Development runner / migration runner |
 | typescript (dev) | 5.6.3 | Apache-2.0 | B01 | Type checking and builds |
 | embedded-postgres (dev/test) | 18.4.0-beta.17 | MIT | B01 | Real PostgreSQL binaries for disposable integration tests |
-| better-auth | (planned) | MIT | B02 | Authentication, session lifecycle |
+| better-auth | 1.7.12 | MIT | B02 | Authentication, session lifecycle |
 | @ai-sdk/* (core + openai + anthropic) | (planned) | Apache-2.0 | B03 | Provider adapters, streaming, cancellation |
 | pg-boss | (planned) | MIT | B06 | PostgreSQL-backed durable jobs |
 
@@ -40,10 +40,15 @@ B-gates and are recorded in `frontend/package.json`.
 ## Section 2 — Adapted files (vendored or substantially copied source)
 
 Format: upstream repo @ commit → upstream path → local path → license →
-modifications → validation. **None yet.** When the first file is adapted
-(e.g. an example worker from pg-boss or an adapter pattern from
-vercel/ai examples), record: upstream repository, commit, path, file hash,
-local path, reason, license, modifications, and validation performed.
+modifications → validation.
+
+| # | Upstream | Local path | License | Modifications | Validation |
+| --- | --- | --- | --- | --- | --- |
+| 1 | better-auth/better-auth @ `88f36c63cf70c4142cf6b03c28cbeca84c981775` → `docs/content/docs/integrations/fastify.mdx` (Fastify integration example, fetched 2026-10-23) | `backend/src/modules/auth/auth.routes.ts` | MIT | Adapted, not copied verbatim: URL base from operator-configured APP_URL env instead of request Host header; multi-value Set-Cookie forwarded via `getSetCookie()`; Fastify JSON parsing kept (no raw-stream hijack) so injection tests match production traffic; wrapped in an encapsulated plugin with an auth-presence guard | `tests/auth.integration.test.ts`: 6/6 — sign-up/sign-in/sign-out round-trip, HttpOnly session cookie, CSRF rejection of untrusted origins (403, no cookie), registration-closed policy, hashed password storage |
+
+Upstream file hash (fastify.mdx at the pinned commit):
+`curl -s https://raw.githubusercontent.com/better-auth/better-auth/88f36c63cf70c4142cf6b03c28cbeca84c981775/docs/content/docs/integrations/fastify.mdx | sha256sum`
+(recorded at B08 alongside the full inventory).
 
 Candidate locations inspected and approved *as candidates* by the prompt
 of record (not yet incorporated):
