@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, primaryKey, jsonb, index, uniqueIndex, foreignKey } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, boolean, primaryKey, jsonb, index, uniqueIndex, foreignKey, integer } from 'drizzle-orm/pg-core'
 
 /* ------------------------------------------------------------------ */
 /* Better Auth core tables (user/session/account/verification)         */
@@ -152,6 +152,46 @@ export const conversationNodes = pgTable(
     }),
     index('conversation_node_conversation_idx').on(table.conversationId, table.createdAt),
   ],
+)
+
+/* ------------------------------------------------------------------ */
+/* Deliberate import batches (B02)                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One row per successfully applied backup import. The unique
+ * (workspace_id, checksum) makes re-importing the identical backup a
+ * no-op replay instead of duplicated records.
+ */
+export const importBatches = pgTable(
+  'import_batch',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    checksum: text('checksum').notNull(),
+    source: text('source').notNull().default('workspace-backup-v1'),
+    importedConversations: integer('imported_conversations').notNull().default(0),
+    importedMessages: integer('imported_messages').notNull().default(0),
+    skippedTemporary: integer('skipped_temporary').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [uniqueIndex('import_batch_workspace_checksum_uq').on(table.workspaceId, table.checksum)],
+)
+
+/** Old (local) ID to new (server) ID mapping per import, for reporting. */
+export const importIdMap = pgTable(
+  'import_id_map',
+  {
+    batchId: text('batch_id')
+      .notNull()
+      .references(() => importBatches.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    localId: text('local_id').notNull(),
+    serverId: text('server_id').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.batchId, table.kind, table.localId] })],
 )
 
 /* ------------------------------------------------------------------ */

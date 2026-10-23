@@ -44,6 +44,8 @@ provides the persistent development database instead.
 | `PATCH /api/v1/conversations/:id` | Rename/pin/archive/active-branch switch; optimistic concurrency via `expectedUpdatedAt` |
 | `DELETE /api/v1/conversations/:id` | Delete conversation (nodes cascade) |
 | `POST /api/v1/conversations/:id/nodes` | Append a user/assistant node (parent + idempotency validated) |
+| `POST /api/v1/import/preview` | Dry-run backup import — counts, errors, unsupported sections; stores nothing |
+| `POST /api/v1/import/commit` | Transactional, idempotent backup import (checksum replay; temporary chats skipped) |
 
 Authentication uses Better Auth with the Drizzle adapter. Sessions are
 HttpOnly cookies (`uni-auth-session_token`), Secure in production,
