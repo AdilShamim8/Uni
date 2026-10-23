@@ -38,7 +38,11 @@ feature-status matrix.
 
 Everything runs locally in your browser: conversations, tasks, agent
 profiles, memory notes, and library artifacts persist in versioned
-localStorage slices, and Work execution is a clearly-labeled local
-simulation. If you connect your own provider key in Settings, chat requests
-(and only chat requests) go directly from your browser to that endpoint —
-the key is stored privately on your device and never appears in exports.
+localStorage slices. Work has two honest modes: without a provider key it
+is a clearly-labeled local simulation, and with your own key connected in
+Settings, Work drafting and revisions make real, streamed requests to that
+endpoint. Chat and Work BYOK requests go directly from your browser to the
+configured endpoint — the key is stored privately on your device and never
+appears in exports. A server-backed mode (accounts, encrypted credentials,
+durable runs) is under construction on the backend roadmap; see
+[`docs/backend-roadmap.md`](docs/backend-roadmap.md) for actual status.
