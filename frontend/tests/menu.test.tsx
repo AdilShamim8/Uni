@@ -158,6 +158,75 @@ describe('Menu portal escape (UI clipping fix)', () => {
     expect(panel.className).toContain('pop-in-up')
     expect(panel.style.bottom).toBe('58px')
   })
+
+  it('clamps an end-aligned panel so it cannot run off the left edge on narrow viewports', async () => {
+    // Regression (mobile model picker): the trigger sits near the LEFT of a
+    // 390px toolbar (right edge at x=171) while the panel is 288px wide.
+    // align="end" used to pin the panel's right edge to the trigger's right
+    // edge with no clamp — spanning -117…171, so 117px (40%) of the menu
+    // hung off-screen and every label was sliced mid-word. The clamp must
+    // cap the right offset at viewportW - width - 8 instead.
+    const originalWidth = window.innerWidth
+    Object.defineProperty(window, 'innerWidth', {
+      configurable: true,
+      writable: true,
+      value: 390,
+    })
+
+    const spy = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect')
+    spy.mockImplementation(function (this: HTMLElement) {
+      const style = this.style
+      if (this.getAttribute('role') === 'menu') {
+        const width = 288
+        const height = 400
+        let top = 66
+        if (style.top) {
+          top = parseFloat(style.top)
+        } else if (style.bottom) {
+          top = window.innerHeight - parseFloat(style.bottom) - height
+        }
+        let left = 0
+        if (style.left) {
+          left = parseFloat(style.left)
+        } else if (style.right) {
+          left = window.innerWidth - parseFloat(style.right) - width
+        }
+        return {
+          x: left, y: top, top, bottom: top + height, left,
+          right: left + width, width, height, toJSON: () => ({}),
+        }
+      }
+      if (this.getAttribute('aria-haspopup') === 'menu') {
+        // Mobile toolbar trigger: spans x 54…171 of the 390px viewport.
+        return {
+          x: 54, y: 16, top: 16, bottom: 60, left: 54, right: 171,
+          width: 117, height: 44, toJSON: () => ({}),
+        }
+      }
+      return { x: 0, y: 0, top: 0, bottom: 0, left: 0, right: 0, width: 0, height: 0, toJSON: () => ({}) }
+    })
+
+    try {
+      render(
+        // align defaults to "end" — exactly the model picker's setup.
+        <Menu label="Test menu" trigger={<button type="button">Demo Pro</button>}>
+          <MenuItem>Item one</MenuItem>
+        </Menu>,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: 'Demo Pro' }))
+      const panel = await screen.findByRole('menu')
+      // Unclamped would be viewportW - triggerRight = 390 - 171 = 219px,
+      // pushing the panel's left edge to -117px. Clamped: 390 - 288 - 8 = 94.
+      expect(panel.style.right).toBe('94px')
+    } finally {
+      Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        writable: true,
+        value: originalWidth,
+      })
+    }
+  })
 })
 
 /* ------------------------------------------------------------------ */
