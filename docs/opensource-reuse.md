@@ -10,21 +10,32 @@ transitive dependencies.
 ## Section 1 — Installed packages (dependencies)
 
 Recorded at introduction; re-generate the full inventory from the lockfile
-at B08 (`npm ls --all` + license scan) and pin it.
+at B08 (`npm ls --all` + license scan) and pin it. Versions below are the
+resolved versions in `backend/package-lock.json` as of B01 (2026-10-23).
 
-| Package | License | Introduced | Purpose |
-| --- | --- | --- | --- |
-| fastify | MIT | B01 | HTTP server, plugin encapsulation, injection testing |
-| zod | MIT | B01 | Input/output validation, contract schemas |
-| drizzle-orm | Apache-2.0 | B01 | Typed PostgreSQL queries and migrations |
-| better-auth | MIT | B02 | Authentication, session lifecycle |
-| @ai-sdk/* (core + openai + anthropic) | Apache-2.0 | B03 | Provider adapters, streaming, cancellation |
-| pg-boss | MIT | B06 (planned) | PostgreSQL-backed durable jobs |
-| pg / postgres drivers | MIT | B01 | PostgreSQL client (per driver choice) |
+| Package | Version | License | Introduced | Purpose |
+| --- | --- | --- | --- | --- |
+| fastify | 5.12.7 | MIT | B01 | HTTP server, plugin encapsulation, injection testing |
+| @fastify/cors | 11.3.1 | MIT | B01 | Explicit-origin credentialed CORS for browser integration |
+| zod | 3.25.76 | MIT | B01 | Input/output validation, contract schemas (backend + contracts) |
+| drizzle-orm | 0.45.4 | Apache-2.0 | B01 | Typed PostgreSQL queries and migrations |
+| drizzle-kit (dev) | 0.31.11 | MIT | B01 | Migration SQL generation |
+| pg (node-postgres) | 8.23.1 | MIT | B01 | PostgreSQL client (pg-boss-compatible driver) |
+| pino | 9.14.0 | MIT | B01 | Structured logging with secret redaction |
+| dotenv | 18.0.9 | BSD-2-Clause | B01 | Local-development .env loading (never production) |
+| vitest (dev) | 2.1.9 | MIT | B01 | Backend unit + integration tests |
+| tsx (dev) | 4.23.15 | MIT | B01 | Development runner / migration runner |
+| typescript (dev) | 5.6.3 | Apache-2.0 | B01 | Type checking and builds |
+| embedded-postgres (dev/test) | 18.4.0-beta.17 | MIT | B01 | Real PostgreSQL binaries for disposable integration tests |
+| better-auth | (planned) | MIT | B02 | Authentication, session lifecycle |
+| @ai-sdk/* (core + openai + anthropic) | (planned) | Apache-2.0 | B03 | Provider adapters, streaming, cancellation |
+| pg-boss | (planned) | MIT | B06 | PostgreSQL-backed durable jobs |
 
-Frontend dependencies (React, Vite, Zustand, react-markdown, Papa Parse,
-Vitest, Testing Library, lucide-react, react-router-dom, tailwindcss)
-pre-date the B-gates and are recorded in `frontend/package.json`.
+License texts for the B01 set are preserved under `third_party/licenses/`
+and summarized in `THIRD_PARTY_NOTICES.md`. Frontend dependencies
+(React, Vite, Zustand, react-markdown, Papa Parse, Vitest, Testing
+Library, lucide-react, react-router-dom, tailwindcss) pre-date the
+B-gates and are recorded in `frontend/package.json`.
 
 ## Section 2 — Adapted files (vendored or substantially copied source)
 

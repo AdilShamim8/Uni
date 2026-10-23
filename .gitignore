@@ -5,3 +5,9 @@ coverage/
 *.local
 .DS_Store
 npm-debug.log*
+
+# Local environment secrets — never commit real values
+.env
+.env.*
+!.env.example
+.tmp/
