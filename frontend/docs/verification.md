@@ -356,6 +356,11 @@ before any fix / after the portal + flip + width commits:
 | Hint texts | "Sample galler", "no microphon(e)", "Enable local tool(s)" — cut mid-letter, no ellipsis | **all five complete** |
 | Label truncation | "Data analysis" → ellipsis (95 px text in 84 px) | **none — `scrollWidth ≤ clientWidth` on every row** |
 
+Evidence screenshots: `screenshots/mobile-tools-menu-before-clipping.png`
+(the reproduced defect — hints cut mid-letter at the clipped panel edge)
+and `screenshots/mobile-tools-menu-after-portal.png` (final state — all
+five rows complete, panel opening upward inside the viewport).
+
 Desktop 1280×800 spot-checks after the fix: sidebar account menu
 (x 23..263) and Tools menu (x 23..279) open upward fully visible as
 body-level children — the account menu had also been losing ~8px to
