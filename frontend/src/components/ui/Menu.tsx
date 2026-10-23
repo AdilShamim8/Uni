@@ -163,7 +163,15 @@ export function Menu({
       style.top = ''
       style.bottom = ''
       if (align === 'end') {
-        style.right = `${Math.max(8, viewportW - triggerRect.right)}px`
+        // The panel's right edge follows the trigger's right edge — but on
+        // narrow viewports a trigger near the LEFT edge would push a wide
+        // panel off-screen (e.g. the model picker in the mobile toolbar:
+        // 288px panel, trigger right at x≈171 → panel spanned -117…171).
+        // Clamp so the panel never starts left of an 8px margin.
+        const width = hasLayout ? rect.width : 0
+        const desiredRight = viewportW - triggerRect.right
+        const maxRight = viewportW - width - 8
+        style.right = `${Math.max(8, Math.min(desiredRight, maxRight))}px`
       } else {
         const width = hasLayout ? rect.width : 0
         style.left = `${Math.max(
