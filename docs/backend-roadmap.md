@@ -19,7 +19,7 @@ Kubernetes, no second backend.
 | Gate | Scope | Status |
 | --- | --- | --- |
 | B00 | Baseline evidence, EmployeeView render-mutation fix, docs, stack decision | **Complete** (23 Oct 2026) |
-| B01 | Running backend, health endpoints, DB wiring, contracts package | **Server side complete** (23 Oct 2026) — backend, contracts, embedded-PG integration tests, docker-compose; frontend API base/proxy wiring lands in the next commit |
+| B01 | Running backend, health endpoints, DB wiring, contracts package | **Complete** (23 Oct 2026) — backend + contracts + embedded-PG integration tests + docker-compose + frontend API client/dev-proxy wiring |
 | B02 | Better Auth identity, workspaces, conversation persistence, importer | Not started |
 | B03 | Server BYOK providers, encrypted credentials, streamed chat runs | Not started |
 | B04 | Library, employee memory, shared context on the server | Not started |

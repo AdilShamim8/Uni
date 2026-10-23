@@ -50,8 +50,17 @@ development database on normal machines.
 | `cd backend && npm test` (vitest run) | **11/11 tests pass across 2 files**: 7 app tests (liveness, readiness 503/200, error envelope incl. 404/AppError/zod-400/no-leak, x-request-id echo, CORS allow/deny) + 4 embedded-PG integration tests (migrations apply, idempotent re-run, Drizzle CRUD round-trip, readiness up/down with no connection-string leak) |
 | `cd backend && npm run dev` (manual smoke) | API starts on 127.0.0.1:4000; `/health/live` 200; `/health/ready` 503 without DATABASE_URL (expected, honest) |
 
-Frontend API base/proxy wiring: recorded here when committed (see
-`frontend/vite.config.ts` dev proxy + `frontend/src/services/api/client.ts`).
+Frontend API wiring (B01, second increment):
+
+| Command | Result |
+| --- | --- |
+| `cd frontend && npx vitest run tests/apiClient.test.ts` | **5/5 pass** — base-URL joining, credentialed JSON requests, error-envelope → ApiError, non-JSON fallback, 204 handling |
+| `cd frontend && npm run build && npm run lint` | **Pass** after adding `src/services/api/client.ts`, the vite dev proxy (`/api`, `/health` → 127.0.0.1:4000), and `.env.example` (public URL only) |
+
+Decision recorded: the frontend keeps a mirrored error-envelope type
+instead of importing `@uni/contracts`, so the existing Vercel static
+deployment (build root `frontend/`) keeps working; direct contract
+imports are revisited when the single-origin deployment lands (B08).
 
 ## B02 — identity, persistence, deliberate import
 
