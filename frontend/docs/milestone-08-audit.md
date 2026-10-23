@@ -52,11 +52,13 @@ build; **SRC** = confirmed by reading the current source.
 
 | ID | Finding | Evidence |
 | --- | --- | --- |
-| F14 | Every transcript update re-renders every message. A streamed reply re-parses the markdown of all 600 messages on every token; a scroll past the near-bottom threshold does the same via `setNearBottom`. | **BR**: 69 long tasks / 5.0 s of blocked main thread during one 6 s streamed reply; median frame 83.3 ms. **SRC**: `MessageList` maps the full `activePath` with an unmemoized `MessageItem`; `Markdown` re-runs the remark + rehype pipeline per render; `updateNode` patches one node per token but gives the whole conversation a new identity, so every item re-renders; `handleScroll` flips `nearBottom` state on the same list. |
+| F14 | Every transcript update re-renders every message component. A streamed reply re-executes all 600 unmemoized `MessageItem`s and reconciles their ~19.5k DOM nodes on every token; a scroll past the near-bottom threshold does the same via `setNearBottom`. | **BR**: 69 long tasks / 5.0 s of blocked main thread during one 6 s streamed reply; median frame 83.3 ms. **SRC**: `MessageList` maps the full `activePath` with an unmemoized `MessageItem`; `updateNode` patches one node per token but gives the whole conversation a new identity, so every item re-renders; `handleScroll` flips `nearBottom` state on the same list. `Markdown` itself is already memoized on its content (so the remark/rehype pipeline does *not* re-run) — the measured cost is the per-token reconciliation of unchanged messages. |
 | F14b | Per-update selector work is quadratic. Each `MessageItem` calls `siblingsOf(conversation, node.id)`, which filters **all** nodes — N items × O(N) per store update. | **SRC**: `MessageItem.tsx` (both message kinds) + `conversationTree.siblingsOf`. |
 | F15 | Initial mount is unbounded: the whole active path mounts in one commit, so cost grows linearly with history and nothing bounds the rendered set. | **BR**: single 1356 ms main-thread block, 19,506 DOM nodes, 66–74 MB heap at mount for 600 messages. **SRC**: `MessageList`/`ThreadView` render `timedPath`/`entries` in full; no windowing anywhere. |
 
-Dispositions: F14 and F14b are one fix (stable per-item inputs + memo);
+Dispositions: F14 and F14b are one fix (stable per-item inputs + memo —
+`Markdown`'s existing memo then shields the pipeline completely, and the
+reconciliation itself stops at the memo boundary);
 F15 is the windowing fix the roadmap made conditional on exactly these
 measurements — the condition is met (1.4 s freeze and 12 fps streaming are
 user-visible defects, not theory).
@@ -67,8 +69,9 @@ user-visible defects, not theory).
    map computes every message's variant index/count in one pass, replacing
    the per-item O(N) sibling scans; `MessageItem` switches to stable
    primitive inputs (`conversationId`, `variantIndex`, `variantCount`) and
-   `React.memo`; `Markdown` is memoized on its content. During streaming,
-   only the message being written re-renders.
+   `React.memo`. During streaming, only the message being written
+   re-renders — unchanged messages bail at the memo boundary with zero
+   reconciliation work.
 2. **Windowed transcript rendering (F15).** The transcript mounts a tail
    window (newest items); older history materializes block-by-block as the
    reader scrolls up, with scroll compensation so the visible position
