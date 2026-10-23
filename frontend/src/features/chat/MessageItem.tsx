@@ -147,7 +147,7 @@ function SaveToCanvasButton({
       aria-label="Save to Canvas"
       title="Save this reply to Canvas as a new document"
       onClick={save}
-      className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+      className="min-touch rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
     >
       <FileText size={14} />
     </button>
@@ -170,7 +170,7 @@ function CopyButton({ content }: { content: string }) {
       type="button"
       aria-label={copied ? 'Copied' : 'Copy message'}
       onClick={() => void handleCopy()}
-      className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+      className="min-touch rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
     >
       {copied ? <Check size={14} className="text-success" /> : <Copy size={14} />}
     </button>
@@ -309,7 +309,7 @@ function UserMessage({
             setDraft(node.content)
             setEditing(true)
           }}
-          className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+          className="min-touch rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
         >
           <Pencil size={14} />
         </button>
@@ -318,7 +318,7 @@ function UserMessage({
           aria-label="Delete message"
           title="Delete message and its replies in this branch"
           onClick={() => setConfirmingDelete(true)}
-          className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
+          className="min-touch rounded-md p-1.5 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
         >
           <Trash2 size={14} />
         </button>
@@ -468,7 +468,7 @@ function AssistantMessage({
             aria-pressed={node.feedback === 'up'}
             title="Good response (stored locally)"
             onClick={() => setFeedback(node.id, 'up')}
-            className={`rounded-md p-1.5 transition-colors hover:bg-subtle ${
+            className={`min-touch rounded-md p-1.5 transition-colors hover:bg-subtle ${
               node.feedback === 'up' ? 'text-accent' : 'text-ink-faint hover:text-ink'
             }`}
           >
@@ -480,7 +480,7 @@ function AssistantMessage({
             aria-pressed={node.feedback === 'down'}
             title="Poor response (stored locally)"
             onClick={() => setFeedback(node.id, 'down')}
-            className={`rounded-md p-1.5 transition-colors hover:bg-subtle ${
+            className={`min-touch rounded-md p-1.5 transition-colors hover:bg-subtle ${
               node.feedback === 'down' ? 'text-danger' : 'text-ink-faint hover:text-ink'
             }`}
           >
@@ -492,7 +492,7 @@ function AssistantMessage({
               aria-label="Regenerate response"
               title="Regenerate response (creates a switchable variant)"
               onClick={() => void regenerate(node.id)}
-              className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+              className="min-touch rounded-md p-1.5 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
             >
               <RotateCcw size={14} />
             </button>
@@ -503,7 +503,7 @@ function AssistantMessage({
               aria-label="Delete response"
               title="Delete response and its replies in this branch"
               onClick={() => setConfirmingDelete(true)}
-              className="rounded-md p-1.5 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
+              className="min-touch rounded-md p-1.5 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
             >
               <Trash2 size={14} />
             </button>
