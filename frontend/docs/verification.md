@@ -274,3 +274,60 @@ Remaining limitations (honest): no screen-reader/axe pass, no real-device
 Safari pass, plugin picker menu items are keyboard-confirmed (pointer-event
 automation quirk in the QA tool, not an app defect — jsdom click tests cover
 the wiring), backup restore requires a reload by design.
+
+## Milestone 08 — long-conversation performance (feat/m08-long-conversation-performance)
+
+### Automated gates (fresh run, final commit)
+
+- `npm run lint` — pass (0 problems)
+- `npm run typecheck` — pass
+- `npm test` — 295/295 passing (43 files; +21 new: 3 domain variant-position
+  cases, 3 transcript memoization suites, 7 windowing math cases, 8
+  windowed-transcript integration cases)
+- `npm run build` — pass (unchanged chunking)
+
+### Benchmark (production build, headless Chromium 1200, 1440×900)
+
+Harness: `scripts/perf_long_conversation.py` — seeds a 600-message
+conversation through the app's own persistence schema in a fresh context
+before app scripts run, deep-links to it, and measures buffered longtask
+entries plus a rAF-based mount probe. Numbers are single runs, each
+reproduced twice and consistent within a few percent.
+
+| Phase | Before (main) | After F14 memo | After F15 windowing |
+| --- | --- | --- | --- |
+| Mount — transcript stable | 1691 ms | 1440 ms | **524 ms** |
+| Mount — longest main-thread block | 1356 ms | 1173 ms | **321 ms** |
+| Mount — transcript DOM nodes | 19,506 | 19,506 | **4,025** (tail window of 120) |
+| Mount — JS heap | 66–74 MB | 59 MB | **11 MB** |
+| Stream 6 s — long tasks | 69 / 5047 ms | **0 / 0 ms** | **0 / 0 ms** |
+| Stream 6 s — median frame | 83.3 ms (~12 fps) | **16.7 ms (60 fps)** | **16.7 ms (60 fps)** |
+| Scroll 40×700 px — long tasks | 30 / 2097 ms | **0 / 0 ms** | 1 / 85 ms (one block materializing) |
+
+Calibration: the same harness on the 4-message demo conversation mounts
+in ~137 ms, so the remaining ~524 ms is app boot plus the bounded tail
+window, not transcript cost.
+
+### Windowing lifecycle (browser probe, production build)
+
+Upward traversal of the full 600-message history materializes every
+block (count 120 → 600) with scrollTop compensated by exactly the
+prepended height each time — the visible message stays anchored and no
+blank spacer scrolls into view. Scrolling back down collapses leading
+blocks that pass fully above the viewport; the rendered set returns to
+the 320-item cap (count 600 → 320) and scrollHeight settles bounded.
+The probe was a local debug script; the committed benchmark covers the
+mount/stream/scroll phases it was derived from.
+
+### Honest limits
+
+- Off-screen history is not in the DOM (or the accessibility tree) while
+  windowed — the standard virtualized-transcript tradeoff; everything
+  stays reachable by scrolling, transcripts ≤ 80 items never window, and
+  jsdom (no layout) fails open to full rendering so tests read the whole
+  transcript.
+- Frame pacing in headless Chromium is indicative; long-task totals are
+  the robust metric. No real-device pass was run in this milestone.
+- A transcript that grows past the threshold mid-session starts windowing
+  only once the reader returns near the bottom, so content under the
+  reader's eyes is never removed by activation.
