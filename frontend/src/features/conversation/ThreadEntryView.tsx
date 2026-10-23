@@ -5,6 +5,7 @@ import { MessageItem } from '@/features/chat/MessageItem'
 import { UniMark } from '@/components/layout/UniMark'
 import { Spinner } from '@/components/ui/Spinner'
 import { formatFullTimestamp } from '@/domain/timestamps'
+import { variantInfoFor } from '@/domain/conversationTree'
 import type { ThreadEntry, StatusNoteEntry, WorkMessageEntry } from './threadModel'
 import { ActivityCard } from './cards/ActivityCard'
 import { TaskCard } from './cards/TaskCard'
@@ -154,9 +155,20 @@ export function ThreadEntryView({ entry, isLast, onAnswerClarify }: ThreadEntryV
     case 'chat_message':
       // Employee threads render the real chat node through the same
       // component the Chat surface uses — identical markup and actions.
-      return (
-        <MessageItem node={entry.node} conversation={entry.conversation} isLast={isLast} />
-      )
+      // Variant index/count come from the one-pass domain map so the
+      // memoized MessageItem receives stable primitive props.
+      {
+        const variant = variantInfoFor(entry.conversation, entry.node.id)
+        return (
+          <MessageItem
+            node={entry.node}
+            conversationId={entry.conversation.id}
+            isLast={isLast}
+            variantIndex={variant?.index ?? 0}
+            variantCount={variant?.count ?? 1}
+          />
+        )
+      }
     case 'work_message':
       return entry.message.role === 'user' ? (
         <WorkUserMessage message={entry.message} />

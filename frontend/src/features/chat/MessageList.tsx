@@ -1,19 +1,27 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowDown } from 'lucide-react'
 import type { Conversation } from '@/domain/types'
-import { activePath } from '@/domain/conversationTree'
+import { activePath, variantPositions } from '@/domain/conversationTree'
 import { withSeparators } from '@/domain/timestamps'
+import { useTranscriptWindow } from '@/features/conversation/useTranscriptWindow'
 import { MessageItem } from './MessageItem'
 
 /**
  * Scrollable transcript with reader-friendly auto-scroll: it follows new
  * content only while the reader is near the bottom, and offers a
- * "jump to latest" button otherwise.
+ * "jump to latest" button otherwise. Long transcripts render through the
+ * shared windowing hook — the newest items mount first and older history
+ * materializes block-by-block on upward scroll (milestone 08, F15).
  */
 export function MessageList({ conversation }: { conversation: Conversation }) {
   const path = useMemo(() => activePath(conversation), [conversation])
   const timedPath = useMemo(() => withSeparators(path), [path])
+  // One O(N log N) pass replaces the per-item sibling scans (F14b) and
+  // keeps MessageItem's props stable so its memo bails unchanged messages
+  // during streaming (F14).
+  const positions = useMemo(() => variantPositions(conversation), [conversation])
   const containerRef = useRef<HTMLDivElement>(null)
+  const { start } = useTranscriptWindow({ containerRef, total: timedPath.length })
   const nearBottomRef = useRef(true)
   const [nearBottom, setNearBottom] = useState(true)
 
@@ -50,29 +58,42 @@ export function MessageList({ conversation }: { conversation: Conversation }) {
         ref={containerRef}
         onScroll={handleScroll}
         className="min-h-0 flex-1 overflow-y-auto"
+        // Native scroll anchoring would also compensate prepended history,
+        // doubling the hook's own compensation; the hook owns anchoring.
+        style={{ overflowAnchor: 'none' }}
         role="log"
         aria-label="Conversation transcript"
       >
         <div
           className="mx-auto flex w-full max-w-column flex-col gap-[var(--gap-chat)] px-4 py-6"
         >
-          {timedPath.map(({ node, separator }, index) => (
-            <Fragment key={node.id}>
-              {separator && (
-                <p
-                  aria-hidden="true"
-                  className="select-none self-center rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-ink-faint/90"
-                >
-                  {separator}
-                </p>
-              )}
-              <MessageItem
-                node={node}
-                conversation={conversation}
-                isLast={index === timedPath.length - 1}
-              />
-            </Fragment>
-          ))}
+          {timedPath.slice(start).map(({ node, separator }, offset) => {
+            const index = start + offset
+            const variant = positions.get(node.id)
+            return (
+              <div
+                key={node.id}
+                data-window-item={index}
+                className="flex flex-col gap-[var(--gap-chat)]"
+              >
+                {separator && (
+                  <p
+                    aria-hidden="true"
+                    className="select-none self-center rounded-full px-2.5 py-0.5 text-[11px] font-medium tracking-wide text-ink-faint/90"
+                  >
+                    {separator}
+                  </p>
+                )}
+                <MessageItem
+                  node={node}
+                  conversationId={conversation.id}
+                  isLast={index === timedPath.length - 1}
+                  variantIndex={variant?.index ?? 0}
+                  variantCount={variant?.count ?? 1}
+                />
+              </div>
+            )
+          })}
         </div>
       </div>
 

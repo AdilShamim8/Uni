@@ -74,6 +74,44 @@ export function deepestLeaf(conversation: Conversation, fromId: string): string 
   }
 }
 
+export interface VariantPosition {
+  /** 0-based position of the node among its siblings (creation order). */
+  index: number
+  /** Total siblings including the node itself (1 = no variants). */
+  count: number
+}
+
+/**
+ * Variant index/count for every node in one pass — the bulk form of
+ * `siblingsOf` used by transcript surfaces. Per-item `siblingsOf` calls are
+ * O(N) each, which makes every store update quadratic in transcript length;
+ * this map keeps per-render lookups O(1) with a single sort per parent.
+ */
+export function variantPositions(conversation: Conversation): Map<string, VariantPosition> {
+  const byParent = new Map<string | null, MessageNode[]>()
+  for (const node of Object.values(conversation.nodes)) {
+    const siblings = byParent.get(node.parentId)
+    if (siblings) siblings.push(node)
+    else byParent.set(node.parentId, [node])
+  }
+  const positions = new Map<string, VariantPosition>()
+  for (const siblings of byParent.values()) {
+    siblings.sort((a, b) => a.createdAt - b.createdAt)
+    for (let index = 0; index < siblings.length; index += 1) {
+      positions.set(siblings[index].id, { index, count: siblings.length })
+    }
+  }
+  return positions
+}
+
+/** Variant index/count for a single node (convenience over the bulk form). */
+export function variantInfoFor(
+  conversation: Conversation,
+  nodeId: string,
+): VariantPosition | undefined {
+  return variantPositions(conversation).get(nodeId)
+}
+
 /** Attach a node to a (mutable draft) conversation and make it active. */
 export function attachNode(conversation: Conversation, node: MessageNode): void {
   conversation.nodes[node.id] = node
