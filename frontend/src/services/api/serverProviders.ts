@@ -29,7 +29,9 @@ export interface ServerProvider {
 }
 
 export async function listServerProviders(): Promise<ServerProvider[]> {
-  return apiFetch<ServerProvider[]>(`${API_ROOT}/providers`)
+  // The backend returns a page-shaped { items } envelope.
+  const page = await apiFetch<{ items: ServerProvider[] }>(`${API_ROOT}/providers`)
+  return Array.isArray(page.items) ? page.items : []
 }
 
 export async function createServerProvider(input: {
