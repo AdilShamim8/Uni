@@ -31,6 +31,16 @@ export async function attachDatabase(app: FastifyInstance): Promise<void> {
     connectionTimeoutMillis: 5_000,
   })
 
+  // Idle pooled clients surface errors on the pool when the server
+  // restarts, the network drops, or a connection is terminated while it
+  // is still closing during shutdown. Without a listener these become
+  // uncaught exceptions that crash the process; with one, pg discards
+  // the dead client and the pool replaces it on the next checkout.
+  // In-flight queries report their own errors through their callers.
+  pool.on('error', (error) => {
+    app.log.warn({ err: error }, 'idle database client error — pooled connection was likely terminated by the server or network')
+  })
+
   const db = drizzle(pool, { schema })
   app.decorate('database', { pool, db })
 
@@ -42,5 +52,11 @@ export async function attachDatabase(app: FastifyInstance): Promise<void> {
 /** Test helper: build an isolated Database for an explicit connection string. */
 export function createDatabase(connectionString: string): Database {
   const pool = new Pool({ connectionString, max: 5, connectionTimeoutMillis: 5_000 })
+  // Same rationale as attachDatabase: a pool with no 'error' listener
+  // turns an idle-client termination (e.g. the embedded server stopping
+  // mid-close) into an uncaught exception that fails the test run.
+  pool.on('error', () => {
+    /* expected during teardown races */
+  })
   return { pool, db: drizzle(pool, { schema }) }
 }
