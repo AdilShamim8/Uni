@@ -54,7 +54,11 @@ function jsonResponse(status: number, body: unknown): Response {
 
 /** Route-based fetch mock mirroring the real backend surface. */
 function createFetchMock() {
-  const state = { sessionUser: null as typeof USER | null }
+  const state = {
+    sessionUser: null as typeof USER | null,
+    providers: [] as Array<Record<string, unknown>>,
+    conversationDetail: structuredClone(CONVERSATION_DETAIL),
+  }
   const calls: Array<{ url: string; method: string; body?: unknown }> = []
 
   const fetchMock = vi.fn(async (url: string | URL, init?: RequestInit) => {
@@ -93,7 +97,7 @@ function createFetchMock() {
       if (!state.sessionUser) return jsonResponse(401, { code: 'unauthorized', message: 'Sign in to use the API.', requestId: 'r-2' })
       return jsonResponse(200, ME)
     }
-    if (path === '/api/v1/conversations') {
+    if (path === '/api/v1/conversations' && method === 'GET') {
       return jsonResponse(200, { items: CONVERSATIONS, nextCursor: null })
     }
     if (path === '/api/v1/conversations/c-1') {
@@ -116,6 +120,156 @@ function createFetchMock() {
         idempotentReplay: false,
         conversationIdMap: { 'local-1': 'c-2', 'local-2': 'c-3' },
       })
+    }
+    if (path === '/api/v1/providers') {
+      if (!state.sessionUser) return jsonResponse(401, { code: 'unauthorized', message: 'Sign in to use the API.', requestId: 'r-3' })
+      if (method === 'GET') return jsonResponse(200, state.providers)
+      if (method === 'POST') {
+        const payload = body as { label?: string; kind?: string; endpointUrl?: string; modelId?: string }
+        const provider = {
+          id: 'sp-1',
+          label: payload.label ?? '',
+          kind: payload.kind ?? 'openai-compatible',
+          endpointUrl: payload.endpointUrl ?? '',
+          modelId: payload.modelId ?? 'grok-test',
+          models: ['grok-test'],
+          credential: { present: false, keyId: null, status: 'untested', lastCheckedAt: null, lastError: null },
+          createdAt: 5,
+          updatedAt: 5,
+        }
+        state.providers.push(provider)
+        return jsonResponse(201, provider)
+      }
+    }
+    if (path === '/api/v1/providers/sp-1/credential' && method === 'PUT') {
+      const provider = state.providers[0]
+      provider.credential = { present: true, keyId: 'key-1', status: 'untested', lastCheckedAt: null, lastError: null }
+      return jsonResponse(200, provider)
+    }
+    if (path === '/api/v1/conversations' && method === 'POST') {
+      // A brand-new conversation with no nodes yet.
+      return jsonResponse(201, {
+        id: 'c-9',
+        title: 'Fresh server chat',
+        agentId: null,
+        pinned: false,
+        archived: false,
+        activeLeafId: null,
+        createdAt: 10,
+        updatedAt: 10,
+        messageCount: 0,
+      })
+    }
+    if (path === '/api/v1/conversations/c-9') {
+      if (state.conversationDetail.id === 'c-9') return jsonResponse(200, state.conversationDetail)
+      return jsonResponse(200, {
+        id: 'c-9',
+        title: 'Fresh server chat',
+        agentId: null,
+        pinned: false,
+        archived: false,
+        activeLeafId: null,
+        createdAt: 10,
+        updatedAt: 10,
+        messageCount: 0,
+        nodes: [],
+      })
+    }
+    if (/^\/api\/v1\/conversations\/c-9\/nodes$/.test(path) && method === 'POST') {
+      const payload = body as { content?: string }
+      const userNode = {
+        id: 'n-user-1',
+        parentId: null,
+        role: 'user',
+        status: 'complete',
+        content: payload.content ?? '',
+        createdAt: 11,
+        feedback: null,
+      }
+      const assistantNode = {
+        id: 'n-assist-1',
+        parentId: 'n-user-1',
+        role: 'assistant',
+        status: 'complete',
+        content: 'Server reply streamed back.',
+        createdAt: 12,
+        feedback: null,
+      }
+      state.conversationDetail = {
+        id: 'c-9',
+        title: 'Fresh server chat',
+        agentId: null,
+        pinned: false,
+        archived: false,
+        activeLeafId: 'n-assist-1',
+        createdAt: 10,
+        updatedAt: 12,
+        messageCount: 2,
+        nodes: [userNode, assistantNode],
+      }
+      return jsonResponse(201, {
+        node: userNode,
+        conversation: { ...state.conversationDetail, nodes: [userNode] },
+        reused: false,
+      })
+    }
+    if (/^\/api\/v1\/conversations\/c-9\/runs$/.test(path) && method === 'POST') {
+      return jsonResponse(201, {
+        run: {
+          id: 'run-1',
+          conversationId: 'c-9',
+          parentNodeId: 'n-user-1',
+          providerId: 'sp-1',
+          providerKind: 'openai-compatible',
+          providerEndpoint: 'https://api.example.test/v1',
+          modelId: 'grok-test',
+          status: 'running',
+          outputText: '',
+          usage: null,
+          errorCode: null,
+          errorMessage: null,
+          createdAt: 12,
+          updatedAt: 12,
+          terminalAt: null,
+        },
+        events: [{ eventId: 'run-1:1', runId: 'run-1', sequence: 1, type: 'started', timestamp: 12, payload: { text: '' } }],
+        reused: false,
+      })
+    }
+    if (/^\/api\/v1\/runs\/run-1\/cancel$/.test(path) && method === 'POST') {
+      return jsonResponse(200, {
+        run: {
+          id: 'run-1',
+          conversationId: 'c-9',
+          parentNodeId: 'n-user-1',
+          providerId: 'sp-1',
+          providerKind: 'openai-compatible',
+          providerEndpoint: 'https://api.example.test/v1',
+          modelId: 'grok-test',
+          status: 'stopped',
+          outputText: 'partial',
+          usage: null,
+          errorCode: null,
+          errorMessage: null,
+          createdAt: 12,
+          updatedAt: 13,
+          terminalAt: 13,
+        },
+      })
+    }
+    if (/^\/api\/v1\/runs\/run-1\/events/.test(path)) {
+      const sse = [
+        'data: ' + JSON.stringify({ eventId: 'run-1:1', runId: 'run-1', sequence: 1, type: 'started', timestamp: 12, payload: { text: '' } }),
+        '',
+        'data: ' + JSON.stringify({ eventId: 'run-1:2', runId: 'run-1', sequence: 2, type: 'delta', timestamp: 13, payload: { text: 'Server ' } }),
+        '',
+        'data: ' + JSON.stringify({ eventId: 'run-1:3', runId: 'run-1', sequence: 3, type: 'delta', timestamp: 14, payload: { text: 'reply streamed back.' } }),
+        '',
+        'data: ' + JSON.stringify({ eventId: 'run-1:4', runId: 'run-1', sequence: 4, type: 'terminal', timestamp: 15, payload: { status: 'complete' } }),
+        '',
+        '',
+      ].join('\n')
+      return new Response(sse, { status: 200, headers: { 'content-type': 'text/event-stream' } })
     }
     return jsonResponse(404, { code: 'not_found', message: 'Resource not found.', requestId: 'r-x' })
   })
@@ -192,7 +346,85 @@ describe('Account section — server session and deliberate import', () => {
     expect(screen.getByText('Hi from the server')).toBeInTheDocument()
     expect(screen.getByText('Older branch')).toBeInTheDocument()
     expect(screen.getByText(/other branch/i)).toBeInTheDocument()
-    expect(screen.getByText(/Read-only server copy/i)).toBeInTheDocument()
+    expect(screen.getByText(/Server execution/i)).toBeInTheDocument()
+  })
+
+  it('adds a server provider, then chats end-to-end over the streamed run', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // Add a server provider (create + credential + refresh).
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'xAI test')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-server-key')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+
+    expect(await screen.findByText('xAI test')).toBeInTheDocument()
+    expect(await screen.findByText('Key saved')).toBeInTheDocument()
+    const createProviderCall = mock.calls.find(
+      (call) => call.url === '/api/v1/providers' && call.method === 'POST',
+    )
+    const credentialCall = mock.calls.find((call) => call.url === '/api/v1/providers/sp-1/credential')
+    expect(createProviderCall).toBeTruthy()
+    expect(credentialCall).toBeTruthy()
+    // The key is sent exactly once, to the credential route.
+    expect(
+      mock.calls.filter((call) => JSON.stringify(call.body ?? '').includes('sk-server-key')),
+    ).toHaveLength(1)
+
+    // Create a server conversation.
+    await userEvent.type(
+      screen.getByLabelText('New server conversation title'),
+      'Fresh server chat',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'New' }))
+
+    // Send a message: user node + run + streamed reply.
+    const composer = await screen.findByLabelText('Message the server assistant')
+    await userEvent.type(composer, 'Hello from the account surface')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    // The streamed deltas render, then the refreshed conversation carries
+    // the persisted assistant node.
+    expect(await screen.findByText('Server reply streamed back.')).toBeInTheDocument()
+    expect(await screen.findByText('Hello from the account surface')).toBeInTheDocument()
+
+    const nodeCall = mock.calls.find(
+      (call) => /^\/api\/v1\/conversations\/c-9\/nodes$/.test(call.url) && call.method === 'POST',
+    )
+    const runCall = mock.calls.find(
+      (call) => /^\/api\/v1\/conversations\/c-9\/runs$/.test(call.url) && call.method === 'POST',
+    )
+    const streamCall = mock.calls.find((call) => call.url.includes('/api/v1/runs/run-1/events'))
+    expect(nodeCall?.body).toMatchObject({ role: 'user', content: 'Hello from the account surface' })
+    expect(runCall?.body).toMatchObject({ parentNodeId: 'n-user-1', providerId: 'sp-1' })
+    expect(streamCall).toBeTruthy()
+  })
+
+  it('shows an honest hint instead of a fake reply when no server provider has a key', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // No provider added: open a conversation — the composer explains
+    // instead of inventing a reply.
+    await userEvent.type(
+      screen.getByLabelText('New server conversation title'),
+      'No provider chat',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'New' }))
+    const composer = await screen.findByLabelText('Message the server assistant')
+    expect(composer).toHaveAttribute(
+      'placeholder',
+      'Add a server provider (with a key) above first…',
+    )
   })
 
   it('signing out clears all server-derived state from the browser', async () => {

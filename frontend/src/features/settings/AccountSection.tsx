@@ -1,5 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import { CloudUpload, Eye, ListTree, LogIn, LogOut, RefreshCw, ShieldCheck } from 'lucide-react'
+import {
+  CloudUpload,
+  Eye,
+  KeyRound,
+  ListTree,
+  LogIn,
+  LogOut,
+  MessageSquare,
+  Plus,
+  RefreshCw,
+  Send,
+  ShieldCheck,
+  Square,
+} from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup'
 import { useServerSessionStore } from '@/state/serverSessionStore'
@@ -8,11 +21,10 @@ import { readFileText } from '@/services/readFileText'
 import type { ImportCommitResponse, ImportPreviewResponse } from '@/services/api/serverContracts'
 
 /**
- * Account settings (B02): server identity with explicit, deliberate
- * actions. Local data is never uploaded implicitly — importing is a
- * two-step preview + confirm on this page, and local originals stay in
- * this browser afterwards. Server chats are read-only here until the
- * server-side chat runs land (next milestone).
+ * Account settings (B02–B03): server identity, deliberate import, and
+ * the server chat surface — providers with server-encrypted keys, plus
+ * conversations that execute runs server-side and stream back. Local
+ * data is never uploaded implicitly; local originals always stay.
  */
 
 export function AccountSection() {
@@ -26,6 +38,7 @@ export function AccountSection() {
   return (
     <div className="flex flex-col gap-5">
       {status === 'signed-in' ? <SignedInView /> : <SignedOutView />}
+      {status === 'signed-in' && <ServerProvidersView />}
       <ServerConversationsView />
     </div>
   )
@@ -295,7 +308,196 @@ function SignedInView() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Server conversations — read-only, reload-safe                       */
+/* Server providers — encrypted credentials live on the server        */
+/* ------------------------------------------------------------------ */
+
+function ServerProvidersView() {
+  const providers = useServerSessionStore((state) => state.serverProviders)
+  const loading = useServerSessionStore((state) => state.serverProvidersLoading)
+  const providerError = useServerSessionStore((state) => state.serverProviderError)
+  const loadServerProviders = useServerSessionStore((state) => state.loadServerProviders)
+  const addServerProvider = useServerSessionStore((state) => state.addServerProvider)
+  const testServerProviderById = useServerSessionStore((state) => state.testServerProviderById)
+  const [adding, setAdding] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [label, setLabel] = useState('')
+  const [kind, setKind] = useState<'openai-compatible' | 'anthropic'>('openai-compatible')
+  const [endpointUrl, setEndpointUrl] = useState('https://api.x.ai/v1')
+  const [modelId, setModelId] = useState('')
+  const [apiKey, setApiKey] = useState('')
+
+  useEffect(() => {
+    void loadServerProviders()
+  }, [loadServerProviders])
+
+  async function submit() {
+    if (!label.trim() || !endpointUrl.trim() || !apiKey.trim()) return
+    setBusy(true)
+    const ok = await addServerProvider({
+      label: label.trim(),
+      kind,
+      endpointUrl: endpointUrl.trim(),
+      modelId: modelId.trim() || undefined,
+      apiKey: apiKey.trim(),
+    })
+    setBusy(false)
+    if (ok) {
+      setAdding(false)
+      setLabel('')
+      setModelId('')
+      setApiKey('')
+    }
+  }
+
+  return (
+    <SettingsGroup
+      title="Server providers"
+      footer="Keys added here are encrypted on the server (AES-256-GCM) and used only for its outbound model requests — they never enter this browser's storage, exports, or logs. This is separate from the browser BYOK keys in Provider settings."
+    >
+      <SettingsRow
+        label={`Providers on the server (${providers.length})`}
+        description={
+          loading
+            ? 'Loading…'
+            : providers.length === 0
+              ? 'None yet — add one to use server chat.'
+              : 'Server chat uses the first provider with a saved key.'
+        }
+      >
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => void loadServerProviders()}>
+            <RefreshCw size={14} />
+            Refresh
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => setAdding(!adding)}>
+            <Plus size={14} />
+            {adding ? 'Cancel' : 'Add provider'}
+          </Button>
+        </div>
+      </SettingsRow>
+
+      {providers.length > 0 && (
+        <ul className="flex flex-col gap-1" aria-label="Server providers">
+          {providers.map((provider) => (
+            <li
+              key={provider.id}
+              className="flex items-center gap-2 rounded-control px-2.5 py-2 text-[13px]"
+            >
+              <KeyRound size={13} className="shrink-0 text-ink-faint" aria-hidden="true" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-ink">{provider.label}</span>
+                <span className="block truncate text-[11px] text-ink-faint">
+                  {provider.kind === 'anthropic' ? 'Anthropic' : 'OpenAI-compatible'} ·{' '}
+                  {provider.endpointUrl}
+                </span>
+              </span>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
+                  provider.credential.present
+                    ? 'bg-accent-soft text-accent'
+                    : 'bg-subtle text-ink-faint'
+                }`}
+              >
+                {provider.credential.present ? 'Key saved' : 'No key'}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={() => void testServerProviderById(provider.id)}
+              >
+                Test
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {adding && (
+        <form
+          className="flex flex-col gap-2.5 rounded-group border border-line bg-panel p-3"
+          onSubmit={(event) => {
+            event.preventDefault()
+            void submit()
+          }}
+        >
+          <label className="flex flex-col gap-1 text-[13px] text-ink-soft">
+            Label
+            <input
+              value={label}
+              onChange={(event) => setLabel(event.target.value)}
+              required
+              placeholder="xAI · Grok"
+              className="rounded-control border border-line bg-raised px-3 py-2 text-sm text-ink"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-[13px] text-ink-soft">
+            Protocol
+            <select
+              value={kind}
+              onChange={(event) =>
+                setKind(event.target.value as 'openai-compatible' | 'anthropic')
+              }
+              className="rounded-control border border-line bg-raised px-3 py-2 text-sm text-ink"
+            >
+              <option value="openai-compatible">OpenAI-compatible (Grok, GPT, DeepSeek…)</option>
+              <option value="anthropic">Anthropic (Claude)</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1 text-[13px] text-ink-soft">
+            Endpoint URL
+            <input
+              value={endpointUrl}
+              onChange={(event) => setEndpointUrl(event.target.value)}
+              required
+              placeholder="https://api.x.ai/v1"
+              className="rounded-control border border-line bg-raised px-3 py-2 text-sm text-ink"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-[13px] text-ink-soft">
+            Model (optional — discovered on test)
+            <input
+              value={modelId}
+              onChange={(event) => setModelId(event.target.value)}
+              placeholder="grok-4-fast"
+              className="rounded-control border border-line bg-raised px-3 py-2 text-sm text-ink"
+            />
+          </label>
+          <label className="flex flex-col gap-1 text-[13px] text-ink-soft">
+            API key
+            <input
+              type="password"
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              required
+              autoComplete="off"
+              placeholder="Sent once, encrypted on the server"
+              className="rounded-control border border-line bg-raised px-3 py-2 text-sm text-ink"
+            />
+          </label>
+          {providerError && (
+            <p role="alert" className="rounded-control bg-danger/10 px-3 py-2 text-[13px] text-danger">
+              {providerError}
+            </p>
+          )}
+          <Button type="submit" variant="primary" size="sm" disabled={busy}>
+            <KeyRound size={14} />
+            {busy ? 'Saving…' : 'Save provider + key'}
+          </Button>
+        </form>
+      )}
+
+      {!adding && providerError && (
+        <p role="alert" className="rounded-control bg-danger/10 px-3 py-2 text-[13px] text-danger">
+          {providerError}
+        </p>
+      )}
+    </SettingsGroup>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Server conversations — chat surface with server-side runs          */
 /* ------------------------------------------------------------------ */
 
 function ServerConversationsView() {
@@ -307,6 +509,9 @@ function ServerConversationsView() {
   const openConversation = useServerSessionStore((state) => state.openConversation)
   const openConversationId = useServerSessionStore((state) => state.openConversationId)
   const openConversationLoading = useServerSessionStore((state) => state.openConversationLoading)
+  const newServerConversation = useServerSessionStore((state) => state.newServerConversation)
+  const [newTitle, setNewTitle] = useState('')
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     if (status === 'signed-in') void loadConversations()
@@ -314,20 +519,52 @@ function ServerConversationsView() {
 
   if (status !== 'signed-in') return null
 
+  async function createConversation() {
+    const title = newTitle.trim() || 'Server chat'
+    setCreating(true)
+    await newServerConversation(title)
+    setCreating(false)
+    setNewTitle('')
+  }
+
   return (
     <SettingsGroup
       title="Chats on this account"
-      footer="Read-only server copies — sending messages from the server account arrives with the chat-runs milestone. Reload this page any time: this list is re-fetched from the server, never cached between sessions."
+      footer="These conversations execute on your Uni server: the server stores the tree, runs the model through its saved provider, and streams replies back. Reload any time — everything is re-fetched from the server, never cached between sessions."
     >
       <SettingsRow
         label={`Server conversations (${conversations.length})`}
-        description={conversationsLoading ? 'Loading…' : 'Newest first; select one to read it.'}
+        description={
+          conversationsLoading ? 'Loading…' : 'Newest first; select one to open it.'
+        }
       >
-        <Button variant="ghost" size="sm" onClick={() => void loadConversations()}>
-          <RefreshCw size={14} />
-          Refresh
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={() => void loadConversations()}>
+            <RefreshCw size={14} />
+            Refresh
+          </Button>
+        </div>
       </SettingsRow>
+
+      <form
+        className="flex items-center gap-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void createConversation()
+        }}
+      >
+        <input
+          value={newTitle}
+          onChange={(event) => setNewTitle(event.target.value)}
+          placeholder="Start a server chat…"
+          aria-label="New server conversation title"
+          className="min-w-0 flex-1 rounded-control border border-line bg-panel px-3 py-2 text-[13px] text-ink"
+        />
+        <Button type="submit" variant="secondary" size="sm" disabled={creating}>
+          <MessageSquare size={14} />
+          New
+        </Button>
+      </form>
 
       {conversations.length > 0 && (
         <ul className="flex max-h-52 flex-col gap-1 overflow-y-auto" aria-label="Server conversations">
@@ -363,8 +600,16 @@ function ServerConversationsView() {
   )
 }
 
-/** A compact read-only rendering of the server message tree. */
+/** The server conversation: transcript + composer + live run bubble. */
 function ServerThread({ detail }: { detail: ServerConversationDetail }) {
+  const sendServerMessage = useServerSessionStore((state) => state.sendServerMessage)
+  const stopActiveServerRun = useServerSessionStore((state) => state.stopActiveServerRun)
+  const activeRun = useServerSessionStore((state) => state.activeRun)
+  const runError = useServerSessionStore((state) => state.runError)
+  const serverProviders = useServerSessionStore((state) => state.serverProviders)
+  const [draft, setDraft] = useState('')
+  const [sending, setSending] = useState(false)
+
   const activePath = new Set<string>()
   let cursor = detail.activeLeafId
   const byId = new Map(detail.nodes.map((node) => [node.id, node]))
@@ -372,6 +617,21 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
     activePath.add(cursor)
     const node = byId.get(cursor)
     cursor = node?.parentId ?? null
+  }
+
+  const runIsLive =
+    activeRun !== null &&
+    activeRun.conversationId === detail.id &&
+    (activeRun.status === 'running' || activeRun.status === 'cancelling')
+  const hasProvider = serverProviders.some((provider) => provider.credential.present)
+
+  async function send() {
+    const text = draft.trim()
+    if (!text || sending || runIsLive) return
+    setSending(true)
+    setDraft('')
+    await sendServerMessage(text)
+    setSending(false)
   }
 
   return (
@@ -403,10 +663,72 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
             </li>
           )
         })}
+        {activeRun && activeRun.conversationId === detail.id && (
+          <li className="rounded-control bg-subtle px-2.5 py-1.5 text-[13px] leading-relaxed text-ink">
+            <span className="mr-1.5 font-medium">
+              Assistant
+              {activeRun.status === 'running' && ' · streaming…'}
+              {activeRun.status === 'cancelling' && ' · stopping…'}
+              {activeRun.status === 'stopped' && ' · stopped'}
+              {activeRun.status === 'repetition_stopped' && ' · stopped — repetitive output'}
+              {activeRun.status === 'error' && ' · error'}
+            </span>
+            <span className="whitespace-pre-wrap">{activeRun.text}</span>
+            {activeRun.errorMessage && (
+              <span className="mt-1 block text-[12px] text-danger">{activeRun.errorMessage}</span>
+            )}
+          </li>
+        )}
       </ol>
+
+      <form
+        className="mt-2.5 flex items-end gap-2"
+        onSubmit={(event) => {
+          event.preventDefault()
+          void send()
+        }}
+      >
+        <textarea
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault()
+              void send()
+            }
+          }}
+          rows={2}
+          aria-label="Message the server assistant"
+          placeholder={
+            hasProvider
+              ? 'Message runs on your Uni server…'
+              : 'Add a server provider (with a key) above first…'
+          }
+          className="min-h-[44px] min-w-0 flex-1 resize-y rounded-control border border-line bg-raised px-3 py-2 text-[13px] text-ink"
+        />
+        {runIsLive ? (
+          <Button type="button" variant="secondary" size="sm" onClick={() => void stopActiveServerRun()}>
+            <Square size={14} />
+            Stop
+          </Button>
+        ) : (
+          <Button type="submit" variant="primary" size="sm" disabled={sending || !draft.trim()}>
+            <Send size={14} />
+            {sending ? 'Sending…' : 'Send'}
+          </Button>
+        )}
+      </form>
+
+      {runError && (
+        <p role="alert" className="mt-2 rounded-control bg-danger/10 px-3 py-2 text-[12.5px] text-danger">
+          {runError}
+        </p>
+      )}
+
       <p className="mt-2 flex items-center gap-1.5 text-[11px] text-ink-faint">
         <ShieldCheck size={12} aria-hidden="true" />
-        Read-only server copy — the active branch is highlighted; siblings are preserved.
+        Server execution — the model runs through your Uni server's saved provider; the active branch
+        is highlighted and siblings are preserved.
       </p>
     </div>
   )
