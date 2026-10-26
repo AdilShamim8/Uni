@@ -241,3 +241,89 @@ export type NewDbMetadataRow = typeof dbMetadata.$inferInsert
 export type UserRow = typeof user.$inferSelect
 export type WorkspaceRow = typeof workspaces.$inferSelect
 export type WorkspaceMemberRow = typeof workspaceMembers.$inferSelect
+
+/* ------------------------------------------------------------------ */
+/* Chat runs + events (B03)                                            */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One model execution answering a user node in a conversation.
+ *
+ * Terminal statuses are exactly one of `complete`, `stopped`,
+ * `repetition_stopped`, or `error` — a provider failure or guard stop is
+ * never recorded as complete. `cancelling` is a durable transitional
+ * state: cancel writes it before aborting the in-process call, so a
+ * crash between request and abort still reconciles honestly.
+ *
+ * Provider provenance is snapshotted (kind/endpoint/model) because the
+ * referenced provider row may be deleted later; history stays truthful
+ * about what actually produced the output.
+ */
+export const runs = pgTable(
+  'run',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    conversationId: text('conversation_id')
+      .notNull()
+      .references(() => conversations.id, { onDelete: 'cascade' }),
+    parentNodeId: text('parent_node_id').notNull(),
+    providerId: text('provider_id').references(() => providerConnections.id, {
+      onDelete: 'set null',
+    }),
+    providerKind: text('provider_kind').notNull(),
+    providerEndpoint: text('provider_endpoint').notNull(),
+    modelId: text('model_id').notNull(),
+    status: text('status').notNull().default('running'),
+    outputText: text('output_text').notNull().default(''),
+    usage: jsonb('usage'),
+    idempotencyKey: text('idempotency_key'),
+    errorCode: text('error_code'),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    terminalAt: timestamp('terminal_at', { withTimezone: true }),
+  },
+  (table) => [
+    // Idempotent run creation per workspace (same key returns the same run).
+    uniqueIndex('run_workspace_idempotency_uq').on(table.workspaceId, table.idempotencyKey),
+    index('run_conversation_idx').on(table.conversationId, table.createdAt),
+    // Stuck-run reconciliation scans non-terminal runs.
+    index('run_status_idx').on(table.status),
+    // The answered node must belong to the same conversation.
+    foreignKey({
+      columns: [table.parentNodeId, table.conversationId],
+      foreignColumns: [conversationNodes.id, conversationNodes.conversationId],
+    }),
+  ],
+)
+
+/**
+ * Ordered, persisted run events — the durable stream clients replay on
+ * reconnect instead of regenerating output. Sequences are per-run and
+ * monotonic; `delta` payloads carry exact text so replayed runs produce
+ * byte-identical transcripts.
+ */
+export const runEvents = pgTable(
+  'run_event',
+  {
+    runId: text('run_id')
+      .notNull()
+      .references(() => runs.id, { onDelete: 'cascade' }),
+    sequence: integer('sequence').notNull(),
+    type: text('type').notNull(),
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.runId, table.sequence] }),
+    index('run_event_run_sequence_idx').on(table.runId, table.sequence),
+  ],
+)
+
+export type RunRow = typeof runs.$inferSelect
+export type NewRunRow = typeof runs.$inferInsert
+export type RunEventRow = typeof runEvents.$inferSelect
+export type NewRunEventRow = typeof runEvents.$inferInsert

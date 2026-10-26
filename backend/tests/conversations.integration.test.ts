@@ -140,6 +140,39 @@ describe('conversations — CRUD, tree, isolation', () => {
     expect(switchedDetail.nodes).toHaveLength(3)
   })
 
+  it('lists the real message count per conversation (correlated subquery regression)', async () => {
+    const { app } = testApp
+    const conversation = await createConversation(alice.cookie, 'Counted chat')
+    await createNode(alice.cookie, conversation.id, {
+      role: 'user',
+      content: 'One',
+      clientId: 'count-1',
+    })
+    await createNode(alice.cookie, conversation.id, {
+      role: 'assistant',
+      content: 'Two',
+      clientId: 'count-2',
+    })
+    await createNode(alice.cookie, conversation.id, {
+      role: 'user',
+      content: 'Three',
+      clientId: 'count-3',
+    })
+
+    const list = await app.inject({
+      method: 'GET',
+      url: '/api/v1/conversations',
+      headers: { cookie: alice.cookie },
+    })
+    expect(list.statusCode).toBe(200)
+    const items = (list.json() as { items: Array<{ id: string; messageCount: number }> }).items
+    const counted = items.find((item) => item.id === conversation.id)
+    // The correlated subquery must count THIS conversation's nodes —
+    // the pre-fix SQL compared node.id to node.conversation_id (always
+    // false) and reported 0 for every conversation.
+    expect(counted?.messageCount).toBe(3)
+  })
+
   it('blocks another user from reading, changing, or deleting conversations (guessed IDs)', async () => {
     const { app } = testApp
     const conversation = await createConversation(alice.cookie, 'Alice private')

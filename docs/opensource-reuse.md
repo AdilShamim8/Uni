@@ -28,7 +28,9 @@ resolved versions in `backend/package-lock.json` as of B01 (2026-10-23).
 | typescript (dev) | 5.6.3 | Apache-2.0 | B01 | Type checking and builds |
 | embedded-postgres (dev/test) | 18.4.0-beta.17 | MIT | B01 | Real PostgreSQL binaries for disposable integration tests |
 | better-auth | 1.7.12 | MIT | B02 | Authentication, session lifecycle |
-| @ai-sdk/* (core + openai + anthropic) | (planned) | Apache-2.0 | B03 | Provider adapters, streaming, cancellation |
+| ai | 7.0.153 | Apache-2.0 | B03 | streamText execution, abort/usage/finish handling for runs |
+| @ai-sdk/openai-compatible | 3.0.78 | Apache-2.0 | B03 | OpenAI-compatible provider transport (Grok/GPT/DeepSeek/local) |
+| @ai-sdk/anthropic | 4.0.88 | Apache-2.0 | B03 | Anthropic provider transport |
 | pg-boss | (planned) | MIT | B06 | PostgreSQL-backed durable jobs |
 
 License texts for the B01 set are preserved under `third_party/licenses/`
