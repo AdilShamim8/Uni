@@ -28,6 +28,8 @@ import { RepetitionWatch } from '../../vendor/openclaw/repetition-guard.js'
 import type { Env } from '../../config/env.js'
 import { buildModelForRun } from './modelClient.js'
 import { finishRun, getRunHandle, publishRunEvent, registerRun } from './runRegistry.js'
+import { findEmployeeRow } from '../employees/employees.service.js'
+import { buildMemoryBlock, buildRecall } from '../memory/memory.service.js'
 
 export type RunsDatabase = NodePgDatabase<typeof schema>
 
@@ -488,6 +490,45 @@ async function executeRun(
 
     const history = await buildHistory(db, row.conversationId, row.parentNodeId, env.RUN_HISTORY_MAX_CHARS)
 
+    // Employee persona + memory (B04). The conversation may reference a
+    // server-side employee; when it does not (or the row was deleted),
+    // everything degrades honestly to the base prompt. Frontend parity
+    // (m07): non-empty employee instructions REPLACE the base prompt,
+    // then the bounded memory block joins with a --- separator.
+    let system = 'You are Uni, a helpful assistant.'
+    let messages = history
+    const conversationRow = (
+      await db
+        .select({ agentId: conversations.agentId })
+        .from(conversations)
+        .where(eq(conversations.id, row.conversationId))
+        .limit(1)
+    )[0]
+    const agentId = conversationRow?.agentId ?? null
+    if (agentId) {
+      const employee = await findEmployeeRow(db, row.workspaceId, agentId)
+      if (employee && employee.instructions.trim()) {
+        system = employee.instructions.trim()
+      }
+      const block = await buildMemoryBlock(db, row.workspaceId, agentId)
+      if (block.block) {
+        system = `${system}\n\n---\n\n${block.block}`
+      }
+      // Recall rides in front of the turn's message, never the system
+      // prompt (upstream design): passages from this employee's own
+      // notes that share words with the message below.
+      const newest = messages[messages.length - 1]
+      if (newest && newest.role === 'user' && typeof newest.content === 'string') {
+        const recall = await buildRecall(db, row.workspaceId, agentId, newest.content)
+        if (recall) {
+          messages = [
+            ...messages.slice(0, -1),
+            { role: 'user' as const, content: `${recall}\n\n${newest.content}` },
+          ]
+        }
+      }
+    }
+
     const handle = registerRun(runId)
     let timeoutAborted = false
     const timeout = setTimeout(() => {
@@ -504,8 +545,8 @@ async function executeRun(
     try {
       const result = streamText({
         model: model as LanguageModel,
-        system: 'You are Uni, a helpful assistant.',
-        messages: history,
+        system,
+        messages,
         abortSignal: handle.controller.signal,
         maxOutputTokens: env.RUN_MAX_OUTPUT_TOKENS,
         // No automatic retries: a failed request may have reached the

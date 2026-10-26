@@ -8,6 +8,23 @@ import { AppError } from '../lib/errors.js'
  * envelope { code, message, requestId, details? }. Internal errors are
  * logged with the request id and returned without internals leaking.
  */
+
+/**
+ * Zod errors arrive from TWO zod copies: the backend's own and the one
+ * bundled inside @uni/contracts (separate installs, so `instanceof`
+ * fails across the boundary). Detect structurally — every zod v3 error
+ * is an Error named ZodError carrying an `issues` array — so contract
+ * validation failures map to 400 with details, never to a 500.
+ */
+function isZodError(error: unknown): error is ZodError {
+  return (
+    error instanceof ZodError ||
+    (error instanceof Error &&
+      error.name === 'ZodError' &&
+      Array.isArray((error as { issues?: unknown }).issues))
+  )
+}
+
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((error: FastifyError | AppError | ZodError | Error, request: FastifyRequest, reply: FastifyReply) => {
     const requestId = request.id
@@ -23,7 +40,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
       return
     }
 
-    if (error instanceof ZodError) {
+    if (isZodError(error)) {
       // flatten() carries paths and messages only — no raw user values.
       const envelope: ErrorEnvelope = {
         code: ERROR_CODES.VALIDATION,
