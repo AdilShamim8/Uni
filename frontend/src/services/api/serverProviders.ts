@@ -63,9 +63,18 @@ export interface ServerProviderTestResponse {
   discoveredModels: string[] | null
 }
 
-export async function testServerProvider(providerId: string): Promise<ServerProviderTestResponse> {
+/**
+ * Test the connection AND persist the discovered model list on the server
+ * (the provider row's `models` field). Server chat needs a model — either
+ * one the user set at creation or the first discovered here — so the UI's
+ * "Test" action uses this route, which supersedes the backend's plain
+ * /test (same check, without the persistence).
+ */
+export async function discoverServerProviderModels(
+  providerId: string,
+): Promise<ServerProviderTestResponse> {
   return apiFetch<ServerProviderTestResponse>(
-    `${API_ROOT}/providers/${encodeURIComponent(providerId)}/test`,
+    `${API_ROOT}/providers/${encodeURIComponent(providerId)}/models`,
     { method: 'POST' },
   )
 }

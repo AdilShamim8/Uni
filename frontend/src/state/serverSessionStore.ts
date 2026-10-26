@@ -13,10 +13,11 @@ import {
 } from '@/services/api/serverSession'
 import {
   createServerProvider,
+  discoverServerProviderModels,
   listServerProviders,
   setServerProviderCredential,
-  testServerProvider,
   type ServerProvider,
+  type ServerProviderTestResponse,
 } from '@/services/api/serverProviders'
 import {
   cancelServerRun,
@@ -81,6 +82,8 @@ interface ServerSessionState {
   serverProviders: ServerProvider[]
   serverProvidersLoading: boolean
   serverProviderError: string | null
+  /** Outcome of the last provider Test, shown verbatim (honest feedback). */
+  serverProviderTest: (ServerProviderTestResponse & { providerId: string }) | null
 
   /** The run currently streaming into the open conversation, if any. */
   activeRun: {
@@ -142,6 +145,7 @@ const clearedServerData: Pick<
   | 'serverProviders'
   | 'serverProvidersLoading'
   | 'serverProviderError'
+  | 'serverProviderTest'
   | 'activeRun'
   | 'runError'
 > = {
@@ -155,6 +159,7 @@ const clearedServerData: Pick<
   serverProviders: [],
   serverProvidersLoading: false,
   serverProviderError: null,
+  serverProviderTest: null,
   activeRun: null,
   runError: null,
 }
@@ -302,9 +307,13 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
   },
 
   testServerProviderById: async (providerId) => {
-    set({ serverProviderError: null })
+    set({ serverProviderError: null, serverProviderTest: null })
     try {
-      await testServerProvider(providerId)
+      // Test + discover in one action: the backend checks the key AND
+      // persists the discovered models, so server chat works without the
+      // user typing a model id by hand. The result is shown verbatim.
+      const result = await discoverServerProviderModels(providerId)
+      set({ serverProviderTest: { ...result, providerId } })
     } catch (error) {
       set({ serverProviderError: errorMessage(error) })
     }
@@ -346,7 +355,10 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     }
     const modelId = provider.modelId ?? provider.models[0] ?? null
     if (!modelId) {
-      set({ runError: 'That server provider has no model selected yet.' })
+      set({
+        runError:
+          'That server provider has no model yet — click Test on it (Server providers above) to check the key and discover its models.',
+      })
       return false
     }
 
@@ -435,7 +447,8 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       return false
     } finally {
       // Refresh the conversation so the persisted assistant node (with
-      // its truthful status) replaces the live bubble.
+      // its truthful status) replaces the live bubble, and re-fetch the
+      // list so summaries (message count, updated time) stay current.
       if (get().openConversationId === conversationId) {
         await get().openServerConversation(conversationId)
         const active = get().activeRun
@@ -443,6 +456,7 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
           set({ activeRun: null })
         }
       }
+      void get().loadConversations()
     }
   },
 
