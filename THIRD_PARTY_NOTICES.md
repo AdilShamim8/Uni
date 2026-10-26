@@ -50,6 +50,17 @@ alongside the backend's.
   integration example (`docs/content/docs/integrations/fastify.mdx`,
   MIT) → `backend/src/modules/auth/auth.routes.ts`; modifications and
   validation are recorded in `docs/opensource-reuse.md` Section 2.
+- Vendored source: the OpenClaw repetition guard
+  (`packages/agent-core/src/repetition-guard.ts` and its test/fixtures,
+  MIT, (c) 2026 OpenClaw Foundation) at commit
+  `29397d2a185c29d4b4d79d2ad41af0f7cf1f6a9b` →
+  `backend/src/vendor/openclaw/` with its upstream suite adapted to
+  `backend/tests/vendor-openclaw-repetition-guard.test.ts`. That file
+  itself adapts Hermes Agent (MIT, (c) 2025 Nous Research) at Hermes
+  commit `acc3cada0da86c81efc8aa6c5a291989549ca900`; OpenClaw's own
+  attribution is preserved at
+  `third_party/licenses/openclaw/THIRD_PARTY_NOTICES.md`. Integrity
+  hashes and modification records live in `third_party/sources.lock.json`.
   No other third-party code has been adapted or vendored into Uni
   source; any future adaptation will be recorded there with upstream
   commit, path, and modifications.
