@@ -11,6 +11,7 @@ import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { useContextStore } from '@/state/contextStore'
 import { useCompareStore } from '@/state/compareStore'
 import { usePluginsStore } from '@/state/pluginsStore'
+import { useServerSessionStore } from '@/state/serverSessionStore'
 import { ChatPage } from '@/features/chat/ChatPage'
 import { CommandPalette } from '@/features/search/CommandPalette'
 import { CompareDialog } from '@/features/compare/CompareDialog'
@@ -40,6 +41,9 @@ export function App() {
     useContextStore.getState().initialize()
     useCompareStore.getState().initialize()
     usePluginsStore.getState().initialize()
+    // Server session hydrates from HttpOnly cookies (no local copy);
+    // local mode is unaffected when the backend is unreachable.
+    void useServerSessionStore.getState().initialize()
   }, [initialize])
 
   // Apply display preferences to the document root.

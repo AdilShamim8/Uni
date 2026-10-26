@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792731269430,
+      "tag": "0000_medical_the_liberteens",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792732306211,
+      "tag": "0001_amused_kylun",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792733096096,
+      "tag": "0002_slimy_nehzno",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792733395904,
+      "tag": "0003_numerous_night_thrasher",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792734684715,
+      "tag": "0004_icy_fat_cobra",
+      "breakpoints": true
+    }
+  ]
+}

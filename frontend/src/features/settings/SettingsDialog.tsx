@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react'
-import { Cpu, Database, Info, MessageSquare, Palette } from 'lucide-react'
+import { Cloud, Cpu, Database, Info, MessageSquare, Palette } from 'lucide-react'
 import { useAppStore } from '@/state/store'
 import { Dialog } from '@/components/ui/Dialog'
 import { AboutSection } from './AboutSection'
+import { AccountSection } from './AccountSection'
 import { AppearanceSection } from './AppearanceSection'
 import { ChatSection } from './ChatSection'
 import { DataSection } from './DataSection'
 import { ProvidersSection } from './ProvidersSection'
 
 const SECTIONS = [
+  { id: 'account', label: 'Account', icon: <Cloud size={15} /> },
   { id: 'appearance', label: 'Appearance', icon: <Palette size={15} /> },
   { id: 'chat', label: 'Chat', icon: <MessageSquare size={15} /> },
   { id: 'data', label: 'Data', icon: <Database size={15} /> },
@@ -70,6 +72,7 @@ export function SettingsDialog() {
         </nav>
 
         <div className="min-w-0 flex-1">
+          {section === 'account' && <AccountSection />}
           {section === 'appearance' && <AppearanceSection />}
           {section === 'chat' && <ChatSection />}
           {section === 'data' && <DataSection />}

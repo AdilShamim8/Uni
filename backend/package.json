@@ -1,0 +1,41 @@
+{
+  "name": "uni-backend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Uni backend — TypeScript modular monolith (Fastify + PostgreSQL + Drizzle).",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx src/db/migrate.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.3.1",
+    "@uni/contracts": "file:../packages/contracts",
+    "better-auth": "^1.7.12",
+    "dotenv": "^18.0.9",
+    "drizzle-orm": "^0.45.4",
+    "fastify": "^5.12.7",
+    "pg": "^8.23.1",
+    "pino": "^9.14.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11",
+    "embedded-postgres": "^18.4.0-beta.17",
+    "tsx": "^4.23.15",
+    "typescript": "^5.6.3",
+    "vitest": "^5.0.5"
+  }
+}
