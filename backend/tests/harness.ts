@@ -66,6 +66,14 @@ export async function startTestApp(): Promise<TestApp> {
 
   const stop = async () => {
     await app.close()
+    // pg's Pool.end() resolves once client termination has been initiated,
+    // not once every socket has finished closing. Stopping the embedded
+    // server in that window makes backends send FATAL 57P01 ("terminating
+    // connection due to administrator command") to sockets that are still
+    // parse-enabled — surfacing as an unhandled error in the test run.
+    // Give the close handshakes a beat to finish before shutting Postgres
+    // down and removing its data directory.
+    await new Promise((resolve) => setTimeout(resolve, 250))
     await postgres.stop()
     await rm(dataDir, { recursive: true, force: true })
   }
