@@ -3,11 +3,15 @@
 Keep short and factual: current commit, completed gate, exact commands and
 results, unresolved problems, environment blockers, next action.
 
-## Current state (updated 2026-10-26, B04 complete)
+## Current state (updated 2026-10-26, backend QA pass complete)
 
-- **Branch:** `feat/backend-foundation` (commits pushed one at a time
-  per working agreement; draft PR next).
-- **Completed gates:** B00, B01, B02, B03, B04.
+- **Branch:** `feat/qa-backend-verify` (off `main` after the B04 merge,
+  PR #24; commits pushed one at a time per working agreement).
+- **Completed gates:** B00, B01, B02, B03, B04, QA pass (103/103).
+- **QA pass (2026-10-26):** memory-block route 404 consistency fix,
+  SSE sentinel dead-code fix (prompt close on finalize), `.env.example`
+  gained `BETTER_AUTH_SECRET`, new `backend/scripts/smoke-live.mjs`
+  boots the compiled server in production mode over real HTTP (11/11).
   - B00: baseline, EmployeeView render-mutation fix, docs.
   - B01: Fastify app, env validation, health, Drizzle + migration 0000,
     docker-compose, `@uni/contracts`, frontend API client + dev proxy.
