@@ -16,6 +16,7 @@ import { conversationsRoutes } from './modules/conversations/conversations.route
 import { importerRoutes } from './modules/importer/importer.routes.js'
 import { providersRoutes } from './modules/providers/providers.routes.js'
 import { runsRoutes } from './modules/runs/runs.routes.js'
+import { employeesRoutes } from './modules/employees/employees.routes.js'
 
 export interface BuildAppOptions {
   env?: Env
@@ -60,6 +61,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       await api.register(importerRoutes)
       await api.register(providersRoutes)
       await api.register(runsRoutes)
+      await api.register(employeesRoutes)
     }
     await app.register(apiV1, { prefix: '/api/v1' })
   }
