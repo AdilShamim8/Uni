@@ -123,7 +123,8 @@ function createFetchMock() {
     }
     if (path === '/api/v1/providers') {
       if (!state.sessionUser) return jsonResponse(401, { code: 'unauthorized', message: 'Sign in to use the API.', requestId: 'r-3' })
-      if (method === 'GET') return jsonResponse(200, state.providers)
+      // The real backend returns a page-shaped envelope.
+      if (method === 'GET') return jsonResponse(200, { items: state.providers })
       if (method === 'POST') {
         const payload = body as { label?: string; kind?: string; endpointUrl?: string; modelId?: string }
         const provider = {
