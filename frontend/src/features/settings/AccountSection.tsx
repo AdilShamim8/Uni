@@ -315,6 +315,7 @@ function ServerProvidersView() {
   const providers = useServerSessionStore((state) => state.serverProviders)
   const loading = useServerSessionStore((state) => state.serverProvidersLoading)
   const providerError = useServerSessionStore((state) => state.serverProviderError)
+  const providerTest = useServerSessionStore((state) => state.serverProviderTest)
   const loadServerProviders = useServerSessionStore((state) => state.loadServerProviders)
   const addServerProvider = useServerSessionStore((state) => state.addServerProvider)
   const testServerProviderById = useServerSessionStore((state) => state.testServerProviderById)
@@ -378,38 +379,75 @@ function ServerProvidersView() {
 
       {providers.length > 0 && (
         <ul className="flex flex-col gap-1" aria-label="Server providers">
-          {providers.map((provider) => (
-            <li
-              key={provider.id}
-              className="flex items-center gap-2 rounded-control px-2.5 py-2 text-[13px]"
-            >
-              <KeyRound size={13} className="shrink-0 text-ink-faint" aria-hidden="true" />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-medium text-ink">{provider.label}</span>
-                <span className="block truncate text-[11px] text-ink-faint">
-                  {provider.kind === 'anthropic' ? 'Anthropic' : 'OpenAI-compatible'} ·{' '}
-                  {provider.endpointUrl}
+          {providers.map((provider) => {
+            const activeModel = provider.modelId ?? provider.models[0] ?? null
+            const testResult = providerTest?.providerId === provider.id ? providerTest : null
+            return (
+              <li
+                key={provider.id}
+                className="flex flex-col gap-1 rounded-control px-2.5 py-2 text-[13px]"
+              >
+                <span className="flex items-center gap-2">
+                  <KeyRound size={13} className="shrink-0 text-ink-faint" aria-hidden="true" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate font-medium text-ink">{provider.label}</span>
+                    <span className="block truncate text-[11px] text-ink-faint">
+                      {provider.kind === 'anthropic' ? 'Anthropic' : 'OpenAI-compatible'} ·{' '}
+                      {provider.endpointUrl}
+                    </span>
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
+                      provider.credential.present
+                        ? 'bg-accent-soft text-accent'
+                        : 'bg-subtle text-ink-faint'
+                    }`}
+                  >
+                    {provider.credential.present ? 'Key saved' : 'No key'}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() => void testServerProviderById(provider.id)}
+                  >
+                    Test
+                  </Button>
                 </span>
-              </span>
-              <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-                  provider.credential.present
-                    ? 'bg-accent-soft text-accent'
-                    : 'bg-subtle text-ink-faint'
-                }`}
-              >
-                {provider.credential.present ? 'Key saved' : 'No key'}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={busy}
-                onClick={() => void testServerProviderById(provider.id)}
-              >
-                Test
-              </Button>
-            </li>
-          ))}
+                {activeModel && (
+                  <span className="pl-[21px] text-[11px] text-ink-faint">
+                    Model for server chat:{' '}
+                    <span className="font-medium text-ink-soft">{activeModel}</span>
+                    {provider.modelId ? '' : ' — first discovered model'}
+                  </span>
+                )}
+                {testResult && (
+                  <p
+                    role="status"
+                    className={`ml-[21px] rounded-control px-2.5 py-1.5 text-[12px] ${
+                      testResult.ok ? 'bg-accent-soft/60 text-ink-soft' : 'bg-danger/10 text-danger'
+                    }`}
+                  >
+                    {testResult.message}
+                    {testResult.ok && testResult.latencyMs !== null && <> · {testResult.latencyMs} ms</>}
+                    {testResult.ok && testResult.discoveredModels && (
+                      <>
+                        {' '}
+                        · {testResult.discoveredModels.length} model
+                        {testResult.discoveredModels.length === 1 ? '' : 's'} discovered
+                        {testResult.discoveredModels.length > 0 &&
+                          ` (${testResult.discoveredModels.slice(0, 3).join(', ')}${
+                            testResult.discoveredModels.length > 3
+                              ? `, +${testResult.discoveredModels.length - 3} more`
+                              : ''
+                          })`}
+                      </>
+                    )}
+                  </p>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
 
