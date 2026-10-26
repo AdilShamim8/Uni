@@ -3,11 +3,11 @@
 Keep short and factual: current commit, completed gate, exact commands and
 results, unresolved problems, environment blockers, next action.
 
-## Current state (updated 2026-10-26, B03 complete)
+## Current state (updated 2026-10-26, B04 complete)
 
 - **Branch:** `feat/backend-foundation` (commits pushed one at a time
   per working agreement; draft PR next).
-- **Completed gates:** B00, B01, B02, B03.
+- **Completed gates:** B00, B01, B02, B03, B04.
   - B00: baseline, EmployeeView render-mutation fix, docs.
   - B01: Fastify app, env validation, health, Drizzle + migration 0000,
     docker-compose, `@uni/contracts`, frontend API client + dev proxy.
@@ -21,9 +21,12 @@ results, unresolved problems, environment blockers, next action.
     (complete/stopped/repetition_stopped/error), stuck-run
     reconciliation; frontend server chat surface in Account; B02
     messageCount bug fixed with regression test.
-- **Verification:** backend 57/57; frontend 292/292; tsc/eslint/build
-  clean; full browser E2E on the dev stack (see
-  `docs/verification.md` B03 section).
+  - B04: employees, employee memory (vendored OpenMausBot kernel —
+    redaction, hash-guarded writes, audit journal with revert, m07
+    memory block, recall), the Library (artifacts + immutable versions,
+    canonical save transaction), all wired into run execution.
+- **Verification:** backend 101/101; frontend 321/321 (unchanged this
+  gate); tsc/build clean (see `docs/verification.md` B03/B04 sections).
 - **Stack:** Fastify + Drizzle + PostgreSQL + Better Auth + Zod +
   Vercel AI SDK (ai 7.0.153, openai-compatible 3.0.78, anthropic
   4.0.88) + pg-boss (from B06).
@@ -39,14 +42,15 @@ results, unresolved problems, environment blockers, next action.
 
 ## Next action
 
-B04 per `docs/backend-roadmap.md`: server-side employees (agent
-profiles, memory notes with Hermes-inspired scoped formatting), shared
-context, and the Library (artifacts, versions, canonical save as a
-server transaction). Port `buildAgentMemoryBlock` semantics and the
-canonicalSave conflict rules; keep every read/write workspace- and
-agent-scoped with server-derived identity. Then B05 (plugins with
-enforced grants), B06 (pg-boss durable Work), B07 (files), B08
-(deployment + draft PR if not yet opened).
+B05 per `docs/backend-roadmap.md`: server-side plugins with enforced
+grants (port the frontend dispatcher's grant model to the server;
+skills inspiration from OpenMausBot's skill-library). Then B06 (pg-boss
+durable Work; define lease/crash semantics for in-flight runs), B07
+(files, export/import completeness, optional routines — OpenMausBot's
+webhook-ingress + routine designs are the reference), B08 (deployment +
+security verification). A B04-followup polish item: frontend surfaces
+for server employees/memory/library (the API is ready; the UI still
+reads localStorage).
 
 ## Unresolved / watch list
 

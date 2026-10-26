@@ -43,6 +43,13 @@
       "when": 1792988100302,
       "tag": "0005_hard_red_ghost",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792994721104,
+      "tag": "0006_silent_starbolt",
+      "breakpoints": true
     }
   ]
 }

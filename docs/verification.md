@@ -196,3 +196,33 @@ that was a terminal-rendering artifact (byte-exact source is
 
 Not run this session: live external providers (no real keys), hosted
 deployment checks (B08).
+
+
+## B04 — employees, memory, Library (2026-10-26)
+
+Gate commands and results (branch `feat/b04-employees-memory-library`):
+
+- `npm run typecheck` (backend): 0 errors.
+- `npm test` (backend, embedded PostgreSQL per file, migrations through
+  0006): **101/101** — app 7, db 6, auth 6, conversations 7, import 6,
+  providers 7, runs 9, openclaw vendor 7, openmausbot vendor 23,
+  employees+memory 11, library 6, runs wiring 3.
+- `npm run build` (backend): clean.
+- Contracts package `npm run build`: clean (new employees/memory/library
+  schemas exported).
+- Frontend untouched this gate (321/321 recorded at the B03 QA session;
+  no frontend files changed on this branch).
+
+Notable checks inside the suites: credential shapes never persist
+(`sk-ant-…` redacted on write, note stays usable); stale edits 409 with
+the current text + hash; journal rows carry honest unified diffs with
+actor/via/kind; revert restores the SAME row (no duplicate); memory
+block hides expired/superseded entries but preserves them; the outbound
+provider request carries persona + memory in the system slot and recall
+in front of the user message (never the system); contract-schema
+validation failures return 400 `validation_error` envelopes (regression
+test) after the cross-zod-copy `instanceof` fix.
+
+Not run this session: browser E2E of the new endpoints (no frontend
+surface exists yet for them — deliberate followup), live external
+providers, hosted deployment checks (B08).

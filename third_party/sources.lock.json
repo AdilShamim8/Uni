@@ -69,6 +69,91 @@
       "validation": "backend/tests/auth.integration.test.ts (6 tests)",
       "introduced": "B02",
       "notes": "Adaptation of the official Better Auth Fastify bridge example; see docs/opensource-reuse.md for the upstream file hash."
+    },
+    {
+      "repository": "https://github.com/milind-soni/OpenMausBot",
+      "commit": "0d8eacc65cd3b783a0d28d019d39e6367780b911",
+      "upstreamPath": "server/memory-entries.ts",
+      "sha256": "09337d994dbf925939dbb77bcb0d7f2bd53cc3a313177f9b8b2860532b7035f1",
+      "localPath": "backend/src/vendor/openmausbot/memory-entries.ts",
+      "license": "Apache-2.0",
+      "licenseEvidence": [
+        "third_party/licenses/openmausbot/LICENSE",
+        "third_party/licenses/openmausbot/UPSTREAM_NOTICE"
+      ],
+      "mode": "copied",
+      "modifications": "Provenance header comment prepended; code otherwise verbatim upstream except type-level only non-null assertions on indexed accesses and regex-match destructures (required by Uni's noUncheckedIndexedAccess tsconfig). No behavioural change.",
+      "validation": "backend/tests/vendor-openmausbot-memory.test.ts",
+      "introduced": "B04",
+      "notes": "Pure MEMORY.md entry grammar: dated entries, until marks, superseded strikethrough, fact identity dedup, always-core safety facts. Ported as the text kernel of Uni's employee memory."
+    },
+    {
+      "repository": "https://github.com/milind-soni/OpenMausBot",
+      "commit": "0d8eacc65cd3b783a0d28d019d39e6367780b911",
+      "upstreamPath": "server/memory-topics.ts",
+      "sha256": "075bea3e17ad3fb7872d9815c3c69c76b4c1d9d84eee1fd9eadbc65caa4e290f",
+      "localPath": "backend/src/vendor/openmausbot/memory-topics.ts",
+      "license": "Apache-2.0",
+      "licenseEvidence": [
+        "third_party/licenses/openmausbot/LICENSE",
+        "third_party/licenses/openmausbot/UPSTREAM_NOTICE"
+      ],
+      "mode": "copied",
+      "modifications": "Provenance header comment prepended; code otherwise verbatim upstream except type-level only non-null assertions on indexed accesses and a regex-match destructure (required by Uni's noUncheckedIndexedAccess tsconfig). No behavioural change.",
+      "validation": "backend/tests/vendor-openmausbot-memory.test.ts",
+      "introduced": "B04",
+      "notes": "Topic frontmatter parsing (title/description/aliases), topic word derivation, bounded topic index rendering, and merge-preserving topic appends."
+    },
+    {
+      "repository": "https://github.com/milind-soni/OpenMausBot",
+      "commit": "0d8eacc65cd3b783a0d28d019d39e6367780b911",
+      "upstreamPath": "shared/redact.ts",
+      "sha256": "6806347f052bb83ef487b10f964f56027813fcf03835b29d314f1433511ccf62",
+      "localPath": "backend/src/vendor/openmausbot/redact.ts",
+      "license": "Apache-2.0",
+      "licenseEvidence": [
+        "third_party/licenses/openmausbot/LICENSE",
+        "third_party/licenses/openmausbot/UPSTREAM_NOTICE"
+      ],
+      "mode": "copied",
+      "modifications": "Provenance header comment prepended (8 lines); code below is verbatim upstream.",
+      "validation": "backend/tests/vendor-openmausbot-memory.test.ts",
+      "introduced": "B04",
+      "notes": "High-precision credential redaction for text crossing trust boundaries (provider key shapes, key=value assignments, bearer tokens, URL userinfo, PEM blocks). Applied to employee memory writes so a pasted key can never persist."
+    },
+    {
+      "repository": "https://github.com/milind-soni/OpenMausBot",
+      "commit": "0d8eacc65cd3b783a0d28d019d39e6367780b911",
+      "upstreamPath": "server/memory-journal.ts (extracted symbols: Op, editScript, splitLines, unifiedDiff, DIFF_CAP, UnifiedDiff)",
+      "sha256": "dd5dbe7bfd59566f001bef9005bf64181db9d7d9290e33c4ba835f278d1e3990",
+      "localPath": "backend/src/vendor/openmausbot/unified-diff.ts",
+      "license": "Apache-2.0",
+      "licenseEvidence": [
+        "third_party/licenses/openmausbot/LICENSE",
+        "third_party/licenses/openmausbot/UPSTREAM_NOTICE"
+      ],
+      "mode": "extracted",
+      "modifications": "Extraction only: the pure LCS-based unified-diff engine lifted verbatim from the upstream file-journal module (CONTEXT inlined as 2 in the hunk-merge expression); the surrounding append-only journal is reimplemented for PostgreSQL in backend/src/modules/memory. Type-level only: three ops[cursor] indexed accesses gained non-null assertions because Uni's tsconfig enables noUncheckedIndexedAccess (upstream's does not).",
+      "validation": "backend/tests/vendor-openmausbot-memory.test.ts",
+      "introduced": "B04",
+      "notes": "sha256 is of the whole upstream server/memory-journal.ts; only the listed pure symbols were taken."
+    },
+    {
+      "repository": "https://github.com/milind-soni/OpenMausBot",
+      "commit": "0d8eacc65cd3b783a0d28d019d39e6367780b911",
+      "upstreamPath": "server/message-db.ts (STOP_WORDS, RECALL_FILLER, recallTerms) + server/recall.ts (RECALL_OPEN/CLOSE, recallQuery, enoughMatches, clean, renderRecall, RecallPassage/RecallResult, constants)",
+      "sha256": "3b1efdaf114ff7a3f23aadac0ff0f5a1c7901d8539cadeb101fe4584f0354299",
+      "localPath": "backend/src/vendor/openmausbot/recall.ts",
+      "license": "Apache-2.0",
+      "licenseEvidence": [
+        "third_party/licenses/openmausbot/LICENSE",
+        "third_party/licenses/openmausbot/UPSTREAM_NOTICE"
+      ],
+      "mode": "extracted",
+      "modifications": "Extraction plus one text change: the RECALL_OPEN disclosure names Uni instead of OpenMausBot. The SQLite FTS5 machinery was NOT ported — Uni matches recallTerms against PostgreSQL-stored notes in backend/src/modules/memory.",
+      "validation": "backend/tests/vendor-openmausbot-memory.test.ts",
+      "introduced": "B04",
+      "notes": "sha256 is of upstream server/message-db.ts; the render/query half comes from upstream server/recall.ts (sha256 1ac469c45ef648e7f743add1249dd11c1a8fad7e890a561135bac5fadaff9ff6). Recall rides in front of the turn message, never the system prompt; fence markers are neutralised so a note cannot close the block."
     }
   ]
 }
