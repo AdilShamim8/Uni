@@ -226,3 +226,61 @@ test) after the cross-zod-copy `instanceof` fix.
 Not run this session: browser E2E of the new endpoints (no frontend
 surface exists yet for them — deliberate followup), live external
 providers, hosted deployment checks (B08).
+
+## Backend QA pass — full verify + two fixes (2026-10-26)
+
+Scope: user-requested full backend verification on `main` after the B04
+merge (PR #24), hunting for bugs, with every gate re-run before commit.
+Branch `feat/qa-backend-verify` (off `origin/main`).
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm install && npm run build` | **Pass** — dist emitted (note: a plain `cd backend && npm install` in this sandbox left `dist/` unbuilt once; building the contracts package directly is the reliable order) |
+| `cd backend && npm run typecheck` | **Pass** — 0 errors (src + tests), before and after the fixes |
+| `cd backend && npm test` | **103/103** (12 files; 101 pre-existing + 2 new regression tests) |
+| `cd backend && npm run build` | **Pass** — clean compile to dist/ |
+| `node backend/scripts/smoke-live.mjs` (new) | **11/11** — boots embedded PostgreSQL, runs migrations, starts the compiled `dist/server.js` in production mode over real HTTP, and checks: liveness, readiness, 401 on unauthenticated `/api/v1/me`, sign-up + HttpOnly `uni-auth.session_token` cookie round-trip, authenticated `/me`, the memory-block 404 fix (live), employee create, block 200 for an existing employee, library canonical-save, SIGTERM graceful exit |
+
+Bugs found and fixed (each with a regression test or live check):
+
+- **Memory block route never 404'd.** `GET /api/v1/employees/:id/memory/block`
+  returned 200 with an empty block for unknown or cross-workspace ids
+  while every sibling route (notes, journal) answered 404 — the route's
+  `if (!block)` guard was dead code because `buildMemoryBlock` always
+  returns a truthy DTO. Fix: explicit `findEmployeeRow` existence check
+  in the route (the builder itself stays non-throwing — run execution
+  relies on it degrading dangling agents to the base prompt). Two
+  regression tests: unknown id 404 + cross-workspace 404 (existence not
+  leaked), both asserting the `not_found` envelope code.
+- **SSE sentinel was dead code.** The run-events stream poll carried
+  `if (sentinelSeen || true)` — an always-true condition shipped in the
+  original B03 commit that made `sentinelSeen` write-only and hid the
+  sentinel's documented purpose. Fix: the sentinel now triggers an
+  immediate `refreshTail()` (prompt close instead of waiting up to the
+  200 ms poll tick); the poll itself stays unconditional as the
+  documented database backstop for the subscribe/finalize race; the
+  dead flag is removed. Covered by the existing runs SSE suites
+  (stream-to-terminal closure exercised in runs + runs-memory
+  integration tests) and the live smoke.
+- **`.env.example` omitted `BETTER_AUTH_SECRET`.** Production mode
+  hard-crashes without it (Better Auth refuses the default secret when
+  `NODE_ENV=production`), but the example environment file never
+  mentioned it — a fresh deployment following the docs would not boot.
+  Fix: documented in `backend/.env.example` with a generation command
+  (found by the new live smoke, which runs the compiled server in
+  production mode).
+
+Investigated and confirmed NOT bugs: `console.log('Migrations
+applied.')` in `src/db/migrate.ts` (CLI script output channel, not a
+logger bypass in request paths); `console.error` in
+`recordMemoryChange` (deliberate best-effort journal failure path,
+documented upstream semantics); `me.routes.ts` createdAt branching
+(Date vs string both resolve to integral epoch ms); urlGuard blocked
+ranges (IPv4/IPv6 coverage re-checked, DNS-resolved, no pattern
+matching); rate-limit map growth (pruned per call, bounded by
+workspace count in a single-process design).
+
+Not run this session: live external providers (no real keys), frontend
+suite (no frontend files touched by the fixes — the two code changes
+are route-level backend behavior with no contract change), hosted
+deployment checks (B08).
