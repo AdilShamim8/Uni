@@ -147,6 +147,10 @@ const exited = await new Promise((resolve) => {
 })
 check('server exits on SIGTERM', exited === 'SIGTERM' || exited === 0, `exit ${exited}`)
 
+// Same close-handshake drain as the test harness: the server's pool ends
+// its sockets asynchronously after the process begins exiting, and stopping
+// Postgres inside that window surfaces FATAL 57P01 on closing sockets.
+await sleep(250)
 await pg.stop()
 await rm(scratch, { recursive: true, force: true })
 
