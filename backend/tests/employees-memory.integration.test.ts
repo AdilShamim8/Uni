@@ -331,6 +331,29 @@ describe('employees + memory — profiles, redaction, journal, block', () => {
       expect(block.block).toBeNull()
       expect(block.noteCount).toBe(0)
     })
+
+    it('404s for an unknown employee id, matching the notes and journal routes', async () => {
+      const blockResponse = await testApp.app.inject({
+        method: 'GET',
+        url: '/api/v1/employees/00000000-0000-0000-0000-000000000000/memory/block',
+        headers: { cookie: alice.cookie },
+      })
+      expect(blockResponse.statusCode).toBe(404)
+      const envelope = errorEnvelopeSchema.parse(blockResponse.json())
+      expect(envelope.code).toBe('not_found')
+    })
+
+    it('404s for another workspace employee — existence is not leaked', async () => {
+      const employee = await createEmployee(alice.cookie, 'Scoped Block')
+      const blockResponse = await testApp.app.inject({
+        method: 'GET',
+        url: `/api/v1/employees/${employee.id}/memory/block`,
+        headers: { cookie: bob.cookie },
+      })
+      expect(blockResponse.statusCode).toBe(404)
+      const envelope = errorEnvelopeSchema.parse(blockResponse.json())
+      expect(envelope.code).toBe('not_found')
+    })
   })
 
   it('keeps a buildApp import surface for the module (no accidental global state)', async () => {
