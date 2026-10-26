@@ -157,6 +157,11 @@ describe('auth — sign-up, sign-in, sign-out, session scope', () => {
         CREDENTIAL_KEY_ID: 'test-key-1',
         ALLOW_LOCAL_MODEL_ENDPOINTS: 'false',
         LOCAL_MODEL_ENDPOINT_ALLOWLIST: '',
+    RUN_TIMEOUT_MS: 15_000,
+    RUN_MAX_OUTPUT_TOKENS: 512,
+    RUN_HISTORY_MAX_CHARS: 8_000,
+    RUN_MAX_CONCURRENT_PER_WORKSPACE: 2,
+    RUN_CREATE_RATE_PER_MINUTE: 60,
       },
     })
 

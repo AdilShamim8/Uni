@@ -86,3 +86,52 @@ Honest limits recorded: server conversations are read-only in Settings → Accou
 ## B03 — server BYOK and streamed chat
 
 (pending)
+
+
+## B03 — streamed chat runs (26 Oct 2026)
+
+Gates run before every commit in this slice (one commit at a time,
+each pushed individually):
+
+- `backend`: `npm run typecheck` clean; `npm test` **57/57** (8 files)
+  — including the new `runs.integration` suite (9 tests: end-to-end
+  stream + reload-visible transcript, idempotent create, cancel with
+  partial output, repetition stop via the vendored guard, provider
+  error never complete, workspace isolation across create/read/events/
+  cancel/provider, concurrency 429, restart reconciliation, missing
+  credential 400) and the vendored OpenClaw guard suite (11 tests).
+- `packages/contracts`: build clean (runs schemas added).
+- `frontend`: `tsc --noEmit` clean; `eslint src tests` clean;
+  `npm run build` clean; `npm test` **292/292** (43 files) —
+  accountServer extended to 9 tests with the exact backend routes
+  mocked (provider add + key-sent-once, end-to-end send with node/run/
+  stream call assertions, honest no-provider hint).
+- Conversations regression for the messageCount fix: list reports the
+  real node count after creating three nodes (the pre-fix subquery
+  fails this test).
+
+### Browser E2E (dev stack: embedded PostgreSQL + Fastify :4000 + Vite proxy :5190)
+
+Journey, all against the real backend and a local fake provider:
+
+1. Sign-up (name/email/password) → signed-in Account view.
+2. Server provider added through the UI (label, OpenAI-compatible,
+   `http://127.0.0.1:4571/v1`, model, key) — key sent exactly once to
+   the credential route; list shows redacted 'Key saved' state.
+3. Server conversation created; message sent → user node + run created
+   server-side → SSE deltas rendered live → truthful assistant node
+   after refresh.
+4. Honest error branch verified live: a provider that omits the
+   finish_reason chunk (protocol violation) produced an `error` run
+   with partial output kept on its own branch — never 'complete'.
+   After fixing the fake provider, the next run completed cleanly.
+5. Reload → same tree, same statuses, siblings preserved.
+6. `messageCount` bug found in this pass (always 0 since B02) — fixed
+   with a qualified correlated subquery + regression test; the live
+   list now shows the true count (4 msg).
+7. Zero page errors; console shows only Vite/React dev notices.
+   Screenshots: `download/b03-e2e/`.
+
+Not run this session: live external providers (no real keys — BYOK
+journey covered by the local fake over the same code path), deployment
+verification (B08), mobile-width pass of the Account surface.

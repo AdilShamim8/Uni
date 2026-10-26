@@ -29,6 +29,16 @@ const envSchema = z.object({
   ALLOW_LOCAL_MODEL_ENDPOINTS: z.enum(['true', 'false']).default('false'),
   /** Comma-separated hostnames/IPs explicitly allowed for local model endpoints. */
   LOCAL_MODEL_ENDPOINT_ALLOWLIST: z.string().default(''),
+  /** Run execution limits (B03): overall deadline per run. */
+  RUN_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
+  /** Run execution limits (B03): provider-side output token cap. */
+  RUN_MAX_OUTPUT_TOKENS: z.coerce.number().int().positive().default(8_192),
+  /** Run execution limits (B03): history characters sent as context. */
+  RUN_HISTORY_MAX_CHARS: z.coerce.number().int().positive().default(24_000),
+  /** Run execution limits (B03): concurrent running runs per workspace. */
+  RUN_MAX_CONCURRENT_PER_WORKSPACE: z.coerce.number().int().positive().default(2),
+  /** Run execution limits (B03): run creations per workspace per minute. */
+  RUN_CREATE_RATE_PER_MINUTE: z.coerce.number().int().positive().default(30),
 })
 
 export type Env = z.infer<typeof envSchema>
