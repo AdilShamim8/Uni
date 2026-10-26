@@ -65,6 +65,20 @@ alongside the backend's.
   attribution is preserved at
   `third_party/licenses/openclaw/THIRD_PARTY_NOTICES.md`. Integrity
   hashes and modification records live in `third_party/sources.lock.json`.
+- Vendored source: the OpenMausBot memory text kernel (Apache-2.0,
+  Copyright 2026 Milind Soni and OpenMausBot contributors) at commit
+  `0d8eacc65cd3b783a0d28d019d39e6367780b911` →
+  `backend/src/vendor/openmausbot/`: `memory-entries.ts` (MEMORY.md
+  entry grammar) and `memory-topics.ts` (topic frontmatter) verbatim;
+  `redact.ts` (credential redaction) verbatim; `unified-diff.ts`
+  (LCS diff engine) and `recall.ts` (query terms + passage rendering)
+  extracted from `server/memory-journal.ts` / `server/message-db.ts` /
+  `server/recall.ts` with the one documented text change (the recall
+  disclosure names Uni). Acceptance suite:
+  `backend/tests/vendor-openmausbot-memory.test.ts`. The upstream NOTICE
+  is preserved at `third_party/licenses/openmausbot/UPSTREAM_NOTICE`;
+  integrity hashes and modification records live in
+  `third_party/sources.lock.json`.
   No other third-party code has been adapted or vendored into Uni
   source; any future adaptation will be recorded there with upstream
   commit, path, and modifications.
