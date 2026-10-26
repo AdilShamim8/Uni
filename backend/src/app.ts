@@ -18,6 +18,7 @@ import { providersRoutes } from './modules/providers/providers.routes.js'
 import { runsRoutes } from './modules/runs/runs.routes.js'
 import { employeesRoutes } from './modules/employees/employees.routes.js'
 import { memoryRoutes } from './modules/memory/memory.routes.js'
+import { libraryRoutes } from './modules/library/library.routes.js'
 
 export interface BuildAppOptions {
   env?: Env
@@ -64,6 +65,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       await api.register(runsRoutes)
       await api.register(employeesRoutes)
       await api.register(memoryRoutes)
+      await api.register(libraryRoutes)
     }
     await app.register(apiV1, { prefix: '/api/v1' })
   }
