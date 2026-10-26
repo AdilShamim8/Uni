@@ -21,7 +21,7 @@ Kubernetes, no second backend.
 | B00 | Baseline evidence, EmployeeView render-mutation fix, docs, stack decision | **Complete** (23 Oct 2026) |
 | B01 | Running backend, health endpoints, DB wiring, contracts package | **Complete** (23 Oct 2026) — backend + contracts + embedded-PG integration tests + docker-compose + frontend API client/dev-proxy wiring |
 | B02 | Better Auth identity, workspaces, conversation persistence, importer | **Complete** (23 Oct 2026) — backend (auth 6, conversations 7, importer 6 integration tests) + frontend Account section (sign-in/out, deliberate import, read-only server conversations; 7 tests) |
-| B03 | Server BYOK providers, encrypted credentials, streamed chat runs | **In progress** — providers slice complete (encrypted credentials, SSRF guard, connection tests); chat runs next |
+| B03 | Server BYOK providers, encrypted credentials, streamed chat runs | **Complete** (26 Oct 2026) — providers (encrypted credentials, SSRF guard, tests) + vendored OpenClaw repetition guard + runs module (create/stream/cancel/replay, durable events, honest terminals) + frontend Account chat surface; E2E verified in-browser |
 | B04 | Library, employee memory, shared context on the server | Not started |
 | B05 | Server-side plugins with enforced grants | Not started |
 | B06 | Durable Work (pg-boss worker) | Not started |
@@ -47,3 +47,37 @@ Kubernetes, no second backend.
 B00–B03: sign in → configure a provider securely → send a streamed chat →
 reload and recover the same conversation. Later gates continue from the
 preserved working slice; see `docs/handoff.md` for the exact checkpoint.
+
+
+## B03 record (2026-10-26)
+
+- Vendored the OpenClaw repetition guard (MIT, commit `29397d2a`) with
+  its upstream suite and the Hermes attribution chain preserved
+  (`third_party/sources.lock.json`); wired into the run lifecycle as an
+  honest `repetition_stopped` terminal.
+- `modules/runs`: idempotent create (client key + unique index),
+  per-workspace concurrency (default 2) and creation rate limits,
+  server-side history resolution from the owned tree (char budget from
+  the newest end), execution via Vercel AI SDK (openai-compatible +
+  anthropic), persisted ordered events (started/delta/usage/terminal),
+  SSE subscription (bus-first, DB-poll backstop), durable cancel with
+  partial output, stuck-run reconciliation (interrupted, never
+  complete), truthful assistant-node finalization (status/error/
+  statusPrefix mapped; active leaf only advances when the user has not
+  branched). No automatic provider retries (`maxRetries: 0`) — a failed
+  request may have reached the provider.
+- Frontend: Account section gains the server chat surface — provider
+  panel (key sent once, redacted afterwards), conversation creation,
+  send → run → streamed reply, Stop, honest no-provider hint; reload
+  re-fetches the same tree.
+- Fixed a B02 bug found in E2E: conversation `messageCount` was always
+  0 (drizzle renders sql-template column refs unqualified; the
+  correlated subquery compared node.id to node.conversation_id).
+  Regression test added.
+- Verification: backend 57/57 (runs suite: 9 integration tests against
+  a mode-switchable fake provider); frontend 292/292; tsc/eslint/build
+  clean both sides; full browser E2E on the dev stack (embedded
+  PostgreSQL + Fastify + Vite proxy): sign-up → add provider → send →
+  stream → reload same tree, honest error branch for a
+  protocol-violating provider, zero console/page errors. Screenshots in
+  the session record.
