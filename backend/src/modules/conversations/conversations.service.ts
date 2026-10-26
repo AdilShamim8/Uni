@@ -102,7 +102,13 @@ export async function listConversations(
   const rows = await db
     .select({
       conversation: conversations,
-      messageCount: sql<number>`(select count(*)::int from ${conversationNodes} where ${conversationNodes.conversationId} = ${conversations.id})`,
+      // Explicit aliasing: drizzle renders column refs inside raw sql
+      // templates UNQUALIFIED, so `${conversationNodes.conversationId}` =
+      // `${conversations.id}` would both resolve inside the subquery
+      // (node.id = node.conversation_id, always false, count 0).
+      // Qualifying by the real table names keeps the correlated subquery
+      // correct; regression-tested below.
+      messageCount: sql<number>`(select count(*)::int from "conversation_node" as counted_nodes where counted_nodes.conversation_id = "conversation"."id")`,
     })
     .from(conversations)
     .where(and(...conditions))
