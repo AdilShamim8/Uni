@@ -18,6 +18,9 @@ lockfiles) is generated and reviewed at B08 — see
 | pino | 9.14.0 | MIT | `third_party/licenses/pino/LICENSE` |
 | dotenv | 18.0.9 | BSD-2-Clause | `third_party/licenses/dotenv/LICENSE` |
 | better-auth | 1.7.12 | MIT | `third_party/licenses/better-auth/LICENSE` |
+| ai | 7.0.153 | Apache-2.0 | `third_party/licenses/ai-sdk/ai/LICENSE` |
+| @ai-sdk/openai-compatible | 3.0.78 | Apache-2.0 | `third_party/licenses/ai-sdk/openai-compatible/LICENSE` |
+| @ai-sdk/anthropic | 4.0.88 | Apache-2.0 | `third_party/licenses/ai-sdk/anthropic/LICENSE` |
 | @uni/contracts | 0.1.0 (local) | MIT (Uni's own) | repository source |
 
 ## Backend development/test dependencies
@@ -42,7 +45,8 @@ alongside the backend's.
 
 - MIT-licensed components: permission notice preserved above and in each
   `third_party/licenses/<name>/LICENSE` file.
-- Apache-2.0 components (drizzle-orm, typescript): full license text
+- Apache-2.0 components (drizzle-orm, typescript, ai,
+  @ai-sdk/openai-compatible, @ai-sdk/anthropic): full license texts
   preserved; no NOTICE files are shipped by these packages at the
   versions in use.
 - BSD-2-Clause component (dotenv): license text preserved.
