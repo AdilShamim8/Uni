@@ -284,3 +284,49 @@ Not run this session: live external providers (no real keys), frontend
 suite (no frontend files touched by the fixes — the two code changes
 are route-level backend behavior with no contract change), hosted
 deployment checks (B08).
+
+## Backend QA pass — connection teardown (2026-10-26, second pass)
+
+Scope: user-requested re-check on `main` after the PR #25 merge ("double
+check and test everything"). All gates re-run from a clean sync at
+`fac3330e1`; one real defect found and fixed. Branch
+`fix/pg-pool-teardown` (off `origin/main`).
+
+| Command | Result |
+| --- | --- |
+| `cd backend && npm run typecheck` | **Pass** — 0 errors (src + tests), before and after the fix |
+| `cd backend && npm test` (before fix) | **103/103 pass, but 1 unhandled error** — `FATAL 57P01 terminating connection due to administrator command` attributed to `tests/runs.integration.test.ts` (probabilistic: not present in an isolated re-run of that file, present under the full suite) |
+| `cd backend && npm test` (after fix) | **103/103, zero errors — run twice consecutively** to confirm the race is closed |
+| `cd backend && npm run build` | **Pass** — clean compile to dist/ |
+| `node backend/scripts/smoke-live.mjs` | **11/11** — compiled production server over real HTTP, including graceful SIGTERM exit |
+
+Bug found and fixed:
+
+- **A leaked database connection crashed test runs (and would crash
+  production).** `pg`'s `Pool` re-emits idle-client errors on the pool
+  itself (`pool.emit('error', err, client)` in `pg-pool`'s idle
+  listener), and the app attached no `'error'` listener — so any
+  server-side termination of an idle pooled connection (database
+  restart, network drop, or the embedded server stopping mid-close)
+  surfaced as an **uncaught exception**, not a log line. Compounding
+  it, `Pool.end()` resolves once client termination has been
+  *initiated*, not once every socket has finished closing; stopping the
+  embedded PostgreSQL in that window makes backends deliver `FATAL
+  57P01` to still-parse-enabled closing sockets. Fix, three parts:
+  (1) `attachDatabase` now logs idle-client errors at warn level and
+  lets the pool replace the dead client — in production this turns a
+  crash into a recoverable event; (2) the `createDatabase` test helper
+  gets the same guard; (3) the test harness and the live smoke script
+  drain 250 ms between app close and embedded-Postgres stop so close
+  handshakes finish first. Root cause verified against the installed
+  `pg-pool`/`pg` sources (`node_modules`), not assumed.
+
+Investigated and confirmed NOT bugs: SSE keepalive/poll intervals
+(cleared in `cleanup()` and `unref`'d); run registry (holds no
+connections or timers — pure in-process maps); the double `app.close()`
+in the runs test teardown (Fastify close is idempotent, hooks run
+once); `waitForRunStatus` polling (goes through the pooled app
+database, no side connections).
+
+Not run this session: live external providers (no real keys), frontend
+suite (no frontend files touched), hosted deployment checks (B08).
