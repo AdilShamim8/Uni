@@ -132,8 +132,10 @@ function createFetchMock() {
           label: payload.label ?? '',
           kind: payload.kind ?? 'openai-compatible',
           endpointUrl: payload.endpointUrl ?? '',
-          modelId: payload.modelId ?? 'grok-test',
-          models: ['grok-test'],
+          // Real backend: no model until the user sets one or discovery
+          // persists the endpoint's list.
+          modelId: payload.modelId ?? null,
+          models: [] as string[],
           credential: { present: false, keyId: null, status: 'untested', lastCheckedAt: null, lastError: null },
           createdAt: 5,
           updatedAt: 5,
@@ -146,6 +148,30 @@ function createFetchMock() {
       const provider = state.providers[0]
       provider.credential = { present: true, keyId: 'key-1', status: 'untested', lastCheckedAt: null, lastError: null }
       return jsonResponse(200, provider)
+    }
+    if (path === '/api/v1/providers/sp-1/models' && method === 'POST') {
+      // The discovery route the Test button uses: tests the key AND
+      // persists the discovered models on the provider row.
+      const provider = state.providers[0] as {
+        models: string[]
+        credential: { present: boolean; keyId: string | null; status: string; lastCheckedAt: number | null; lastError: string | null }
+      }
+      if (!provider.credential.present) {
+        return jsonResponse(200, {
+          ok: false,
+          message: 'No API key stored for this provider yet.',
+          latencyMs: null,
+          discoveredModels: null,
+        })
+      }
+      provider.models = ['grok-3-mini', 'grok-4']
+      provider.credential = { ...provider.credential, status: 'connected', lastCheckedAt: 99, lastError: null }
+      return jsonResponse(200, {
+        ok: true,
+        message: 'Connected — the key works.',
+        latencyMs: 42,
+        discoveredModels: ['grok-3-mini', 'grok-4'],
+      })
     }
     if (path === '/api/v1/conversations' && method === 'POST') {
       // A brand-new conversation with no nodes yet.
@@ -377,6 +403,10 @@ describe('Account section — server session and deliberate import', () => {
       mock.calls.filter((call) => JSON.stringify(call.body ?? '').includes('sk-server-key')),
     ).toHaveLength(1)
 
+    // Test the provider — discovery persists the models server chat needs.
+    await userEvent.click(screen.getByRole('button', { name: 'Test' }))
+    expect(await screen.findByText(/Connected — the key works/i)).toBeInTheDocument()
+
     // Create a server conversation.
     await userEvent.type(
       screen.getByLabelText('New server conversation title'),
@@ -404,6 +434,45 @@ describe('Account section — server session and deliberate import', () => {
     expect(nodeCall?.body).toMatchObject({ role: 'user', content: 'Hello from the account surface' })
     expect(runCall?.body).toMatchObject({ parentNodeId: 'n-user-1', providerId: 'sp-1' })
     expect(streamCall).toBeTruthy()
+  })
+
+  it('tests a provider through the discovery route and shows the honest result', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // Add a provider without typing a model id (the default happy path).
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'xAI test')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-server-key')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('xAI test')).toBeInTheDocument()
+
+    // Before the test: no model on the row, so no model-for-chat line.
+    expect(screen.queryByText(/Model for server chat/i)).toBeNull()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Test' }))
+
+    // The Test button hits the discovery route (test + persist models).
+    const discoverCall = mock.calls.find((call) => call.url === '/api/v1/providers/sp-1/models')
+    expect(discoverCall?.method).toBe('POST')
+
+    // The outcome is shown verbatim — never silent on success.
+    const status = await screen.findByRole('status')
+    expect(status).toHaveTextContent('Connected — the key works.')
+    expect(status).toHaveTextContent('42 ms')
+    expect(status).toHaveTextContent('2 models discovered (grok-3-mini, grok-4)')
+
+    // The refreshed provider row names the model server chat will use.
+    expect(await screen.findByText(/Model for server chat/i)).toHaveTextContent('grok-3-mini')
+    expect(screen.getByText(/first discovered model/i)).toBeInTheDocument()
+
+    // The stale-avoidance check: the plain test route is NOT what the
+    // button calls (it would not persist models).
+    expect(mock.calls.some((call) => call.url === '/api/v1/providers/sp-1/test')).toBe(false)
   })
 
   it('shows an honest hint instead of a fake reply when no server provider has a key', async () => {

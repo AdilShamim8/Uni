@@ -135,3 +135,64 @@ Journey, all against the real backend and a local fake provider:
 Not run this session: live external providers (no real keys — BYOK
 journey covered by the local fake over the same code path), deployment
 verification (B08), mobile-width pass of the Account surface.
+
+## Post-merge full verification (26 Oct 2026)
+
+Full-stack QA pass over merged main (B00–B03): every gate, a fresh
+database, and a browser journey across local and server surfaces.
+
+Gates (fresh `feat/qa-full-verify` branch off main `09b456341`):
+
+- `backend`: typecheck clean; **58/58** tests (8 files); build clean;
+  migrations applied cleanly to an empty embedded PostgreSQL 18
+  database (fresh data dir, database `uni_e2e_v2`).
+- `frontend`: typecheck clean; eslint clean; build clean; **320/320**
+  tests (47 files) before the fix below, **321/321** after.
+
+Browser journey (Vite :5191 → Fastify :4000 → embedded PG :4591, fake
+OpenAI-compatible provider :4571), zero console/page errors throughout:
+
+1. Local demo mode: chat send → streamed simulated reply with full
+   message actions; Work task → quick question → artifact with linked
+   task + honest provenance; Save to Library once (button becomes
+   Update, second save impossible); Library lists it with provenance.
+2. Agents: Uni hero with New/Built-in badges; starter chip opens the
+   thread with a prefilled composer.
+3. Settings: all six sections render (Account, Appearance, Chat, Data,
+   Providers & models, Privacy & about). Command palette search,
+   Compare models side-by-side run, dark mode, 390 px mobile — no
+   horizontal overflow anywhere.
+4. Server mode (the new B03 surface): sign-up → add provider → Test →
+   conversation → send → streamed reply → reload — session, provider,
+   and tree all persisted.
+
+### Bugs found and fixed (commit 915cacd53)
+
+- **Server provider Test was silent and never discovered models.**
+  The button called `POST /providers/:id/test` (key check only, no
+  persistence) and discarded the response; the discovery route
+  (`/providers/:id/models`) was never called by the frontend. With no
+  `modelId` and empty `models`, `sendServerMessage` always failed with
+  "no model selected yet" — server chat was unusable unless the user
+  typed a model id by hand, and the form hint "discovered on test" was
+  false. Fix: Test calls the discovery route (persists models
+  server-side), renders the result verbatim (message, latency, model
+  list), names the model server chat will use on the row, and the
+  no-model send error now points at the recovery action. Re-verified
+  live with a brand-new user: add provider without a model → Test →
+  feedback visible → send → streamed reply.
+- **Stale conversation list after sending.** The summaries (message
+  count, updated time) kept pre-send values until a manual Refresh.
+  Fix: `sendServerMessage` re-fetches the list when the run settles.
+  Verified live: both threads show "2 msg" immediately after send.
+
+Investigated and confirmed NOT bugs: dialog scrim "covering" clicks (a
+QA-tool actionability race with the vertically re-centering dialog —
+DOM hit-tests and real event dispatch land on the buttons); sidebar nav
+pointer clicks not firing in the QA tool (keyboard and JS clicks work;
+jsdom tests cover the wiring); a suspected `const odelId` syntax error
+that was a terminal-rendering artifact (byte-exact source is
+`const [modelId, setModelId]`).
+
+Not run this session: live external providers (no real keys), hosted
+deployment checks (B08).
