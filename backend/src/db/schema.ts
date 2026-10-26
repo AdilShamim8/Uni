@@ -327,3 +327,167 @@ export type RunRow = typeof runs.$inferSelect
 export type NewRunRow = typeof runs.$inferInsert
 export type RunEventRow = typeof runEvents.$inferSelect
 export type NewRunEventRow = typeof runEvents.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* Employees (B04) — server-side agent profiles                        */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Workspace-scoped employee (agent) profiles. Mirrors the frontend's
+ * AgentProfile shape so a future sync is a projection, not a rewrite.
+ * `providerId` is deliberately NOT a foreign key: a pinned preference
+ * must survive the provider row being deleted and simply fall back to
+ * workspace defaults at send time.
+ */
+export const employees = pgTable(
+  'employee',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    instructions: text('instructions').notNull().default(''),
+    category: text('category').notNull().default('personal'),
+    providerId: text('provider_id'),
+    modelId: text('model_id'),
+    tools: jsonb('tools').$type<string[]>(),
+    starters: jsonb('starters').$type<string[]>(),
+    archived: boolean('archived').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('employee_workspace_updated_idx').on(table.workspaceId, table.updatedAt)],
+)
+
+/* ------------------------------------------------------------------ */
+/* Employee memory (B04) — notes + audit journal                       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One user-authored memory note attached to an employee. `text` is
+ * stored exactly as redacted on write (the vendored OpenMausBot
+ * redactor strips credential shapes before persistence); entries inside
+ * `text` may follow the MEMORY.md grammar (`- YYYY-MM-DD · … · until
+ * YYYY-MM-DD`) which the memory block builder respects (expired and
+ * superseded entries are hidden from prompts but preserved on disk).
+ * `contentHash` is the sha256 of the stored text — the optimistic
+ * concurrency token for edits (409 on mismatch, like a file's expected
+ * hash upstream).
+ */
+export const memoryNotes = pgTable(
+  'memory_note',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    employeeId: text('employee_id')
+      .notNull()
+      .references(() => employees.id, { onDelete: 'cascade' }),
+    text: text('text').notNull(),
+    contentHash: text('content_hash').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('memory_note_employee_updated_idx').on(table.employeeId, table.updatedAt)],
+)
+
+/**
+ * Append-only audit trail of memory changes — the PostgreSQL port of
+ * OpenMausBot's out-of-workspace journal: the audited employee cannot
+ * rewrite its own history. `noteId` carries no foreign key ON PURPOSE so
+ * journal rows survive note deletion; `before` holds a redacted, capped
+ * snapshot enabling revert; `diff` is the vendored unified-diff render.
+ * A journal write must never fail the change it records.
+ */
+export const memoryJournal = pgTable(
+  'memory_journal',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    employeeId: text('employee_id')
+      .notNull()
+      .references(() => employees.id, { onDelete: 'cascade' }),
+    noteId: text('note_id'),
+    actor: text('actor').notNull(),
+    via: text('via').notNull(),
+    kind: text('kind').notNull(),
+    beforeHash: text('before_hash'),
+    afterHash: text('after_hash'),
+    before: text('before'),
+    diff: text('diff').notNull(),
+    added: integer('added').notNull().default(0),
+    removed: integer('removed').notNull().default(0),
+    canRevert: boolean('can_revert').notNull().default(true),
+    revertUnavailableReason: text('revert_unavailable_reason'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('memory_journal_employee_created_idx').on(table.employeeId, table.createdAt)],
+)
+
+/* ------------------------------------------------------------------ */
+/* Library (B04) — artifacts with versions                             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Canonical Library artifacts. Provenance is snapshotted (kind,
+ * generatedBy, source ids as plain text) because referenced rows may be
+ * deleted later; history stays truthful about what produced the
+ * artifact. `versionCount` is maintained transactionally by the
+ * canonical save path.
+ */
+export const libraryArtifacts = pgTable(
+  'library_artifact',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    kind: text('kind').notNull(),
+    markdown: text('markdown').notNull(),
+    provenance: text('provenance').notNull().default('demo-simulation'),
+    generatedBy: jsonb('generated_by'),
+    taskId: text('task_id'),
+    sourceConversationId: text('source_conversation_id'),
+    sourceMessageId: text('source_message_id'),
+    versionCount: integer('version_count').notNull().default(1),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('library_artifact_workspace_updated_idx').on(table.workspaceId, table.updatedAt)],
+)
+
+/** Immutable per-save versions; `version` starts at 1 and only grows. */
+export const libraryArtifactVersions = pgTable(
+  'library_artifact_version',
+  {
+    id: text('id').primaryKey(),
+    artifactId: text('artifact_id')
+      .notNull()
+      .references(() => libraryArtifacts.id, { onDelete: 'cascade' }),
+    version: integer('version').notNull(),
+    title: text('title').notNull(),
+    markdown: text('markdown').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('library_artifact_version_uq').on(table.artifactId, table.version),
+    index('library_artifact_version_artifact_idx').on(table.artifactId, table.version),
+  ],
+)
+
+export type EmployeeRow = typeof employees.$inferSelect
+export type NewEmployeeRow = typeof employees.$inferInsert
+export type MemoryNoteRow = typeof memoryNotes.$inferSelect
+export type NewMemoryNoteRow = typeof memoryNotes.$inferInsert
+export type MemoryJournalRow = typeof memoryJournal.$inferSelect
+export type NewMemoryJournalRow = typeof memoryJournal.$inferInsert
+export type LibraryArtifactRow = typeof libraryArtifacts.$inferSelect
+export type NewLibraryArtifactRow = typeof libraryArtifacts.$inferInsert
+export type LibraryArtifactVersionRow = typeof libraryArtifactVersions.$inferSelect
+export type NewLibraryArtifactVersionRow = typeof libraryArtifactVersions.$inferInsert
