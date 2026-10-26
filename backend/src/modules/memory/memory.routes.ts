@@ -7,6 +7,7 @@ import {
   putMemoryNoteRequestSchema,
 } from '@uni/contracts'
 import { notFound } from '../../lib/errors.js'
+import { findEmployeeRow } from '../employees/employees.service.js'
 import {
   buildMemoryBlock,
   createNote,
@@ -105,8 +106,13 @@ export async function memoryRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { employeeId: string } }>(
     '/employees/:employeeId/memory/block',
     async (request) => {
+      // 404 for unknown ids exactly like the notes and journal routes.
+      // The check lives here (not in buildMemoryBlock) because run
+      // execution relies on that builder degrading dangling agents to
+      // the base prompt instead of throwing.
+      const employee = await findEmployeeRow(db, request.workspace!.id, request.params.employeeId)
+      if (!employee) throw notFound('Employee not found.')
       const block = await buildMemoryBlock(db, request.workspace!.id, request.params.employeeId)
-      if (!block) throw notFound('Employee not found.')
       void memoryBlockDtoSchema.parse(block)
       return block
     },

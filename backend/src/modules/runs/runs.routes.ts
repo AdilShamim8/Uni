@@ -86,7 +86,6 @@ export async function runsRoutes(app: FastifyInstance): Promise<void> {
 
     let lastSequence = query.after
     let terminalSeen = false
-    let sentinelSeen = false
     let ended = false
 
     const writeEvent = (payload: string): void => {
@@ -146,7 +145,9 @@ export async function runsRoutes(app: FastifyInstance): Promise<void> {
     // then replay, then poll as backstop.
     const unsubscribe = subscribeToRun(request.params.runId, (event) => {
       if ('terminal' in event && (event as { terminal?: boolean }).terminal === true) {
-        sentinelSeen = true // runner finished; the poll re-reads the tail
+        // Sentinel: the runner finished — re-read the tail now so the
+        // stream closes without waiting for the next poll tick.
+        void refreshTail()
         return
       }
       handleEvent(event as RunEvent)
@@ -159,7 +160,7 @@ export async function runsRoutes(app: FastifyInstance): Promise<void> {
     if (typeof keepalive.unref === 'function') keepalive.unref()
 
     const poll = setInterval(() => {
-      if (sentinelSeen || true) void refreshTail()
+      void refreshTail()
       if (terminalSeen || closed || raw.writableEnded) {
         clearInterval(poll)
         endStream()
