@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderApp, setupAppTest } from './helpers'
+import { renderApp, sessionAwareFetch, setupAppTest } from './helpers'
 import { useAppStore } from '@/state/store'
 import type { ProviderProfile } from '@/domain/types'
 import {
@@ -397,7 +397,7 @@ describe('live routing through the store', () => {
         'data: [DONE]\n\n',
       ]),
     )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('fetch', sessionAwareFetch(fetchMock))
 
     const user = userEvent.setup()
     renderApp('/')
@@ -423,7 +423,7 @@ describe('live routing through the store', () => {
 
   it('keeps using the local demo adapter when no key is connected', async () => {
     const fetchMock = vi.fn()
-    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('fetch', sessionAwareFetch(fetchMock))
 
     const user = userEvent.setup()
     renderApp('/')

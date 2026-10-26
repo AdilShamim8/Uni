@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Upstream open-source sources incorporated into Uni beyond installed npm dependencies. Each entry records the exact upstream revision, integrity hash, local path, license evidence, reuse mode, modifications, and validation. Maintained per docs/opensource-reuse.md.",
+  "version": 1,
+  "sources": [
+    {
+      "repository": "https://github.com/openclaw/openclaw",
+      "commit": "29397d2a185c29d4b4d79d2ad41af0f7cf1f6a9b",
+      "upstreamPath": "packages/agent-core/src/repetition-guard.ts",
+      "sha256": "bb165f425a1026bb9c8f0d11091ca37c849e76e269f4979333e98d16b5fa4ca0",
+      "localPath": "backend/src/vendor/openclaw/repetition-guard.ts",
+      "license": "MIT",
+      "licenseEvidence": [
+        "third_party/licenses/openclaw/LICENSE",
+        "third_party/licenses/openclaw/THIRD_PARTY_NOTICES.md"
+      ],
+      "mode": "copied",
+      "modifications": "Provenance header block prepended (9 comment lines); code below is verbatim upstream.",
+      "validation": "backend/tests/vendor-openclaw-repetition-guard.test.ts (upstream suite, import paths adapted)",
+      "introduced": "B03",
+      "notes": "Upstream file itself adapts Hermes Agent (https://github.com/NousResearch/hermes-agent, MIT, (c) 2025 Nous Research) at Hermes commit acc3cada0da86c81efc8aa6c5a291989549ca900 per OpenClaw's THIRD_PARTY_NOTICES.md. Attribution chain preserved: Hermes -> OpenClaw -> Uni."
+    },
+    {
+      "repository": "https://github.com/openclaw/openclaw",
+      "commit": "29397d2a185c29d4b4d79d2ad41af0f7cf1f6a9b",
+      "upstreamPath": "packages/agent-core/src/repetition-guard.test-fixtures.ts",
+      "sha256": "dcbb38bbf7946b6367fc2cc7aa0743bdb4c4eab428eccdecc8688fbf79e923bd",
+      "localPath": "backend/src/vendor/openclaw/repetition-guard.test-fixtures.ts",
+      "license": "MIT",
+      "licenseEvidence": [
+        "third_party/licenses/openclaw/LICENSE",
+        "third_party/licenses/openclaw/THIRD_PARTY_NOTICES.md"
+      ],
+      "mode": "copied",
+      "modifications": "Provenance header comment prepended (3 lines); fixture data is verbatim upstream.",
+      "validation": "backend/tests/vendor-openclaw-repetition-guard.test.ts",
+      "introduced": "B03",
+      "notes": "Captured local-model research corpus shipped with the upstream guard."
+    },
+    {
+      "repository": "https://github.com/openclaw/openclaw",
+      "commit": "29397d2a185c29d4b4d79d2ad41af0f7cf1f6a9b",
+      "upstreamPath": "packages/agent-core/src/repetition-guard.test.ts",
+      "sha256": "faa453a874e6d84958f452ecda96e99a294b1ec687510ded1440fb82571d684a",
+      "localPath": "backend/tests/vendor-openclaw-repetition-guard.test.ts",
+      "license": "MIT",
+      "licenseEvidence": [
+        "third_party/licenses/openclaw/LICENSE",
+        "third_party/licenses/openclaw/THIRD_PARTY_NOTICES.md"
+      ],
+      "mode": "copied",
+      "modifications": "Import paths adapted to Uni's backend layout; doc comment added; test bodies verbatim upstream.",
+      "validation": "Executed by backend `npm test` (vitest, node environment)",
+      "introduced": "B03",
+      "notes": "Upstream suite retained as the acceptance gate for the vendor copy."
+    },
+    {
+      "repository": "https://github.com/better-auth/better-auth",
+      "commit": "88f36c63cf70c4142cf6b03c28cbeca84c981775",
+      "upstreamPath": "docs/content/docs/integrations/fastify.mdx",
+      "sha256": "recorded in docs/opensource-reuse.md (section 2, entry 1)",
+      "localPath": "backend/src/modules/auth/auth.routes.ts",
+      "license": "MIT",
+      "licenseEvidence": [
+        "https://github.com/better-auth/better-auth/blob/88f36c63cf70c4142cf6b03c28cbeca84c981775/LICENSE.md"
+      ],
+      "mode": "adapted",
+      "modifications": "URL base from operator-configured APP_URL env instead of request Host header; multi-value Set-Cookie forwarded via getSetCookie(); Fastify JSON parsing kept; wrapped in encapsulated plugin with auth-presence guard.",
+      "validation": "backend/tests/auth.integration.test.ts (6 tests)",
+      "introduced": "B02",
+      "notes": "Adaptation of the official Better Auth Fastify bridge example; see docs/opensource-reuse.md for the upstream file hash."
+    }
+  ]
+}

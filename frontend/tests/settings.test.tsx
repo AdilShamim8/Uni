@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderApp, setupAppTest } from './helpers'
+import { renderApp, sessionAwareFetch, setupAppTest } from './helpers'
 import { flushPersistence } from '@/state/store'
 
 setupAppTest()
@@ -57,7 +57,7 @@ describe('settings', () => {
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ data: [{ id: 'gpt-test' }] }), { status: 200 }),
     )
-    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('fetch', sessionAwareFetch(fetchMock))
     await openSettings()
     const user = userEvent.setup()
 
@@ -97,7 +97,7 @@ describe('settings', () => {
 
   it('shows an honest error and keeps the key out of storage when auth fails', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response('bad key', { status: 401 }))
-    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('fetch', sessionAwareFetch(fetchMock))
     await openSettings()
     const user = userEvent.setup()
 
