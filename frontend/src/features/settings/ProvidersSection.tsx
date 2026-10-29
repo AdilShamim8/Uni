@@ -102,6 +102,12 @@ const PRESETS: ProviderPreset[] = [
   },
   { label: 'Ollama (local)', kind: 'local', endpointUrl: 'http://localhost:11434/v1', freeTier: true },
   { label: 'LM Studio (local)', kind: 'local', endpointUrl: 'http://localhost:1234/v1', freeTier: true },
+  {
+    label: 'Cerebras',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://api.cerebras.ai/v1',
+    freeTier: true,
+  },
 ]
 
 function maskKey(apiKey: string): string {
