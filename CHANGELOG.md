@@ -6,6 +6,10 @@ existing `type(scope): summary` commit vocabulary.
 
 ## [Unreleased] — provider freedom wave
 
+*Shipped 29 October 2026 — 91 commits (210 → 300), each pushed
+individually. Final verification: frontend 339/339 + lint clean, backend
+105/105, contracts clean.*
+
 This wave makes "bring your own key" effortless for beginners and hardens
 the honesty of connection tests.
 
