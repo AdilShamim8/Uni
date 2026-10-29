@@ -6,7 +6,12 @@ import { signUpUser, startTestApp, type TestApp } from './harness.js'
  * OpenRouter-specific provider verification. OpenRouter's /models catalog
  * is public, so the connection test must also prove the key against the
  * auth-protected /key endpoint. DNS + fetch are mocked so the test never
- * leaves the machine.
+ * leaves the machine and stays deterministic in CI (no network needed).
+ *
+ * Covered behaviors (mirrored on the frontend side in byok.test.ts):
+ * - a key /key rejects fails the test even though /models answered 200
+ * - a working key connects and discovery lists the free tier first
+ * - both outbound calls carry the decrypted bearer key
  */
 
 // openrouter.ai resolves to a public address (any public IP passes the guard).
