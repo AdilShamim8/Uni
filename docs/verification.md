@@ -371,7 +371,8 @@ daemon in sandbox).
 
 ## Provider-freedom wave — closing record (2026-10-29)
 
-Final state at wave close (HEAD `2ff77fbb7c` + the closing docs commits):
+Final state at wave close — this is the 300th commit of the repository
+(the wave's 91st, closing the milestone):
 
 | Check | Result |
 | --- | --- |
@@ -388,3 +389,5 @@ Final state at wave close (HEAD `2ff77fbb7c` + the closing docs commits):
 Wave totals: 91 commits (210 → 300), one pushed at a time. Every commit
 typechecks and tests green at its own HEAD; no fix-up commits were needed
 after the final suites above.
+
+The repository now stands at exactly 300 commits on `main`.
