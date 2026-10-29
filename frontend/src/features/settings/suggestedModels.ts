@@ -148,6 +148,13 @@ const GITHUB_MODELS: SuggestedModel[] = [
   { id: 'meta-llama/Llama-3.3-70B-Instruct', label: 'Llama 3.3 70B' },
 ]
 
+/** HuggingFace Inference Router - free monthly credits, open models. */
+const HUGGINGFACE: SuggestedModel[] = [
+  { id: 'meta-llama/Llama-3.3-70B-Instruct', label: 'Llama 3.3 70B' },
+  { id: 'Qwen/Qwen3-32B', label: 'Qwen 3 32B' },
+  { id: 'deepseek-ai/DeepSeek-V3', label: 'DeepSeek V3' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -166,6 +173,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'integrate.api.nvidia.com': NVIDIA,
   'models.github.ai': GITHUB_MODELS,
   'models.inference.ai.azure.com': GITHUB_MODELS,
+  'router.huggingface.co': HUGGINGFACE,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
