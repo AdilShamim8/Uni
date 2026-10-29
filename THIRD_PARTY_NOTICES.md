@@ -12,12 +12,12 @@ lockfiles) is generated and reviewed at B08 — see
 | --- | --- | --- | --- |
 | fastify | 5.12.7 | MIT | `third_party/licenses/fastify/LICENSE` |
 | @fastify/cors | 11.3.1 | MIT | `third_party/licenses/fastify-cors/LICENSE` |
-| zod | 3.25.76 | MIT | `third_party/licenses/zod/LICENSE` |
+| zod | 4.6.7 | MIT | `third_party/licenses/zod/LICENSE` |
 | drizzle-orm | 0.45.4 | Apache-2.0 | `third_party/licenses/drizzle-orm/LICENSE` |
 | pg (node-postgres) | 8.23.1 | MIT | `third_party/licenses/pg/LICENSE` |
-| pino | 9.14.0 | MIT | `third_party/licenses/pino/LICENSE` |
+| pino | 10.4.0 | MIT | `third_party/licenses/pino/LICENSE` |
 | dotenv | 18.0.9 | BSD-2-Clause | `third_party/licenses/dotenv/LICENSE` |
-| better-auth | 1.7.12 | MIT | `third_party/licenses/better-auth/LICENSE` |
+| better-auth | 1.7.13 | MIT | `third_party/licenses/better-auth/LICENSE` |
 | ai | 7.0.153 | Apache-2.0 | `third_party/licenses/ai-sdk/ai/LICENSE` |
 | @ai-sdk/openai-compatible | 3.0.78 | Apache-2.0 | `third_party/licenses/ai-sdk/openai-compatible/LICENSE` |
 | @ai-sdk/anthropic | 4.0.88 | Apache-2.0 | `third_party/licenses/ai-sdk/anthropic/LICENSE` |
