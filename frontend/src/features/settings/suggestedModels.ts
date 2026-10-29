@@ -59,12 +59,19 @@ const XAI: SuggestedModel[] = [
   { id: 'grok-3-mini', label: 'Grok 3 mini', note: 'affordable' },
 ]
 
+/** DeepSeek - the stable aliases always point at the current models. */
+const DEEPSEEK: SuggestedModel[] = [
+  { id: 'deepseek-chat', label: 'DeepSeek Chat', note: 'stable alias' },
+  { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', note: 'reasoning' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
   'api.anthropic.com': ANTHROPIC,
   'generativelanguage.googleapis.com': GOOGLE,
   'api.x.ai': XAI,
+  'api.deepseek.com': DEEPSEEK,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
