@@ -81,3 +81,22 @@ Errors always use the contract envelope from `@uni/contracts`:
 See `.env.example`. `DATABASE_URL` is required in production; development
 may start without it (`/health/ready` then honestly reports down).
 `CORS_ORIGINS` is an explicit allowlist — no wildcard with credentials.
+
+> **Precedence gotcha:** exported shell environment variables win over
+> `backend/.env` (standard dotenv behavior). If your shell already exports
+> a `DATABASE_URL` (common in polyglot workspaces), the `.env` value is
+> silently ignored — `unset DATABASE_URL` or export the value you actually
+> want.
+
+## Provider connection tests
+
+`POST /api/v1/providers/:id/test` and `POST /api/v1/providers/:id/models`
+run the same honest check: a GET against the provider's model-list endpoint
+through the SSRF guard (`src/lib/urlGuard.ts`), with the decrypted key only
+in the auth header.
+
+OpenRouter is special-cased: its model catalog is **public**, so a wrong
+key still returns a model list. For `openrouter.ai` endpoints the check
+additionally calls the auth-protected `/key` endpoint — a 401/403 there
+fails the test with an honest message instead of a false "connected", and
+discovered models list the `:free` tier first.
