@@ -1,6 +1,6 @@
 # PROJECT_CONTEXT.md — Uni product and technical summary
 
-Last updated: 23 October 2026 (B00 session). Owner of truth for statuses:
+Last updated: 29 October 2026 (provider-freedom wave). Owner of truth for statuses:
 `docs/backend-roadmap.md` and `docs/verification.md`.
 
 ## Product
@@ -24,6 +24,14 @@ own model connections. Five destinations:
 Product principle: provider-independent workspace, user-supplied model
 connections, persistent employee conversations, permissioned tools, and
 conversational Work. Deployed frontend: https://universe-mu-two.vercel.app/
+
+Onboarding stance (provider-freedom wave, 2026-10-29): the provider form
+carries 21 one-tap presets (free-tier ones badged FREE), per-host suggested
+model chips (`frontend/src/features/settings/suggestedModels.ts`), and
+honest connection tests — OpenRouter keys are proven against its
+auth-protected `/key` because its `/models` catalog is public. The root
+README is the beginner-facing guide (quick start, per-provider connection
+walkthroughs, the 100% free path, troubleshooting).
 
 ## Current architecture (B00)
 
