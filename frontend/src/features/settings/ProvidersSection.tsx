@@ -124,6 +124,12 @@ const PRESETS: ProviderPreset[] = [
     endpointUrl: 'https://api.sambanova.ai/v1',
     freeTier: true,
   },
+  {
+    label: 'NVIDIA NIM',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://integrate.api.nvidia.com/v1',
+    freeTier: true,
+  },
 ]
 
 function maskKey(apiKey: string): string {
