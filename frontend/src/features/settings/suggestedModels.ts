@@ -65,6 +65,14 @@ const DEEPSEEK: SuggestedModel[] = [
   { id: 'deepseek-reasoner', label: 'DeepSeek Reasoner', note: 'reasoning' },
 ]
 
+/** Groq - open models served at very high speed on a free tier. */
+const GROQ: SuggestedModel[] = [
+  { id: 'gpt-oss-120b', label: 'GPT-OSS 120B', note: 'free tier' },
+  { id: 'gpt-oss-20b', label: 'GPT-OSS 20B', note: 'free tier' },
+  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B Versatile' },
+  { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant', note: 'fast' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -72,6 +80,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'generativelanguage.googleapis.com': GOOGLE,
   'api.x.ai': XAI,
   'api.deepseek.com': DEEPSEEK,
+  'api.groq.com': GROQ,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
