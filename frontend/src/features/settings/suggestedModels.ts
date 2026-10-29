@@ -97,6 +97,14 @@ const OPENROUTER: SuggestedModel[] = [
   { id: 'cohere/north-mini-code:free', label: 'North Mini Code', note: 'free' },
 ]
 
+/** Cerebras - open models at extreme speed on a free tier. */
+const CEREBRAS: SuggestedModel[] = [
+  { id: 'gpt-oss-120b', label: 'GPT-OSS 120B', note: 'free tier' },
+  { id: 'llama-3.3-70b', label: 'Llama 3.3 70B' },
+  { id: 'llama-3.1-8b', label: 'Llama 3.1 8B', note: 'fast' },
+  { id: 'qwen-3-32b', label: 'Qwen 3 32B' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -107,6 +115,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.groq.com': GROQ,
   'api.mistral.ai': MISTRAL,
   'openrouter.ai': OPENROUTER,
+  'api.cerebras.ai': CEREBRAS,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
