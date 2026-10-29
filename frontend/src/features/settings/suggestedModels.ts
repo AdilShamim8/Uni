@@ -51,11 +51,20 @@ const GOOGLE: SuggestedModel[] = [
   { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', note: 'budget' },
 ]
 
+/** xAI Grok - ids match xAI's own API. */
+const XAI: SuggestedModel[] = [
+  { id: 'grok-4.7', label: 'Grok 4.7', note: 'newest' },
+  { id: 'grok-4.5', label: 'Grok 4.5' },
+  { id: 'grok-4', label: 'Grok 4' },
+  { id: 'grok-3-mini', label: 'Grok 3 mini', note: 'affordable' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
   'api.anthropic.com': ANTHROPIC,
   'generativelanguage.googleapis.com': GOOGLE,
+  'api.x.ai': XAI,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
