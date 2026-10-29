@@ -483,3 +483,54 @@ mobile 390×844 responsive → **zero page errors, zero console errors**.
 
 Repair wave commits (one at a time, all green at their own HEAD):
 `31a066d61` (backend zod 4 + notices) → `f161db973` (frontend toolchain).
+
+## CI repair wave — backend job green on GitHub Actions (2026-10-29)
+
+**Trigger:** user-reported failing checks on `main`: "CI / Backend
+(typecheck + integration tests)" failing after 20s on every run, plus
+"Vercel — Deployment rate limited — retry in 24 hours".
+
+**Root cause 1 (the backend job):** `backend/tests/helpers.ts` hardcoded
+`TEST_SCRATCH_ROOT = '/home/z/my-project/.tmp'` — one machine's absolute
+path. Every GitHub runner failed in beforeAll with
+`EACCES: permission denied, mkdir '/home/z'` (10 suites), then afterAll
+cascaded `TypeError: Cannot read properties of undefined (reading
+'stop'/'server')`, doubling the noise. The job had never been green on
+GitHub Actions; local runs passed because the path existed locally.
+
+Fix `c427d8a80`: scratch root resolves from `UNI_TEST_SCRATCH_ROOT` when
+set, else `<os.tmpdir()>/uni-backend-tests`.
+Fix `2a670fed4`: all afterAll teardowns guarded (`?.` / truthiness) so a
+failed beforeAll reports only its real error.
+
+**Root cause 2 (surfaced once tests ran on CI, run #105):** the cancel
+integration test failed with `expected undefined to be 'stopped'` —
+`finalize()` committed the run's terminal status in one write and
+inserted the assistant transcript node in a later transaction. A client
+polling run status then immediately reloading the conversation could
+observe a terminal run whose node was not durable yet; the CI runner
+lost that race.
+
+Fix `85db8a2cc`: status update + node insert + active-leaf advance now
+commit in ONE transaction (either all visible or none; the lost-race
+warning path is preserved).
+Fix `4779ded6c`: the test waits for a real streamed chunk on the live
+SSE stream before cancelling (was a fixed 400ms sleep racing first-token
+latency).
+
+| Check (latest run, HEAD `4779ded6c`, CI run #107) | Result |
+| --- | --- |
+| Backend typecheck | **Pass — 0 errors** |
+| Backend tests (local) | **105/105 across 13 files**, runs suite 3/3 stable |
+| Backend job on GitHub Actions | **Pass — first green run in repo history** |
+| Frontend + Contracts jobs on GitHub Actions | **Pass** |
+| GitHub Pages build + deploy | **Pass** |
+| Vercel check | **External account rate limit — auto-retries in 24h**; documented in README Troubleshooting + CONTRIBUTING (not a repo defect) |
+
+Local guard-behavior proof: with `UNI_TEST_SCRATCH_ROOT` pointed at a
+non-directory, the suite fails with the single real error
+(`ENOTDIR: not a directory`) and skips tests — no teardown cascade.
+
+Wave commits (one at a time, each pushed separately): `c427d8a80` →
+`2a670fed4` → `75d676ebc` (docs) → `85db8a2cc` → `4779ded6c` → docs
+close-out.

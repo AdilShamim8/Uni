@@ -3,33 +3,36 @@
 Keep short and factual: current commit, completed gate, exact commands and
 results, unresolved problems, environment blockers, next action.
 
-## Current state (updated 2026-10-29, provider-freedom wave complete)
+## Current state (updated 2026-10-29, CI repair wave complete)
 
 - **Branch:** `main` (commits pushed one at a time per working agreement).
-- **Wave scope shipped:** suggested models per provider (21 host catalogs +
-  kind fallbacks), 10 new presets with free-tier badges (21 presets total),
-  honest OpenRouter key verification via `/key` (frontend BYOK + backend
-  server-side, free-first discovery), `X-Title` attribution on OpenRouter
-  chat, long-model-list collapse, CI (contracts/frontend/backend), Dependabot,
-  PR template, CONTRIBUTING, CHANGELOG, and the beginner-facing root README
-  with 9 fresh screenshots in `docs/screenshots/`.
-- **Wave complete (300th commit milestone):** all suites green at close —
-  frontend 339/339 + typecheck + lint clean, backend 105/105 + typecheck
-  clean, contracts clean, live GitHub anchors + screenshot URLs verified.
-  Full closing record in `docs/verification.md`.
-- **Verification:** frontend 338/338 (typecheck + lint clean), backend
-  105/105 (typecheck clean, embedded PG per file), contracts build clean,
-  full browser golden-path pass with a real local OpenAI-compatible mock
-  (connect → discover → live SSE reply, zero console errors). Details in
-  `docs/verification.md` (Provider-freedom wave section).
-- **Notable facts for the next session:** OpenRouter `/models` is public
-  (key must be proven against `/key` — both sides now do this); live
-  catalog 2026-10-29 held 457 models, 16 `:free`; shell-exported
-  `DATABASE_URL` overrides `backend/.env` (dotenv precedence) — documented
-  in both READMEs.
-- **Next action candidates:** multimodal content + tool-calling on the wire
-  (B05+), reasoning-model streaming fields, server-mode provider list in
-  the frontend Account section polish, README localization.
+- **Wave scope shipped:** backend CI green on GitHub Actions for the first
+  time — portable test scratch root (`UNI_TEST_SCRATCH_ROOT` env override,
+  `os.tmpdir()` fallback; the old hardcoded `/home/z/...` path broke every
+  runner with `EACCES`), guarded afterAll teardowns (no more TypeError
+  cascades over the real error), atomic run finalization (terminal status +
+  assistant node + active leaf in one transaction — closes the reload race
+  CI exposed in the cancel test), deterministic pre-cancel wait on the live
+  SSE stream, and docs (backend README, CONTRIBUTING, README troubleshooting
+  cover the scratch root and the three commit checks).
+- **CI state at HEAD `4779ded6c` (run #107):** Contracts / Frontend /
+  Backend all **success** on GitHub Actions; GitHub Pages build + deploy
+  **success**. Vercel reports "Deployment rate limited — retry in 24
+  hours": external account quota, auto-retries, documented — not a repo
+  defect and not fixable from the repository.
+- **Verification:** backend 105/105 across 13 files locally (runs suite
+  3/3 stable), typecheck clean; guard behavior proven by forcing a
+  beforeAll failure (single real error, no cascade). Full record in
+  `docs/verification.md` (CI repair wave section).
+- **Notable facts for the next session:** the backend CI job had NEVER
+  been green on GitHub Actions before this wave (the hardcoded scratch
+  path predates the dependabot merges); `mkdir` under `/proc` can HANG on
+  Linux instead of failing — use a regular file path when forcing
+  ENOTDIR-style failures; embedded-postgres works fine on ubuntu-latest
+  runners with the tmpdir scratch root (~31s full suite).
+- **Next action candidates:** B05+ (multimodal content, tool-calling),
+  reasoning-model streaming fields, server-mode provider list in the
+  frontend Account section, README localization.
 
 ## Prior state (2026-10-26, backend QA pass complete)
 
