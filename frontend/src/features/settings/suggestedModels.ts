@@ -112,6 +112,13 @@ const TOGETHER: SuggestedModel[] = [
   { id: 'Qwen/Qwen2.5-72B-Instruct-Turbo', label: 'Qwen 2.5 72B Turbo' },
 ]
 
+/** Fireworks - fast open-model serving; ids carry the accounts path. */
+const FIREWORKS: SuggestedModel[] = [
+  { id: 'accounts/fireworks/models/llama-v3p3-70b-instruct', label: 'Llama 3.3 70B' },
+  { id: 'accounts/fireworks/models/deepseek-v3', label: 'DeepSeek V3' },
+  { id: 'accounts/fireworks/models/qwen2p5-72b-instruct', label: 'Qwen 2.5 72B' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -124,6 +131,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'openrouter.ai': OPENROUTER,
   'api.cerebras.ai': CEREBRAS,
   'api.together.xyz': TOGETHER,
+  'api.fireworks.ai': FIREWORKS,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
