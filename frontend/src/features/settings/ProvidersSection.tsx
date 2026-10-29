@@ -703,9 +703,13 @@ export function ProvidersSection() {
       <div>
         <h3 className="text-sm font-medium text-ink">Providers and models</h3>
         <p className="mt-0.5 text-sm leading-relaxed text-ink-soft">
-          Bring your own key: add any provider profile, connect it with an API key, and chat live
-          with the models it offers. Keys stay in this browser and are sent only to the endpoint
-          you configure. Demo profiles keep working fully offline.
+          Uni itself is free and open — bring your own key and it works like a premium chat
+          product at a fraction of the cost. Add any provider profile (OpenAI, Anthropic,
+          OpenRouter, Google, Groq, and any OpenAI-compatible or local endpoint), connect it
+          with an API key, and chat live with the models it offers. Several providers have
+          free tiers, which makes the whole stack cost nothing. Keys stay in this browser and
+          are sent only to the endpoint you configure. Demo profiles keep working fully
+          offline.
         </p>
       </div>
 
