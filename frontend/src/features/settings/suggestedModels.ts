@@ -162,6 +162,13 @@ const COHERE: SuggestedModel[] = [
   { id: 'command-r7b-12-2024', label: 'Command R7B', note: 'fast' },
 ]
 
+/** Alibaba DashScope (Qwen) - stable aliases via the compatible endpoint. */
+const DASHSCOPE: SuggestedModel[] = [
+  { id: 'qwen-max', label: 'Qwen Max', note: 'stable alias' },
+  { id: 'qwen-plus', label: 'Qwen Plus', note: 'stable alias' },
+  { id: 'qwen-turbo', label: 'Qwen Turbo', note: 'stable alias' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -182,6 +189,8 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'models.inference.ai.azure.com': GITHUB_MODELS,
   'router.huggingface.co': HUGGINGFACE,
   'api.cohere.ai': COHERE,
+  'dashscope-intl.aliyuncs.com': DASHSCOPE,
+  'dashscope.aliyuncs.com': DASHSCOPE,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
