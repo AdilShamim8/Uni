@@ -1,48 +1,66 @@
-## Uni ✨
+<div align="center">
 
-Uni (formerly Universe) is an independent, open-source, provider-independent
-AI workspace. This repository hosts the **frontend** built with React,
-TypeScript, and Vite, organized into five destinations:
+# ✨ Uni
 
-- **Chat** — conversations with models. Bring your own API key to chat
-  live with any supported OpenAI-compatible or Anthropic endpoint; without
-  one, a clearly-labeled local demo adapter responds.
-- **Work** — outcomes as a conversation. Describe a goal and the task
-  thread opens immediately: watch the run, answer inline questions, review
-  the output, then refine it with follow-up messages (a real revision for
-  AI drafts; a guided rerun for the local demo).
-- **Agents** — persistent AI employees. Selecting one opens its actual
-  conversation directly, with memory notes, assigned work, plugin access,
-  and routines in a compact inspector.
-- **Plugins** — local tools. Enable built-ins (Documents, Data analysis,
-  Library context), grant them per thread, and see an honest receipt for
-  every action; external entries stay clearly unconnected until a real
-  integration exists.
-- **Library** — one shared local collection of artifacts and lightweight
-  projects.
+**A free, open-source AI workspace — bring your own key, keep your own data.**
 
-### Try the frontend
+Chat with GPT, Claude, Gemini, Grok, DeepSeek, Llama, and hundreds more —
+through one honest interface that costs **$0** and runs from your browser.
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+[Live demo](https://universe-mu-two.vercel.app/) · [Quick start](#-quick-start-3-commands) · [Connect a provider](#-connect-your-first-provider-step-by-step) · [The 100% free path](#-the-100-free-path)
 
-See [`frontend/README.md`](frontend/README.md) for setup, architecture, and
-commands; [`frontend/docs/`](frontend/docs) for the milestone-3 audit,
-architecture map, design tokens, verification results, and the
-feature-status matrix.
+<img src="docs/screenshots/desktop-light-home.png" alt="Uni home screen — a clean chat interface with a sidebar of conversations and a large message box" width="860">
 
-### How data and privacy work
+</div>
 
-Everything runs locally in your browser: conversations, tasks, agent
-profiles, memory notes, and library artifacts persist in versioned
-localStorage slices. Work has two honest modes: without a provider key it
-is a clearly-labeled local simulation, and with your own key connected in
-Settings, Work drafting and revisions make real, streamed requests to that
-endpoint. Chat and Work BYOK requests go directly from your browser to the
-configured endpoint — the key is stored privately on your device and never
-appears in exports. A server-backed mode (accounts, encrypted credentials,
-durable runs) is under construction on the backend roadmap; see
-[`docs/backend-roadmap.md`](docs/backend-roadmap.md) for actual status.
+---
+
+## 🧭 What is Uni?
+
+Uni is an **independent, open-source AI workspace**. Instead of paying for a
+premium chat subscription, you connect your own API keys — from OpenAI,
+Anthropic, OpenRouter, Google, Groq, DeepSeek, or any OpenAI-compatible
+endpoint (including local models like Ollama and LM Studio) — and Uni becomes
+your premium chat product.
+
+**Why people use it:**
+
+- 💸 **Free forever.** Uni itself costs nothing and locks nothing behind a
+  paywall. Several providers have free tiers, so the whole stack can run at
+  zero cost.
+- 🔑 **Your keys, your data.** In local mode everything — conversations,
+  settings, and API keys — stays in **your browser**. Keys are never uploaded,
+  never exported, and sent only to the provider endpoint you configure.
+- 🧩 **Provider-independent.** Start on OpenAI, switch to Claude, try a free
+  model on OpenRouter, then settle on a local Llama — same app, same
+  conversations.
+- 🪞 **Honest by design.** Anything simulated is labeled as simulated. If a
+  connection test cannot prove your key works, it says so.
+
+**The five destinations:**
+
+| Destination | What it does |
+| --- | --- |
+| **Chat** | Branched conversations with any model: message tree, sibling variants, streamed replies, export. |
+| **Work** | Describe an outcome; a task thread runs, asks inline questions, produces output you refine. |
+| **Agents** | Persistent AI employees with memory notes, assigned work, and their own conversations. |
+| **Plugins** | Local tools (documents, data analysis, library context) with per-thread grants and receipts. |
+| **Library** | A shared collection of artifacts and lightweight projects with immutable versions. |
+
+---
+
+## 📑 Table of contents
+
+1. [What is Uni?](#-what-is-uni)
+2. [Quick start (3 commands)](#-quick-start-3-commands)
+3. [Connect your first provider (step by step)](#-connect-your-first-provider-step-by-step)
+   - [OpenAI (GPT)](#1-openai--gpt) · [Anthropic (Claude)](#2-anthropic--claude) · [OpenRouter (hundreds of models)](#3-openrouter--hundreds-of-models) · [Google (Gemini)](#4-google--gemini-free-tier) · [Groq (free tier)](#5-groq--free-tier) · [DeepSeek](#6-deepseek) · [Local models (Ollama / LM Studio)](#7-local-models--ollama--lm-studio--100-free)
+4. [The 100% free path](#-the-100-free-path)
+5. [Settings reference](#%EF%B8%8F-settings-reference)
+6. [Screenshots](#-screenshots)
+7. [Architecture](#-architecture)
+8. [Full-stack development (backend)](#-full-stack-development-backend)
+9. [Project structure](#-project-structure)
+10. [Troubleshooting](#-troubleshooting)
+11. [FAQ](#-faq)
+12. [License & credits](#-license--credits)
