@@ -81,6 +81,22 @@ const MISTRAL: SuggestedModel[] = [
   { id: 'codestral-latest', label: 'Codestral', note: 'code' },
 ]
 
+/**
+ * OpenRouter - one key, hundreds of models. Ids are vendor-prefixed slugs;
+ * the ':free' suffix marks OpenRouter's free tier (rate-limited, zero cost).
+ */
+const OPENROUTER: SuggestedModel[] = [
+  { id: 'openai/gpt-6.1-terra', label: 'GPT-6.1 Terra (OpenAI)' },
+  { id: 'anthropic/claude-sonnet-5.5', label: 'Claude Sonnet 5.5' },
+  { id: 'google/gemini-4-argon', label: 'Gemini 4 Argon' },
+  { id: 'x-ai/grok-4.7', label: 'Grok 4.7' },
+  { id: 'z-ai/glm-5.3', label: 'GLM 5.3' },
+  { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B', note: 'free' },
+  { id: 'nvidia/nemotron-3.5-lightning:free', label: 'Nemotron 3.5 Lightning', note: 'free' },
+  { id: 'thinkingmachines/inkling:free', label: 'Inkling', note: 'free' },
+  { id: 'cohere/north-mini-code:free', label: 'North Mini Code', note: 'free' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -90,6 +106,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.deepseek.com': DEEPSEEK,
   'api.groq.com': GROQ,
   'api.mistral.ai': MISTRAL,
+  'openrouter.ai': OPENROUTER,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
