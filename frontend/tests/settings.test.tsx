@@ -244,6 +244,41 @@ describe('provider quick setup', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('collapses long model lists behind a +N more toggle', async () => {
+    // Seed a provider with 15 models — beyond the 12-chip preview — before
+    // the app renders (openSettings renders it).
+    const { useAppStore } = await import('@/state/store')
+    useAppStore.getState().addProvider({
+      id: 'provider-many',
+      label: 'Many Models',
+      kind: 'openai-compatible',
+      endpointUrl: 'https://api.many.example/v1',
+      demo: true,
+      models: Array.from({ length: 15 }, (_, index) => ({
+        id: `model-${index}`,
+        label: `Model ${index}`,
+        demo: false,
+        capabilities: ['chat'] as const,
+      })),
+    })
+
+    const user = userEvent.setup()
+    const dialog = await openSettings()
+    await user.click(dialog.getByRole('button', { name: 'Providers & models' }))
+
+    // The total count is announced, only the preview chips render.
+    expect(dialog.getByText('Models (click to activate) — 15 total')).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: 'Model 0' })).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: 'Model 11' })).toBeInTheDocument()
+    expect(dialog.queryByRole('button', { name: 'Model 12' })).not.toBeInTheDocument()
+
+    // Expanding reveals the rest; collapsing hides them again.
+    await user.click(dialog.getByRole('button', { name: '+3 more models' }))
+    expect(dialog.getByRole('button', { name: 'Model 14' })).toBeInTheDocument()
+    await user.click(dialog.getByRole('button', { name: 'Show fewer' }))
+    expect(dialog.queryByRole('button', { name: 'Model 14' })).not.toBeInTheDocument()
+  })
+
   it('suggests free OpenRouter models for the OpenRouter preset', async () => {
     const user = userEvent.setup()
     renderApp('/')
