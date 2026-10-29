@@ -54,9 +54,10 @@ the honesty of connection tests.
 
 ### Tests
 
-- Frontend: 335 tests green (was 321) — new suites for suggested-model
-  matching, preset free-tier rendering, one-tap model add, OpenRouter
-  `/key` verification, free-first ordering, and `X-Title` attribution.
+- Frontend: 338 tests green (was 321, +17) — new suites for suggested-model
+  matching, catalog coverage and uniqueness, preset free-tier rendering,
+  one-tap model add, model-list collapse, OpenRouter `/key` verification,
+  free-first ordering, and `X-Title` attribution.
 - Backend: 105 tests green (was 103) — new suite proving the OpenRouter
   key verification end-to-end with mocked DNS + fetch (no network).
 
