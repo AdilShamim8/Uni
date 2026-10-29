@@ -176,6 +176,18 @@ const ZHIPU: SuggestedModel[] = [
   { id: 'glm-4.5-air', label: 'GLM 4.5 Air', note: 'budget' },
 ]
 
+/**
+ * Local servers (Ollama, LM Studio, vLLM) - popular open-model tags. Ids
+ * depend on what the user actually pulled/downloaded, so these are just
+ * common starting points.
+ */
+const LOCAL: SuggestedModel[] = [
+  { id: 'gpt-oss:20b', label: 'GPT-OSS 20B' },
+  { id: 'qwen3:8b', label: 'Qwen 3 8B' },
+  { id: 'llama3.3', label: 'Llama 3.3' },
+  { id: 'mistral', label: 'Mistral' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -199,6 +211,10 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'dashscope-intl.aliyuncs.com': DASHSCOPE,
   'dashscope.aliyuncs.com': DASHSCOPE,
   'open.bigmodel.cn': ZHIPU,
+  'localhost': LOCAL,
+  '127.0.0.1': LOCAL,
+  '0.0.0.0': LOCAL,
+  'host.docker.internal': LOCAL,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
@@ -206,6 +222,7 @@ const BY_KIND: Partial<Record<ProviderKind, SuggestedModel[]>> = {
   openai: OPENAI,
   anthropic: ANTHROPIC,
   google: GOOGLE,
+  local: LOCAL,
 }
 
 /**
