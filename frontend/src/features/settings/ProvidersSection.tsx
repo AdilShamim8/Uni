@@ -141,6 +141,12 @@ const PRESETS: ProviderPreset[] = [
     endpointUrl: 'https://models.github.ai/inference',
     freeTier: true,
   },
+  {
+    label: 'HuggingFace Router',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://router.huggingface.co/v1',
+    freeTier: true,
+  },
 ]
 
 function maskKey(apiKey: string): string {
