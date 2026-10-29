@@ -250,6 +250,31 @@ function authHeaders(kind: ProviderRow['kind'], apiKey: string): Record<string, 
 }
 
 /**
+ * True when the endpoint is OpenRouter. Its /models catalog is PUBLIC —
+ * a wrong key still returns 200 with a model list — so a successful models
+ * fetch alone cannot claim the key works for OpenRouter.
+ */
+function isOpenRouterEndpoint(endpointUrl: string): boolean {
+  try {
+    return new URL(endpointUrl).hostname.toLowerCase() === 'openrouter.ai'
+  } catch {
+    return false
+  }
+}
+
+/** OpenRouter's auth-protected key info endpoint. */
+function openRouterKeyUrl(endpointUrl: string): string {
+  return `${endpointUrl.replace(/\/+$/, '')}/key`
+}
+
+/** OpenRouter orders its catalog with the free tier first (zero-cost path). */
+function orderOpenRouterModels(models: string[]): string[] {
+  const free = models.filter((id) => id.endsWith(':free')).sort((a, b) => a.localeCompare(b))
+  const paid = models.filter((id) => !id.endsWith(':free')).sort((a, b) => a.localeCompare(b))
+  return [...free, ...paid].slice(0, 100)
+}
+
+/**
  * SSRF-guarded outbound fetch for provider endpoints. DNS resolves and
  * validates against private/link-local/metadata ranges BEFORE the
  * request; redirects are refused (a redirect must not silently bypass
@@ -305,12 +330,40 @@ async function runConnectionCheck(
     }
 
     const body = (await response.json()) as { data?: Array<{ id?: string }> }
-    const models = Array.isArray(body.data)
+    let models = Array.isArray(body.data)
       ? body.data
           .map((entry) => (typeof entry?.id === 'string' ? entry.id : null))
           .filter((id): id is string => id !== null)
           .slice(0, 100)
       : []
+
+    // OpenRouter's /models is public: verify the key against the
+    // auth-protected /key endpoint before claiming the connection works,
+    // and surface the free tier first in the discovered list.
+    if (isOpenRouterEndpoint(provider.endpointUrl)) {
+      try {
+        const keyResponse = await guardedProviderFetch(env, openRouterKeyUrl(provider.endpointUrl), {
+          method: 'GET',
+          headers: authHeaders(provider.kind, apiKey),
+        })
+        if (keyResponse.status === 401 || keyResponse.status === 403) {
+          return {
+            ok: false,
+            message:
+              'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys.',
+            models: null,
+          }
+        }
+      } catch (error) {
+        if (error instanceof UrlGuardError) {
+          return { ok: false, message: error.message, models: null }
+        }
+        // The key check is a bonus signal: a network hiccup there must not
+        // fail an endpoint that already answered the models request.
+      }
+      models = orderOpenRouterModels(models)
+    }
+
     return { ok: true, message: 'Connected — the key works.', models }
   } catch (error) {
     if (error instanceof UrlGuardError) {
