@@ -169,6 +169,13 @@ const DASHSCOPE: SuggestedModel[] = [
   { id: 'qwen-turbo', label: 'Qwen Turbo', note: 'stable alias' },
 ]
 
+/** Zhipu GLM (open.bigmodel.cn) - GLM family incl. free flash models. */
+const ZHIPU: SuggestedModel[] = [
+  { id: 'glm-5.3', label: 'GLM 5.3', note: 'newest' },
+  { id: 'glm-5.3-flash', label: 'GLM 5.3 Flash', note: 'fast' },
+  { id: 'glm-4.5-air', label: 'GLM 4.5 Air', note: 'budget' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -191,6 +198,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.cohere.ai': COHERE,
   'dashscope-intl.aliyuncs.com': DASHSCOPE,
   'dashscope.aliyuncs.com': DASHSCOPE,
+  'open.bigmodel.cn': ZHIPU,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
