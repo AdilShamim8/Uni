@@ -368,3 +368,23 @@ Not run this session: real paid provider keys (none available — provider
 behavior verified against a local OpenAI-compatible mock with real HTTP +
 SSE, and live OpenRouter public endpoints), Docker Compose stack (no Docker
 daemon in sandbox).
+
+## Provider-freedom wave — closing record (2026-10-29)
+
+Final state at wave close (HEAD `2ff77fbb7c` + the closing docs commits):
+
+| Check | Result |
+| --- | --- |
+| Frontend typecheck | **0 errors** |
+| Frontend lint | **0 findings** |
+| Frontend tests | **339/339 across 48 files** |
+| Backend typecheck | **0 errors** |
+| Backend tests | **105/105 across 13 files** |
+| Contracts build + typecheck | **Pass** |
+| Working tree | **Clean** — nothing uncommitted |
+| Live GitHub checks | README heading anchors verified against the rendered page (emoji-variation-selector anchors resolved); all `docs/screenshots/*.png` return HTTP 200 from raw.githubusercontent.com |
+| Commit attribution | All wave commits authored as Adil Shamim <157037615+AdilShamim8@users.noreply.github.com>, pushed one at a time to `main` |
+
+Wave totals: 91 commits (210 → 300), one pushed at a time. Every commit
+typechecks and tests green at its own HEAD; no fix-up commits were needed
+after the final suites above.
