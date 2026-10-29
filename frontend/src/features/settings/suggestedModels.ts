@@ -31,14 +31,28 @@ const OPENAI: SuggestedModel[] = [
   { id: 'gpt-4o-mini', label: 'GPT-4o mini', note: 'budget' },
 ]
 
+/**
+ * Anthropic — the platform uses dashed ids (claude-sonnet-5-5), while some
+ * aggregators show dotted names; these are the ids Anthropic's own API
+ * expects.
+ */
+const ANTHROPIC: SuggestedModel[] = [
+  { id: 'claude-opus-5-5', label: 'Claude Opus 5.5', note: 'flagship' },
+  { id: 'claude-sonnet-5-5', label: 'Claude Sonnet 5.5' },
+  { id: 'claude-haiku-5-5', label: 'Claude Haiku 5.5', note: 'fast' },
+  { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5', note: 'budget' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
+  'api.anthropic.com': ANTHROPIC,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
 const BY_KIND: Partial<Record<ProviderKind, SuggestedModel[]>> = {
   openai: OPENAI,
+  anthropic: ANTHROPIC,
 }
 
 /**
