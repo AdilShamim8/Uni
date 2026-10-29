@@ -435,3 +435,51 @@ OpenAI-compatible provider :5188, browser QA via agent-browser):
 Not run (unchanged limits): real paid provider keys (none available;
 verified via the local mock with real HTTP + SSE and the live OpenAI
 outbound 401), Docker Compose stack (no Docker daemon in sandbox).
+
+## Dependabot-repair re-verification (2026-10-29, HEAD `f161db973`)
+
+The double-check above ran at `cb75cb9bf`; while it was in flight, ten
+more dependabot PRs (#28–38) were merged on GitHub, landing major bumps:
+zod 4 (contracts), TypeScript 7 (contracts), lucide-react 1, pino 10,
+better-auth 1.7.13, the eslint 10 stack, and @vitejs/plugin-react 6.
+Re-checking everything against the new HEAD found real breakage, which
+this wave repairs:
+
+- **Frontend un-installable**: `@eslint/js@10` peers on `eslint@^10`
+  (pinned ^9.12) and `@vitejs/plugin-react@6` peers on `vite@^8`
+  (project runs 5.4) → ERESOLVE. Fixed by `eslint ^10.0.0` (inside
+  typescript-eslint 8.72's accepted range) and `plugin-react ^5.2.0`.
+- **lucide-react 1.x removed brand icons** → `Github` import failed
+  typecheck; swapped to `Code2` (development plugin category).
+- **Mixed zod majors**: contracts (zod 4) + backend (zod 3) broke the
+  library canonical-save at runtime — 4 integration tests failed, 3
+  typecheck errors. Fixed by moving the backend to zod `^4.6.7` (one
+  major everywhere; the backend's own usage is fully v4-compatible).
+- **eslint 10 + react-hooks 7 surfaced 12 findings** — 6 real fixes
+  (useCallback purity, latest-ref sync via passive effect, Error cause,
+  dead initializers, ES2022 lib) + 6 documented deliberate sync
+  effects with per-site justification disables (two mutate stores
+  mid-transition, where the effect is the architecturally correct form).
+
+Full re-verification at `f161db973`:
+
+| Check | Result |
+| --- | --- |
+| Contracts build + typecheck (TypeScript 7, zod 4) | **Pass** |
+| Backend typecheck | **Pass — 0 errors** |
+| Backend tests | **105/105 across 13 files** |
+| Frontend install (npm, clean tree) | **Pass — 0 vulnerabilities** |
+| Frontend lint | **Pass — 0 errors, 0 warnings** |
+| Frontend typecheck (both tsconfigs) | **Pass — 0 errors** |
+| Frontend tests | **339/339 across 48 files** |
+
+Live E2E re-run on the upgraded stack (embedded PG :5432, backend :4000
+on zod 4, Vite :5173, mock provider :5188, agent-browser): fresh state →
+Providers → LM Studio preset → mock endpoint → key → **Connect → 3
+models auto-discovered** → activate → **Live badge** → message → **real
+SSE reply streamed** ("Hello from the mock provider! Your BYOK setup is
+streaming end-to-end.") → Plugins page renders with the Code2 icon →
+mobile 390×844 responsive → **zero page errors, zero console errors**.
+
+Repair wave commits (one at a time, all green at their own HEAD):
+`31a066d61` (backend zod 4 + notices) → `f161db973` (frontend toolchain).
