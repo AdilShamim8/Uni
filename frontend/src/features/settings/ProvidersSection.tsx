@@ -113,6 +113,11 @@ const PRESETS: ProviderPreset[] = [
     kind: 'openai-compatible',
     endpointUrl: 'https://api.fireworks.ai/inference/v1',
   },
+  {
+    label: 'Perplexity',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://api.perplexity.ai',
+  },
 ]
 
 function maskKey(apiKey: string): string {
