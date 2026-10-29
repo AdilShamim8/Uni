@@ -4,6 +4,42 @@ All notable changes to Uni are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) with the repo's
 existing `type(scope): summary` commit vocabulary.
 
+## [Unreleased] — CI repair wave
+
+*Shipped 29 October 2026 — 6 commits, each pushed individually. Final
+verification: CI run #107 fully green on GitHub Actions (contracts,
+frontend, backend) — the backend job's first green run in repo history.*
+
+### Fixed — backend
+
+- **Backend CI job green on GitHub Actions for the first time.** The
+  integration-test scratch root hardcoded one machine's absolute path
+  (`/home/z/my-project/.tmp`), so every runner failed in beforeAll with
+  `EACCES: permission denied, mkdir '/home/z'`. It now resolves from the
+  `UNI_TEST_SCRATCH_ROOT` environment variable when set, else
+  `<os.tmpdir()>/uni-backend-tests` — writable on dev laptops and CI
+  runners alike.
+- **Teardown no longer buries the real error.** A failed beforeAll used
+  to cascade `TypeError: Cannot read properties of undefined` from
+  afterAll in all 10 integration suites. Every teardown reference is now
+  guarded, so the suite reports exactly one error: the real one.
+- **Run finalization is atomic.** The terminal status, the assistant
+  transcript node, and the active-leaf advance now commit in a single
+  transaction. Previously the status became visible before the node was
+  durable, so a cancel-then-reload could momentarily show a finished run
+  with no assistant message — a race CI's slower runners reliably lost.
+- **Cancel test is deterministic.** It waits for a real streamed chunk on
+  the live SSE stream before cancelling, replacing a fixed 400ms sleep
+  that raced first-token latency.
+
+### Documentation
+
+- `UNI_TEST_SCRATCH_ROOT` documented in `backend/README.md` and
+  `CONTRIBUTING.md`; the three commit checks (CI, GitHub Pages, Vercel)
+  explained in `CONTRIBUTING.md` and the README troubleshooting section —
+  including that "Vercel — rate limited — retry in 24 hours" is an
+  external account quota that auto-retries, not a repository defect.
+
 ## [Unreleased] — provider freedom wave
 
 *Shipped 29 October 2026 — 91 commits (210 → 300), each pushed
