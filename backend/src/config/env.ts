@@ -21,6 +21,19 @@ const envSchema = z.object({
   APP_URL: z.string().url().default('http://127.0.0.1:4000'),
   /** Explicit registration policy: open (dev default) or closed (hosted without email verification). */
   AUTH_REGISTRATION: z.enum(['open', 'closed']).default('open'),
+  /**
+   * Comma-separated IPs/CIDRs of reverse proxies whose X-Forwarded-For is
+   * trusted for auth rate limiting (e.g. `127.0.0.1` or `10.0.0.0/8`).
+   * `*` trusts every peer — only for private networks where every client
+   * of the API is a trusted proxy. Empty: the direct peer is the client.
+   */
+  AUTH_TRUSTED_PROXIES: z.string().default(''),
+  /**
+   * Per-IP budget for sensitive auth paths (sign-in/sign-up/change-*).
+   * Unset keeps Better Auth's default (3 per 10 seconds). Raise for
+   * deployments where many users share one egress IP.
+   */
+  AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().optional(),
   /** Base64 (32 bytes) master key for credential encryption. Required to store credentials. */
   CREDENTIAL_MASTER_KEY: z.string().min(1).optional(),
   /** Key id recorded in credential envelopes (rotation marker). */

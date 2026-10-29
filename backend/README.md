@@ -21,6 +21,7 @@ npm run typecheck    # tsc over src + tests
 npm test             # vitest: app tests + DB integration tests
 npm run build        # compile to dist/
 npm start            # run compiled build (node dist/server.js)
+npm run qa:live      # build + full live QA sweep (119 checks over real HTTP)
 ```
 
 Tests boot a real embedded PostgreSQL (downloaded once into node_modules)
@@ -32,6 +33,18 @@ this order: the `UNI_TEST_SCRATCH_ROOT` environment variable when set,
 then `<os.tmpdir()>/uni-backend-tests` (e.g. `/tmp/uni-backend-tests` on
 Linux). Both paths work unchanged on dev laptops and CI runners — set
 the variable only if your temp directory is unwritable or too small.
+
+`npm run qa:live` goes beyond the unit/integration suites: it boots the
+compiled server in production mode plus a fake OpenAI-compatible
+provider over real sockets and walks the whole public surface like an
+external tester — auth edges and rate limiting, conversation/node
+validation and pagination, BYOK provider CRUD with credential
+redaction, SSRF-guard rejections, employee memory (hash-conflict 409s,
+journal), library canonical-save versioning rules, import preview/
+commit idempotency, and the full run lifecycle (SSE stream, cancel with
+partial output, timeout, provider 401/500, concurrency cap,
+idempotency, cross-workspace isolation). It exits non-zero on the first
+wave of failures it finds — run it before cutting a release.
 
 ## Endpoints
 
@@ -65,6 +78,16 @@ SameSite Lax. Untrusted origins are rejected on auth state changes
 service is configured in this milestone, so email verification and
 password recovery are honestly unavailable; hosted deployments should
 close registration or configure email before exposing sign-up.
+
+Auth rate limiting is per client IP (Better Auth defaults: 3 per 10 s
+on sign-in/sign-up/change-*, 100 per 10 s elsewhere). The Fastify
+bridge resolves the identity server-side — the socket peer, or the
+`X-Forwarded-For` chain unwrapped only when the peer is listed in
+`AUTH_TRUSTED_PROXIES` (IPs/CIDRs, `*` for fully private networks) —
+and strips client-supplied forwarded headers, so limits can be neither
+starved into one global bucket nor bypassed with a forged header.
+Shared-egress deployments (offices behind one NAT IP) can raise the
+sensitive-path budget with `AUTH_RATE_LIMIT_MAX`.
 
 Errors always use the contract envelope from `@uni/contracts`:
 `{ code, message, requestId, details? }`. Responses carry `x-request-id`
