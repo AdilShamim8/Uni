@@ -64,3 +64,52 @@ your premium chat product.
 10. [Troubleshooting](#-troubleshooting)
 11. [FAQ](#-faq)
 12. [License & credits](#-license--credits)
+
+---
+
+## 🚀 Quick start (3 commands)
+
+You need [Node.js 20+](https://nodejs.org) and nothing else — no database,
+no Docker, no account.
+
+```bash
+git clone https://github.com/AdilShamim8/Uni.git
+cd Uni/frontend
+npm install && npm run dev
+```
+
+Open **http://localhost:5173** — Uni starts instantly in **demo mode**:
+every feature is explorable, and replies come from a clearly-labeled local
+demo adapter that contacts no one. Connect a real provider (next section)
+whenever you are ready.
+
+> **Beginner note:** "demo mode" is not a trial — it is the same app with a
+> simulated adapter. Your conversations, settings, and keys always stay in
+> your own browser.
+
+---
+
+## 🔌 Connect your first provider (step by step)
+
+The idea is simple: **you** get an API key from a provider, paste it into
+Uni, and Uni streams real model replies straight from that provider to your
+browser. Uni never sees your key.
+
+The general flow for every provider:
+
+1. Click your profile at the bottom of the sidebar → **Settings** →
+   **Providers & models**.
+2. Click **Add provider profile**.
+3. Tap a one-tap preset (e.g. `OpenAI · GPT`) — the endpoint fills itself in.
+4. *(Optional but recommended)* Tap a **suggested model** chip so you do not
+   have to hunt for a model id.
+5. Click **Add profile**, paste your API key in the **API key** field, and
+   click **Connect**. Uni tests the key and auto-discovers the models the
+   endpoint offers.
+6. Pick a model in the top bar and start chatting. A green **Live** badge
+   means real streamed replies.
+
+<img src="docs/screenshots/desktop-light-presets.png" alt="The Add provider form: preset chips for OpenAI, Anthropic, OpenRouter, Grok and more, with green FREE badges on providers that offer a free tier" width="760">
+
+Where the sections below say "get a key", they link to the provider's own
+console. Most take under two minutes.
