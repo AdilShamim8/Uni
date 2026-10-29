@@ -2,6 +2,11 @@
 
 > Canonical repository: <https://github.com/AdilShamim8/Uni>
 
+> 🌱 **New here?** The [repository root README](../README.md) is the
+> beginner-friendly guide — 3-command quick start, step-by-step provider
+> connection for OpenAI / Claude / OpenRouter / free tiers / local models,
+> screenshots, and troubleshooting. This file is the developer reference.
+
 An independent, open-source AI workspace with five destinations: **Chat**,
 **Work**, **Agents**, **Plugins**, and a shared **Library** — all running
 locally in your browser. Out of the box, chat responses come from a
