@@ -308,6 +308,56 @@ describe('runs — streamed execution, events, cancel, guard', () => {
     throw new Error(`run ${runId} never reached ${statuses.join('|')}`)
   }
 
+  /**
+   * Wait until the run's live event stream delivers at least one text
+   * delta (bounded wait) — the deterministic replacement for a fixed
+   * pre-cancel sleep.
+   */
+  async function waitForStreamedChunk(runId: string, cookie: string, timeoutMs = 20_000) {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const response = await fetch(`${baseUrl}/api/v1/runs/${runId}/events?after=0`, {
+        headers: { cookie, accept: 'text/event-stream' },
+        signal: controller.signal,
+      })
+      expect(response.status).toBe(200)
+      const reader = response.body!.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let sawChunk = false
+      try {
+        for (;;) {
+          const { done, value } = await reader.read()
+          if (done) break
+          buffer += decoder.decode(value, { stream: true })
+          let index: number
+          while ((index = buffer.indexOf('\n\n')) >= 0) {
+            const frame = buffer.slice(0, index)
+            buffer = buffer.slice(index + 2)
+            const dataLine = frame.split('\n').find((line) => line.startsWith('data: '))
+            if (!dataLine) continue
+            try {
+              const event = JSON.parse(dataLine.slice(6)) as { type?: string; payload?: { text?: string } }
+              if (event.type === 'delta' && /chunk-\d/.test(event.payload?.text ?? '')) {
+                sawChunk = true
+                await reader.cancel()
+                return
+              }
+            } catch {
+              /* keepalive */
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
+      }
+      if (!sawChunk) throw new Error(`run ${runId} never streamed a chunk`)
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
   it('creates, streams, and completes a run end to end', async () => {
     fake.setMode('normal')
     const providerId = await createProviderAndCredential(alice.cookie)
@@ -390,7 +440,10 @@ describe('runs — streamed execution, events, cancel, guard', () => {
 
     const { body } = await startRun(alice.cookie, conversationId, nodeId, providerId, undefined)
     const runId = (body as { run: { id: string } }).run.id
-    await new Promise((resolve) => setTimeout(resolve, 400))
+    // Wait for a real streamed chunk before cancelling — a fixed sleep
+    // raced first-token latency on slower machines and made the
+    // partial-output assertion timing luck.
+    await waitForStreamedChunk(runId, alice.cookie)
 
     const cancel = await testApp.app.inject({
       method: 'POST',
