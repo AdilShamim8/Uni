@@ -682,6 +682,67 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* Model chip list — collapses long discovered lists                   */
+/* ------------------------------------------------------------------ */
+
+/** Models shown before the list collapses; beyond this a toggle appears. */
+const MODEL_CHIPS_PREVIEW = 12
+
+function ModelChips({
+  provider,
+  isActiveProvider,
+  activeModelId,
+  onActivate,
+}: {
+  provider: ProviderProfile
+  isActiveProvider: boolean
+  activeModelId: string | null
+  onActivate: (modelId: string) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const hidden = provider.models.length - MODEL_CHIPS_PREVIEW
+  const visible = expanded ? provider.models : provider.models.slice(0, MODEL_CHIPS_PREVIEW)
+
+  return (
+    <>
+      {visible.map((model) => {
+        const isActiveModel = isActiveProvider && model.id === activeModelId
+        return (
+          <li key={model.id}>
+            <button
+              type="button"
+              aria-pressed={isActiveModel}
+              onClick={() => onActivate(model.id)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                isActiveModel
+                  ? 'border-accent bg-accent-soft text-accent'
+                  : 'border-line text-ink-soft hover:bg-subtle hover:text-ink'
+              }`}
+            >
+              {isActiveModel && <Check size={11} />}
+              {model.label}
+              {model.demo && <span className="text-[10px] text-ink-faint">demo</span>}
+            </button>
+          </li>
+        )
+      })}
+      {hidden > 0 && (
+        <li>
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((value) => !value)}
+            className="rounded-full border border-dashed border-line px-3 py-1.5 text-xs font-medium text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+          >
+            {expanded ? 'Show fewer' : `+${hidden} more model${hidden === 1 ? '' : 's'}`}
+          </button>
+        </li>
+      )}
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
 /* Section                                                             */
 /* ------------------------------------------------------------------ */
 
@@ -781,34 +842,21 @@ export function ProvidersSection() {
                 </p>
 
                 <div className="mt-3">
-                  <p className="text-xs font-medium text-ink-soft">Models (click to activate)</p>
+                  <p className="text-xs font-medium text-ink-soft">
+                    Models (click to activate){provider.models.length > 1 ? ` — ${provider.models.length} total` : ''}
+                  </p>
                   <ul className="mt-1.5 flex flex-wrap gap-1.5">
                     {provider.models.length === 0 && (
                       <li className="text-xs text-ink-faint">
                         No models yet — connect with an API key to discover them
                       </li>
                     )}
-                    {provider.models.map((model) => {
-                      const isActiveModel = isActiveProvider && model.id === activeModelId
-                      return (
-                        <li key={model.id}>
-                          <button
-                            type="button"
-                            aria-pressed={isActiveModel}
-                            onClick={() => setActiveModel(provider.id, model.id)}
-                            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                              isActiveModel
-                                ? 'border-accent bg-accent-soft text-accent'
-                                : 'border-line text-ink-soft hover:bg-subtle hover:text-ink'
-                            }`}
-                          >
-                            {isActiveModel && <Check size={11} />}
-                            {model.label}
-                            {model.demo && <span className="text-[10px] text-ink-faint">demo</span>}
-                          </button>
-                        </li>
-                      )
-                    })}
+                    <ModelChips
+                      provider={provider}
+                      isActiveProvider={isActiveProvider}
+                      activeModelId={activeModelId}
+                      onActivate={(modelId) => setActiveModel(provider.id, modelId)}
+                    />
                   </ul>
                 </div>
 
