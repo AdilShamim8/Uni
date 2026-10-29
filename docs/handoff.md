@@ -13,6 +13,10 @@ results, unresolved problems, environment blockers, next action.
   chat, long-model-list collapse, CI (contracts/frontend/backend), Dependabot,
   PR template, CONTRIBUTING, CHANGELOG, and the beginner-facing root README
   with 9 fresh screenshots in `docs/screenshots/`.
+- **Wave complete (300th commit milestone):** all suites green at close —
+  frontend 339/339 + typecheck + lint clean, backend 105/105 + typecheck
+  clean, contracts clean, live GitHub anchors + screenshot URLs verified.
+  Full closing record in `docs/verification.md`.
 - **Verification:** frontend 338/338 (typecheck + lint clean), backend
   105/105 (typecheck clean, embedded PG per file), contracts build clean,
   full browser golden-path pass with a real local OpenAI-compatible mock
