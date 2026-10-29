@@ -671,6 +671,8 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
           <p id={`keynote-${provider.id}`} className="mt-1 text-xs leading-relaxed text-ink-faint">
             Stored only in this browser and sent only to{' '}
             <span className="break-all">{provider.endpointUrl}</span> — never to anything else.
+            {provider.endpointUrl.includes('openrouter.ai') &&
+              ' OpenRouter lists its free models (ids ending in ":free") first after connecting.'}
           </p>
         </div>
         <Button
