@@ -15,6 +15,7 @@ const envWithoutDb: Env = {
   CORS_ORIGINS: 'http://localhost:5173',
   APP_URL: 'http://127.0.0.1:4000',
   AUTH_REGISTRATION: 'open',
+    AUTH_TRUSTED_PROXIES: '',
   CREDENTIAL_MASTER_KEY: undefined,
   CREDENTIAL_KEY_ID: 'test-key-1',
   ALLOW_LOCAL_MODEL_ENDPOINTS: 'false',

@@ -7,6 +7,7 @@ import { and, asc, eq } from 'drizzle-orm'
 import { account, session, user, verification, workspaceMembers, workspaces } from '../../db/schema.js'
 import * as schema from '../../db/schema.js'
 import { parseCorsOrigins } from '../../config/env.js'
+import { CLIENT_IP_HEADER } from './clientIp.js'
 import type { Env } from '../../config/env.js'
 
 export type AppDatabase = NodePgDatabase<typeof schema>
@@ -49,6 +50,12 @@ export function buildAuth(app: FastifyInstance) {
     advanced: {
       cookiePrefix: 'uni-auth',
       useSecureCookies: env.NODE_ENV === 'production',
+      // Rate limiting identity comes from the Fastify bridge: the
+      // server-resolved client IP under a private header (client-supplied
+      // forwarded headers are stripped there — see auth.routes.ts).
+      ipAddress: {
+        ipAddressHeaders: [CLIENT_IP_HEADER],
+      },
       // Better Auth silently disables origin checks when it detects a test
       // environment; Uni runs its integration tests against the REAL
       // production behavior instead, so the CSRF/origin defense stays
@@ -57,6 +64,19 @@ export function buildAuth(app: FastifyInstance) {
     },
     rateLimit: {
       enabled: env.NODE_ENV !== 'test',
+      // Sensitive-path budget override for shared-egress deployments
+      // (offices/NAT behind one IP). Unset keeps Better Auth's default
+      // of 3 per 10 seconds for sign-in/sign-up/change-* paths.
+      ...(env.AUTH_RATE_LIMIT_MAX !== undefined
+        ? {
+            customRules: {
+              '/sign-in/*': { window: 10, max: env.AUTH_RATE_LIMIT_MAX },
+              '/sign-up/*': { window: 10, max: env.AUTH_RATE_LIMIT_MAX },
+              '/change-password': { window: 10, max: env.AUTH_RATE_LIMIT_MAX },
+              '/change-email': { window: 10, max: env.AUTH_RATE_LIMIT_MAX },
+            },
+          }
+        : {}),
     },
     databaseHooks: {
       user: {
