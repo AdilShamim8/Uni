@@ -365,9 +365,11 @@ function ProviderForm({
           ))}
         </select>
         <p className="mt-1 text-xs leading-relaxed text-ink-faint">
-          Any OpenAI-compatible endpoint works (xAI Grok, DeepSeek, Groq, OpenRouter, Mistral,
-          LM Studio, Ollama, and more). Anthropic uses its native protocol. The type only decides
-          headers and URL paths — the key and endpoint stay yours.
+          Any OpenAI-compatible endpoint works — the 21 presets plus custom
+          gateways (xAI Grok, DeepSeek, Groq, OpenRouter, Mistral, Cerebras,
+          GitHub Models, Ollama, LM Studio, and more). Anthropic uses its
+          native protocol. The type only decides headers and URL paths — the
+          key and endpoint stay yours.
         </p>
       </div>
       <TextField
