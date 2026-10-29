@@ -108,6 +108,11 @@ const PRESETS: ProviderPreset[] = [
     endpointUrl: 'https://api.cerebras.ai/v1',
     freeTier: true,
   },
+  {
+    label: 'Fireworks',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://api.fireworks.ai/inference/v1',
+  },
 ]
 
 function maskKey(apiKey: string): string {

@@ -12,16 +12,13 @@ block_file = sys.argv[2]
 entry = open(block_file).read().rstrip('\n')
 
 src = open(path).read()
-marker = "  { label: 'LM Studio (local)', kind: 'local', endpointUrl: 'http://localhost:1234/v1', freeTier: true },\n]"
-assert marker in src, 'PRESETS closing marker missing'
+anchor_line = "  { label: 'LM Studio (local)', kind: 'local', endpointUrl: 'http://localhost:1234/v1', freeTier: true },"
+assert anchor_line in src, 'PRESETS anchor missing'
 if entry not in src:
-    src = src.replace(
-        marker,
-        "  { label: 'LM Studio (local)', kind: 'local', endpointUrl: 'http://localhost:1234/v1', freeTier: true },\n"
-        + entry
-        + '\n]',
-        1,
-    )
+    idx = src.index(anchor_line) + len(anchor_line)
+    # find the closing bracket of the PRESETS array after the anchor
+    close = src.index(']', idx)
+    src = src[:close] + entry + '\n' + src[close:]
 open(path, 'w').write(src)
 print('preset added')
 subprocess.run(['git', 'add', '-A'], check=True)
