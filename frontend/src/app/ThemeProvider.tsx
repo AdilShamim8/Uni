@@ -48,6 +48,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [resolved, setResolved] = useState<'light' | 'dark'>(() => applyTheme(theme))
 
   useEffect(() => {
+    // Deliberate sync effect: `resolved` mirrors an external input (the
+    // persisted preference + the OS color-scheme query) through a DOM-writing
+    // resolver, so it cannot be derived during render. The rule's heuristic
+    // (prefer render-time derivation) does not apply to external stores.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- see comment above
     setResolved(applyTheme(theme))
     if (theme === 'system' && typeof window.matchMedia === 'function') {
       const query = window.matchMedia('(prefers-color-scheme: dark)')

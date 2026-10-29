@@ -43,7 +43,7 @@ export interface LoadResult {
 }
 
 export function loadPersisted(): LoadResult {
-  let raw: string | null = null
+  let raw: string | null
   try {
     raw = localStorage.getItem(STORAGE_KEY)
   } catch {
