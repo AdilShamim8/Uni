@@ -160,3 +160,59 @@ Meta, DeepSeek, Mistral, and more — including a rotating free tier.
 > OpenRouter's model catalog is public, so a bad key would still "look
 > connected" on other apps. Uni checks the key against `/key` and tells you
 > the truth.
+
+### 4. Google · Gemini (free tier)
+
+**Cost:** **free tier** for personal use.
+
+1. Open <https://aistudio.google.com/apikey> and click **Create API key**.
+2. In Uni, tap the **Google AI Studio · Gemini** preset — it uses Google's
+   OpenAI-compatible endpoint, so no extra setup.
+3. Add a suggested model (e.g. **Gemini 3.8 Flash**), save, paste the key,
+   **Connect**.
+
+### 5. Groq · free tier
+
+**Cost:** **free tier** with generous rate limits — the fastest free chat
+you can get.
+
+1. Create a key at <https://console.groq.com/keys>.
+2. In Uni, tap the **Groq** preset. Suggestions include **GPT-OSS 120B**
+   and Llama models hosted at extreme speed.
+3. Save, paste the key, **Connect**.
+
+### 6. DeepSeek
+
+**Cost:** pay-as-you-go, very inexpensive.
+
+1. Create a key at <https://platform.deepseek.com/api_keys>.
+2. Tap the **DeepSeek** preset. The suggestions use DeepSeek's stable
+   aliases (`deepseek-chat`, `deepseek-reasoner`) which always point at the
+   current models — no id hunting needed.
+3. Save, paste the key, **Connect**.
+
+### 7. Local models · Ollama / LM Studio · 100% free
+
+No key, no account, no internet — your machine is the provider.
+
+**With [Ollama](https://ollama.com):**
+
+```bash
+ollama pull qwen3:8b      # or: gpt-oss:20b, llama3.3, mistral…
+ollama serve              # usually already running
+```
+
+**With [LM Studio](https://lmstudio.ai):** download a model from the app
+and start the local server (Developer tab → Start Server, default port 1234).
+
+Then in Uni: tap the **Ollama (local)** or **LM Studio (local)** preset,
+**Add profile**, and **Connect** — local servers need no key, but the
+connection test still discovers the models you pulled. A green **Live**
+badge means replies stream from your own hardware.
+
+> Other presets work the same way: Cerebras, Fireworks, Perplexity,
+> SambaNova, NVIDIA NIM, Cohere, GitHub Models (free with a GitHub
+> account), HuggingFace Router, Together, Mistral, Alibaba DashScope
+> (Qwen), and Zhipu GLM. And **any OpenAI-compatible endpoint** — custom
+> base URL, custom models — works through the *OpenAI-compatible* provider
+> type.
