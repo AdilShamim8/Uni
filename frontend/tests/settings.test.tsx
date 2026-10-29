@@ -151,7 +151,7 @@ describe('provider quick setup', () => {
     const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
     await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))
 
-    await user.click(dialog.getByRole('button', { name: 'Groq' }))
+    await user.click(dialog.getByRole('button', { name: /Groq/ }))
 
     expect(dialog.getByLabelText('Profile label')).toHaveValue('Groq')
     expect(dialog.getByLabelText('Endpoint base URL')).toHaveValue(
@@ -176,14 +176,90 @@ describe('provider quick setup', () => {
     await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))
 
     // The model-family labels users actually search for are present…
-    expect(dialog.getByRole('button', { name: 'xAI · Grok' })).toBeInTheDocument()
-    expect(dialog.getByRole('button', { name: 'DeepSeek' })).toBeInTheDocument()
-    expect(dialog.getByRole('button', { name: 'OpenAI · GPT' })).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: /xAI · Grok/ })).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: /^DeepSeek/ })).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: /OpenAI · GPT/ })).toBeInTheDocument()
 
     // …and tapping the Grok preset fills kind + endpoint.
-    await user.click(dialog.getByRole('button', { name: 'xAI · Grok' }))
+    await user.click(dialog.getByRole('button', { name: /xAI · Grok/ }))
     expect(dialog.getByLabelText('Endpoint base URL')).toHaveValue('https://api.x.ai/v1')
     expect(dialog.getByRole('button', { name: 'Add profile' })).toBeEnabled()
+  })
+
+  it('offers the wider provider catalog as one-tap presets', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+
+    await user.click(
+      screen.getByRole('button', { name: /Connect a supported provider/i }),
+    )
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
+    await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))
+
+    for (const label of [
+      'OpenRouter',
+      'Cerebras',
+      'Fireworks',
+      'Perplexity',
+      'SambaNova',
+      'NVIDIA NIM',
+      'Cohere',
+      'GitHub Models',
+      'HuggingFace Router',
+      'Alibaba DashScope · Qwen',
+      'Zhipu GLM',
+    ]) {
+      expect(dialog.getByRole('button', { name: new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) })).toBeInTheDocument()
+    }
+
+    // The free-tier marker shows on a known free provider preset.
+    expect(dialog.getByRole('button', { name: /Groq/ }).textContent).toContain('free')
+  })
+
+  it('adds a suggested model with one tap after picking a provider', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+
+    await user.click(
+      screen.getByRole('button', { name: /Connect a supported provider/i }),
+    )
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
+    await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))
+
+    // Tap the OpenAI preset — its suggestions appear.
+    await user.click(dialog.getByRole('button', { name: /OpenAI · GPT/ }))
+    const suggestion = dialog.getByRole('button', {
+      name: /Add suggested model GPT-4o mini/i,
+    })
+    expect(suggestion).toBeInTheDocument()
+
+    // One tap fills the model editor with the exact API id.
+    await user.click(suggestion)
+    expect(dialog.getByLabelText('Model ID')).toHaveValue('gpt-4o-mini')
+    expect(dialog.getByLabelText('Display label')).toHaveValue('GPT-4o mini')
+
+    // The suggestion chip disappears once the model is in the draft.
+    expect(
+      dialog.queryByRole('button', { name: /Add suggested model GPT-4o mini/i }),
+    ).not.toBeInTheDocument()
+  })
+
+  it('suggests free OpenRouter models for the OpenRouter preset', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+
+    await user.click(
+      screen.getByRole('button', { name: /Connect a supported provider/i }),
+    )
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
+    await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))
+
+    await user.click(dialog.getByRole('button', { name: /OpenRouter/ }))
+    const freeSuggestion = dialog.getByRole('button', {
+      name: /Add suggested model Gemma 4 31B/i,
+    })
+    expect(freeSuggestion).toBeInTheDocument()
+    expect(freeSuggestion.textContent).toContain('free')
   })
 })
 
