@@ -155,6 +155,13 @@ const HUGGINGFACE: SuggestedModel[] = [
   { id: 'deepseek-ai/DeepSeek-V3', label: 'DeepSeek V3' },
 ]
 
+/** Cohere - via its OpenAI-compatible endpoint. */
+const COHERE: SuggestedModel[] = [
+  { id: 'command-a', label: 'Command A', note: 'flagship' },
+  { id: 'command-a-plus', label: 'Command A+' },
+  { id: 'command-r7b-12-2024', label: 'Command R7B', note: 'fast' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -174,6 +181,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'models.github.ai': GITHUB_MODELS,
   'models.inference.ai.azure.com': GITHUB_MODELS,
   'router.huggingface.co': HUGGINGFACE,
+  'api.cohere.ai': COHERE,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
