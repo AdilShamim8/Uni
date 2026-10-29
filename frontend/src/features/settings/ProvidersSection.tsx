@@ -56,8 +56,17 @@ const KIND_ENDPOINTS: Record<ProviderKind, string> = {
 /** One-tap templates for popular providers — label, kind, and endpoint.
  * Labels lead with the model family users actually know (GPT, Grok, Claude,
  * Gemini) so the list reads like a model picker, not a company directory.
- * xAI · Grok leads the list — it pairs with the featured Uni teammate. */
-const PRESETS: { label: string; kind: ProviderKind; endpointUrl: string }[] = [
+ * xAI · Grok leads the list — it pairs with the featured Uni teammate.
+ * `freeTier` marks providers a key from Uni's providers list can use at no
+ * cost — Uni itself is free, and several providers have real free tiers. */
+interface ProviderPreset {
+  label: string
+  kind: ProviderKind
+  endpointUrl: string
+  freeTier?: boolean
+}
+
+const PRESETS: ProviderPreset[] = [
   { label: 'xAI · Grok', kind: 'openai-compatible', endpointUrl: 'https://api.x.ai/v1' },
   { label: 'OpenAI · GPT', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },
   { label: 'Anthropic · Claude', kind: 'anthropic', endpointUrl: 'https://api.anthropic.com' },
@@ -65,13 +74,20 @@ const PRESETS: { label: string; kind: ProviderKind; endpointUrl: string }[] = [
     label: 'Google AI Studio · Gemini',
     kind: 'google',
     endpointUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+    freeTier: true,
   },
   { label: 'DeepSeek', kind: 'openai-compatible', endpointUrl: 'https://api.deepseek.com/v1' },
-  { label: 'Groq', kind: 'openai-compatible', endpointUrl: 'https://api.groq.com/openai/v1' },
+  {
+    label: 'Groq',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://api.groq.com/openai/v1',
+    freeTier: true,
+  },
   {
     label: 'OpenRouter',
     kind: 'openai-compatible',
     endpointUrl: 'https://openrouter.ai/api/v1',
+    freeTier: true,
   },
   {
     label: 'Together',
@@ -82,9 +98,10 @@ const PRESETS: { label: string; kind: ProviderKind; endpointUrl: string }[] = [
     label: 'Mistral',
     kind: 'openai-compatible',
     endpointUrl: 'https://api.mistral.ai/v1',
+    freeTier: true,
   },
-  { label: 'Ollama (local)', kind: 'local', endpointUrl: 'http://localhost:11434/v1' },
-  { label: 'LM Studio (local)', kind: 'local', endpointUrl: 'http://localhost:1234/v1' },
+  { label: 'Ollama (local)', kind: 'local', endpointUrl: 'http://localhost:11434/v1', freeTier: true },
+  { label: 'LM Studio (local)', kind: 'local', endpointUrl: 'http://localhost:1234/v1', freeTier: true },
 ]
 
 function maskKey(apiKey: string): string {
@@ -229,7 +246,9 @@ function ProviderForm({
         <div>
           <p className="text-sm font-medium text-ink">Start from a provider</p>
           <p className="mt-0.5 text-xs leading-relaxed text-ink-faint">
-            One tap fills in the endpoint — you only add a name if you want your own.
+            One tap fills in the endpoint — you only add a name if you want your own. Marked
+            with <span className="font-medium text-success">free tier</span> = you can get a
+            working key at no cost.
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {PRESETS.map((preset) => {
@@ -248,13 +267,18 @@ function ProviderForm({
                       endpointUrl: preset.endpointUrl,
                     })
                   }
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                     selected
                       ? 'border-accent bg-accent-soft text-accent'
                       : 'border-line text-ink-soft hover:bg-subtle hover:text-ink'
                   }`}
                 >
                   {preset.label}
+                  {preset.freeTier && (
+                    <span className="rounded-full bg-success-soft px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-success">
+                      free
+                    </span>
+                  )}
                 </button>
               )
             })}
