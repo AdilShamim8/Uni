@@ -119,6 +119,14 @@ const FIREWORKS: SuggestedModel[] = [
   { id: 'accounts/fireworks/models/qwen2p5-72b-instruct', label: 'Qwen 2.5 72B' },
 ]
 
+/** Perplexity - online models with built-in web search (sonar family). */
+const PERPLEXITY: SuggestedModel[] = [
+  { id: 'sonar', label: 'Sonar', note: 'search' },
+  { id: 'sonar-pro', label: 'Sonar Pro', note: 'search' },
+  { id: 'sonar-reasoning-pro', label: 'Sonar Reasoning Pro', note: 'search' },
+  { id: 'sonar-deep-research', label: 'Sonar Deep Research', note: 'research' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -132,6 +140,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.cerebras.ai': CEREBRAS,
   'api.together.xyz': TOGETHER,
   'api.fireworks.ai': FIREWORKS,
+  'api.perplexity.ai': PERPLEXITY,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
