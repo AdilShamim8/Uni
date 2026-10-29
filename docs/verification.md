@@ -391,3 +391,47 @@ typechecks and tests green at its own HEAD; no fix-up commits were needed
 after the final suites above.
 
 The repository now stands at exactly 300 commits on `main`.
+
+## Re-verification at HEAD `cb75cb9bf` (2026-10-29, post-milestone)
+
+Full double-check after the 300-commit milestone, at the user's request.
+HEAD includes the two post-milestone commits merged from GitHub
+(dependabot PR #27 — GitHub Actions bumps only; no product code changed).
+
+| Check | Result |
+| --- | --- |
+| Frontend typecheck (both tsconfigs) | **Pass — 0 errors** |
+| Frontend lint | **Pass — 0 findings** |
+| Frontend tests | **339/339 across 48 files** |
+| Backend typecheck | **Pass — 0 errors** |
+| Backend tests | **105/105 across 13 files** |
+| Git state | `main` clean, synced with `origin/main` (302 commits; #300 was the wave milestone, #301–302 merged by the repo owner from GitHub) |
+| Wave attribution re-check | All 91 wave commits (5f3cf5861 → e64b73455) authored **and** committed as Adil Shamim <157037615+AdilShamim8@users.noreply.github.com> |
+
+Live E2E (embedded PostgreSQL :5432 + backend :4000 + Vite :5173 + mock
+OpenAI-compatible provider :5188, browser QA via agent-browser):
+
+- Backend `/health/ready` → `{"status":"ready","checks":{"database":{"status":"up"}}}`.
+- API smoke (curl, session cookie): sign-up 200 → provider create 201
+  (strict kind validation caught an invalid kind with a clear 400) →
+  BYOK credential set 200 (redacted response; key never returned) →
+  provider list 200 (redacted) → connection test made a **real outbound
+  call to api.openai.com** (54 ms, honest "provider rejected the API key"
+  on a fake key, status persisted) → URL guard refused a loopback endpoint
+  fetch with 0 ms latency (no outbound call) → delete 204.
+- Browser golden path: home renders with zero page errors → settings →
+  Providers → "LM Studio (local)" preset (label/type/endpoint prefilled,
+  suggested-model chips shown) → endpoint changed to the mock → key
+  entered → **Connect** → **3 models auto-discovered** ("3 total") →
+  model activated → **Live badge** ("streaming ... straight from this
+  browser") → message sent → **real SSE reply streamed into the chat**
+  ("Hello from the mock provider! Your BYOK setup is streaming
+  end-to-end.", labeled "Live reply from LM Studio (local)").
+- Mobile 390×844: responsive layout, navigation collapses to a drawer,
+  zero errors. Desktop 1280×800: clean.
+- README re-check: all 10 screenshot files present in the repo and
+  referenced correctly; raw.githubusercontent.com URLs return 200.
+
+Not run (unchanged limits): real paid provider keys (none available;
+verified via the local mock with real HTTP + SSE and the live OpenAI
+outbound 401), Docker Compose stack (no Docker daemon in sandbox).
