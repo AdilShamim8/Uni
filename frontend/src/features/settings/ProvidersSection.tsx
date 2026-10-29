@@ -188,10 +188,12 @@ interface ModelDraft {
 
 function ModelEditor({
   model,
+  exampleId,
   onChange,
   onRemove,
 }: {
   model: ModelDraft
+  exampleId: string
   onChange: (model: ModelDraft) => void
   onRemove: () => void
 }) {
@@ -202,7 +204,7 @@ function ModelEditor({
           className="min-w-[10rem] flex-1"
           label="Model ID"
           value={model.id}
-          placeholder="e.g. my-model"
+          placeholder={`e.g. ${exampleId}`}
           onChange={(event) => onChange({ ...model, id: event.target.value })}
         />
         <TextField
@@ -392,63 +394,72 @@ function ProviderForm({
           const notYetAdded = suggestions.filter(
             (suggestion) => !draft.models.some((model) => model.id === suggestion.id),
           )
-          if (notYetAdded.length === 0) return null
           return (
-            <div className="mb-2.5">
-              <p className="text-xs font-medium text-ink-soft">
-                Suggested for this provider — one tap adds the model
-              </p>
-              <div className="mt-1.5 flex flex-wrap gap-1.5">
-                {notYetAdded.map((suggestion) => (
-                  <button
-                    key={suggestion.id}
-                    type="button"
-                    aria-label={`Add suggested model ${suggestion.label}`}
-                    onClick={() =>
+            <>
+              {notYetAdded.length > 0 && (
+                <div className="mb-2.5">
+                  <p className="text-xs font-medium text-ink-soft">
+                    Suggested for this provider — one tap adds the model
+                  </p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {notYetAdded.map((suggestion) => (
+                      <button
+                        key={suggestion.id}
+                        type="button"
+                        aria-label={`Add suggested model ${suggestion.label}`}
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            models: [
+                              ...draft.models,
+                              {
+                                id: suggestion.id,
+                                label: suggestion.label,
+                                capabilities: ['chat'],
+                              },
+                            ],
+                          })
+                        }
+                        className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-colors hover:border-accent hover:bg-accent-soft hover:text-accent"
+                      >
+                        <Plus size={10} aria-hidden="true" />
+                        {suggestion.label}
+                        {suggestion.note && (
+                          <span className="text-[10px] font-normal text-ink-faint">
+                            {suggestion.note}
+                          </span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex flex-col gap-2.5">
+                {draft.models.map((model, index) => (
+                  <ModelEditor
+                    key={index}
+                    model={model}
+                    exampleId={suggestions[0]?.id ?? 'my-model'}
+                    onChange={(next) =>
                       setDraft({
                         ...draft,
-                        models: [
-                          ...draft.models,
-                          {
-                            id: suggestion.id,
-                            label: suggestion.label,
-                            capabilities: ['chat'],
-                          },
-                        ],
+                        models: draft.models.map((item, itemIndex) =>
+                          itemIndex === index ? next : item,
+                        ),
                       })
                     }
-                    className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-colors hover:border-accent hover:bg-accent-soft hover:text-accent"
-                  >
-                    <Plus size={10} aria-hidden="true" />
-                    {suggestion.label}
-                    {suggestion.note && (
-                      <span className="text-[10px] font-normal text-ink-faint">
-                        {suggestion.note}
-                      </span>
-                    )}
-                  </button>
+                    onRemove={() =>
+                      setDraft({
+                        ...draft,
+                        models: draft.models.filter((_, itemIndex) => itemIndex !== index),
+                      })
+                    }
+                  />
                 ))}
               </div>
-            </div>
+            </>
           )
         })()}
-        <div className="flex flex-col gap-2.5">
-          {draft.models.map((model, index) => (
-            <ModelEditor
-              key={index}
-              model={model}
-              onChange={(next) =>
-                setDraft({
-                  ...draft,
-                  models: draft.models.map((item, itemIndex) => (itemIndex === index ? next : item)),
-                })
-              }
-              onRemove={() =>
-                setDraft({ ...draft, models: draft.models.filter((_, itemIndex) => itemIndex !== index) })
-              }
-            />
-          ))}
-        </div>
         <Button
           variant="ghost"
           size="sm"
