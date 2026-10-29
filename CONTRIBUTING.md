@@ -40,7 +40,9 @@ cd backend && npm install && cd ..
 | Build + typecheck contracts | `packages/contracts/` | `npm run build` |
 
 Backend integration tests boot an embedded PostgreSQL per file — no
-running database or Docker is required.
+running database or Docker is required. Their scratch space lives under
+`UNI_TEST_SCRATCH_ROOT` when set, else `<os.tmpdir()>/uni-backend-tests`;
+never hardcode a machine-specific path in test setup code.
 
 ## Where things live
 
@@ -66,6 +68,21 @@ running database or Docker is required.
 5. UI copy is honest (see the one rule) and wraps safely on mobile.
 6. Commit messages follow `type(scope): summary` — e.g.
    `feat(frontend): suggested-model chips for OpenRouter`.
+
+### About the checks on every commit
+
+Three report on each push to `main`:
+
+- **CI** (`.github/workflows/ci.yml`) — contracts, frontend, and backend
+  jobs. This one is on contributors: keep it green.
+- **pages build and deployment** — GitHub Pages publishing of the demo
+  site. Automatic; green when the build succeeds.
+- **Vercel** — deployment of the hosted live demo by the Vercel account
+  connected to this repository. It is external to the repo: on the free
+  tier it can report `Deployment rate limited — retry in 24 hours` after
+  a day of many pushes. That is an account quota, not a code failure —
+  Vercel retries automatically and nothing in the repository needs to
+  change.
 
 ## Commit style
 
