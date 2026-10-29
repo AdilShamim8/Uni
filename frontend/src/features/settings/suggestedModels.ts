@@ -105,6 +105,13 @@ const CEREBRAS: SuggestedModel[] = [
   { id: 'qwen-3-32b', label: 'Qwen 3 32B' },
 ]
 
+/** Together AI - open-model hosting with Turbo variants. */
+const TOGETHER: SuggestedModel[] = [
+  { id: 'meta-llama/Llama-3.3-70B-Instruct-Turbo', label: 'Llama 3.3 70B Turbo' },
+  { id: 'deepseek-ai/DeepSeek-V3', label: 'DeepSeek V3' },
+  { id: 'Qwen/Qwen2.5-72B-Instruct-Turbo', label: 'Qwen 2.5 72B Turbo' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -116,6 +123,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.mistral.ai': MISTRAL,
   'openrouter.ai': OPENROUTER,
   'api.cerebras.ai': CEREBRAS,
+  'api.together.xyz': TOGETHER,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
