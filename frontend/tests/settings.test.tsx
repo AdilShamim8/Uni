@@ -244,6 +244,35 @@ describe('provider quick setup', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('offers suggestions when editing an existing provider too', async () => {
+    const user = userEvent.setup()
+    renderApp('/')
+
+    await user.click(
+      screen.getByRole('button', { name: /Connect a supported provider/i }),
+    )
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
+    await user.click(dialog.getByRole('button', { name: 'Add provider profile' }))
+
+    // Create a Groq profile with one manually-entered model.
+    await user.click(dialog.getByRole('button', { name: /Groq/ }))
+    await user.click(dialog.getByRole('button', { name: 'Add model' }))
+    await user.type(dialog.getByLabelText('Model ID'), 'my-custom-model')
+    await user.type(dialog.getByLabelText('Display label'), 'My Custom Model')
+    await user.click(dialog.getByRole('button', { name: 'Add profile' }))
+
+    // Editing it still shows suggestions — minus the model already present.
+    const groqHeading = await dialog.findByRole('heading', { name: 'Groq' })
+    const groqCard = groqHeading.closest('article')
+    expect(groqCard).toBeTruthy()
+    await user.click(within(groqCard as HTMLElement).getByRole('button', { name: 'Edit' }))
+    expect(
+      dialog.getByRole('button', { name: /Add suggested model GPT-OSS 120B/i }),
+    ).toBeInTheDocument()
+    // The manual model survives untouched in the editor.
+    expect(dialog.getByLabelText('Model ID')).toHaveValue('my-custom-model')
+  })
+
   it('collapses long model lists behind a +N more toggle', async () => {
     // Seed a provider with 15 models — beyond the 12-chip preview — before
     // the app renders (openSettings renders it).
