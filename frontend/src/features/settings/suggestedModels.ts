@@ -134,6 +134,13 @@ const SAMBANOVA: SuggestedModel[] = [
   { id: 'Qwen3-32B', label: 'Qwen 3 32B' },
 ]
 
+/** NVIDIA NIM (build.nvidia.com) - ids carry the org/model convention. */
+const NVIDIA: SuggestedModel[] = [
+  { id: 'meta/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
+  { id: 'deepseek-ai/deepseek-r1', label: 'DeepSeek R1', note: 'reasoning' },
+  { id: 'nvidia/nemotron-3.5-lightning', label: 'Nemotron 3.5 Lightning' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -149,6 +156,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.fireworks.ai': FIREWORKS,
   'api.perplexity.ai': PERPLEXITY,
   'api.sambanova.ai': SAMBANOVA,
+  'integrate.api.nvidia.com': NVIDIA,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
