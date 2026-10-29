@@ -16,6 +16,7 @@ import type { Capability, ModelInfo, ProviderKind, ProviderProfile } from '@/dom
 import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
 import { testProviderConnection } from '@/services/connection/providerConnection'
+import { suggestedModelsFor } from './suggestedModels'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
@@ -300,8 +301,54 @@ function ProviderForm({
         <p className="mb-2 text-sm font-medium text-ink">Models (optional)</p>
         <p className="mb-2 text-xs leading-relaxed text-ink-faint">
           Leave empty — connecting with an API key below discovers the endpoint's model list
-          automatically and fills this in for you.
+          automatically and fills this in for you. Or tap a suggestion to start from a known
+          model; every entry stays editable.
         </p>
+        {(() => {
+          const suggestions = suggestedModelsFor(draft.kind, draft.endpointUrl)
+          const notYetAdded = suggestions.filter(
+            (suggestion) => !draft.models.some((model) => model.id === suggestion.id),
+          )
+          if (notYetAdded.length === 0) return null
+          return (
+            <div className="mb-2.5">
+              <p className="text-xs font-medium text-ink-soft">
+                Suggested for this provider — one tap adds the model
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-1.5">
+                {notYetAdded.map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    type="button"
+                    aria-label={`Add suggested model ${suggestion.label}`}
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        models: [
+                          ...draft.models,
+                          {
+                            id: suggestion.id,
+                            label: suggestion.label,
+                            capabilities: ['chat'],
+                          },
+                        ],
+                      })
+                    }
+                    className="inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-1 text-[11px] font-medium text-ink-soft transition-colors hover:border-accent hover:bg-accent-soft hover:text-accent"
+                  >
+                    <Plus size={10} aria-hidden="true" />
+                    {suggestion.label}
+                    {suggestion.note && (
+                      <span className="text-[10px] font-normal text-ink-faint">
+                        {suggestion.note}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
         <div className="flex flex-col gap-2.5">
           {draft.models.map((model, index) => (
             <ModelEditor
