@@ -135,6 +135,12 @@ const PRESETS: ProviderPreset[] = [
     kind: 'openai-compatible',
     endpointUrl: 'https://api.cohere.ai/compatibility/v1',
   },
+  {
+    label: 'GitHub Models',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://models.github.ai/inference',
+    freeTier: true,
+  },
 ]
 
 function maskKey(apiKey: string): string {
