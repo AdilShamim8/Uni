@@ -100,8 +100,9 @@ export function ProviderHint() {
         <KeyRound size={13} aria-hidden="true" />
         Connect a supported provider
       </button>{' '}
-      — OpenAI (GPT), xAI (Grok), Anthropic (Claude), Google (Gemini), DeepSeek,
-      Groq, or a local runtime.
+      — OpenAI (GPT), Anthropic (Claude), OpenRouter, Google (Gemini), Groq,
+      DeepSeek, or a local runtime. Several have free tiers, so Uni can stay
+      100% free.
     </p>
   )
 }
