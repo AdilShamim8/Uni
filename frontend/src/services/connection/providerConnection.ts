@@ -30,6 +30,15 @@ function usesAnthropicProtocol(kind: ProviderProfile['kind']): boolean {
   return kind === 'anthropic'
 }
 
+/** True when the endpoint is OpenRouter (its /models list is public). */
+function isOpenRouter(profile: ProviderProfile): boolean {
+  try {
+    return new URL(profile.endpointUrl).hostname.toLowerCase() === 'openrouter.ai'
+  } catch {
+    return false
+  }
+}
+
 export function modelsListUrl(profile: ProviderProfile): string {
   const base = profile.endpointUrl.replace(/\/+$/, '')
   if (usesAnthropicProtocol(profile.kind)) {
@@ -81,6 +90,51 @@ function parseModelIds(bodyText: string): string[] {
   return []
 }
 
+/**
+ * OpenRouter sorts its huge catalog with free models first, so the free
+ * tier (the fastest path to a zero-cost setup) is visible at the top of
+ * the discovered list instead of buried under hundreds of paid ids.
+ */
+function orderOpenRouterModels(ids: string[]): string[] {
+  const free = ids.filter((id) => id.endsWith(':free')).sort((a, b) => a.localeCompare(b))
+  const paid = ids.filter((id) => !id.endsWith(':free'))
+  return [...free, ...paid].slice(0, 200)
+}
+
+/**
+ * OpenRouter's /models endpoint is public — a wrong key still returns a
+ * model list. The /key endpoint requires a valid key, so it is the honest
+ * auth check for OpenRouter specifically.
+ */
+async function verifyOpenRouterKey(
+  base: string,
+  apiKey: string,
+  signal?: AbortSignal,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    const response = await fetch(`${base.replace(/\/+$/, '')}/key`, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${apiKey}` },
+      signal,
+    })
+    if (response.status === 401 || response.status === 403) {
+      return {
+        ok: false,
+        message:
+          'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys (the model list itself is public, so only /key proves the key).',
+      }
+    }
+    return { ok: true }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return { ok: false, message: 'Connection test cancelled.' }
+    }
+    // The key check is a bonus signal — a network failure here should not
+    // fail an otherwise reachable endpoint.
+    return { ok: true }
+  }
+}
+
 export async function testProviderConnection(
   profile: ProviderProfile,
   apiKey: string,
@@ -117,7 +171,20 @@ export async function testProviderConnection(
     }
 
     const bodyText = await response.text().catch(() => '')
-    const models = parseModelIds(bodyText)
+
+    // OpenRouter's model list is public: a successful /models fetch proves
+    // reachability, not the key. Verify the key against the auth-protected
+    // /key endpoint before claiming "connected".
+    if (isOpenRouter(profile)) {
+      const verified = await verifyOpenRouterKey(profile.endpointUrl, trimmedKey, signal)
+      if (!verified.ok) {
+        return { ok: false, message: verified.message, latencyMs }
+      }
+    }
+
+    const models = isOpenRouter(profile)
+      ? orderOpenRouterModels(parseModelIds(bodyText))
+      : parseModelIds(bodyText)
     return {
       ok: true,
       message:
