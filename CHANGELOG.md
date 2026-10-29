@@ -54,7 +54,7 @@ the honesty of connection tests.
 
 ### Tests
 
-- Frontend: 338 tests green (was 321, +17) — new suites for suggested-model
+- Frontend: 339 tests green (was 321, +18) — new suites for suggested-model
   matching, catalog coverage and uniqueness, preset free-tier rendering,
   one-tap model add, model-list collapse, OpenRouter `/key` verification,
   free-first ordering, and `X-Title` attribution.
