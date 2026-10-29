@@ -141,6 +141,13 @@ const NVIDIA: SuggestedModel[] = [
   { id: 'nvidia/nemotron-3.5-lightning', label: 'Nemotron 3.5 Lightning' },
 ]
 
+/** GitHub Models - free tier with a GitHub account; org-prefixed ids. */
+const GITHUB_MODELS: SuggestedModel[] = [
+  { id: 'openai/gpt-4o-mini', label: 'GPT-4o mini', note: 'free tier' },
+  { id: 'openai/gpt-4o', label: 'GPT-4o' },
+  { id: 'meta-llama/Llama-3.3-70B-Instruct', label: 'Llama 3.3 70B' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -157,6 +164,8 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.perplexity.ai': PERPLEXITY,
   'api.sambanova.ai': SAMBANOVA,
   'integrate.api.nvidia.com': NVIDIA,
+  'models.github.ai': GITHUB_MODELS,
+  'models.inference.ai.azure.com': GITHUB_MODELS,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
