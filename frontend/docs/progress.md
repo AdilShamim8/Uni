@@ -452,3 +452,22 @@ Next concrete tasks: axe/screen-reader audit over the portaled panels
 (focus order across a body-level portal deserves a dedicated pass),
 and a decision on whether ToolPicker's `w-72` should clamp on
 sub-300px viewports.
+
+## Provider-freedom wave (2026-10-29)
+
+- **Scope:** beginner-proof provider onboarding + honesty hardening,
+  all shipped to `main` one commit at a time.
+- **Added:** `features/settings/suggestedModels.ts` (20 host catalogs +
+  kind fallbacks; one-tap chips in the provider form, deduped against the
+  draft), 10 new presets (21 total) with green FREE badges on free-tier
+  providers, long-model-list collapse (`+N more models` + total count),
+  OpenRouter `X-Title` attribution.
+- **Fixed:** OpenRouter connection honesty — `/models` there is public, so
+  the BYOK test now also proves the key against auth-protected `/key` and
+  discovery orders `:free` first (backend mirrors both).
+- **Tests:** 338/338 (was 321) — suggested-models suite (10), settings
+  additions (presets/free badges/one-tap add/free picks/collapse), byok
+  additions (/key verification, free-first ordering, X-Title).
+- **Docs:** root README rewritten as the beginner guide (screenshots in
+  `docs/screenshots/`), CONTRIBUTING, CHANGELOG, CI + Dependabot + PR
+  template; verification record in `docs/verification.md`.
