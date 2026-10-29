@@ -73,6 +73,14 @@ const GROQ: SuggestedModel[] = [
   { id: 'llama-3.1-8b-instant', label: 'Llama 3.1 8B Instant', note: 'fast' },
 ]
 
+/** Mistral La Plateforme - the -latest aliases track current models. */
+const MISTRAL: SuggestedModel[] = [
+  { id: 'mistral-large-latest', label: 'Mistral Large', note: 'stable alias' },
+  { id: 'mistral-small-latest', label: 'Mistral Small', note: 'stable alias' },
+  { id: 'open-mistral-nemo', label: 'Mistral Nemo', note: 'budget' },
+  { id: 'codestral-latest', label: 'Codestral', note: 'code' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -81,6 +89,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.x.ai': XAI,
   'api.deepseek.com': DEEPSEEK,
   'api.groq.com': GROQ,
+  'api.mistral.ai': MISTRAL,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
