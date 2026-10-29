@@ -11,6 +11,10 @@ from "Universe" to "Uni"; older branch names may still reference Universe.
 
 - Working (local mode): chat message tree with branches, demo adapter,
   browser BYOK streaming for OpenAI-compatible and Anthropic protocols,
+  one-tap provider presets (21, free-tier ones badged) with per-host
+  suggested model chips (`frontend/src/features/settings/suggestedModels.ts`)
+  and honest OpenRouter key verification (`/key`, since its `/models` is
+  public) on both the BYOK and server paths,
   Work demo runner plus live BYOK drafting/revisions, employees with memory
   notes and persistent threads, built-in plugins with grants and receipts,
   Library artifacts/versions, workspace backup/restore.
