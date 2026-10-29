@@ -127,6 +127,13 @@ const PERPLEXITY: SuggestedModel[] = [
   { id: 'sonar-deep-research', label: 'Sonar Deep Research', note: 'research' },
 ]
 
+/** SambaNova - fast dedicated open-model serving. */
+const SAMBANOVA: SuggestedModel[] = [
+  { id: 'Meta-Llama-3.3-70B-Instruct', label: 'Llama 3.3 70B' },
+  { id: 'DeepSeek-R1', label: 'DeepSeek R1', note: 'reasoning' },
+  { id: 'Qwen3-32B', label: 'Qwen 3 32B' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
@@ -141,6 +148,7 @@ const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.together.xyz': TOGETHER,
   'api.fireworks.ai': FIREWORKS,
   'api.perplexity.ai': PERPLEXITY,
+  'api.sambanova.ai': SAMBANOVA,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
