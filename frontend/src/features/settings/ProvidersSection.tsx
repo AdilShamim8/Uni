@@ -130,6 +130,11 @@ const PRESETS: ProviderPreset[] = [
     endpointUrl: 'https://integrate.api.nvidia.com/v1',
     freeTier: true,
   },
+  {
+    label: 'Cohere',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://api.cohere.ai/compatibility/v1',
+  },
 ]
 
 function maskKey(apiKey: string): string {
