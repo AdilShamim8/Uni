@@ -67,7 +67,8 @@ your premium chat product.
 9. [Project structure](#-project-structure)
 10. [Troubleshooting](#-troubleshooting)
 11. [FAQ](#-faq)
-12. [License & credits](#-license--credits)
+12. [Keyboard shortcuts](#%EF%B8%8F-keyboard-shortcuts) · [Contributing](#-contributing)
+13. [License & credits](#-license--credits)
 
 ---
 
@@ -460,6 +461,24 @@ models keep everything on your machine.
 **Something looks simulated — is that a bug?**
 No — it is the honesty policy. Every not-yet-real integration is labeled
 as a preview in the UI instead of pretending.
+
+---
+
+## ⌨️ Keyboard shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Enter` (default) or `Ctrl/Cmd + Enter` | Send the message (configurable in Settings → Chat) |
+| `Shift + Enter` | New line — never sends |
+| `Ctrl/Cmd + K` | Search the workspace |
+| `Ctrl/Cmd + ,` | Open Settings |
+| `Escape` | Close the topmost surface (menu, dialog) |
+
+## 🤝 Contributing
+
+Pull requests are welcome — setup, commands, layout conventions, and the
+PR checklist live in [CONTRIBUTING.md](CONTRIBUTING.md). The one rule:
+**truthful labels everywhere** — if something is simulated, the UI says so.
 
 ---
 
