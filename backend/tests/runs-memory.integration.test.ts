@@ -100,8 +100,10 @@ describe('runs — employee persona, memory block, recall wiring', () => {
   }, 180_000)
 
   afterAll(async () => {
-    await new Promise<void>((resolve) => fake.server.close(() => resolve()))
-    await testApp.stop()
+    // Guarded: if beforeAll failed partway (harness or sign-ups), these
+    // may be undefined — report the real error, not a teardown TypeError.
+    if (fake) await new Promise<void>((resolve) => fake.server.close(() => resolve()))
+    await testApp?.stop()
   })
 
   /** Create a fresh provider+credential and return its id (self-contained per test). */

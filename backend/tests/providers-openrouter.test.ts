@@ -62,7 +62,7 @@ describe('providers — OpenRouter key verification', () => {
 
   afterAll(async () => {
     vi.unstubAllGlobals()
-    await testApp.stop()
+    await testApp?.stop()
   })
 
   async function createOpenRouterProvider(): Promise<string> {

@@ -62,8 +62,10 @@ describe('database integration — migrations, CRUD, readiness', () => {
   }, 180_000)
 
   afterAll(async () => {
-    await postgres.stop()
-    await rm(dataDir, { recursive: true, force: true })
+    // Guarded: if beforeAll failed partway, postgres/dataDir may be
+    // undefined — report the real error, not a teardown TypeError.
+    await postgres?.stop()
+    if (dataDir) await rm(dataDir, { recursive: true, force: true })
   })
 
   it('applies committed migrations and round-trips CRUD through Drizzle', async () => {

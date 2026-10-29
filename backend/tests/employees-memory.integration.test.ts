@@ -28,7 +28,7 @@ describe('employees + memory — profiles, redaction, journal, block', () => {
   }, 180_000)
 
   afterAll(async () => {
-    await testApp.stop()
+    await testApp?.stop()
   })
 
   async function createEmployee(cookie: string, name: string) {

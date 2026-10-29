@@ -19,7 +19,7 @@ describe('auth — sign-up, sign-in, sign-out, session scope', () => {
   }, 180_000)
 
   afterAll(async () => {
-    await testApp.stop()
+    await testApp?.stop()
   })
 
   it('sign-up creates the user, a session cookie, and one personal workspace', async () => {
