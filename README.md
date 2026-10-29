@@ -385,3 +385,89 @@ Uni/
 ├── infra/docker-compose.yml   # dev PostgreSQL
 └── .github/workflows/ci.yml   # contracts + frontend + backend CI
 ```
+
+---
+
+## 🩺 Troubleshooting
+
+**"Could not reach the endpoint from this browser"**
+Your browser could not connect — check the URL (usually ends in `/v1`,
+never include `/chat/completions`), your network, and whether the provider
+allows direct browser (CORS) requests. OpenAI, Anthropic, OpenRouter,
+Groq, Google, DeepSeek, Mistral, and the local servers all allow it.
+
+**"401 Unauthorized — the saved API key was rejected"**
+The key is wrong, expired, or from a different account. Generate a new one
+at the provider's console and reconnect. (OpenRouter: Uni verifies keys
+against `/key`, because OpenRouter's model list is public.)
+
+**"404 Not found — the model or endpoint path may be wrong"**
+Usually a model id typo or a base URL that already includes
+`/chat/completions`. Remove the path — Uni appends it automatically — or
+pick a model from the discovered list instead of typing one.
+
+**"The provider connected but returned no content"**
+The endpoint answered but streamed nothing usable. Some reasoning models
+emit their answer in a field Uni's streaming parser does not read yet —
+try a standard chat model (anything without "reasoning" in the name).
+
+**Backend: "relation 'user' does not exist"**
+Migrations have not run against your database: `npm run db:migrate` in
+`backend/`.
+
+**Backend starts but `/health/ready` says the database is down**
+Check `DATABASE_URL` in `backend/.env` — and remember exported shell
+variables override `.env` (unset a stale `DATABASE_URL` first).
+
+**My provider is not in the preset list**
+Use the **OpenAI-compatible** provider type and paste your custom base
+URL. That works for any endpoint speaking the OpenAI protocol — add model
+ids manually or connect a key to discover them.
+
+---
+
+## ❓ FAQ
+
+**Is Uni really free?**
+Yes — MIT-licensed, no accounts required, no paywalled features. Model
+usage is billed by whoever issues your API key; with a free-tier provider
+(or local models) that is $0 too.
+
+**Where are my API keys stored?**
+In your browser's localStorage, in a dedicated slice that is **never**
+included in exports. They are sent only to the endpoint you configured. In
+optional server mode, keys are stored AES-256-GCM-encrypted and never
+leave the backend unencrypted.
+
+**Can I use multiple providers at once?**
+Yes — add as many profiles as you like and switch models from the top bar.
+The compare dialog even runs one prompt through two models side by side.
+
+**What is "demo mode"?**
+The state before any key is connected: replies come from a local,
+clearly-labeled demo adapter that contacts no one. It exists so you can
+explore everything before creating any account anywhere.
+
+**Does Uni train on my conversations?**
+Uni does nothing with your data — it is a client. Whatever the connected
+provider does with requests is governed by that provider's terms; local
+models keep everything on your machine.
+
+**Something looks simulated — is that a bug?**
+No — it is the honesty policy. Every not-yet-real integration is labeled
+as a preview in the UI instead of pretending.
+
+---
+
+## 📄 License & credits
+
+- Frontend: MIT (see [`frontend/LICENSE`](frontend/LICENSE)).
+- Backend and contracts: MIT.
+- Reused permissively-licensed code is recorded in
+  [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) and
+  [`docs/opensource-reuse.md`](docs/opensource-reuse.md).
+- Uni is an independent project and is not affiliated with OpenAI,
+  Anthropic, Google, or any other provider.
+
+Built to prove a premium AI workspace can be free, private, and honest.
+Enjoy! ✨
