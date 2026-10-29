@@ -3,18 +3,50 @@
 Keep short and factual: current commit, completed gate, exact commands and
 results, unresolved problems, environment blockers, next action.
 
-## Current state (updated 2026-10-29, CI repair wave complete)
+## Current state (updated 2026-10-29, live QA sweep wave complete)
 
 - **Branch:** `main` (commits pushed one at a time per working agreement).
-- **Wave scope shipped:** backend CI green on GitHub Actions for the first
-  time — portable test scratch root (`UNI_TEST_SCRATCH_ROOT` env override,
-  `os.tmpdir()` fallback; the old hardcoded `/home/z/...` path broke every
-  runner with `EACCES`), guarded afterAll teardowns (no more TypeError
-  cascades over the real error), atomic run finalization (terminal status +
-  assistant node + active leaf in one transaction — closes the reload race
-  CI exposed in the cancel test), deterministic pre-cancel wait on the live
-  SSE stream, and docs (backend README, CONTRIBUTING, README troubleshooting
-  cover the scratch root and the three commit checks).
+- **Wave scope shipped:** the "test everything like a tester" pass.
+  Commit `4a3b89f77` fixed a production-only auth bug the sweep found
+  (Better Auth fell back to ONE shared rate-limit bucket per path
+  because the Fastify bridge could not hand it the client IP — three
+  sign-ups in 10 s locked the auth surface globally, and a client-set
+  `X-Forwarded-For` was trusted verbatim, making per-IP limits
+  bypassable). The bridge now resolves identity server-side
+  (`AUTH_TRUSTED_PROXIES` IPs/CIDRs/`*`; spoofable forwarded headers
+  stripped; private header to Better Auth), with optional
+  `AUTH_RATE_LIMIT_MAX` for shared-egress deployments; 12 unit tests.
+  Commit `6018ee565` added `npm run qa:live` — 119 checks over the
+  compiled production server + fake provider on real sockets (auth,
+  conversations/nodes, BYOK providers + SSRF guard, employees/memory,
+  library m07 rules, importer, full run lifecycle incl. SSE, cancel,
+  timeout, 401/500, concurrency cap, isolation). Commit `1a96a95d6`
+  added `backend/scripts/browser-qa-stack.mjs` (one-command manual
+  browser-QA stack) — used for a headless-browser golden-path pass:
+  sign-up → server-provider BYOK (key encrypted, test connected, 2
+  models discovered) → server chat → SSE-streamed reply → sign-out/in →
+  transcript re-fetched; zero console/page errors.
+- **Verification:** backend typecheck clean, 117/117 tests across 14
+  files; `qa:live` 119/119; frontend lint/typecheck/build clean, 339/339
+  tests across 48 files. Full record in `docs/verification.md` (live QA
+  sweep wave section).
+- **Notable facts for the next session:** delta events may coalesce a
+  fast provider stream (per-chunk granularity proven via the cancel
+  test); library canonical-save needs `linkedArtifactId`/`sourceMessageId`
+  for the no-op/in-place paths (a bare save is Rule 4: fresh artifact);
+  node idempotency is keyed by `clientId`; the browser-BYOK provider
+  card is localStorage/direct-fetch by design (CORS note is honest).
+- **Next action candidates:** B05+ (multimodal content, tool-calling),
+  reasoning-model streaming fields, server-mode provider list beyond the
+  Account section, README localization.
+
+## Prior state (2026-10-29, CI repair wave complete)
+
+- **Wave scope shipped:** backend CI green on GitHub Actions for the
+  first time — portable test scratch root (`UNI_TEST_SCRATCH_ROOT` env
+  override, `os.tmpdir()` fallback; the old hardcoded `/home/z/...`
+  path broke every runner with `EACCES`), guarded afterAll teardowns,
+  atomic run finalization, deterministic pre-cancel wait, and docs.
 - **CI state at HEAD `4779ded6c` (run #107):** Contracts / Frontend /
   Backend all **success** on GitHub Actions; GitHub Pages build + deploy
   **success**. Vercel reports "Deployment rate limited — retry in 24

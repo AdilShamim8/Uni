@@ -4,6 +4,43 @@ All notable changes to Uni are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) with the repo's
 existing `type(scope): summary` commit vocabulary.
 
+## [Unreleased] — live QA sweep wave
+
+*Shipped 29 October 2026 — 3 commits, each pushed individually: an
+exhaustive external-tester pass over the whole product (119-check live
+HTTP sweep, full frontend verification, and a scripted headless-browser
+walkthrough of the golden path).*
+
+### Fixed — backend
+
+- **Auth rate limiting no longer collapses into one shared bucket in
+  production.** The Fastify bridge could not hand Better Auth the
+  client's address, so in production every caller shared a single
+  per-path budget (three sign-ups in ten seconds locked the auth
+  surface for everyone) and a client-set `X-Forwarded-For` was trusted
+  verbatim (per-IP limits bypassable with fake headers). The bridge now
+  resolves the identity server-side — direct peer, or the forwarded
+  chain unwrapped only behind the new `AUTH_TRUSTED_PROXIES` allowlist
+  (IPs/CIDRs, `*` for private networks) — strips every spoofable
+  forwarded header, and passes the address under a private header.
+  `AUTH_RATE_LIMIT_MAX` (optional) raises the sensitive-path budget for
+  shared-egress deployments. Covered by 12 unit tests.
+
+### Added — testing
+
+- `npm run qa:live` (`backend/scripts/qa-live.mjs`): boots the compiled
+  server in production mode plus a fake OpenAI-compatible provider and
+  runs **119 checks** across the entire HTTP surface — auth edges and
+  rate limiting, conversation/node validation and pagination, BYOK
+  provider CRUD with credential redaction, five SSRF-guard rejections,
+  employee memory, library m07 versioning rules, import idempotency,
+  and the full run lifecycle (SSE, cancel with partial output, timeout,
+  provider 401/500, concurrency cap, workspace isolation). Always tears
+  the stack down, even on failure.
+- `backend/scripts/browser-qa-stack.mjs`: one command to boot the whole
+  app (embedded PostgreSQL + fake provider + backend) for manual
+  browser QA — no Docker or real provider account needed.
+
 ## [Unreleased] — CI repair wave
 
 *Shipped 29 October 2026 — 6 commits, each pushed individually. Final
