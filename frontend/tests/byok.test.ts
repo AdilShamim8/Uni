@@ -236,6 +236,77 @@ describe('provider connection testing', () => {
     expect(result.message).toContain('Could not reach the endpoint from this browser')
     vi.unstubAllGlobals()
   })
+
+  it('verifies OpenRouter keys against the auth-protected /key endpoint', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      id: 'provider-openrouter',
+      label: 'OpenRouter',
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    const catalog = new Response(
+      JSON.stringify({ data: [{ id: 'vendor/paid' }, { id: 'vendor/free:free' }] }),
+      { status: 200 },
+    )
+    const rejectedKey = new Response('unauthorized', { status: 401 })
+    // /models succeeds (public), then /key rejects the bad key.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce(catalog).mockResolvedValueOnce(rejectedKey),
+    )
+
+    const bad = await testProviderConnection(openRouterProfile, 'sk-or-bad')
+    expect(bad.ok).toBe(false)
+    expect(bad.message).toContain('API key was rejected')
+    vi.unstubAllGlobals()
+
+    // With a working key both calls succeed and the models come through.
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [{ id: 'vendor/paid' }, { id: 'vendor/free:free' }] }), {
+            status: 200,
+          }),
+        )
+        .mockResolvedValueOnce(new Response('{}', { status: 200 })),
+    )
+    const good = await testProviderConnection(openRouterProfile, 'sk-or-good')
+    expect(good.ok).toBe(true)
+    expect(good.models?.[0]).toBe('vendor/free:free')
+    vi.unstubAllGlobals()
+  })
+
+  it('orders OpenRouter discovery with free models first', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              data: [
+                { id: 'zeta/paid' },
+                { id: 'alpha/free:free' },
+                { id: 'meta/paid' },
+                { id: 'beta/free:free' },
+              ],
+            }),
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(new Response('{}', { status: 200 })),
+    )
+
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.models).toEqual(['alpha/free:free', 'beta/free:free', 'meta/paid', 'zeta/paid'])
+    vi.unstubAllGlobals()
+  })
 })
 
 /* ------------------------------------------------------------------ */
@@ -270,6 +341,42 @@ describe('live chat adapter', () => {
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer sk-key')
     const body = JSON.parse(init.body as string) as { model: string; messages: unknown[] }
     expect(body.model).toBe('test-model')
+    vi.unstubAllGlobals()
+  })
+
+  it('sends the X-Title attribution header to OpenRouter only', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    const fetchMock = vi.fn().mockResolvedValue(sseResponse(['data: [DONE]\n\n']))
+    vi.stubGlobal('fetch', fetchMock)
+    const handlers = makeHandlers()
+    const adapter = createLiveAdapter(openRouterProfile, 'sk-or-key', 'vendor/model')
+
+    await adapter.stream(
+      { prompt: 'hi', history: [], tools: [], attachments: [], nickname: '', traits: '' },
+      handlers,
+      new AbortController().signal,
+    )
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    const headers = init.headers as Record<string, string>
+    expect(headers['X-Title']).toBe('Uni')
+    expect(headers.Authorization).toBe('Bearer sk-or-key')
+    vi.unstubAllGlobals()
+
+    // Plain OpenAI-compatible endpoints do not get the header.
+    const plainMock = vi.fn().mockResolvedValue(sseResponse(['data: [DONE]\n\n']))
+    vi.stubGlobal('fetch', plainMock)
+    const plainAdapter = createLiveAdapter(profile, 'sk-key', 'test-model')
+    await plainAdapter.stream(
+      { prompt: 'hi', history: [], tools: [], attachments: [], nickname: '', traits: '' },
+      makeHandlers(),
+      new AbortController().signal,
+    )
+    const [, plainInit] = plainMock.mock.calls[0] as [string, RequestInit]
+    expect((plainInit.headers as Record<string, string>)['X-Title']).toBeUndefined()
     vi.unstubAllGlobals()
   })
 

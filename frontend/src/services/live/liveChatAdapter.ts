@@ -20,6 +20,15 @@ function usesAnthropicProtocol(profile: ProviderProfile): boolean {
   return profile.kind === 'anthropic'
 }
 
+/** True when the endpoint is OpenRouter — used for its optional headers. */
+function isOpenRouter(profile: ProviderProfile): boolean {
+  try {
+    return new URL(profile.endpointUrl).hostname.toLowerCase() === 'openrouter.ai'
+  } catch {
+    return false
+  }
+}
+
 function chatCompletionsUrl(profile: ProviderProfile): string {
   const base = profile.endpointUrl.replace(/\/+$/, '')
   return /\/chat\/completions\/?$/.test(base) ? base : `${base}/chat/completions`
@@ -164,6 +173,9 @@ export function createLiveAdapter(
         headers['anthropic-dangerous-direct-browser-access'] = 'true'
       } else {
         headers.Authorization = `Bearer ${apiKey}`
+        // OpenRouter's optional attribution header (their docs recommend it
+        // so requests from Uni show up under an app name, not "unknown").
+        if (isOpenRouter(profile)) headers['X-Title'] = 'Uni'
       }
 
       const body = anthropic
