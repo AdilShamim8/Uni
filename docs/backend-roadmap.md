@@ -125,3 +125,17 @@ preserved working slice; see `docs/handoff.md` for the exact checkpoint.
   6 library, 3 runs wiring); typecheck/build clean. Frontend untouched
   this gate (the Account surface still exercises B03; employee/library
   frontend surfaces are deliberate B04-followup polish).
+
+## Provider-test honesty note (2026-10-29, provider-freedom wave)
+
+B03's connection check assumes the model-list endpoint authenticates the
+key. OpenRouter breaks that assumption: `GET /api/v1/models` is public, so
+a wrong key returned 200 and the test claimed "Connected" — the failure
+only surfaced on the first chat (401). `runConnectionCheck` now, for
+`openrouter.ai` hosts only, follows the models fetch with the
+auth-protected `GET /api/v1/key` (through the same SSRF-guarded fetch) and
+fails honestly on 401/403; discovery orders `:free` models first. The
+frontend BYOK test mirrors this exactly. Covered by
+`tests/providers-openrouter.test.ts` (mocked DNS + fetch — no network,
+deterministic in CI). Live facts recorded 2026-10-29: catalog 457 models,
+16 free; `/key` 401s a fake key; `/models` 200s without any key.
