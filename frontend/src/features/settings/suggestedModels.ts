@@ -43,16 +43,26 @@ const ANTHROPIC: SuggestedModel[] = [
   { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5', note: 'budget' },
 ]
 
+/** Google AI Studio (Gemini) via its OpenAI-compatible endpoint. */
+const GOOGLE: SuggestedModel[] = [
+  { id: 'gemini-4-argon', label: 'Gemini 4 Argon', note: 'newest' },
+  { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', note: 'fast' },
+  { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash Lite', note: 'very cheap' },
+  { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', note: 'budget' },
+]
+
 /** Host-specific catalogs. Keys are lowercased endpoint hostnames. */
 const BY_HOST: Record<string, SuggestedModel[]> = {
   'api.openai.com': OPENAI,
   'api.anthropic.com': ANTHROPIC,
+  'generativelanguage.googleapis.com': GOOGLE,
 }
 
 /** Fallbacks by provider kind, used when the host is unknown or custom. */
 const BY_KIND: Partial<Record<ProviderKind, SuggestedModel[]>> = {
   openai: OPENAI,
   anthropic: ANTHROPIC,
+  google: GOOGLE,
 }
 
 /**
