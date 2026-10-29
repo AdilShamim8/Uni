@@ -86,6 +86,20 @@ Key decisions (full rationale in `docs/`):
   browser (their own localStorage key, never in exports) and are sent only to
   the endpoint you configure. With no key connected, the deterministic demo
   adapter keeps everything fully offline.
+- **One-tap onboarding for every provider.** 21 preset chips (OpenAI,
+  Anthropic, OpenRouter, Google, Groq, DeepSeek, Mistral, xAI, Cerebras,
+  Fireworks, Perplexity, SambaNova, NVIDIA NIM, Cohere, GitHub Models,
+  HuggingFace Router, Together, DashScope, Zhipu, Ollama, LM Studio) prefill
+  the endpoint, with a green FREE badge on providers that offer a no-cost
+  tier. Suggested-model chips (`features/settings/suggestedModels.ts`) match
+  the endpoint hostname and one-tap fill real model ids — editable afterwards,
+  never overriding live discovery. Long discovered model lists collapse
+  behind a `+N more models` toggle.
+- **Honest OpenRouter verification.** OpenRouter's model catalog is public,
+  so its connection test also proves the key against the auth-protected
+  `/key` endpoint (a 401 there is reported as a failure, not "connected"),
+  and discovery lists `:free` models first. Live chat requests to
+  OpenRouter carry the optional `X-Title: Uni` attribution header.
 - **Versioned persistence.** One localStorage key, schema version 1, debounced
   writes, quarantine + fresh seed on malformed data. Temporary conversations
   are filtered from every write and vanish on reload by design. Workspace
