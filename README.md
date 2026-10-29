@@ -216,3 +216,72 @@ badge means replies stream from your own hardware.
 > (Qwen), and Zhipu GLM. And **any OpenAI-compatible endpoint** — custom
 > base URL, custom models — works through the *OpenAI-compatible* provider
 > type.
+
+---
+
+## 💚 The 100% free path
+
+Uni costs nothing, and you can run the *whole* stack at zero cost. Pick
+any combination:
+
+| Path | What you get | Cost |
+| --- | --- | --- |
+| **Groq free tier** | GPT-OSS 120B, Llama 3.3 70B at extreme speed, generous rate limits | **$0** |
+| **Google AI Studio** | Gemini Flash models for personal use | **$0** |
+| **OpenRouter `:free` models** | A rotating set of free models from many vendors | **$0** |
+| **GitHub Models** | GPT and Llama models with your GitHub account | **$0** |
+| **Mistral free tier** | Mistral Small + experiments on La Plateforme | **$0** |
+| **HuggingFace Router** | Monthly free inference credits for open models | **$0** |
+| **Cerebras free tier** | Fast open-model inference | **$0** |
+| **NVIDIA NIM** | Free build credits at build.nvidia.com | **$0** |
+| **Ollama / LM Studio** | Any open model, fully offline, on your hardware | **$0** |
+
+In the provider form, anything with a green **FREE** badge has a no-cost
+tier. Connect one, pick a model, and you have a private premium chat
+product for exactly nothing.
+
+---
+
+## ⚙️ Settings reference
+
+Open **Settings** from the profile button at the bottom of the sidebar
+(keyboard shortcut: `Ctrl/Cmd + ,`).
+
+| Section | What lives there |
+| --- | --- |
+| **Account** | Local vs server mode; the server account panel when a backend is connected. |
+| **Appearance** | Light / dark / system theme, density, text size, reduced transparency. |
+| **Chat** | Send-key behavior (Enter vs Ctrl/Cmd+Enter), your nickname, persona traits. |
+| **Data** | Export / import your workspace, storage details, reset. |
+| **Providers & models** | Everything API: presets, custom endpoints, keys, model lists, connection status. |
+| **Privacy & about** | Where your data lives, what is simulated, licenses. |
+
+**Provider card anatomy:**
+
+- **Models (click to activate)** — chips activate a model instantly; long
+  discovered lists collapse behind a `+N more models` toggle.
+- **API key / Connect** — the key is stored only in this browser (in a
+  separate storage slice that exports never include) and sent only to the
+  endpoint shown on the card.
+- **Test again** — re-runs the honest connection check (including
+  OpenRouter's `/key` verification).
+- **Edit** — change label, provider type, endpoint, or the model list.
+- **Disconnect / Delete** — remove the key or the whole profile.
+
+---
+
+## 📸 Screenshots
+
+| | |
+| --- | --- |
+| ![Home — new chat](docs/screenshots/desktop-light-home.png) | ![Providers settings](docs/screenshots/desktop-light-settings-providers.png) |
+| *Home — the composer with tool pickers* | *Providers & models — profiles, models, connection status* |
+| ![Suggested models](docs/screenshots/desktop-light-suggested-models.png) | ![Connected provider](docs/screenshots/desktop-light-connected.png) |
+| *Suggested models for OpenRouter — free picks marked* | *A connected provider with auto-discovered models* |
+| ![Live chat](docs/screenshots/desktop-light-live-chat.png) | ![Dark theme](docs/screenshots/desktop-dark-chat.png) |
+| *Live streamed reply (green LIVE badge)* | *Dark theme* |
+| ![Mobile](docs/screenshots/mobile-light-home.png) | |
+| *Mobile — the responsive layout* | |
+
+More captures (including tablet views and per-milestone evidence) live in
+[`frontend/docs/screenshots/`](frontend/docs/screenshots).
