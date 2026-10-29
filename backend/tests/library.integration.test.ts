@@ -25,7 +25,7 @@ describe('library — artifacts, versions, canonical save', () => {
   }, 180_000)
 
   afterAll(async () => {
-    await testApp.stop()
+    await testApp?.stop()
   })
 
   async function createArtifact(cookie: string, markdown: string) {

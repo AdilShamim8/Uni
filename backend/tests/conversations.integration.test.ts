@@ -27,7 +27,7 @@ describe('conversations — CRUD, tree, isolation', () => {
   }, 180_000)
 
   afterAll(async () => {
-    await testApp.stop()
+    await testApp?.stop()
   })
 
   async function createConversation(cookie: string, title: string) {

@@ -220,9 +220,11 @@ describe('runs — streamed execution, events, cancel, guard', () => {
   }, 180_000)
 
   afterAll(async () => {
-    await new Promise<void>((resolve) => fake.server.close(() => resolve()))
-    await testApp.app.close()
-    await testApp.stop()
+    // Guarded: if beforeAll failed partway (harness or sign-ups), these
+    // may be undefined — report the real error, not a teardown TypeError.
+    if (fake) await new Promise<void>((resolve) => fake.server.close(() => resolve()))
+    await testApp?.app.close()
+    await testApp?.stop()
   })
 
   async function createProviderAndCredential(cookie: string): Promise<string> {
