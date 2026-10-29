@@ -118,6 +118,12 @@ const PRESETS: ProviderPreset[] = [
     kind: 'openai-compatible',
     endpointUrl: 'https://api.perplexity.ai',
   },
+  {
+    label: 'SambaNova',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://api.sambanova.ai/v1',
+    freeTier: true,
+  },
 ]
 
 function maskKey(apiKey: string): string {
