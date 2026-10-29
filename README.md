@@ -285,8 +285,10 @@ Open **Settings** from the profile button at the bottom of the sidebar
 | *Suggested models for OpenRouter — free picks marked* | *A connected provider with auto-discovered models* |
 | ![Live chat](docs/screenshots/desktop-light-live-chat.png) | ![Dark theme](docs/screenshots/desktop-dark-chat.png) |
 | *Live streamed reply (green LIVE badge)* | *Dark theme* |
-| ![Mobile light](docs/screenshots/mobile-light-home.png) | ![Mobile dark](docs/screenshots/mobile-dark-home.png) |
-| *Mobile — light* | *Mobile — dark* |
+| ![Mobile light](docs/screenshots/mobile-light-home.png) | ![Mobile light chat](docs/screenshots/mobile-light-chat.png) |
+| *Mobile — light home* | *Mobile — light conversation* |
+| ![Mobile dark](docs/screenshots/mobile-dark-home.png) | |
+| *Mobile — dark* | |
 
 More captures (including tablet views and per-milestone evidence) live in
 [`frontend/docs/screenshots/`](frontend/docs/screenshots).
