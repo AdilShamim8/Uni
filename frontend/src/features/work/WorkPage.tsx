@@ -513,6 +513,7 @@ function NewTaskForm() {
     if (modelKey && connectedModels.some((m) => `${m.providerId}:${m.modelId}` === modelKey)) {
       return
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- guards a store-derived selection against connection changes; the early-return shape keeps the invariant readable
     setModelKey(connectedModels[0] ? `${connectedModels[0].providerId}:${connectedModels[0].modelId}` : '')
   }, [mode, modelKey, connectedModels])
 

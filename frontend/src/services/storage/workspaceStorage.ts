@@ -82,7 +82,7 @@ export interface SliceResult<T> {
 }
 
 function loadSlice<T>(key: string, guard: (value: unknown) => value is T): SliceResult<T> {
-  let raw: string | null = null
+  let raw: string | null
   try {
     raw = localStorage.getItem(key)
   } catch {

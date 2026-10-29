@@ -89,6 +89,8 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (open) {
+      // Deliberate reset-on-open: fresh query/scope/selection per opening.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset-on-open sync; behavior verified by palette tests
       setScope(initialScope)
       setQuery('')
       setActiveIndex(0)
@@ -279,6 +281,10 @@ export function CommandPalette() {
   }, [scope, results, actions])
 
   useEffect(() => {
+    // Deliberate: the highlighted row must follow every query/scope change;
+    // resetting during render would need the previous-value pattern for a
+    // purely cosmetic selection cursor. Kept as a sync effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- selection reset on input change; verified by palette tests
     setActiveIndex(0)
   }, [query, scope])
 

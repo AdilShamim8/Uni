@@ -32,6 +32,7 @@ export function SettingsDialog() {
   // open there once, then clear the request so manual navigation wins.
   useEffect(() => {
     if (open && requestedSection && SECTION_IDS.includes(requestedSection)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- consumes a one-shot store request (setUi clears it); store writes during render are forbidden, so the effect is the correct form
       setSection(requestedSection as SectionId)
       setUi({ settingsSection: null })
     }

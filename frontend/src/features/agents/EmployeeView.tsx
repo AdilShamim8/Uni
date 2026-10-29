@@ -67,6 +67,7 @@ export function EmployeeView({
   const [conversationId, setConversationId] = useState<string | null>(null)
   useEffect(() => {
     const id = useAppStore.getState().openAgentConversation(agentId)
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- openAgentConversation mutates the store (sidebar + records); store writes during render are forbidden, so the effect IS the correct form here
     setConversationId(id)
   }, [agentId])
 

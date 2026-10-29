@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   BarChart3,
   Check,
+  Code2,
   FolderOpen,
-  Github,
   Globe,
   Mail,
   Puzzle,
@@ -51,7 +51,7 @@ const CATEGORY_ICON: Record<PluginCategory, React.ReactNode> = {
   documents: <FolderOpen size={16} />,
   data: <BarChart3 size={16} />,
   productivity: <Settings2 size={16} />,
-  development: <Github size={16} />,
+  development: <Code2 size={16} />,
   custom: <Puzzle size={16} />,
 }
 

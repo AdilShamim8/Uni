@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   Archive,
@@ -455,7 +455,10 @@ function AgentBuilder({
 
   const selectedProvider = providers.find((p) => p.id === providerId)
 
-  function validate(): string[] {
+  // useCallback marks this as an event handler (never invoked during
+  // render), which keeps the impure calls inside it — Date.now(), store
+  // writes — legal under the react-hooks purity rules.
+  const handleSave = useCallback(() => {
     const found: string[] = []
     if (!name.trim()) found.push('Give the agent a name.')
     if (!instructions.trim()) found.push('Write at least one line of instructions.')
@@ -470,11 +473,6 @@ function AgentBuilder({
         )
       if (!known) found.push('The selected model is not known for that provider.')
     }
-    return found
-  }
-
-  function handleSave() {
-    const found = validate()
     setErrors(found)
     if (found.length > 0) return
 
@@ -504,7 +502,22 @@ function AgentBuilder({
     } else {
       navigate(`/agents/${profile.id}`)
     }
-  }
+  }, [
+    category,
+    description,
+    existing,
+    instructions,
+    modelId,
+    name,
+    navigate,
+    onDone,
+    providerId,
+    providers,
+    saveAgent,
+    selectedProvider,
+    startersText,
+    tools,
+  ])
 
   return (
     <div className="flex h-full min-h-0 flex-col">

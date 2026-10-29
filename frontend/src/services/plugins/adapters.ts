@@ -100,7 +100,7 @@ async function documentsSaveAdapter(
     throw new CanonicalSaveError('Save needs a thread with output to save.')
   } catch (error) {
     if (error instanceof CanonicalSaveError) throw error
-    throw new Error('The save could not be completed.')
+    throw new Error('The save could not be completed.', { cause: error })
   }
 }
 

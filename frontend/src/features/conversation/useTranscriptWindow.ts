@@ -41,10 +41,19 @@ export function useTranscriptWindow({
     return { windowed, start: initialWindow(total, windowed).start }
   })
   const stateRef = useRef(state)
-  stateRef.current = state
   const totalRef = useRef(total)
   const prevTotalRef = useRef(total)
   const heightBeforeRef = useRef<number | null>(null)
+
+  // Latest-ref sync: keep the mirrors current without touching refs during
+  // render (react-hooks/refs). Passive effects flush before the next user
+  // event, so the scroll handler below always reads fresh values; the mount
+  // layout effect runs against the useRef initializers, which already hold
+  // this render's state and total.
+  useEffect(() => {
+    stateRef.current = state
+    totalRef.current = total
+  })
 
   // Mount measurement: confirm the optimistic window, or fail open where
   // layout is unavailable (jsdom, hidden containers).
