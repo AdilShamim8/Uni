@@ -67,7 +67,11 @@ real request to a provider the user configured with their own API key.
 | Feature | Status | Notes |
 | --- | --- | --- |
 | BYOK live streaming | Live | OpenAI-compatible + Anthropic endpoints, user's own key, stored privately |
-| One-tap provider presets | Working | OpenAI · GPT, xAI · Grok, Anthropic · Claude, Google AI Studio · Gemini, DeepSeek, Groq, OpenRouter, Together, Mistral, Ollama, LM Studio — label + kind + endpoint filled in one tap |
+| One-tap provider presets | Working | 21 presets — OpenAI · GPT, xAI · Grok, Anthropic · Claude, Google AI Studio · Gemini, DeepSeek, Groq, OpenRouter, Together, Mistral, Cerebras, Fireworks, Perplexity, SambaNova, NVIDIA NIM, Cohere, GitHub Models, HuggingFace Router, Alibaba DashScope · Qwen, Zhipu GLM, Ollama, LM Studio — label + kind + endpoint in one tap; providers with a no-cost tier carry a green FREE badge (provider-freedom wave) |
+| Suggested models | Working | Per-host catalogs (`features/settings/suggestedModels.ts`) one-tap fill real model ids (OpenAI, Anthropic, Google, xAI, DeepSeek, Groq, Mistral, OpenRouter, Cerebras, Together, Fireworks, Perplexity, SambaNova, NVIDIA, GitHub Models, HuggingFace, Cohere, DashScope, Zhipu, local) with kind fallbacks; chips dedupe against the draft and never override live discovery |
+| Honest OpenRouter verification | Working | `/models` is public on OpenRouter, so the BYOK test also proves the key against auth-protected `/key` (401 → honest failure); discovery lists `:free` models first; chat requests carry `X-Title: Uni` |
+| Long model lists | Working | Provider cards collapse discovered lists past 12 chips behind a "+N more models" toggle with the total count in the section label |
+
 | Demo adapter | Simulated (labeled) | Default without a key; agent conversations surface instruction scoping |
 | Composer draft ownership | Working | Submitted snapshot cleared at submit; drafts scoped per conversation and preserved during streaming |
 | Timestamps, delete-with-undo, honest live/demo status | Working | Status derived from credentials, never hard-coded |
