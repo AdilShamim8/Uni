@@ -147,6 +147,12 @@ const PRESETS: ProviderPreset[] = [
     endpointUrl: 'https://router.huggingface.co/v1',
     freeTier: true,
   },
+  {
+    label: 'Alibaba DashScope · Qwen',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+    freeTier: true,
+  },
 ]
 
 function maskKey(apiKey: string): string {
