@@ -153,6 +153,12 @@ const PRESETS: ProviderPreset[] = [
     endpointUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
     freeTier: true,
   },
+  {
+    label: 'Zhipu GLM',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    freeTier: true,
+  },
 ]
 
 function maskKey(apiKey: string): string {
