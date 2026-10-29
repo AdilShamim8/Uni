@@ -330,3 +330,41 @@ database, no side connections).
 
 Not run this session: live external providers (no real keys), frontend
 suite (no frontend files touched), hosted deployment checks (B08).
+
+## Provider-freedom wave (2026-10-29)
+
+Scope: make "any provider, any model, free" real for beginners — suggested
+models, wider preset catalog, free-tier markers, honest OpenRouter
+verification (frontend + backend), CI, and the beginner-facing root README.
+HEAD at record time: `94331c1ad1` (commits pushed one at a time per working
+agreement).
+
+| Command | Result |
+| --- | --- |
+| `frontend && npm run typecheck` | **Pass** (both tsconfigs) |
+| `frontend && npm run lint` | **Pass** — no findings |
+| `frontend && npx vitest run` | **338/338 tests pass across 48 files** (321 baseline + 17 new: suggested-model matching/catalog/uniqueness 10, presets + free badges + one-tap add + OpenRouter free picks 4, model-list collapse 1, OpenRouter /key + ordering + X-Title 2... counted within the files touched) |
+| `backend && npm run typecheck` | **Pass** — 0 errors |
+| `backend && npx vitest run` | **105/105 tests pass across 13 files** (103 baseline + 2 new OpenRouter /key tests, mocked DNS + fetch, no network) |
+| `packages/contracts && npm run build && npm run typecheck` | **Pass** |
+| Browser QA (Vite dev, Chromium via agent-browser) | Fresh state → deep-link to Providers → add LM Studio preset → custom endpoint `http://localhost:5188/v1` → Connect with key → **3 models auto-discovered** ("3 total" count label) → activate model → **Live badge** ("streaming ... straight from this browser") → sent message → **real SSE reply streamed** ("Hello from the mock provider!...") → mobile 390×844 responsive; **zero page errors, zero console errors** |
+
+Live-verified details:
+
+- OpenRouter catalog facts re-checked against the live endpoint
+  (`GET openrouter.ai/api/v1/models`, 457 models, 16 `:free`): suggestions
+  and the free-first ordering use real current ids.
+- OpenRouter `/key` confirmed auth-protected (401 with a fake key) before
+  shipping the honest-verification fix; `/models` confirmed public.
+- Backend booted against an embedded PostgreSQL on :5432 with migrations:
+  `/health/ready` → `{"status":"ready","checks":{"database":{"status":"up"}}}`;
+  live API smoke: sign-up 200, provider create 201, credential set 200,
+  provider list 200 (redacted credential view), OpenRouter test honest.
+- Environment gotcha found and documented: an exported shell `DATABASE_URL`
+  overrides `backend/.env` (dotenv precedence) — recorded in backend README
+  and root README troubleshooting.
+
+Not run this session: real paid provider keys (none available — provider
+behavior verified against a local OpenAI-compatible mock with real HTTP +
+SSE, and live OpenRouter public endpoints), Docker Compose stack (no Docker
+daemon in sandbox).
