@@ -410,26 +410,33 @@ async function executeRun(
       })
 
       const terminalAt = new Date()
-      const updated = await db
-        .update(runs)
-        .set({
-          status: outcome.status,
-          outputText: output,
-          usage: usage ?? null,
-          errorCode: outcome.errorCode ?? null,
-          errorMessage: outcome.errorMessage ?? null,
-          terminalAt,
-          updatedAt: terminalAt,
-        })
-        .where(and(eq(runs.id, runId), inArray(runs.status, ['running', 'cancelling'])))
-        .returning()
-
-      // Truthful transcript node for reload (mapped status; error detail
-      // on the node, never on a fake 'complete').
-      const nodeStatus =
-        outcome.status === 'complete' ? 'complete' : outcome.status === 'error' ? 'error' : 'stopped'
+      // The terminal status and the transcript node commit atomically:
+      // there must never be a window where a client can observe a terminal
+      // run whose assistant node is not yet durable. Pollers sync on run
+      // status and immediately reload the conversation — a two-phase write
+      // let that reload race the node insert on slower machines.
       const nodeId = randomUUID()
+      let lostStatusRace = false
       await db.transaction(async (tx) => {
+        const updated = await tx
+          .update(runs)
+          .set({
+            status: outcome.status,
+            outputText: output,
+            usage: usage ?? null,
+            errorCode: outcome.errorCode ?? null,
+            errorMessage: outcome.errorMessage ?? null,
+            terminalAt,
+            updatedAt: terminalAt,
+          })
+          .where(and(eq(runs.id, runId), inArray(runs.status, ['running', 'cancelling'])))
+          .returning()
+        lostStatusRace = updated.length === 0
+
+        // Truthful transcript node for reload (mapped status; error detail
+        // on the node, never on a fake 'complete').
+        const nodeStatus =
+          outcome.status === 'complete' ? 'complete' : outcome.status === 'error' ? 'error' : 'stopped'
         await tx.insert(conversationNodes).values({
           id: nodeId,
           conversationId: row.conversationId,
@@ -456,7 +463,7 @@ async function executeRun(
           )
       })
 
-      if (updated.length === 0) {
+      if (lostStatusRace) {
         logger.warn({ runId }, 'run finalize lost its status race; terminal event still recorded')
       }
       void terminalEvent
