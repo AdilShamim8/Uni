@@ -48,4 +48,49 @@ describe('suggestedModelsFor', () => {
       suggestedModelsFor('openai-compatible', 'https://api.openai.com/v1'),
     )
   })
+
+  it('has a catalog for every supported provider host', () => {
+    const hosts = [
+      ['api.openai.com', 'openai-compatible'],
+      ['api.anthropic.com', 'anthropic'],
+      ['generativelanguage.googleapis.com', 'google'],
+      ['api.x.ai', 'openai-compatible'],
+      ['api.deepseek.com', 'openai-compatible'],
+      ['api.groq.com', 'openai-compatible'],
+      ['api.mistral.ai', 'openai-compatible'],
+      ['openrouter.ai', 'openai-compatible'],
+      ['api.cerebras.ai', 'openai-compatible'],
+      ['api.together.xyz', 'openai-compatible'],
+      ['api.fireworks.ai', 'openai-compatible'],
+      ['api.perplexity.ai', 'openai-compatible'],
+      ['api.sambanova.ai', 'openai-compatible'],
+      ['integrate.api.nvidia.com', 'openai-compatible'],
+      ['models.github.ai', 'openai-compatible'],
+      ['router.huggingface.co', 'openai-compatible'],
+      ['api.cohere.ai', 'openai-compatible'],
+      ['dashscope-intl.aliyuncs.com', 'openai-compatible'],
+      ['dashscope.aliyuncs.com', 'openai-compatible'],
+      ['open.bigmodel.cn', 'openai-compatible'],
+    ] as const
+    for (const [host, kind] of hosts) {
+      const models = suggestedModelsFor(kind, `https://${host}/v1`)
+      expect(models.length, host).toBeGreaterThan(0)
+      for (const model of models) {
+        expect(model.id.length, `${host}: ${model.id}`).toBeGreaterThan(0)
+        expect(model.label.length, `${host}: ${model.label}`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('never suggests the same id twice within one catalog', () => {
+    const catalogs = [
+      suggestedModelsFor('openai', 'https://api.openai.com/v1'),
+      suggestedModelsFor('anthropic', 'https://api.anthropic.com'),
+      suggestedModelsFor('openai-compatible', 'https://openrouter.ai/api/v1'),
+      suggestedModelsFor('local', 'http://localhost:1234/v1'),
+    ]
+    for (const catalog of catalogs) {
+      expect(new Set(catalog.map((model) => model.id)).size).toBe(catalog.length)
+    }
+  })
 })
