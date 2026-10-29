@@ -113,3 +113,50 @@ The general flow for every provider:
 
 Where the sections below say "get a key", they link to the provider's own
 console. Most take under two minutes.
+
+### 1. OpenAI · GPT
+
+**Cost:** pay-as-you-go (cheap for `mini` models).
+
+1. Go to <https://platform.openai.com/api-keys> and create a key
+   (starts with `sk-`).
+2. Add ~$5 credit at <https://platform.openai.com/settings/organization/billing>
+   — `gpt-4o-mini` and friends cost fractions of a cent per conversation.
+3. In Uni: **Settings → Providers & models → Add provider profile**.
+4. Tap the **OpenAI · GPT** preset, tap a suggested model (e.g.
+   **GPT-4o mini**), click **Add profile**.
+5. Paste the key → **Connect**. You should see
+   `Connected — N models available`, and the model list fills itself.
+
+### 2. Anthropic · Claude
+
+**Cost:** pay-as-you-go.
+
+1. Create a key at <https://console.anthropic.com/settings/keys>
+   (starts with `sk-ant-`).
+2. Add credit at <https://console.anthropic.com/settings/billing>.
+3. In Uni, tap the **Anthropic · Claude** preset — the provider type
+   switches to Anthropic's native protocol automatically.
+4. Add a suggested model (e.g. **Claude Sonnet 4.5**), save, paste the key,
+   **Connect**.
+
+> Anthropic requires one extra header for direct browser requests — Uni
+> sends it for you, so Claude just works.
+
+### 3. OpenRouter · hundreds of models
+
+**Cost:** has **free models** (marked `:free`).
+
+OpenRouter is one account for ~450 models from OpenAI, Anthropic, Google,
+Meta, DeepSeek, Mistral, and more — including a rotating free tier.
+
+1. Create a key at <https://openrouter.ai/settings/keys>.
+2. In Uni, tap the **OpenRouter** preset. Suggested chips include real
+   `free` models (e.g. `google/gemma-4-31b-it:free`) — add one or skip
+   (discovery lists everything).
+3. Save, paste the key, **Connect**. Uni verifies the key against
+   OpenRouter's auth-protected endpoint and lists **free models first**.
+
+> OpenRouter's model catalog is public, so a bad key would still "look
+> connected" on other apps. Uni checks the key against `/key` and tells you
+> the truth.
