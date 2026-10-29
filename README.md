@@ -285,3 +285,103 @@ Open **Settings** from the profile button at the bottom of the sidebar
 
 More captures (including tablet views and per-milestone evidence) live in
 [`frontend/docs/screenshots/`](frontend/docs/screenshots).
+
+---
+
+## 🏗️ Architecture
+
+Uni ships as three packages:
+
+```
+┌─────────────────────────┐        ┌──────────────────────────┐
+│  frontend (React/Vite)  │        │  backend (Fastify)       │
+│  browser-only by default│  API   │  accounts · runs · keys  │
+│  BYOK chat → providers  │◄──────►│  PostgreSQL + Drizzle    │
+└───────────┬─────────────┘  REST  └────────────┬─────────────┘
+            │                                        │
+            │  shared DTOs + zod schemas + SSE types │
+            └──────────── packages/contracts ────────┘
+```
+
+- **Frontend** (`frontend/`) — React 18 + TypeScript + Vite. React Router,
+  Zustand stores, versioned localStorage persistence. **Local mode is the
+  default**: your keys stay in the browser and chat requests go straight
+  from the browser to the provider.
+- **Backend** (`backend/`) — optional Fastify modular monolith: Better Auth
+  accounts, encrypted (AES-256-GCM) server-side credentials, durable
+  streamed runs, SSRF-guarded outbound calls. PostgreSQL via Drizzle.
+- **Contracts** (`packages/contracts/`) — the only coupling point between
+  the two: shared DTOs and zod schemas.
+
+**Where do my API requests go?** In local mode (the default), requests go
+directly from your browser to the provider endpoint you configured —
+Uni's servers are never in the path (there are none). In server mode,
+the backend proxies requests with your encrypted key and an SSRF guard.
+
+---
+
+## 🧰 Full-stack development (backend)
+
+The frontend alone is a complete product. The backend adds accounts,
+server-encrypted credentials, and durable runs — useful for teams or
+multi-device use.
+
+```bash
+# 1. Contracts first (backend links the build output)
+cd packages/contracts && npm install && npm run build && cd ../..
+
+# 2. Backend
+cd backend
+cp .env.example .env          # then fill in the secrets it documents
+npm install
+npm run db:migrate            # needs a PostgreSQL (see below)
+npm run dev                   # → http://127.0.0.1:4000
+```
+
+**PostgreSQL options:**
+
+```bash
+# Option A — Docker (matches infra/docker-compose.yml)
+docker compose -f infra/docker-compose.yml up -d
+
+# Option B — any PostgreSQL you already run; point backend/.env at it:
+# DATABASE_URL=postgres://user:pass@127.0.0.1:5432/uni
+```
+
+**Testing needs no database at all** — the integration suite boots an
+embedded PostgreSQL per test file:
+
+```bash
+cd backend && npm test
+```
+
+The frontend picks the API up automatically in development (the Vite dev
+server proxies `/api` and `/health` to port 4000), or configure
+`frontend/.env` with `VITE_API_BASE_URL`.
+
+> **Gotcha:** shell environment variables win over `backend/.env` (standard
+> dotenv behavior). If a `DATABASE_URL` is already exported in your shell,
+> the one in `.env` is ignored — unset it or export the value you want.
+
+---
+
+## 📁 Project structure
+
+```
+Uni/
+├── frontend/                  # React 18 + TypeScript + Vite app
+│   ├── src/features/          #   chat, settings, work, agents, plugins, library…
+│   ├── src/state/             #   Zustand stores + persistence slices
+│   ├── src/services/          #   live adapter, BYOK connection, storage
+│   ├── src/components/ui/     #   the design system (Button, Menu, Dialog…)
+│   └── tests/                 #   48 files / 335 tests (Vitest + Testing Library)
+├── backend/                   # Fastify modular monolith (optional server mode)
+│   ├── src/modules/           #   auth, providers, conversations, runs, memory…
+│   ├── src/lib/               #   secretBox (AES-256-GCM), urlGuard (SSRF), logger
+│   ├── drizzle/               #   committed migrations
+│   └── tests/                 #   13 files / 105 integration tests (embedded PG)
+├── packages/contracts/        # shared DTOs + zod schemas (the only coupling)
+├── docs/                      # project records: roadmap, verification, handoff
+├── infra/docker-compose.yml   # dev PostgreSQL
+└── .github/workflows/ci.yml   # contracts + frontend + backend CI
+```
