@@ -534,3 +534,80 @@ non-directory, the suite fails with the single real error
 Wave commits (one at a time, each pushed separately): `c427d8a80` →
 `2a670fed4` → `75d676ebc` (docs) → `85db8a2cc` → `4779ded6c` → docs
 close-out.
+
+---
+
+## 2026-10-29 — Live QA sweep wave ("test everything like a tester")
+
+*3 commits: `4a3b89f77` (auth rate-limit fix) → `6018ee565` (live QA
+harness) → `1a96a95d6` (browser QA stack). Each pushed individually.*
+
+### What ran
+
+1. **`npm run qa:live` (new, `backend/scripts/qa-live.mjs`)** — boots
+   embedded PostgreSQL + the COMPILED `dist/server.js` in production
+   mode plus a mode-switchable fake OpenAI-compatible provider, then
+   walks the whole public HTTP surface over real sockets like an
+   external tester. **119/119 checks** across boot/health, auth (19),
+   conversations/nodes (19), providers/BYOK + SSRF (27), employees +
+   memory (14), library m07 rules (11), importer (6), runs lifecycle
+   (20), shutdown. The harness always tears the stack down
+   (`try/finally`) — a failure can never orphan a server or database.
+2. **Backend suite** — typecheck clean; **117/117 tests across 14
+   files** (12 new unit tests for the IP resolver).
+3. **Frontend** — eslint clean, typecheck clean, production build
+   clean; **339/339 tests across 48 files**.
+4. **Browser walkthrough** (via `scripts/browser-qa-stack.mjs` + the
+   Vite dev server, driven with a headless browser): account sign-up →
+   server-provider BYOK (key stored, `POST /test` → "Connected — the
+   key works. · 13 ms · 2 models discovered") → server conversation →
+   message send → `POST /runs` → SSE stream → streamed reply rendered →
+   sign-out → sign-in → transcript re-fetched from the server. Network
+   log shows the full golden path (`conversations` → `nodes` → `runs`
+   → `runs/:id/events`); **zero console errors, zero page errors**;
+   visual render confirmed clean (modal backdrop verified as the only
+   dark region — no clipping).
+
+### Bug found and fixed by the sweep
+
+**Auth rate limiting fell back to ONE shared bucket per path in
+production.** The Fastify bridge hands Better Auth a Web `Request`,
+which cannot carry the socket's remote address; Better Auth warned
+("could not determine a client IP") and degrading to a single global
+bucket — the sweep's second QA user got a 429 on sign-up through no
+fault of their own, and any three sign-ups in ten seconds would lock
+the auth surface for every user at once. The inverse hole existed too:
+Better Auth trusts a client-set single-value `X-Forwarded-For`, so a
+caller could rotate fake IPs and bypass per-IP limits entirely.
+
+Fix `4a3b89f77`: the bridge resolves the identity server-side (direct
+peer; `X-Forwarded-For` unwrapped right-to-left only when the peer
+matches the new `AUTH_TRUSTED_PROXIES` list of IPs/CIDRs — `*` takes
+the rightmost, observed hop), strips every spoofable forwarded header
+from the inbound request, and injects the address under a private
+header Better Auth reads exclusively. New optional `AUTH_RATE_LIMIT_MAX`
+raises the sensitive-path budget for shared-egress (office/NAT)
+deployments. The resolver's first live run also caught a trim bug
+(untrimmed chain entries silently dropped, resolving to the wrong hop)
+— now covered by a unit test.
+
+### Sweep-harness findings that were NOT bugs (correct behavior verified)
+
+- Fast provider streams may coalesce into fewer `delta` events (delta
+  batching; per-chunk granularity proven by the cancel test).
+- Library canonical-save without a link (`linkedArtifactId` /
+  `sourceMessageId`) intentionally creates a fresh artifact; the no-op
+  and in-place-version-bump paths require the m07 link.
+- Node idempotency is keyed by `clientId`, not content dedupe.
+- The browser-BYOK provider card (localStorage keys, direct
+  browser→provider fetch) correctly reports CORS-blocked endpoints with
+  an honest message — that path is local-by-design and separate from
+  the server providers surface.
+
+| Check (HEAD `1a96a95d6`) | Result |
+| --- | --- |
+| Backend typecheck + tests | **0 errors; 117/117 across 14 files** |
+| `npm run qa:live` | **119/119** |
+| Frontend lint / typecheck / build / tests | **clean / clean / clean; 339/339** |
+| Browser golden path (sign-up → BYOK → run → SSE → persistence) | **Pass, zero console errors** |
+| GitHub Actions (contracts, frontend, backend) | see close-out below |
