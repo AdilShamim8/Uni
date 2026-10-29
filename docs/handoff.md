@@ -3,7 +3,31 @@
 Keep short and factual: current commit, completed gate, exact commands and
 results, unresolved problems, environment blockers, next action.
 
-## Current state (updated 2026-10-26, backend QA pass complete)
+## Current state (updated 2026-10-29, provider-freedom wave complete)
+
+- **Branch:** `main` (commits pushed one at a time per working agreement).
+- **Wave scope shipped:** suggested models per provider (21 host catalogs +
+  kind fallbacks), 10 new presets with free-tier badges (21 presets total),
+  honest OpenRouter key verification via `/key` (frontend BYOK + backend
+  server-side, free-first discovery), `X-Title` attribution on OpenRouter
+  chat, long-model-list collapse, CI (contracts/frontend/backend), Dependabot,
+  PR template, CONTRIBUTING, CHANGELOG, and the beginner-facing root README
+  with 9 fresh screenshots in `docs/screenshots/`.
+- **Verification:** frontend 338/338 (typecheck + lint clean), backend
+  105/105 (typecheck clean, embedded PG per file), contracts build clean,
+  full browser golden-path pass with a real local OpenAI-compatible mock
+  (connect → discover → live SSE reply, zero console errors). Details in
+  `docs/verification.md` (Provider-freedom wave section).
+- **Notable facts for the next session:** OpenRouter `/models` is public
+  (key must be proven against `/key` — both sides now do this); live
+  catalog 2026-10-29 held 457 models, 16 `:free`; shell-exported
+  `DATABASE_URL` overrides `backend/.env` (dotenv precedence) — documented
+  in both READMEs.
+- **Next action candidates:** multimodal content + tool-calling on the wire
+  (B05+), reasoning-model streaming fields, server-mode provider list in
+  the frontend Account section polish, README localization.
+
+## Prior state (2026-10-26, backend QA pass complete)
 
 - **Branch:** `feat/qa-backend-verify` (off `main` after the B04 merge,
   PR #24; commits pushed one at a time per working agreement).
