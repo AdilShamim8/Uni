@@ -27,6 +27,12 @@ Tests boot a real embedded PostgreSQL (downloaded once into node_modules)
 on a random port — no Docker needed for `npm test`. `infra/docker-compose.yml`
 provides the persistent development database instead.
 
+Integration-test scratch space (per-run cluster data dirs) resolves in
+this order: the `UNI_TEST_SCRATCH_ROOT` environment variable when set,
+then `<os.tmpdir()>/uni-backend-tests` (e.g. `/tmp/uni-backend-tests` on
+Linux). Both paths work unchanged on dev laptops and CI runners — set
+the variable only if your temp directory is unwritable or too small.
+
 ## Endpoints
 
 | Route | Purpose |

@@ -431,6 +431,14 @@ Use the **OpenAI-compatible** provider type and paste your custom base
 URL. That works for any endpoint speaking the OpenAI protocol — add model
 ids manually or connect a key to discover them.
 
+**A commit shows "Vercel — Deployment rate limited — retry in 24 hours"**
+That check comes from the Vercel account hosting the live demo, not from
+this repository. Vercel's free tier caps deployments per day; when the
+cap is hit the check reports "rate limited" and Vercel retries the
+deployment automatically after the window resets. Nothing in the repo is
+broken and no action is needed — the repo's own CI and the GitHub Pages
+build are separate checks and stay green.
+
 ---
 
 ## ❓ FAQ
