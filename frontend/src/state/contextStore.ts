@@ -15,7 +15,7 @@ import { create } from 'zustand'
  * - Deleted references resolve to "unavailable" — never a raw orphan id.
  */
 
-export type ContextItemKind = 'artifact' | 'project' | 'note'
+export type ContextItemKind = 'artifact' | 'project' | 'note' | 'knowledge'
 
 export interface ContextItem {
   id: string
@@ -51,7 +51,10 @@ function isContextItem(value: unknown): value is ContextItem {
   return (
     isRecord(value) &&
     typeof value.id === 'string' &&
-    (value.kind === 'artifact' || value.kind === 'project' || value.kind === 'note') &&
+    (value.kind === 'artifact' ||
+      value.kind === 'project' ||
+      value.kind === 'note' ||
+      value.kind === 'knowledge') &&
     typeof value.title === 'string'
   )
 }
@@ -97,6 +100,8 @@ export interface ContextStore {
   addArtifactContext: (targetKey: string, input: { refId: string; title: string }) => void
   addProjectContext: (targetKey: string, input: { refId: string; title: string }) => void
   addNoteContext: (targetKey: string, input: { title: string; content: string }) => void
+  /** Attach knowledge-base retrieval (one per target; runs at send). */
+  addKnowledgeContext: (targetKey: string) => void
   removeContextItem: (targetKey: string, itemId: string) => void
   clearContext: (targetKey: string) => void
   /** Drop every selection — used by data resets. */
@@ -167,6 +172,23 @@ export const useContextStore = create<ContextStore>()((set, get) => ({
         title: input.title.trim() || 'Note',
         // Notes carry their own bounded content.
         content: input.content.slice(0, CONTEXT_ITEM_LIMIT),
+        addedAt: Date.now(),
+      }
+      return { selections: { ...state.selections, [targetKey]: [...existing, item] } }
+    })
+  },
+
+  addKnowledgeContext: (targetKey) => {
+    set((state) => {
+      const existing = state.selections[targetKey] ?? []
+      // One retrieval source per target — adding twice changes nothing.
+      if (existing.some((item) => item.kind === 'knowledge')) return state
+      const item: ContextItem = {
+        id: makeContextId(),
+        kind: 'knowledge',
+        refId: null,
+        title: 'Knowledge base',
+        content: null,
         addedAt: Date.now(),
       }
       return { selections: { ...state.selections, [targetKey]: [...existing, item] } }

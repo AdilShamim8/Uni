@@ -768,6 +768,21 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
         system = system ? `${system}\n\n---\n\n${block}` : `Selected context:\n\n${block}`
       }
     }
+
+    // Knowledge-base retrieval (K2): the only context whose content is
+    // computed per message. The outgoing user text is the query; hits are
+    // cited by document and heading, and the block states the retrieval
+    // method — no silent injection.
+    if (contextItems.some((item) => item.kind === 'knowledge')) {
+      const { buildKnowledgeContextBlock } = await import('@/domain/knowledgeBase')
+      const { useKnowledgeStore } = await import('@/state/knowledgeStore')
+      const knowledge = useKnowledgeStore.getState()
+      knowledge.initialize()
+      const knowledgeBlock = buildKnowledgeContextBlock(knowledge.search(userNode.content))
+      if (knowledgeBlock) {
+        system = system ? `${system}\n\n---\n\n${knowledgeBlock}` : knowledgeBlock
+      }
+    }
   }
 
   const history: ChatTurn[] = activePath(conversation)
