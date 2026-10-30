@@ -9,7 +9,7 @@ through one honest interface that costs **$0** and runs from your browser.
 
 [![CI](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml/badge.svg)](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](frontend/LICENSE)
-[![Frontend tests](https://img.shields.io/badge/tests-339%20frontend%20%2B%20105%20backend-10b981.svg)](#%EF%B8%8F-architecture)
+[![Frontend tests](https://img.shields.io/badge/tests-339%20frontend%20%2B%20117%20backend-10b981.svg)](#%EF%B8%8F-architecture)
 
 [Live demo](https://universe-mu-two.vercel.app/) · [Quick start](#-quick-start-3-commands) · [Connect a provider](#-connect-your-first-provider-step-by-step) · [The 100% free path](#-the-100-free-path)
 
@@ -53,29 +53,107 @@ your premium chat product.
 
 ---
 
+## 🎬 A 60-second tour (with pictures)
+
+Never used Uni before? This is everything you'll see, in the order you'll
+meet it. Every picture below is the real app — running in **demo mode**,
+which works instantly with no account and no key.
+
+### 1 · Home — where every conversation starts
+
+The left sidebar holds your chats and the four other destinations. The big
+box in the middle is where you type. That's it — you already know how to
+use this part.
+
+<img src="docs/screenshots/tour/home-light.png" alt="Uni home screen: a sidebar of past chats on the left, and a large message box in the middle asking What would you like to create?" width="820">
+
+### 2 · Chat — talk to any model, branch any answer
+
+Type a message, get a streamed reply. Want a different take? **Branch**
+the conversation and try another model on the same message — both versions
+stay side by side. In this picture the reply comes from the clearly-labeled
+demo adapter (no key needed); with a real provider connected you'd see a
+green **LIVE** badge instead.
+
+<img src="docs/screenshots/tour/chat-demo.png" alt="A Uni conversation: the user's question on the left, the streamed answer rendered with formatting on the right" width="820">
+
+### 3 · Work — describe an outcome, not a prompt
+
+Instead of chatting, tell Uni *what you want done*. A task thread runs
+step by step, asks you inline questions when it's unsure, and produces an
+output you can refine with follow-ups.
+
+<img src="docs/screenshots/tour/work.png" alt="The Work page: a Describe an outcome box with Demo and AI draft modes, and a list of your recent tasks" width="820">
+
+### 4 · Agents — AI employees that remember
+
+Create a profile once (name, role, memory notes) and it stays. Assign it
+work, grant it tools, and open its own conversation where it already knows
+who it is.
+
+<img src="docs/screenshots/tour/agents.png" alt="The Agents page: a grid of AI employee cards, each with a name, description, and buttons to chat or assign work" width="820">
+
+### 5 · Plugins — tools with permission slips
+
+Documents, data analysis, and library context run as local tools. Each one
+is granted per conversation, and every use leaves an honest receipt — no
+silent tool calls.
+
+<img src="docs/screenshots/tour/plugins.png" alt="The Plugins page: tool cards such as Documents and Data analysis, each with an Enable or Settings action" width="820">
+
+### 6 · Library — your saved work, versioned
+
+Anything worth keeping becomes an artifact with immutable versions:
+working drafts, projects, and Canvas documents all live here, ready to be
+reused by you, your agents, or a Work task.
+
+<img src="docs/screenshots/tour/library.png" alt="The Library page: empty-state cards for Artifacts and Projects inviting you to create your first one" width="820">
+
+### 7 · Connecting a real model — the only setup step
+
+When you're ready for real AI: open **Settings → Providers & models →
+Add provider profile** and tap a preset. Free-tier providers wear a green
+**FREE** badge — OpenRouter, Groq, Google AI Studio, Mistral, GitHub
+Models, and fully-local Ollama can all cost **$0**.
+
+<img src="docs/screenshots/tour/add-provider.png" alt="The Add provider form: preset chips for OpenAI, Anthropic, OpenRouter, Groq, Google and more, with green FREE badges on free-tier providers" width="820">
+
+Tap a preset (here **OpenRouter**) and the endpoint fills itself in —
+then paste your key and press **Connect**. Uni tests the key honestly and
+auto-discovers every model the endpoint offers.
+
+<img src="docs/screenshots/tour/add-provider-openrouter.png" alt="The Add provider form with the OpenRouter preset selected: the base URL is prefilled and suggested model chips appear" width="820">
+
+That's the whole product. The rest of this README goes deeper, one step
+at a time.
+
+---
+
 ## 📑 Table of contents
 
 1. [What is Uni?](#-what-is-uni)
-2. [Quick start (3 commands)](#-quick-start-3-commands)
-3. [Connect your first provider (step by step)](#-connect-your-first-provider-step-by-step)
+2. [A 60-second tour (with pictures)](#-a-60-second-tour-with-pictures) — *start here if you're new*
+3. [Quick start (3 commands)](#-quick-start-3-commands)
+4. [Connect your first provider (step by step)](#-connect-your-first-provider-step-by-step)
    - [OpenAI (GPT)](#1-openai--gpt) · [Anthropic (Claude)](#2-anthropic--claude) · [OpenRouter (hundreds of models)](#3-openrouter--hundreds-of-models) · [Google (Gemini)](#4-google--gemini-free-tier) · [Groq (free tier)](#5-groq--free-tier) · [DeepSeek](#6-deepseek) · [Local models (Ollama / LM Studio)](#7-local-models--ollama--lm-studio--100-free)
-4. [The 100% free path](#-the-100-free-path)
-5. [Settings reference](#%EF%B8%8F-settings-reference)
-6. [Screenshots](#-screenshots)
-7. [Architecture](#%EF%B8%8F-architecture)
-8. [Full-stack development (backend)](#-full-stack-development-backend)
-9. [Project structure](#-project-structure)
-10. [Troubleshooting](#-troubleshooting)
-11. [FAQ](#-faq)
-12. [Keyboard shortcuts](#%EF%B8%8F-keyboard-shortcuts) · [Contributing](#-contributing)
-13. [License & credits](#-license--credits)
+5. [The 100% free path](#-the-100-free-path)
+6. [Settings reference](#%EF%B8%8F-settings-reference)
+7. [Screenshots](#-screenshots)
+8. [Architecture](#%EF%B8%8F-architecture)
+9. [Full-stack development (backend)](#-full-stack-development-backend)
+10. [Project structure](#-project-structure)
+11. [Troubleshooting](#-troubleshooting)
+12. [FAQ](#-faq)
+13. [Keyboard shortcuts](#%EF%B8%8F-keyboard-shortcuts) · [Contributing](#-contributing)
+14. [License & credits](#-license--credits)
 
 ---
 
 ## 🚀 Quick start (3 commands)
 
-You need [Node.js 20+](https://nodejs.org) and nothing else — no database,
-no Docker, no account.
+You need [Node.js 22+](https://nodejs.org) and nothing else — no database,
+no Docker, no account. *(The app itself runs on Node 20+; Node 22 is
+needed to run the test suite, which uses jsdom 30 → undici 8.)*
 
 ```bash
 git clone https://github.com/AdilShamim8/Uni.git
