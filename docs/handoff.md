@@ -3,10 +3,58 @@
 Keep short and factual: current commit, completed gate, exact commands and
 results, unresolved problems, environment blockers, next action.
 
-## Current state (updated 2026-10-30, free-worldwide wave complete)
+## Current state (updated 2026-10-30, knowledge base wave complete)
 
-- **Branch:** `main` — this commit is the 376th. All 14 wave commits
+- **Branch:** `main` — HEAD is the 383rd+ commit. All 8 wave commits
   were pushed one at a time per working agreement.
+- **Wave scope shipped:** Wave 1 K1+K2 from PRODUCT_STRATEGY §6 — the
+  knowledge base, local mode. (1) Domain module
+  `frontend/src/domain/knowledgeBase.ts`: heading-aware chunking
+  (#/##/### sections; oversized sections window with 160-char overlap
+  and whole-word cuts; 400k-char/400-chunk hard caps reported honestly),
+  a Unicode tokenizer with a small English stopword list, BM25-style
+  lexical retrieval (postings + tf/idf, exact-phrase bonus, heading
+  boost, per-doc cap 3, total cap 6, bounded snippets), and a cited
+  context-block builder whose header states the retrieval method.
+  (2) Store `state/knowledgeStore.ts` persisting under
+  `universe:knowledge:v1` (quarantine policy like all slices; orphan
+  chunks dropped on load; lazily rebuilt index). (3) Library Knowledge
+  section (`features/library/KnowledgeSection.tsx`): paste/file ingest
+  (.md/.txt/.csv/.json; PDFs honestly rejected), doc list, delete
+  confirm, retrieval tester using the exact chat search. (4) Workspace
+  backups carry the knowledge slice (optional for legacy backups;
+  restore REPLACES — a legacy backup empties the base). (5) Chat
+  integration: `knowledge` context item kind; the send path queries the
+  outgoing message and appends only top cited excerpts to the system
+  prompt; empty base → labeled unavailable state. (6) The composer
+  toolbar gained a Context button (live count badge) — previously the
+  inspector's Context tab had NO direct entry point in Chat.
+- **Verification:** frontend 445/445 across 63 files (51 new), lint and
+  both typechecks clean, production build clean; three fresh 1440×900
+  screenshots from the real dev server; a fresh browser session ran the
+  golden path with zero page/console errors. Backend untouched (117/117
+  at last record; CI green on push). Full record in
+  `docs/verification.md` (knowledge base wave section).
+- **Notable facts for the next session:** retrieval is honestly
+  keyword-based — embeddings (transformers.js local, provider optional)
+  are the declared next step, and the UI says so; `resolveContextItems`
+  takes an optional 4th arg `knowledgeDocCount` (CompareDialog call site
+  unchanged); knowledge items resolve with `content: ''` so
+  `buildContextBlock` skips them — the real block is built by the send
+  path from `userNode.content`; `userEvent.upload` honors `accept`
+  (test PDF rejection via `fireEvent.change`); knowledge documents are
+  immutable in v1 (edit = delete + re-add, stated in the UI).
+- **Next action candidates:** K1 embeddings upgrade (local
+  transformers.js first; keep the lexical engine as the offline
+  fallback and label which is active), K3 (agents/Work draw on the
+  knowledge base through the plugins grant model), B05 server-side
+  plugins with enforced grants, frontend surfaces for server
+  employees/memory/library, README localization (R2).
+
+## Prior state (2026-10-30, free-worldwide wave complete)
+
+- **Branch:** `main` — the 376th commit closed that wave; all 14 of its
+  commits were pushed one at a time per working agreement.
 - **Wave scope shipped:** the $0 front door and the shareability
   flywheel. (1) Free-models catalog — ten curated $0 routes with honest
   limits, console links, steps, and starter models
