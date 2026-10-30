@@ -40,7 +40,7 @@ export interface AgentExportFile {
   agent: PortableAgent
 }
 
-const VALID_TOOLS: readonly ToolId[] = ['search', 'research', 'images', 'voice', 'canvas']
+export const VALID_TOOLS: readonly ToolId[] = ['search', 'research', 'images', 'voice', 'canvas']
 
 function toPortable(agent: AgentProfile): PortableAgent {
   return {
