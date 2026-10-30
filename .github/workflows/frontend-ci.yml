@@ -20,7 +20,11 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          # Node 22 LTS: jsdom 30 → undici 8 requires Node >= 22.19
+          # (zlib zstd decompress API). Node 20 crashed 'npm test' at
+          # import time. Verified on Node 22.20.0: typecheck, lint,
+          # 339/339 tests, and production build all pass.
+          node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - name: Install dependencies
