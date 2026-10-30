@@ -5,9 +5,11 @@ import {
   useRef,
   useState,
 } from 'react'
-import { ArrowUp, FileText, Paperclip, Square, X } from 'lucide-react'
+import { ArrowUp, FileText, FolderKanban, Paperclip, Square, X } from 'lucide-react'
 import type { AttachmentMeta, ToolId } from '@/domain/types'
 import { selectActiveModel, useAppStore } from '@/state/store'
+import { useContextStore } from '@/state/contextStore'
+import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { IconButton } from '@/components/ui/IconButton'
 import { Tooltip } from '@/components/ui/Tooltip'
 import {
@@ -58,6 +60,14 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
       : null
     return conversation?.temporary ?? false
   })
+
+  // Selected context count for the active conversation — the badge that
+  // makes the Context button answer "what will this chat see?".
+  const activeConversationId = useAppStore((state) => state.activeConversationId)
+  const contextCount = useContextStore(
+    (state) =>
+      activeConversationId ? (state.selections[activeConversationId] ?? []).length : 0,
+  )
 
   const isStreaming = useAppStore((state) => {
     const conversation = state.activeConversationId
@@ -380,6 +390,27 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
           <Tooltip label="Attach images or files (kept local)">
             <IconButton label="Attach files" onClick={() => fileInputRef.current?.click()}>
               <Paperclip size={17} />
+            </IconButton>
+          </Tooltip>
+
+          <Tooltip label="Context — choose what this chat can see">
+            <IconButton
+              label="Context — choose what this chat can see"
+              onClick={() =>
+                useWorkspaceUiStore.getState().openInspector({ tab: 'context' })
+              }
+            >
+              <span className="relative flex items-center justify-center">
+                <FolderKanban size={17} />
+                {contextCount > 0 && (
+                  <span
+                    aria-hidden="true"
+                    className="absolute -right-1.5 -top-1 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-accent px-[3px] text-[9px] font-semibold leading-none text-accent-contrast"
+                  >
+                    {contextCount}
+                  </span>
+                )}
+              </span>
             </IconButton>
           </Tooltip>
 
