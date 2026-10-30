@@ -23,6 +23,7 @@ import { HeaderExtras } from '@/components/layout/HeaderExtras'
 import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { TOOL_REGISTRY } from '@/features/chat/toolRegistry'
+import { AGENT_TEMPLATES } from '@/features/agents/agentTemplates'
 import { saveThreadDraft } from '@/features/conversation/threadDrafts'
 import { EmployeeView } from './EmployeeView'
 import type { AgentProfile } from '@/domain/workspaceTypes'
@@ -455,6 +456,30 @@ function AgentBuilder({
 
   const selectedProvider = providers.find((p) => p.id === providerId)
 
+  // One-tap templates: fill the form from a curated starting point.
+  // Only offered for brand-new agents — editing an existing profile
+  // must never silently overwrite its instructions.
+  const applyTemplate = useCallback((templateId: string) => {
+    const template = AGENT_TEMPLATES.find((item) => item.id === templateId)
+    if (!template) return
+    setName(template.name)
+    setDescription(template.description)
+    setInstructions(template.instructions)
+    setCategory(template.category)
+    setTools(template.tools)
+    setStartersText(template.starters.join('\n'))
+    setErrors([])
+  }, [])
+
+  const [appliedTemplate, setAppliedTemplate] = useState<string | null>(null)
+  const handleTemplatePick = useCallback(
+    (templateId: string) => {
+      applyTemplate(templateId)
+      setAppliedTemplate(templateId)
+    },
+    [applyTemplate],
+  )
+
   // useCallback marks this as an event handler (never invoked during
   // render), which keeps the impure calls inside it — Date.now(), store
   // writes — legal under the react-hooks purity rules.
@@ -537,6 +562,40 @@ function AgentBuilder({
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
+          {!existing && (
+            <fieldset className="mb-4">
+              <legend className="mb-1.5 block text-sm font-medium text-ink">
+                Start from a template
+              </legend>
+              <p className="mb-2.5 text-xs leading-relaxed text-ink-faint">
+                One tap fills the form below — everything stays editable. Skip this and
+                write your own if you prefer.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {AGENT_TEMPLATES.map((template) => {
+                  const selected = appliedTemplate === template.id
+                  return (
+                    <button
+                      key={template.id}
+                      type="button"
+                      onClick={() => handleTemplatePick(template.id)}
+                      aria-pressed={selected}
+                      title={template.description}
+                      className={`flex min-touch items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-sm transition-colors ${
+                        selected
+                          ? 'border-accent bg-accent-soft font-medium text-accent'
+                          : 'border-line text-ink hover:bg-subtle'
+                      }`}
+                    >
+                      <span aria-hidden="true">{template.emoji}</span>
+                      {template.name}
+                      {selected && <Check size={13} aria-hidden="true" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </fieldset>
+          )}
           <div className="flex flex-col gap-4 rounded-group border border-line bg-raised p-4 sm:p-5">
             <TextField
               label="Name"
