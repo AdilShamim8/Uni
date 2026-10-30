@@ -9,7 +9,7 @@ through one honest interface that costs **$0** and runs from your browser.
 
 [![CI](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml/badge.svg)](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](frontend/LICENSE)
-[![Frontend tests](https://img.shields.io/badge/tests-339%20frontend%20%2B%20117%20backend-10b981.svg)](#%EF%B8%8F-architecture)
+[![Frontend tests](https://img.shields.io/badge/tests-359%20frontend%20%2B%20117%20backend-10b981.svg)](#%EF%B8%8F-architecture)
 
 [Live demo](https://universe-mu-two.vercel.app/) · [Quick start](#-quick-start-3-commands) · [Connect a provider](#-connect-your-first-provider-step-by-step) · [The 100% free path](#-the-100-free-path)
 
@@ -91,7 +91,9 @@ Create a profile once (name, role, memory notes) and it stays. Assign it
 work, grant it tools, and open its own conversation where it already knows
 who it is. Building one? **Start from a template** — Deep Researcher, Code
 Partner, Editor, Study Coach, and more fill the whole form in one tap, and
-everything stays editable.
+everything stays editable. Built something you like? **Export it as JSON**
+and share it anywhere — anyone can import it into their own Uni in one
+tap, no account needed.
 
 <img src="docs/screenshots/tour/agents.png" alt="The Agents page: a grid of AI employee cards, each with a name, description, and buttons to chat or assign work" width="820">
 
@@ -539,6 +541,11 @@ leave the backend unencrypted.
 **Can I use multiple providers at once?**
 Yes — add as many profiles as you like and switch models from the top bar.
 The compare dialog even runs one prompt through two models side by side.
+
+**Can I share an agent I built?**
+Yes — every agent exports as a small `.agent.json` file (Actions → Export
+as JSON). The file carries the persona only (never your keys or local
+ids); whoever receives it imports it from the Agents page in one tap.
 
 **Can I install Uni as an app?**
 Yes — Uni is a **PWA**. On your phone: *Share → Add to Home Screen*
