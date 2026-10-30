@@ -9,7 +9,7 @@ through one honest interface that costs **$0** and runs from your browser.
 
 [![CI](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml/badge.svg)](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](frontend/LICENSE)
-[![Frontend tests](https://img.shields.io/badge/tests-394%20frontend%20%2B%20117%20backend-10b981.svg)](#%EF%B8%8F-architecture)
+[![Frontend tests](https://img.shields.io/badge/tests-445%20frontend%20%2B%20117%20backend-10b981.svg)](#%EF%B8%8F-architecture)
 
 [Live demo](https://universe-mu-two.vercel.app/) · [Quick start](#-quick-start-3-commands) · [Connect a provider](#-connect-your-first-provider-step-by-step) · [The 100% free path](#-the-100-free-path)
 
@@ -49,7 +49,7 @@ your premium chat product.
 | **Work** | Describe an outcome; a task thread runs, asks inline questions, produces output you refine. |
 | **Agents** | Persistent AI employees with memory notes, assigned work, and their own conversations. |
 | **Plugins** | Local tools (documents, data analysis, library context) with per-thread grants and receipts. |
-| **Library** | A shared collection of artifacts and lightweight projects with immutable versions. |
+| **Library** | A shared collection of artifacts and projects (versioned), plus a local knowledge base your chats can cite. |
 
 ---
 
@@ -80,7 +80,14 @@ thread into one standalone web page — inline styles, no scripts, no
 tracking — that opens in any browser. **Export as Markdown** stays for
 notes and wikis.
 
+Need the chat to know your documents? The **Context** button in the
+composer (folder icon, next to the paperclip) opens the context panel:
+attach notes, Library documents, projects — or the **knowledge base**, and
+your message retrieves labeled, cited excerpts from it at send time.
+
 <img src="docs/screenshots/tour/chat-demo.png" alt="A Uni conversation: the user's question on the left, the streamed answer rendered with formatting on the right" width="820">
+
+<img src="docs/screenshots/tour/knowledge-context.png" alt="The context panel open beside a chat: a selected item reading Knowledge base, retrieval at send, 1 document, and a note explaining the top matching excerpts are cited by document and heading" width="820">
 
 <img src="docs/screenshots/tour/share-export.png" alt="The conversation actions menu open: Share as HTML and Export as Markdown listed between Archive and Copy shared link" width="820">
 
@@ -129,7 +136,14 @@ Anything worth keeping becomes an artifact with immutable versions:
 working drafts, projects, and Canvas documents all live here, ready to be
 reused by you, your agents, or a Work task.
 
-<img src="docs/screenshots/tour/library.png" alt="The Library page: empty-state cards for Artifacts and Projects inviting you to create your first one" width="820">
+The **knowledge base** lives here too: paste text or load `.md` / `.txt`
+files and they become searchable documents. Retrieval runs locally
+(keyword match, no data leaves your device), and a **test box** lets you
+try the exact search chats will use before you attach it.
+
+<img src="docs/screenshots/tour/knowledge-add.png" alt="The Add knowledge dialog: a title field, a large text area holding a pasted team handbook with markdown headings, and a Load a text file button" width="820">
+
+<img src="docs/screenshots/tour/knowledge-library.png" alt="The Knowledge base section of the Library page: a Team Handbook document card with chunk and character counts, and the retrieval test box showing a cited match for install the CLI" width="820">
 
 ### 7 · Connecting a real model — the only setup step
 
@@ -406,6 +420,8 @@ Open **Settings** from the profile button at the bottom of the sidebar
 | *Suggested models for OpenRouter — free picks marked* | *A connected provider with auto-discovered models* |
 | ![Free models hub](docs/screenshots/tour/free-models-hub.png) | ![Community gallery](docs/screenshots/tour/agents-gallery.png) |
 | *The Start at $0 hub — every free route, one tap away* | *Curated community agents, installable offline* |
+| ![Knowledge base](docs/screenshots/tour/knowledge-library.png) | ![Knowledge in chat](docs/screenshots/tour/knowledge-context.png) |
+| *The knowledge base — local documents, testable retrieval* | *Knowledge retrieval attached to a chat, cited at send* |
 | ![Live chat](docs/screenshots/desktop-light-live-chat.png) | ![Dark theme](docs/screenshots/desktop-dark-chat.png) |
 | *Live streamed reply (green LIVE badge)* | *Dark theme* |
 | ![Mobile light](docs/screenshots/mobile-light-home.png) | ![Mobile light chat](docs/screenshots/mobile-light-chat.png) |
@@ -601,6 +617,14 @@ as a single standalone web page: inline styles, no scripts, no network
 calls, no tracking. It opens in any browser. **Export as Markdown** is
 there for notes and wikis. Only the active branch travels — sibling
 variants stay private.
+
+**What is the knowledge base?**
+A local document collection chats can retrieve from. Paste text or load
+`.md` / `.txt` files in **Library → Knowledge base**, then attach it from
+a chat's **Context** button. When you send a message, Uni searches your
+documents locally (keyword match) and includes the top excerpts, cited by
+document and heading. Nothing is uploaded, nothing is retrieved silently,
+and PDFs are honestly not extracted (yet) — plain text and markdown only.
 
 **Can I install Uni as an app?**
 Yes — Uni is a **PWA**. On your phone: *Share → Add to Home Screen*
