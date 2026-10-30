@@ -7,6 +7,7 @@ import {
   PencilLine,
   Pin,
   PinOff,
+  Share2,
   Trash2,
 } from 'lucide-react'
 import type { Conversation } from '@/domain/types'
@@ -18,7 +19,12 @@ import { Menu, MenuItem } from '@/components/ui/Menu'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { TextField } from '@/components/ui/TextField'
 import { Badge, Tooltip } from '@/components/ui/Tooltip'
-import { conversationToMarkdown, downloadText, slugifyTitle } from './exportUtils'
+import {
+  conversationToMarkdown,
+  conversationToShareHtml,
+  downloadText,
+  slugifyTitle,
+} from './exportUtils'
 
 export interface ConversationListItemProps {
   conversation: Conversation
@@ -39,6 +45,14 @@ export function ConversationListItem({ conversation, active, onSelect }: Convers
     downloadText(
       `universe-${slugifyTitle(conversation.title)}.md`,
       conversationToMarkdown(conversation),
+    )
+  }
+
+  function handleSharePage() {
+    downloadText(
+      `universe-${slugifyTitle(conversation.title)}.html`,
+      conversationToShareHtml(conversation),
+      'text/html',
     )
   }
 
@@ -96,6 +110,9 @@ export function ConversationListItem({ conversation, active, onSelect }: Convers
           </MenuItem>
           <MenuItem icon={<Download size={15} />} onClick={handleExport}>
             Export as Markdown
+          </MenuItem>
+          <MenuItem icon={<Share2 size={15} />} onClick={handleSharePage}>
+            Share as HTML
           </MenuItem>
           <MenuItem
             icon={<Trash2 size={15} />}
