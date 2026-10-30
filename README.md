@@ -117,10 +117,13 @@ reused by you, your agents, or a Work task.
 
 ### 7 · Connecting a real model — the only setup step
 
-When you're ready for real AI: open **Settings → Providers & models →
-Add provider profile** and tap a preset. Free-tier providers wear a green
-**FREE** badge — OpenRouter, Groq, Google AI Studio, Mistral, GitHub
-Models, and fully-local Ollama can all cost **$0**.
+When you're ready for real AI: open **Settings → Providers & models** —
+the **Start at $0** panel at the top lists every free route, and one tap
+on **Use this route** fills in the whole form (a numbered guide with the
+console link appears inside it). Prefer the manual way? **Add provider
+profile** shows preset chips; free-tier providers wear a green **FREE**
+badge — OpenRouter, Groq, Google AI Studio, Mistral, GitHub Models, and
+fully-local Ollama can all cost **$0**.
 
 <img src="docs/screenshots/tour/add-provider.png" alt="The Add provider form: preset chips for OpenAI, Anthropic, OpenRouter, Groq, Google and more, with green FREE badges on free-tier providers" width="820">
 
@@ -310,8 +313,26 @@ badge means replies stream from your own hardware.
 
 ## 💚 The 100% free path
 
-Uni costs nothing, and you can run the *whole* stack at zero cost. Pick
-any combination:
+Uni costs nothing, and you can run the *whole* stack at zero cost. The
+**Start at $0** panel at the top of **Settings → Providers & models**
+gathers every free route in one place — real free tiers, rotating
+`:free` models, and fully-local servers on your own machine.
+
+<img src="docs/screenshots/tour/free-models-hub.png" alt="The Start at $0 panel in the Providers settings: a grid of free-route cards — Groq, Google AI Studio, OpenRouter free models, Mistral, GitHub Models, Cerebras, NVIDIA NIM, HuggingFace Router, Ollama and LM Studio — each with a headline, honest limits, and starter model chips" width="820">
+
+**Free in about two minutes, step by step:**
+
+1. Tap **Use this route** on any card — the provider form opens with
+   the label, endpoint, and starter models already filled in.
+2. Follow the numbered guide that appears inside the form: it links
+   straight to the provider's own console, tells you exactly where the
+   key page is, and states the honest limits before you commit.
+3. Paste the key, press **Connect** — Uni tests it and auto-discovers
+   the models. That's a private premium chat product for $0.
+
+<img src="docs/screenshots/tour/free-setup-guide.png" alt="The Add provider form with the Groq route applied: a green free-setup guide with numbered steps — open console.groq.com, create a gsk key, paste it — plus an Open console.groq.com link and the honest daily-limits note" width="820">
+
+**The routes, and what each honestly costs:**
 
 | Path | What you get | Cost |
 | --- | --- | --- |
@@ -323,11 +344,11 @@ any combination:
 | **HuggingFace Router** | Monthly free inference credits for open models | **$0** |
 | **Cerebras free tier** | Fast open-model inference | **$0** |
 | **NVIDIA NIM** | Free build credits at build.nvidia.com | **$0** |
-| **Ollama / LM Studio** | Any open model, fully offline, on your hardware | **$0** |
+| **Ollama / LM Studio** | Any open model, fully offline, on your hardware — no key, no account | **$0** |
 
 In the provider form, anything with a green **FREE** badge has a no-cost
-tier. Connect one, pick a model, and you have a private premium chat
-product for exactly nothing.
+tier. The local routes need no key at all — the guide just asks you to
+type any word in the key box (the server ignores it).
 
 ---
 
