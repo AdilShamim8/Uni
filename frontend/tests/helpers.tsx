@@ -7,6 +7,7 @@ import { resetStoreForTests, setChatAdapter, useAppStore } from '@/state/store'
 import { resetAgentsStoreForTests } from '@/state/agentsStore'
 import { resetWorkStoreForTests } from '@/state/workStore'
 import { resetLibraryStoreForTests } from '@/state/libraryStore'
+import { resetKnowledgeStoreForTests } from '@/state/knowledgeStore'
 import { resetWorkspaceUiForTests } from '@/state/workspaceUiStore'
 import { resetContextStoreForTests } from '@/state/contextStore'
 import { resetCompareStoreForTests } from '@/state/compareStore'
@@ -34,6 +35,7 @@ export function setupAppTest(options: { chunkDelay?: number } = {}): void {
     resetAgentsStoreForTests()
     resetWorkStoreForTests()
     resetLibraryStoreForTests()
+    resetKnowledgeStoreForTests()
     resetWorkspaceUiForTests()
     resetContextStoreForTests()
     resetCompareStoreForTests()
@@ -53,6 +55,7 @@ export function setupAppTest(options: { chunkDelay?: number } = {}): void {
     resetAgentsStoreForTests()
     resetWorkStoreForTests()
     resetLibraryStoreForTests()
+    resetKnowledgeStoreForTests()
     resetWorkspaceUiForTests()
     resetContextStoreForTests()
     resetCompareStoreForTests()
