@@ -11,10 +11,12 @@ import {
 } from '@/state/agentsStore'
 import { resetWorkStoreForTests, useWorkStore } from '@/state/workStore'
 import { resetLibraryStoreForTests, useLibraryStore } from '@/state/libraryStore'
+import { resetKnowledgeStoreForTests, flushKnowledgePersistence, useKnowledgeStore } from '@/state/knowledgeStore'
 import { resetPluginsStoreForTests, usePluginsStore } from '@/state/pluginsStore'
 import {
   loadWorkSlice,
   loadLibrarySlice,
+  loadKnowledgeSlice,
   saveWorkSlice,
 } from '@/services/storage/workspaceStorage'
 
@@ -30,9 +32,11 @@ beforeEach(() => {
   resetAgentsStoreForTests()
   resetWorkStoreForTests()
   resetLibraryStoreForTests()
+  resetKnowledgeStoreForTests()
   resetPluginsStoreForTests()
   useAppStore.getState().initialize()
   useAgentsStore.getState().initialize()
+  useKnowledgeStore.getState().initialize()
   usePluginsStore.getState().initialize()
   localStorage.clear()
 })
@@ -56,6 +60,11 @@ describe('workspace backup', () => {
     useAppStore.getState().newConversation()
     const agents = Object.values(useAgentsStore.getState().agents)
     useAgentsStore.getState().addMemoryNote(agents[0].id, 'Backup note')
+    useKnowledgeStore.getState().addDocument({
+      title: 'Backup knowledge',
+      text: '# Retrieval\n\nBacked-up knowledge stays retrievable after a restore.',
+      source: 'paste',
+    })
 
     const backup = buildWorkspaceBackup()
     const json = JSON.stringify(backup)
@@ -69,6 +78,7 @@ describe('workspace backup', () => {
     expect(parsed.counts.artifacts).toBe(1)
     expect(parsed.counts.memoryNotes).toBe(1)
     expect(parsed.counts.enabledPlugins).toBe(1)
+    expect(parsed.counts.knowledgeDocuments).toBe(1)
 
     const restored = restoreWorkspaceBackup(parsed.backup)
     expect(restored.ok).toBe(true)
@@ -82,6 +92,54 @@ describe('workspace backup', () => {
     expect(library.state?.artifacts[0]?.taskId).toBe(work.state?.tasks[0]?.id)
     expect(localStorage.getItem('universe:plugins:v1')).toContain('documents')
     expect(localStorage.getItem('universe:credentials:v1')).toBeNull()
+
+    // Knowledge documents and their chunks survive the round-trip and
+    // stay retrievable from the restored slice.
+    const knowledge = loadKnowledgeSlice()
+    expect(knowledge.state?.documents[0]?.title).toBe('Backup knowledge')
+    expect(knowledge.state?.chunks.length).toBe(1)
+    expect(knowledge.state?.chunks[0]?.text).toContain('stays retrievable')
+  })
+
+  it('a backup without a knowledge section empties the base on restore (replace semantics)', () => {
+    useKnowledgeStore.getState().addDocument({
+      title: 'Current knowledge',
+      text: '# Now\n\nThis document exists before the restore.',
+      source: 'paste',
+    })
+    const withKnowledge = buildWorkspaceBackup()
+    // Simulate a pre-knowledge-era backup: same payload, no knowledge key.
+    const legacy = {
+      ...withKnowledge,
+      payload: { ...withKnowledge.payload, knowledge: undefined },
+    }
+    const parsed = parseWorkspaceBackup(JSON.stringify(legacy))
+    expect(parsed.ok).toBe(true)
+    if (!parsed.ok) return
+    expect(parsed.counts.knowledgeDocuments).toBe(0)
+
+    const restored = restoreWorkspaceBackup(parsed.backup)
+    expect(restored.ok).toBe(true)
+    expect(loadKnowledgeSlice().state).toBeNull()
+  })
+
+  it('rejects a present-but-invalid knowledge section without touching data', () => {
+    useKnowledgeStore.getState().addDocument({
+      title: 'Current knowledge',
+      text: '# Now\n\nMust survive an invalid restore attempt.',
+      source: 'paste',
+    })
+    // Persist the current document so survival is provable in storage.
+    flushKnowledgePersistence()
+    const backup = buildWorkspaceBackup()
+    const corrupted = JSON.parse(JSON.stringify(backup))
+    corrupted.payload.knowledge = { documents: 'not-an-array' }
+    const parsed = parseWorkspaceBackup(JSON.stringify(corrupted))
+    expect(parsed.ok).toBe(false)
+    if (parsed.ok) return
+    expect(parsed.error).toContain('knowledge base section failed validation')
+    const knowledge = loadKnowledgeSlice()
+    expect(knowledge.state?.documents[0]?.title).toBe('Current knowledge')
   })
 
   it('rejects invalid input and leaves existing data untouched', () => {

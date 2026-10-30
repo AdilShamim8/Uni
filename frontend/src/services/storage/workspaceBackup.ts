@@ -1,18 +1,22 @@
 import type { PersistedState } from '@/domain/types'
-import type { AgentsSlice, WorkSlice, LibrarySlice } from './workspaceStorage'
+import type { AgentsSlice, WorkSlice, LibrarySlice, KnowledgeSlice } from './workspaceStorage'
 import {
   isAgentsSlice,
   isWorkSlice,
   isLibrarySlice,
+  isKnowledgeSlice,
   saveAgentsSlice,
   saveWorkSlice,
   saveLibrarySlice,
+  saveKnowledgeSlice,
+  clearKnowledgeSlice,
 } from './workspaceStorage'
 import { isPersistedState, savePersisted } from './localStorage'
 import { useAppStore, serializeAppState } from '@/state/store'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useWorkStore } from '@/state/workStore'
 import { useLibraryStore } from '@/state/libraryStore'
+import { useKnowledgeStore } from '@/state/knowledgeStore'
 import { useContextStore, type ContextState } from '@/state/contextStore'
 import { usePluginsStore } from '@/state/pluginsStore'
 
@@ -23,7 +27,8 @@ import { usePluginsStore } from '@/state/pluginsStore'
  *   INCLUDED   chats (temporary chats never are), preferences, provider
  *              profiles, Work tasks/events, employees + memory notes +
  *              routines + thread events, Library artifacts/projects,
- *              context selections, plugin configuration + receipts.
+ *              knowledge-base documents + chunks, context selections,
+ *              plugin configuration + receipts.
  *   EXCLUDED   API keys and every credential, temporary conversations,
  *              ephemeral UI state, drafts not committed to a store,
  *              active controllers.
@@ -45,6 +50,8 @@ export interface WorkspaceBackup {
     agents: AgentsSlice
     work: WorkSlice
     library: LibrarySlice
+    /** Optional: backups from before the knowledge base parse without it. */
+    knowledge?: KnowledgeSlice
     context: { version: 1; savedAt: number; payload: ContextState }
     plugins: {
       version: 1
@@ -67,6 +74,7 @@ export interface BackupCounts {
   memoryNotes: number
   artifacts: number
   projects: number
+  knowledgeDocuments: number
   enabledPlugins: number
   receipts: number
 }
@@ -80,6 +88,7 @@ export function backupCountsOf(backup: WorkspaceBackup): BackupCounts {
     memoryNotes: backup.payload.agents.memoryNotes.length,
     artifacts: backup.payload.library.artifacts.length,
     projects: backup.payload.library.projects.length,
+    knowledgeDocuments: backup.payload.knowledge?.documents.length ?? 0,
     enabledPlugins: backup.payload.plugins.payload.enabled.length,
     receipts: backup.payload.plugins.payload.receipts.length,
   }
@@ -105,6 +114,10 @@ export function buildWorkspaceBackup(): WorkspaceBackup {
       library: {
         artifacts: Object.values(useLibraryStore.getState().artifacts),
         projects: Object.values(useLibraryStore.getState().projects),
+      },
+      knowledge: {
+        documents: Object.values(useKnowledgeStore.getState().documents),
+        chunks: Object.values(useKnowledgeStore.getState().chunks).flat(),
       },
       context: {
         version: 1,
@@ -174,6 +187,11 @@ export function parseWorkspaceBackup(raw: string): BackupParseResult {
   if (!isLibrarySlice(p.library)) {
     return { ok: false, error: 'The Library section failed validation — nothing was changed.' }
   }
+  // Knowledge is optional (older backups predate it); present-but-invalid
+  // is still rejected like every other slice.
+  if (p.knowledge !== undefined && !isKnowledgeSlice(p.knowledge)) {
+    return { ok: false, error: 'The knowledge base section failed validation — nothing was changed.' }
+  }
   const context = p.context as { version?: number; savedAt?: number; payload?: unknown } | undefined
   if (!context || context.version !== 1 || !isContextState(context.payload)) {
     return { ok: false, error: 'The context selections section failed validation — nothing was changed.' }
@@ -199,6 +217,7 @@ export function parseWorkspaceBackup(raw: string): BackupParseResult {
       agents: p.agents,
       work: p.work,
       library: p.library,
+      knowledge: p.knowledge,
       context: { version: 1, savedAt: context.savedAt ?? 0, payload: context.payload as ContextState },
       plugins,
     },
@@ -215,6 +234,7 @@ const KEYS = [
   'universe:agents:v1',
   'universe:work:v1',
   'universe:library:v1',
+  'universe:knowledge:v1',
   'universe:context:v1',
   'universe:plugins:v1',
 ] as const
@@ -243,6 +263,12 @@ export function restoreWorkspaceBackup(backup: WorkspaceBackup): { ok: boolean; 
     const agentsOk = saveAgentsSlice(backup.payload.agents)
     const workOk = saveWorkSlice(backup.payload.work)
     const libraryOk = saveLibrarySlice(backup.payload.library)
+    // Restore REPLACES the workspace: a backup without a knowledge section
+    // (pre-knowledge-era) empties the knowledge base too — nothing stale
+    // survives a restore silently.
+    const knowledgeOk = backup.payload.knowledge
+      ? saveKnowledgeSlice(backup.payload.knowledge)
+      : (clearKnowledgeSlice(), true)
     localStorage.setItem(
       'universe:context:v1',
       JSON.stringify(backup.payload.context),
@@ -251,7 +277,7 @@ export function restoreWorkspaceBackup(backup: WorkspaceBackup): { ok: boolean; 
       'universe:plugins:v1',
       JSON.stringify(backup.payload.plugins),
     )
-    if (!agentsOk || !workOk || !libraryOk) {
+    if (!agentsOk || !workOk || !libraryOk || !knowledgeOk) {
       return {
         ok: false,
         error: 'Local storage rejected part of the restore (quota or privacy mode). Your snapshot is preserved — nothing was half-written silently.',
