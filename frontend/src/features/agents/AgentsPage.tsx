@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   Archive,
@@ -6,11 +6,13 @@ import {
   Bot,
   Check,
   Copy,
+  Download,
   MessageSquare,
   MoreHorizontal,
   Plus,
   Search,
   Sparkles,
+  Upload,
   Wrench,
   Zap,
 } from 'lucide-react'
@@ -24,6 +26,7 @@ import { PageToolbar } from '@/components/layout/PageToolbar'
 import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { TOOL_REGISTRY } from '@/features/chat/toolRegistry'
 import { AGENT_TEMPLATES } from '@/features/agents/agentTemplates'
+import { exportAgentFile, importAgentJson } from '@/features/agents/agentPortability'
 import { saveThreadDraft } from '@/features/conversation/threadDrafts'
 import { EmployeeView } from './EmployeeView'
 import type { AgentProfile } from '@/domain/workspaceTypes'
@@ -54,7 +57,21 @@ export function AgentsPage() {
 function AgentDirectory() {
   const navigate = useNavigate()
   const agents = useAgentsStore((state) => state.agents)
+  const showToast = useAppStore((state) => state.showToast)
   const [query, setQuery] = useState('')
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+
+  function handleImportFile(file: File): void {
+    void file.text().then((text) => {
+      const result = importAgentJson(text)
+      if (result.ok) {
+        showToast('Agent imported')
+        navigate(`/agents/${result.agentId}`)
+      } else {
+        showToast(`Import failed: ${result.error}`)
+      }
+    })
+  }
 
   const visible = useMemo(() => {
     const normalized = query.trim().toLowerCase()
@@ -104,10 +121,32 @@ function AgentDirectory() {
                 Persistent profiles you can chat with or assign real work to.
               </p>
             </div>
-            <Button variant="primary" onClick={() => navigate('/agents/new')}>
-              <Plus size={16} />
-              New agent
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) handleImportFile(file)
+                  // Reset so picking the same file twice re-fires change.
+                  event.target.value = ''
+                }}
+              />
+              <Button
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                aria-label="Import an agent profile from a JSON file"
+              >
+                <Upload size={16} />
+                Import
+              </Button>
+              <Button variant="primary" onClick={() => navigate('/agents/new')}>
+                <Plus size={16} />
+                New agent
+              </Button>
+            </div>
           </div>
 
           <div className="relative mt-5">
@@ -362,6 +401,12 @@ function AgentCardMenu({ agentId }: { agentId: string }) {
             }
           }}>
             Duplicate
+          </MenuItem>
+          <MenuItem icon={<Download size={15} />} onClick={() => {
+            exportAgentFile(agent)
+            showToast('Agent exported as JSON')
+          }}>
+            Export as JSON
           </MenuItem>
           <MenuItem
             icon={agent.archived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
