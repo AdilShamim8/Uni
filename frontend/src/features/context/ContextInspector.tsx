@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useParams } from 'react-router-dom'
-import { FileText, FolderKanban, NotebookPen, Plus, StickyNote, X } from 'lucide-react'
+import { BookOpen, FileText, FolderKanban, NotebookPen, Plus, StickyNote, X } from 'lucide-react'
 import { CONTEXT_ITEM_LIMIT, useContextStore, type ContextItem } from '@/state/contextStore'
 import {
   buildContextBlock,
@@ -9,6 +9,7 @@ import {
   type ResolvedContextItem,
 } from '@/domain/contextResolution'
 import { useLibraryStore } from '@/state/libraryStore'
+import { useKnowledgeStore } from '@/state/knowledgeStore'
 import { useWorkStore } from '@/state/workStore'
 import { useAppStore } from '@/state/store'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
@@ -53,6 +54,9 @@ export function ContextInspector() {
   const closeInspector = useWorkspaceUiStore((state) => state.closeInspector)
   const artifacts = useLibraryStore((state) => state.artifacts)
   const projects = useLibraryStore((state) => state.projects)
+  const knowledgeDocCount = useKnowledgeStore(
+    (state) => Object.keys(state.documents).length,
+  )
 
   const selection = useContextStore((state) => state.selections)
   const removeContextItem = useContextStore((state) => state.removeContextItem)
@@ -70,8 +74,8 @@ export function ContextInspector() {
   )
 
   const resolved = useMemo(
-    () => resolveContextItems(items, artifacts, projects),
-    [items, artifacts, projects],
+    () => resolveContextItems(items, artifacts, projects, knowledgeDocCount),
+    [items, artifacts, projects, knowledgeDocCount],
   )
 
   const contextBlock = useMemo(() => buildContextBlock(resolved), [resolved])
@@ -143,6 +147,13 @@ export function ContextInspector() {
             </p>
           </section>
         )}
+
+        {resolved.some((entry) => entry.item.kind === 'knowledge' && entry.available) && (
+          <p className="mt-3 rounded-group border border-dashed border-line px-3 py-2 text-[11.5px] leading-relaxed text-ink-faint">
+            Knowledge base retrieval also runs at send — the top excerpts matching your message
+            are added then, cited by document and heading (keyword match, local only).
+          </p>
+        )}
       </div>
 
       <footer className="flex shrink-0 items-center gap-2 border-t border-line px-3 py-2.5">
@@ -210,6 +221,9 @@ export function ContextInspector() {
 
 function ContextRow({ entry, onRemove }: { entry: ResolvedContextItem; onRemove: () => void }) {
   const { item, available, reason, truncated, size } = entry
+  const knowledgeDocCount = useKnowledgeStore(
+    (state) => Object.keys(state.documents).length,
+  )
   return (
     <li
       className={`flex items-start gap-2.5 rounded-group border px-3 py-2.5 ${
@@ -221,6 +235,8 @@ function ContextRow({ entry, onRemove }: { entry: ResolvedContextItem; onRemove:
           <FileText size={15} />
         ) : item.kind === 'project' ? (
           <FolderKanban size={15} />
+        ) : item.kind === 'knowledge' ? (
+          <BookOpen size={15} />
         ) : (
           <StickyNote size={15} />
         )}
@@ -235,7 +251,9 @@ function ContextRow({ entry, onRemove }: { entry: ResolvedContextItem; onRemove:
         </p>
         <p className="mt-0.5 text-[11.5px] leading-snug text-ink-faint">
           {available
-            ? `${item.kind === 'artifact' ? 'Document' : item.kind === 'project' ? 'Project' : 'Note'} · ${humanSize(size)}${truncated ? ' · will be truncated' : ''}`
+            ? item.kind === 'knowledge'
+              ? `Knowledge base · retrieval at send · ${knowledgeDocCount} document${knowledgeDocCount === 1 ? '' : 's'}`
+              : `${item.kind === 'artifact' ? 'Document' : item.kind === 'project' ? 'Project' : 'Note'} · ${humanSize(size)}${truncated ? ' · will be truncated' : ''}`
             : reason}
         </p>
       </div>
@@ -254,6 +272,9 @@ function ContextRow({ entry, onRemove }: { entry: ResolvedContextItem; onRemove:
 function AddContextMenu({ onAddNote }: { onAddNote: () => void }) {
   const artifacts = useLibraryStore((state) => state.artifacts)
   const projects = useLibraryStore((state) => state.projects)
+  const knowledgeDocCount = useKnowledgeStore(
+    (state) => Object.keys(state.documents).length,
+  )
   const { targetKey } = useContextTarget()
 
   const artifactList = useMemo(
@@ -279,6 +300,17 @@ function AddContextMenu({ onAddNote }: { onAddNote: () => void }) {
       <MenuItem icon={<NotebookPen size={15} />} onClick={onAddNote}>
         New note…
       </MenuItem>
+      {knowledgeDocCount > 0 && (
+        <MenuItem
+          icon={<BookOpen size={15} />}
+          onClick={() => {
+            if (!targetKey) return
+            useContextStore.getState().addKnowledgeContext(targetKey)
+          }}
+        >
+          Knowledge base retrieval ({knowledgeDocCount} doc{knowledgeDocCount === 1 ? '' : 's'})
+        </MenuItem>
+      )}
       {projectList.length > 0 && (
         <>
           <div className="my-1 border-t border-line" />

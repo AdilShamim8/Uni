@@ -7,6 +7,11 @@ import type { Artifact, Project } from '@/domain/workspaceTypes'
  * plain-text block a live send would include. Shared by the inspector
  * preview (what WILL be included) and the send path (what IS included),
  * so the two can never disagree.
+ *
+ * Knowledge-base items are the one deliberate exception: their content
+ * is retrieved per message at send time, so resolution here only reports
+ * availability (documents exist?) — the block itself is built by the send
+ * path from the message text, and the inspector says so explicitly.
  */
 
 export interface ResolvedContextItem {
@@ -23,8 +28,20 @@ export function resolveContextItems(
   items: ContextItem[],
   artifacts: Record<string, Artifact>,
   projects: Record<string, Project>,
+  /** Documents currently in the knowledge base (knowledge items only). */
+  knowledgeDocCount = 0,
 ): ResolvedContextItem[] {
   return items.map((item) => {
+    if (item.kind === 'knowledge') {
+      return {
+        item,
+        available: knowledgeDocCount > 0,
+        reason: knowledgeDocCount > 0 ? null : 'The knowledge base is empty',
+        content: '',
+        truncated: false,
+        size: 0,
+      }
+    }
     if (item.kind === 'note') {
       const content = item.content ?? ''
       return {
