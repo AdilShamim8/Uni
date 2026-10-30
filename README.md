@@ -75,7 +75,14 @@ stay side by side. In this picture the reply comes from the clearly-labeled
 demo adapter (no key needed); with a real provider connected you'd see a
 green **LIVE** badge instead.
 
+Done talking? **Share as HTML** (in the conversation's ⋯ menu) turns the
+thread into one standalone web page — inline styles, no scripts, no
+tracking — that opens in any browser. **Export as Markdown** stays for
+notes and wikis.
+
 <img src="docs/screenshots/tour/chat-demo.png" alt="A Uni conversation: the user's question on the left, the streamed answer rendered with formatting on the right" width="820">
+
+<img src="docs/screenshots/tour/share-export.png" alt="The conversation actions menu open: Share as HTML and Export as Markdown listed between Archive and Copy shared link" width="820">
 
 ### 3 · Work — describe an outcome, not a prompt
 
@@ -95,7 +102,16 @@ everything stays editable. Built something you like? **Export it as JSON**
 and share it anywhere — anyone can import it into their own Uni in one
 tap, no account needed.
 
+No ideas yet? The **Community gallery** at the bottom of the page ships six
+curated agents inside the app — Research Librarian, Resume Polisher, SQL
+Sidekick, Meeting Scribe, Trip Planner, Homework Explainer. One tap on
+**Add to my agents** installs one through the same import path as a shared
+file; it becomes yours — fully editable, running on whichever provider you
+connected.
+
 <img src="docs/screenshots/tour/agents.png" alt="The Agents page: a grid of AI employee cards, each with a name, description, and buttons to chat or assign work" width="820">
+
+<img src="docs/screenshots/tour/agents-gallery.png" alt="The Community gallery section of the Agents page: six curated agent cards such as Research Librarian and Trip Planner, each with an Add to my agents button or an Already added badge" width="820">
 
 <img src="docs/screenshots/tour/agent-template-applied.png" alt="The New agent page: a row of one-tap template chips above the form, with the Deep Researcher template applied — name, description, instructions, and starters all filled in" width="820">
 
@@ -388,6 +404,8 @@ Open **Settings** from the profile button at the bottom of the sidebar
 | *Home — the composer with tool pickers* | *Providers & models — profiles, models, connection status* |
 | ![Suggested models](docs/screenshots/desktop-light-suggested-models.png) | ![Connected provider](docs/screenshots/desktop-light-connected.png) |
 | *Suggested models for OpenRouter — free picks marked* | *A connected provider with auto-discovered models* |
+| ![Free models hub](docs/screenshots/tour/free-models-hub.png) | ![Community gallery](docs/screenshots/tour/agents-gallery.png) |
+| *The Start at $0 hub — every free route, one tap away* | *Curated community agents, installable offline* |
 | ![Live chat](docs/screenshots/desktop-light-live-chat.png) | ![Dark theme](docs/screenshots/desktop-dark-chat.png) |
 | *Live streamed reply (green LIVE badge)* | *Dark theme* |
 | ![Mobile light](docs/screenshots/mobile-light-home.png) | ![Mobile light chat](docs/screenshots/mobile-light-chat.png) |
