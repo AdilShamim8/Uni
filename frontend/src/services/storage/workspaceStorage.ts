@@ -7,6 +7,7 @@ import type {
   ScheduleDraft,
   WorkTask,
 } from '@/domain/workspaceTypes'
+import type { KnowledgeChunk, KnowledgeDocument } from '@/domain/knowledgeBase'
 
 /**
  * Workspace persistence — a family of independently versioned slices,
@@ -15,6 +16,7 @@ import type {
  * - `universe:agents:v1` — agent profiles, memory notes, schedule drafts.
  * - `universe:work:v1` — tasks and their activity logs.
  * - `universe:library:v1` — artifacts and projects.
+ * - `universe:knowledge:v1` — knowledge-base documents and their chunks.
  *
  * Each slice loads and saves under its own key, so stores never overwrite
  * each other, and a corrupt slice quarantines only itself (a backup is
@@ -224,4 +226,62 @@ export function saveLibrarySlice(slice: LibrarySlice): boolean {
 
 export function clearLibrarySlice(): void {
   clearSlice(LIBRARY_KEY)
+}
+
+/* ------------------------------------------------------------------ */
+/* Knowledge slice                                                     */
+/* ------------------------------------------------------------------ */
+
+export interface KnowledgeSlice {
+  documents: KnowledgeDocument[]
+  chunks: KnowledgeChunk[]
+}
+
+function isKnowledgeDocument(value: unknown): value is KnowledgeDocument {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.title === 'string' &&
+    (value.source === 'paste' || value.source === 'file') &&
+    (value.fileName === null || typeof value.fileName === 'string') &&
+    typeof value.createdAt === 'number' &&
+    typeof value.updatedAt === 'number' &&
+    typeof value.charCount === 'number' &&
+    typeof value.chunkCount === 'number'
+  )
+}
+
+function isKnowledgeChunk(value: unknown): value is KnowledgeChunk {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.docId === 'string' &&
+    typeof value.ordinal === 'number' &&
+    typeof value.heading === 'string' &&
+    typeof value.text === 'string'
+  )
+}
+
+export function isKnowledgeSlice(value: unknown): value is KnowledgeSlice {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.documents) &&
+    value.documents.every(isKnowledgeDocument) &&
+    Array.isArray(value.chunks) &&
+    value.chunks.every(isKnowledgeChunk)
+  )
+}
+
+const KNOWLEDGE_KEY = 'universe:knowledge:v1'
+
+export function loadKnowledgeSlice(): SliceResult<KnowledgeSlice> {
+  return loadSlice(KNOWLEDGE_KEY, isKnowledgeSlice)
+}
+
+export function saveKnowledgeSlice(slice: KnowledgeSlice): boolean {
+  return saveSlice(KNOWLEDGE_KEY, slice)
+}
+
+export function clearKnowledgeSlice(): void {
+  clearSlice(KNOWLEDGE_KEY)
 }
