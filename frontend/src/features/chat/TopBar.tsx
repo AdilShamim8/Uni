@@ -14,6 +14,7 @@ import {
   Pin,
   Scale,
   PinOff,
+  Share2,
   Trash2,
   Download,
   Zap,
@@ -29,7 +30,12 @@ import { TextField } from '@/components/ui/TextField'
 import { Badge, Tooltip } from '@/components/ui/Tooltip'
 import { PageToolbar, ToolbarGroup } from '@/components/layout/PageToolbar'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
-import { conversationToMarkdown, downloadText, slugifyTitle } from './exportUtils'
+import {
+  conversationToMarkdown,
+  conversationToShareHtml,
+  downloadText,
+  slugifyTitle,
+} from './exportUtils'
 
 export function TopBar() {
   const navigate = useNavigate()
@@ -83,6 +89,16 @@ export function TopBar() {
       conversationToMarkdown(conversation),
     )
     showToast('Conversation exported as Markdown')
+  }
+
+  function handleSharePage() {
+    if (!conversation) return
+    downloadText(
+      `universe-${slugifyTitle(conversation.title)}.html`,
+      conversationToShareHtml(conversation),
+      'text/html',
+    )
+    showToast('Share page exported — send the file to anyone')
   }
 
   function handleSharedLink() {
@@ -277,6 +293,13 @@ export function TopBar() {
         </MenuItem>
         <MenuItem icon={<Download size={15} />} disabled={!conversation} onClick={handleExport}>
           Export as Markdown
+        </MenuItem>
+        <MenuItem
+          icon={<Share2 size={15} />}
+          disabled={!conversation}
+          onClick={handleSharePage}
+        >
+          Share as HTML
         </MenuItem>
         <MenuItem
           icon={<Link2 size={15} />}
