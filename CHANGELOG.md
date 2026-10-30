@@ -4,6 +4,55 @@ All notable changes to Uni are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) with the repo's
 existing `type(scope): summary` commit vocabulary.
 
+## [Unreleased] — provider-freedom follow-up wave
+
+*Shipped 30 October 2026 — CI recovery, PWA, agent templates, portable
+agent profiles, and a beginner-first README. Each change committed and
+pushed individually.*
+
+### Fixed — CI
+
+- **Both failing checks are green again.** The dependabot bump
+  `jsdom 25 → 30` pulled `undici 8.12.3`, which requires Node >= 22.19
+  (it calls the zlib zstd APIs): on the workflows' Node 20, `npm test`
+  crashed at import time with `Cannot read properties of undefined
+  (reading 'bind')` in `undici/lib/interceptor/decompress.js:78`. Both
+  workflows (`CI`, `Frontend CI`) now run Node 22 LTS, verified locally
+  on Node 22.20.0 — 339 frontend + 117 backend tests green.
+
+### Added — PWA (installable app)
+
+- **Uni installs to your home screen / desktop.** Web manifest with
+  the Uni mark (any + maskable icons, generated via cairosvg),
+  iOS/Android standalone meta, and a small dependency-free service
+  worker: network-first navigations with an offline shell fallback,
+  stale-while-revalidate for hashed static assets, and — by design —
+  **zero interception of API or BYOK provider traffic**. Registration
+  is production + secure-context only (5 tests).
+
+### Added — agents
+
+- **One-tap templates in the builder.** Eight curated starting points
+  (Deep Researcher, Code Partner, Editor, Study Coach, Data Analyst,
+  Brainstorm Partner, Daily Planner, Language Tutor) prefill the form;
+  everything stays editable; offered only when creating, never when
+  editing an existing profile (5 tests).
+- **Portable profiles: export/import as JSON.** Any agent exports to a
+  shareable `.agent.json` (persona only — no device-specific ids), and
+  any file imports in one tap with defensive validation and a fresh
+  local id; re-imports never overwrite (10 tests).
+
+### Changed — docs
+
+- **Beginner-first README**: a screenshot-guided 60-second tour of all
+  five destinations plus the provider setup flow (fresh 1440×900
+  captures in `docs/screenshots/tour/`), an install-as-app FAQ entry,
+  and accuracy fixes (Node 22+ for tests, backend test badge 117).
+- **`docs/PRODUCT_STRATEGY.md`** (new): competitive audit against the
+  highest-starred projects (Open WebUI, LobeChat, LibreChat, big-AGI),
+  what users love there vs Uni's state, and a four-wave plan — led by
+  the knowledge-base/RAG gap — under explicit honesty guardrails.
+
 ## [Unreleased] — live QA sweep wave
 
 *Shipped 29 October 2026 — 3 commits, each pushed individually: an
