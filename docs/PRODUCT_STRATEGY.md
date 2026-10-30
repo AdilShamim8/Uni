@@ -1,8 +1,9 @@
 # PRODUCT_STRATEGY.md — where Uni stands, what users love elsewhere, and the plan
 
-Written 30 October 2026, after the provider-freedom wave and today's
-PWA + agent-templates ship. Companion to `docs/PROJECT_CONTEXT.md`
-(product truth) and `docs/backend-roadmap.md` (backend gates).
+Written 30 October 2026, after the provider-freedom wave; updated the same
+day after the free-worldwide wave (commits 363–376). Companion to
+`docs/PROJECT_CONTEXT.md` (product truth) and `docs/backend-roadmap.md`
+(backend gates).
 
 ---
 
@@ -29,14 +30,14 @@ capacity away — and Uni makes all of them one tap away.
 
 | Area | State |
 | --- | --- |
-| CI | **Green** — fixed the jsdom 30 → undici 8 crash by moving workflows to Node 22 LTS (both `CI` and `Frontend CI` passing) |
-| Tests | 359 frontend (339 + 20 new: 5 PWA + 5 templates + 10 portability) + 117 backend, all passing |
-| Frontend | React 18 + Vite + TS, 5 destinations, BYOK streaming, demo mode, dark theme, mobile-first |
+| CI | **Green** — Node 22 LTS everywhere (both `CI` and `Frontend CI` passing) |
+| Tests | 394 frontend (359 + 35 new: catalog, hub, guides, gallery, share export) + 117 backend, all passing |
+| Frontend | React 19 + Vite + TS, 5 destinations, BYOK streaming, demo mode, dark theme, mobile-first |
 | Backend | B00–B04 complete (auth, conversations, providers, runs, employees, library); B05–B08 not started |
-| Docs | Beginner README with a screenshot-guided tour (this wave), honest per-provider guides |
-| Distribution | Vercel deployment + **new PWA** (installable, offline shell) |
-| Onboarding | 21 provider presets with FREE badges + **new** 8 one-tap agent templates |
-| Shareability | **New** portable agent profiles — export/import `.agent.json` (Wave 2 / S1 ✅ shipped same day) |
+| Docs | Beginner README with a screenshot-guided tour, honest per-provider guides, pictured free-path walkthrough |
+| Distribution | Vercel deployment + PWA (installable, offline shell) |
+| Onboarding | 21 provider presets with FREE badges + 8 one-tap agent templates + **new** Start-at-$0 hub with inline setup guides |
+| Shareability | Portable agent profiles (S1 ✅) + **new** community gallery in-app (S2 ✅) + **new** standalone share-page export (S3 ✅) |
 
 ## 3 · What users love in the highest-starred projects
 
@@ -74,7 +75,27 @@ projects in chat UX, provider freedom, and honesty. The two biggest gaps:
 4. **CI on Node 22 LTS** — unblocked the dependency line (jsdom 30,
    undici 8) so dependabot bumps keep landing green.
 
-## 5 · Future plan (ordered by user value ÷ effort)
+## 5 · What shipped in the free-worldwide wave (30 Oct 2026, later)
+
+The mission statement — *premium AI capability, free, worldwide,
+honestly* — now has a front door and a flywheel:
+
+1. **Free-models catalog + Start-at-$0 hub** — ten curated $0 routes
+   (Groq, Google AI Studio, OpenRouter `:free`, Mistral, GitHub Models,
+   Cerebras, NVIDIA NIM, HuggingFace Router, Ollama, LM Studio) as cards
+   with honest limits; one tap pre-fills the entire provider form.
+2. **Inline free-setup guides** — numbered key instructions inside the
+   form, linking only to providers' own consoles, with a no-key variant
+   for local routes. The guide follows the endpoint live.
+3. **Community agent gallery (S2)** — six reviewed personas ship as
+   normal `uni.agent/v1` files in
+   `frontend/src/features/agents/gallery/`; installs go through the
+   standard defensive import path; contributions are pull requests.
+4. **Share-page export (S3)** — the active thread becomes one
+   standalone HTML file (inline CSS, no scripts, no tracking, all
+   content escaped). Markdown export unchanged.
+
+## 6 · Future plan (ordered by user value ÷ effort)
 
 ### Wave 1 — Knowledge base / RAG (the Open WebUI draw) 🎯
 - **K1.** Ingest documents (PDF/MD/TXT/DOCX) into a workspace library
@@ -91,10 +112,11 @@ projects in chat UX, provider freedom, and honesty. The two biggest gaps:
 ### Wave 2 — Shareability flywheel (the LobeChat draw)
 - **S1.** ✅ *Shipped 30 Oct 2026* — export/import agent profiles as
   portable JSON (`uni.agent/v1`, persona-only, defensive import).
-- **S2.** A curated community gallery file in-repo
-  (`gallery/agents/*.json`) that ships with the app as an offline
-  catalog; contributions via pull request.
-- **S3.** Conversation-share exports (static HTML/Markdown).
+- **S2.** ✅ *Shipped 30 Oct 2026 (free-worldwide wave)* — in-app
+  community gallery seeded with six curated profiles at
+  `frontend/src/features/agents/gallery/`; PR contributions.
+- **S3.** ✅ *Shipped 30 Oct 2026 (free-worldwide wave)* — conversation
+  share exports as standalone HTML (Markdown export already existed).
 
 ### Wave 3 — Backend gates B05–B08 (from backend-roadmap.md)
 - **B05** server-side plugins with enforced grants; **B06** durable Work
@@ -110,7 +132,7 @@ projects in chat UX, provider freedom, and honesty. The two biggest gaps:
 - **R3.** Star-history / awesome-list submission once Wave 1 lands —
   the README tour + honest free path is the pitch.
 
-## 6 · What we will not do (honesty guardrails)
+## 7 · What we will not do (honesty guardrails)
 
 - No "free premium accounts" of any provider — never resell, proxy, or
   pool credentials; BYOK only.
