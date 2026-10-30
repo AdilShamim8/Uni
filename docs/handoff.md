@@ -3,7 +3,45 @@
 Keep short and factual: current commit, completed gate, exact commands and
 results, unresolved problems, environment blockers, next action.
 
-## Current state (updated 2026-10-29, live QA sweep wave complete)
+## Current state (updated 2026-10-30, free-worldwide wave complete)
+
+- **Branch:** `main` — this commit is the 376th. All 14 wave commits
+  were pushed one at a time per working agreement.
+- **Wave scope shipped:** the $0 front door and the shareability
+  flywheel. (1) Free-models catalog — ten curated $0 routes with honest
+  limits, console links, steps, and starter models
+  (`src/features/settings/freeModels.ts`). (2) Start-at-$0 hub leading
+  the Providers section — one tap pre-fills the whole create form
+  (`FreeModelsHub.tsx`; `creating` state now holds the seeded
+  `ProviderDraft`). (3) Inline free-setup guides that follow the
+  endpoint live, with a no-key variant for local routes
+  (`FreeSetupGuide.tsx`). (4) Community gallery — six `uni.agent/v1`
+  files in `src/features/agents/gallery/`, defensively normalized at
+  load, installed through the standard `importAgentJson` path, honest
+  already-added badges (`agentGallery.ts` + `GallerySection` in
+  AgentsPage). (5) Share-page export — `conversationToShareHtml()`
+  standalone HTML (escaped, no scripts, active path only) wired into
+  TopBar and ConversationListItem menus.
+- **Verification:** frontend 394/394 across 57 files (35 new), lint and
+  both typechecks clean, production build clean; four fresh 1440×900
+  screenshots captured from the real dev server via agent-browser with
+  zero console/page errors. Backend untouched (117/117 at last record;
+  CI green on push). Full record in `docs/verification.md`
+  (free-worldwide wave section).
+- **Notable facts for the next session:** hub cards are `<li>` with
+  `<p>` labels by design — provider cards are the only `<article>`s and
+  preset-chip tests query buttons like `/Groq/` while the hub is
+  unmounted (it hides during creation), so keep that invariant;
+  `VALID_TOOLS` is exported from `agentPortability` for shared
+  validation; `tsconfig.json` now sets `resolveJsonModule`; gallery
+  contribution path is `frontend/src/features/agents/gallery/` (JSON
+  widened literals are normalized in `normalizeAgent`).
+- **Next action candidates:** Wave 1 K1 (knowledge base / RAG — the
+  top future priority per PRODUCT_STRATEGY §6), B05 server-side
+  plugins with enforced grants, frontend surfaces for server
+  employees/memory/library, README localization (R2).
+
+## Prior state (2026-10-29, live QA sweep wave complete)
 
 - **Branch:** `main` (commits pushed one at a time per working agreement).
 - **Wave scope shipped:** the "test everything like a tester" pass.
