@@ -89,9 +89,13 @@ output you can refine with follow-ups.
 
 Create a profile once (name, role, memory notes) and it stays. Assign it
 work, grant it tools, and open its own conversation where it already knows
-who it is.
+who it is. Building one? **Start from a template** — Deep Researcher, Code
+Partner, Editor, Study Coach, and more fill the whole form in one tap, and
+everything stays editable.
 
 <img src="docs/screenshots/tour/agents.png" alt="The Agents page: a grid of AI employee cards, each with a name, description, and buttons to chat or assign work" width="820">
+
+<img src="docs/screenshots/tour/agent-template-applied.png" alt="The New agent page: a row of one-tap template chips above the form, with the Deep Researcher template applied — name, description, instructions, and starters all filled in" width="820">
 
 ### 5 · Plugins — tools with permission slips
 
@@ -535,6 +539,13 @@ leave the backend unencrypted.
 **Can I use multiple providers at once?**
 Yes — add as many profiles as you like and switch models from the top bar.
 The compare dialog even runs one prompt through two models side by side.
+
+**Can I install Uni as an app?**
+Yes — Uni is a **PWA**. On your phone: *Share → Add to Home Screen*
+(iOS Safari) or the browser's *Install app* prompt (Android/desktop
+Chrome/Edge). It opens full-screen with its own icon, works offline for
+the app shell, and keeps behaving like the site — same data, same
+browser storage, no separate account.
 
 **What is "demo mode"?**
 The state before any key is connected: replies come from a local,
