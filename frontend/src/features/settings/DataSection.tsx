@@ -98,7 +98,7 @@ export function DataSection() {
 
       <SettingsGroup
         title="Workspace backup"
-        footer="A versioned backup of the whole workspace: chats and settings, Work tasks and events, employees with their memory notes and routines, Library documents and projects, context selections, and plugin configuration with receipts. Never includes API keys or temporary chats."
+        footer="A versioned backup of the whole workspace: chats and settings, Work tasks and events, employees with their memory notes and routines, Library documents and projects, knowledge-base documents, context selections, and plugin configuration with receipts. Never includes API keys or temporary chats."
       >
         <SettingsRow
           label="Back up workspace"
@@ -200,7 +200,7 @@ export function DataSection() {
         title="Restore this workspace backup?"
         body={
           pendingRestore
-            ? `Backup from ${new Date(pendingRestore.savedAt).toLocaleString()} contains ${pendingRestore.counts.conversations} conversation${pendingRestore.counts.conversations === 1 ? '' : 's'}, ${pendingRestore.counts.tasks} Work task${pendingRestore.counts.tasks === 1 ? '' : 's'}, ${pendingRestore.counts.agents} employee${pendingRestore.counts.agents === 1 ? '' : 's'} with ${pendingRestore.counts.memoryNotes} memory note${pendingRestore.counts.memoryNotes === 1 ? '' : 's'}, ${pendingRestore.counts.artifacts} Library document${pendingRestore.counts.artifacts === 1 ? '' : 's'}, and ${pendingRestore.counts.enabledPlugins} enabled plugin${pendingRestore.counts.enabledPlugins === 1 ? '' : 's'}. Restoring REPLACES the current workspace in this browser. A recoverable snapshot of today’s data is kept first. API keys are never imported.`
+            ? `Backup from ${new Date(pendingRestore.savedAt).toLocaleString()} contains ${pendingRestore.counts.conversations} conversation${pendingRestore.counts.conversations === 1 ? '' : 's'}, ${pendingRestore.counts.tasks} Work task${pendingRestore.counts.tasks === 1 ? '' : 's'}, ${pendingRestore.counts.agents} employee${pendingRestore.counts.agents === 1 ? '' : 's'} with ${pendingRestore.counts.memoryNotes} memory note${pendingRestore.counts.memoryNotes === 1 ? '' : 's'}, ${pendingRestore.counts.artifacts} Library document${pendingRestore.counts.artifacts === 1 ? '' : 's'}, ${pendingRestore.counts.knowledgeDocuments} knowledge document${pendingRestore.counts.knowledgeDocuments === 1 ? '' : 's'}, and ${pendingRestore.counts.enabledPlugins} enabled plugin${pendingRestore.counts.enabledPlugins === 1 ? '' : 's'}. Restoring REPLACES the current workspace in this browser. A recoverable snapshot of today’s data is kept first. API keys are never imported.`
             : ''
         }
         confirmLabel="Restore and reload"
