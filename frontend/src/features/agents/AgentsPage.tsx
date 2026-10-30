@@ -27,6 +27,11 @@ import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { TOOL_REGISTRY } from '@/features/chat/toolRegistry'
 import { AGENT_TEMPLATES } from '@/features/agents/agentTemplates'
 import { exportAgentFile, importAgentJson } from '@/features/agents/agentPortability'
+import {
+  AGENT_GALLERY,
+  installGalleryAgent,
+  isGalleryAgentInstalled,
+} from '@/features/agents/agentGallery'
 import { saveThreadDraft } from '@/features/conversation/threadDrafts'
 import { EmployeeView } from './EmployeeView'
 import type { AgentProfile } from '@/domain/workspaceTypes'
@@ -217,9 +222,95 @@ function AgentDirectory() {
               </section>
             </>
           )}
+
+          <GallerySection />
         </div>
       </div>
     </div>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Community gallery                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The community gallery — curated, offline, one tap away. Every entry
+ * installs through the standard import path and becomes a normal agent
+ * the user owns: editable, archivable, running on whichever provider is
+ * connected. Contributions are pull requests against the gallery folder.
+ */
+function GallerySection() {
+  const navigate = useNavigate()
+  const agents = useAgentsStore((state) => state.agents)
+  const showToast = useAppStore((state) => state.showToast)
+
+  function addEntry(entryId: string): void {
+    const entry = AGENT_GALLERY.find((item) => item.id === entryId)
+    if (!entry) return
+    const result = installGalleryAgent(entry)
+    if (result.ok) {
+      showToast(`${entry.agent.name} added from the gallery`)
+      navigate(`/agents/${result.agentId}`)
+    } else {
+      showToast(`Could not add: ${result.error}`)
+    }
+  }
+
+  return (
+    <section className="mt-8" aria-label="Community gallery">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 px-1">
+        <p className="text-[12px] font-medium text-ink-faint">Community gallery</p>
+        <p className="text-[11px] text-ink-faint">Curated · offline · editable once added</p>
+      </div>
+      <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+        {AGENT_GALLERY.map((entry) => {
+          const installed = isGalleryAgentInstalled(entry, agents)
+          return (
+            <li
+              key={entry.id}
+              className="flex flex-col gap-2 rounded-group border border-line bg-raised p-3"
+            >
+              <div className="flex items-start gap-2.5">
+                <span
+                  aria-hidden="true"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-subtle text-[15px]"
+                >
+                  {entry.emoji}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold tracking-tight text-ink">
+                    {entry.agent.name}
+                  </p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-ink-soft">
+                    {entry.agent.description}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-auto flex flex-wrap items-center gap-2">
+                {installed ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-success-soft px-2.5 py-1 text-[11px] font-medium text-success">
+                    <Check size={11} aria-hidden="true" />
+                    Already added
+                  </span>
+                ) : (
+                  <Button variant="secondary" size="sm" onClick={() => addEntry(entry.id)}>
+                    <Plus size={13} />
+                    Add to my agents
+                  </Button>
+                )}
+                <span className="text-[10.5px] text-ink-faint">{entry.credit}</span>
+              </div>
+            </li>
+          )
+        })}
+      </ul>
+      <p className="mt-2 px-1 text-[11px] leading-relaxed text-ink-faint">
+        Built something good? Share it — export any agent as a{' '}
+        <span className="font-medium text-ink-soft">.agent.json</span> file, or contribute to the
+        gallery folder on GitHub via pull request.
+      </p>
+    </section>
   )
 }
 
