@@ -9,7 +9,7 @@ through one honest interface that costs **$0** and runs from your browser.
 
 [![CI](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml/badge.svg)](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](frontend/LICENSE)
-[![Frontend tests](https://img.shields.io/badge/tests-359%20frontend%20%2B%20117%20backend-10b981.svg)](#%EF%B8%8F-architecture)
+[![Frontend tests](https://img.shields.io/badge/tests-394%20frontend%20%2B%20117%20backend-10b981.svg)](#%EF%B8%8F-architecture)
 
 [Live demo](https://universe-mu-two.vercel.app/) · [Quick start](#-quick-start-3-commands) · [Connect a provider](#-connect-your-first-provider-step-by-step) · [The 100% free path](#-the-100-free-path)
 
@@ -585,6 +585,22 @@ The compare dialog even runs one prompt through two models side by side.
 Yes — every agent exports as a small `.agent.json` file (Actions → Export
 as JSON). The file carries the persona only (never your keys or local
 ids); whoever receives it imports it from the Agents page in one tap.
+
+**What is the Community gallery?**
+A curated set of ready-made agents that ships inside the app — no
+download, no account. One tap on **Add to my agents** installs one
+through the exact same defensive import path as a shared file, and it
+becomes a normal agent you own: edit it, archive it, assign it work.
+Entries you already added show an honest *Already added* badge. Want to
+contribute one? Add a `.agent.json` file to
+`frontend/src/features/agents/gallery/` and open a pull request.
+
+**Can I share a conversation with someone who doesn't use Uni?**
+Yes — **Share as HTML** (conversation ⋯ menu) exports the active thread
+as a single standalone web page: inline styles, no scripts, no network
+calls, no tracking. It opens in any browser. **Export as Markdown** is
+there for notes and wikis. Only the active branch travels — sibling
+variants stay private.
 
 **Can I install Uni as an app?**
 Yes — Uni is a **PWA**. On your phone: *Share → Add to Home Screen*
