@@ -30,12 +30,13 @@ capacity away — and Uni makes all of them one tap away.
 | Area | State |
 | --- | --- |
 | CI | **Green** — fixed the jsdom 30 → undici 8 crash by moving workflows to Node 22 LTS (both `CI` and `Frontend CI` passing) |
-| Tests | 344 frontend (339 + 5 new PWA) + 117 backend, all passing |
+| Tests | 359 frontend (339 + 20 new: 5 PWA + 5 templates + 10 portability) + 117 backend, all passing |
 | Frontend | React 18 + Vite + TS, 5 destinations, BYOK streaming, demo mode, dark theme, mobile-first |
 | Backend | B00–B04 complete (auth, conversations, providers, runs, employees, library); B05–B08 not started |
 | Docs | Beginner README with a screenshot-guided tour (this wave), honest per-provider guides |
 | Distribution | Vercel deployment + **new PWA** (installable, offline shell) |
 | Onboarding | 21 provider presets with FREE badges + **new** 8 one-tap agent templates |
+| Shareability | **New** portable agent profiles — export/import `.agent.json` (Wave 2 / S1 ✅ shipped same day) |
 
 ## 3 · What users love in the highest-starred projects
 
@@ -88,8 +89,8 @@ projects in chat UX, provider freedom, and honesty. The two biggest gaps:
   keeps an on-device index.
 
 ### Wave 2 — Shareability flywheel (the LobeChat draw)
-- **S1.** Export/import agent profiles as portable JSON — one file,
-  shareable anywhere, importable in one tap (no account needed).
+- **S1.** ✅ *Shipped 30 Oct 2026* — export/import agent profiles as
+  portable JSON (`uni.agent/v1`, persona-only, defensive import).
 - **S2.** A curated community gallery file in-repo
   (`gallery/agents/*.json`) that ships with the app as an offline
   catalog; contributions via pull request.
