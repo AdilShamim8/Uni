@@ -4,6 +4,56 @@ All notable changes to Uni are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) with the repo's
 existing `type(scope): summary` commit vocabulary.
 
+## [Unreleased] — free-worldwide wave
+
+*Shipped 30 October 2026 (later the same day) — the mission's front
+door and the shareability flywheel. 14 commits, pushed one at a time.*
+*Frontend tests 359 → 394; backend unchanged at 117.*
+
+### Added — the $0 front door (settings)
+
+- **Free-models catalog.** Ten curated $0 routes (Groq, Google AI
+  Studio, OpenRouter `:free`, Mistral, GitHub Models, Cerebras, NVIDIA
+  NIM, HuggingFace Router, Ollama, LM Studio) with honest limits,
+  provider-console signup links, beginner steps, and starter models.
+  `freeRouteFor()` matches a provider draft to its route (10 tests).
+- **Start-at-$0 hub.** The Providers & models section now leads with a
+  panel of route cards; one tap on **Use this route** opens the create
+  form fully pre-filled — label, kind, endpoint, and starter models —
+  collapsing to four cards with a show-more toggle. The hub steps aside
+  while a form is open and returns after save/cancel (5 tests).
+- **Inline free-setup guides.** When the form targets a free route, a
+  numbered guide appears where the key gets pasted: console link
+  (`target=_blank`, `rel=noopener noreferrer`), honest limits, and a
+  no-key variant for local routes (whose catalog steps now say the key
+  box takes any word). The guide follows the endpoint live (4 tests).
+
+### Added — shareability flywheel (agents, chat)
+
+- **Community agent gallery (S2).** Six reviewed personas (Research
+  Librarian, Resume Polisher, SQL Sidekick, Meeting Scribe, Trip
+  Planner, Homework Explainer) ship as normal `uni.agent/v1` files in
+  `frontend/src/features/agents/gallery/` — contributions are pull
+  requests. The loader normalizes defensively; installs go through the
+  exact same import path as shared files; already-added entries show an
+  honest badge; the section renders even with zero agents (9 tests).
+- **Share-page export (S3).** **Share as HTML** joins the conversation
+  menus (TopBar + sidebar items): the active thread becomes one
+  standalone web page — inline CSS, no scripts, no network calls, no
+  tracking, all content HTML-escaped; only the active path travels
+  (7 tests).
+
+### Changed — tooling, docs
+
+- `tsconfig.json` gains `resolveJsonModule` for typed gallery imports;
+  `VALID_TOOLS` is now exported from `agentPortability` for shared
+  validation.
+- README: the 100%-free-path section is now a pictured walkthrough
+  (hub + guide screenshots, three-step flow), the 60-second tour covers
+  share pages and the gallery, the FAQ gains two beginner answers, and
+  the test badge reads 394. Four fresh 1440×900 captures. Strategy doc
+  updated: S2/S3 shipped, Wave 1 (RAG) remains the top next priority.
+
 ## [Unreleased] — provider-freedom follow-up wave
 
 *Shipped 30 October 2026 — CI recovery, PWA, agent templates, portable
