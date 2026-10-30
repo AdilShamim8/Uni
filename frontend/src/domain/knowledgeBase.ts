@@ -193,3 +193,186 @@ export function tokenizeForSearch(text: string): string[] {
   }
   return tokens
 }
+
+/* ------------------------------------------------------------------ */
+/* Index + search                                                      */
+/* ------------------------------------------------------------------ */
+
+export interface KnowledgeIndex {
+  /** Chunk metadata + text keyed by chunk id. */
+  chunks: Map<string, KnowledgeChunk>
+  /** Document titles keyed by doc id (for citations). */
+  docTitles: Map<string, string>
+  /** term -> set of chunk ids containing it. */
+  postings: Map<string, Set<string>>
+  /** chunk id -> term frequencies. */
+  termFreq: Map<string, Map<string, number>>
+  /** chunk id -> token count. */
+  lengths: Map<string, number>
+}
+
+/** Build the retrieval index from documents' chunks. Pure and reusable. */
+export function buildKnowledgeIndex(
+  documents: Pick<KnowledgeDocument, 'id' | 'title'>[],
+  chunksByDoc: Record<string, KnowledgeChunk[]>,
+): KnowledgeIndex {
+  const index: KnowledgeIndex = {
+    chunks: new Map(),
+    docTitles: new Map(),
+    postings: new Map(),
+    termFreq: new Map(),
+    lengths: new Map(),
+  }
+  for (const doc of documents) index.docTitles.set(doc.id, doc.title)
+  for (const docChunks of Object.values(chunksByDoc)) {
+    for (const chunk of docChunks) {
+      index.chunks.set(chunk.id, chunk)
+      const tokens = tokenizeForSearch(chunk.text)
+      const counts = new Map<string, number>()
+      for (const token of tokens) {
+        counts.set(token, (counts.get(token) ?? 0) + 1)
+        let set = index.postings.get(token)
+        if (!set) {
+          set = new Set()
+          index.postings.set(token, set)
+        }
+        set.add(chunk.id)
+      }
+      index.termFreq.set(chunk.id, counts)
+      index.lengths.set(chunk.id, tokens.length)
+    }
+  }
+  return index
+}
+
+export interface SearchOptions {
+  /** Maximum hits returned (default 6). */
+  limit?: number
+  /** Maximum hits per document (default 3) — one doc cannot flood results. */
+  perDocLimit?: number
+}
+
+const SNIPPET_TARGET = 260
+
+/** Build a short excerpt around the first occurrence of a query token. */
+function buildSnippet(text: string, tokens: string[]): string {
+  const lower = text.toLowerCase()
+  let at = -1
+  for (const token of tokens) {
+    const found = lower.indexOf(token)
+    if (found !== -1 && (at === -1 || found < at)) at = found
+  }
+  if (at === -1) {
+    return text.length <= SNIPPET_TARGET ? text : `${text.slice(0, SNIPPET_TARGET)}…`
+  }
+  const start = Math.max(0, at - Math.floor(SNIPPET_TARGET / 3))
+  const end = Math.min(text.length, start + SNIPPET_TARGET)
+  return `${start > 0 ? '…' : ''}${text.slice(start, end)}${end < text.length ? '…' : ''}`
+}
+
+/**
+ * Search the index with BM25-style lexical scoring plus an exact-phrase
+ * bonus and a heading-match boost. Empty query tokens → no hits (honest:
+ * nothing matches "the of and").
+ */
+export function searchKnowledge(
+  index: KnowledgeIndex,
+  query: string,
+  options: SearchOptions = {},
+): KnowledgeHit[] {
+  const limit = options.limit ?? 6
+  const perDocLimit = options.perDocLimit ?? 3
+  const tokens = tokenizeForSearch(query)
+  if (tokens.length === 0 || index.chunks.size === 0) return []
+
+  const total = index.chunks.size
+  const avgLength =
+    [...index.lengths.values()].reduce((sum, n) => sum + n, 0) / Math.max(1, total)
+
+  // BM25 constants (calibrated for short chunks).
+  const k1 = 1.4
+  const b = 0.6
+
+  const scores = new Map<string, number>()
+  for (const token of new Set(tokens)) {
+    const posting = index.postings.get(token)
+    if (!posting) continue
+    const df = posting.size
+    const idf = Math.log(1 + (total - df + 0.5) / (df + 0.5))
+    for (const chunkId of posting) {
+      const tf = index.termFreq.get(chunkId)?.get(token) ?? 0
+      const length = index.lengths.get(chunkId) ?? 1
+      const denominator = tf + k1 * (1 - b + (b * length) / Math.max(1, avgLength))
+      const score = idf * ((tf * (k1 + 1)) / Math.max(denominator, 1e-6))
+      scores.set(chunkId, (scores.get(chunkId) ?? 0) + score)
+    }
+  }
+
+  // Exact-phrase bonus: the whole query (normalized) appearing verbatim is
+  // strong evidence — worth an extra weighted term.
+  const phrase = query.trim().toLowerCase()
+  if (phrase.length >= 4) {
+    for (const [chunkId, chunk] of index.chunks) {
+      if (chunk.text.toLowerCase().includes(phrase)) {
+        scores.set(chunkId, (scores.get(chunkId) ?? 0) + 2.5)
+      }
+    }
+  }
+
+  // Heading boost: a query token in the heading means the section is about it.
+  for (const [chunkId, chunk] of index.chunks) {
+    if (!chunk.heading) continue
+    const headingTokens = new Set(tokenizeForSearch(chunk.heading))
+    if (tokens.some((token) => headingTokens.has(token))) {
+      scores.set(chunkId, (scores.get(chunkId) ?? 0) * 1.25)
+    }
+  }
+
+  const perDoc = new Map<string, number>()
+  return [...scores.entries()]
+    .filter(([, score]) => score > 0)
+    .sort((a, b2) => b2[1] - a[1] || a[0].localeCompare(b2[0]))
+    .flatMap(([chunkId, score]) => {
+      const chunk = index.chunks.get(chunkId)
+      if (!chunk) return []
+      const used = perDoc.get(chunk.docId) ?? 0
+      if (used >= perDocLimit) return []
+      perDoc.set(chunk.docId, used + 1)
+      return [
+        {
+          chunkId,
+          docId: chunk.docId,
+          docTitle: index.docTitles.get(chunk.docId) ?? 'Untitled document',
+          heading: chunk.heading,
+          score,
+          snippet: buildSnippet(chunk.text, tokens),
+        },
+      ]
+    })
+    .slice(0, limit)
+}
+
+/* ------------------------------------------------------------------ */
+/* Context assembly                                                    */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Turn hits into the labeled plain-text block appended to the system
+ * prompt on a live send. The header states the retrieval method so the
+ * model (and the user reading the inspector) knows how excerpts were
+ * chosen — no silent injection.
+ */
+export function buildKnowledgeContextBlock(hits: KnowledgeHit[]): string {
+  if (hits.length === 0) return ''
+  const sections = hits.map((hit, i) => {
+    const where = hit.heading
+      ? `From “${hit.docTitle}” — ${hit.heading}`
+      : `From “${hit.docTitle}”`
+    return `[${i + 1}] ${where}\n\n${hit.snippet}`
+  })
+  return [
+    'Knowledge base excerpts (retrieved locally on this device by keyword match against your message — check the citations; excerpts may be partial):',
+    '',
+    sections.join('\n\n'),
+  ].join('\n')
+}
