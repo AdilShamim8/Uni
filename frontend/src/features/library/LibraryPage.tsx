@@ -17,6 +17,7 @@ import {
   Download,
 } from 'lucide-react'
 import { useLibraryStore } from '@/state/libraryStore'
+import { KnowledgeSection } from '@/features/library/KnowledgeSection'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useAppStore } from '@/state/store'
@@ -275,6 +276,9 @@ export function LibraryPage() {
               </ul>
             )}
           </section>
+
+          {/* Knowledge base (K1/K2) */}
+          <KnowledgeSection />
         </div>
       </div>
 

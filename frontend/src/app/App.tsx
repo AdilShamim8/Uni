@@ -7,6 +7,7 @@ import { useAppStore } from '@/state/store'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useWorkStore } from '@/state/workStore'
 import { useLibraryStore } from '@/state/libraryStore'
+import { useKnowledgeStore } from '@/state/knowledgeStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { useContextStore } from '@/state/contextStore'
 import { useCompareStore } from '@/state/compareStore'
@@ -37,6 +38,7 @@ export function App() {
     useAgentsStore.getState().initialize()
     useWorkStore.getState().initialize()
     useLibraryStore.getState().initialize()
+    useKnowledgeStore.getState().initialize()
     useWorkspaceUiStore.getState().initialize()
     useContextStore.getState().initialize()
     useCompareStore.getState().initialize()
