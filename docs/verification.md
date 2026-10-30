@@ -611,3 +611,32 @@ deployments. The resolver's first live run also caught a trim bug
 | Frontend lint / typecheck / build / tests | **clean / clean / clean; 339/339** |
 | Browser golden path (sign-up → BYOK → run → SSE → persistence) | **Pass, zero console errors** |
 | GitHub Actions (contracts, frontend, backend) | see close-out below |
+
+## Free-worldwide wave (2026-10-30, later) — 14 commits, pushed one at a time
+
+Scope: the $0 front door (free-models catalog, Start-at-$0 hub, inline
+setup guides), the shareability flywheel (community agent gallery,
+share-page export), screenshots, README/strategy/changelog docs. All
+frontend-only; backend untouched this wave.
+
+| Command (frontend/) | Result |
+| --- | --- |
+| `npx vitest run` (full suite, final state) | **394/394 across 57 files** — 359 pre-existing + 35 new (10 catalog, 5 hub, 4 guides, 5 gallery data, 4 gallery UI, 7 share export), 114.3s |
+| Per-feature targeted runs during development | Each feature's suite green before its commit (catalog 10/10; hub 5/5 + settings regression 16/16; guides 4/4 + regressions 19/19; gallery data 5/5 + portability 10/10; gallery UI 4/4 + templates 15/15; share export 7/7) |
+| `npm run lint` | **Pass** — no findings |
+| `npm run typecheck` (both tsconfigs) | **Pass** — includes the new `resolveJsonModule` JSON imports |
+| `npm run build` (typecheck + vite) | **Pass** — only the known pre-existing chunk-size warning for the markdown highlighter bundle |
+| Screenshots (agent-browser, real dev server on :5199) | 4 fresh 1440×900 captures from the running app in demo mode; zero page errors, zero console errors during the capture session |
+
+Notes:
+
+- Each of the 14 commits was pushed individually (`git push origin main`
+  after every commit), per the repo's working agreement; every
+  intermediate commit is self-contained and green (feature + its tests
+  ship together; docs commits touch no code).
+- Browser verification of the new surfaces (hub expansion, route
+  prefill, guide visibility, gallery scroll, share menu) was done via
+  the same session that produced the screenshots — element presence
+  and scroll were confirmed programmatically before each capture.
+- Backend suite intentionally not re-run: no backend file changed this
+  wave (last recorded state 117/117; CI covers it on push).
