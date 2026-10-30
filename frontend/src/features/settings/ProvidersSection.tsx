@@ -17,6 +17,8 @@ import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
 import { testProviderConnection } from '@/services/connection/providerConnection'
 import { suggestedModelsFor } from './suggestedModels'
+import type { FreeRoute } from './freeModels'
+import { FreeModelsHub } from './FreeModelsHub'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
@@ -771,7 +773,9 @@ export function ProvidersSection() {
   const removeProvider = useAppStore((state) => state.removeProvider)
 
   const [editing, setEditing] = useState<{ id: string; draft: ProviderDraft } | null>(null)
-  const [creating, setCreating] = useState(false)
+  // When set, a new-provider form is open — seeded either empty or from a
+  // free route (label, kind, endpoint, and starter models pre-filled).
+  const [creating, setCreating] = useState<ProviderDraft | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<ProviderProfile | null>(null)
 
   return (
@@ -789,17 +793,29 @@ export function ProvidersSection() {
         </p>
       </div>
 
+      {!creating && (
+        <FreeModelsHub
+          onUseRoute={(route: FreeRoute) =>
+            setCreating({
+              id: makeId('provider'),
+              label: route.label,
+              kind: route.kind,
+              endpointUrl: route.endpointUrl,
+              models: route.models.map((model) => ({
+                id: model.id,
+                label: model.label,
+                capabilities: ['chat'],
+              })),
+            })
+          }
+        />
+      )}
+
       {creating && (
         <ProviderForm
           isNew
-          initial={{
-            id: makeId('provider'),
-            label: '',
-            kind: 'openai-compatible',
-            endpointUrl: '',
-            models: [],
-          }}
-          onCancel={() => setCreating(false)}
+          initial={creating}
+          onCancel={() => setCreating(null)}
           onSave={(draft) => {
             addProvider({
               id: draft.id,
@@ -814,7 +830,7 @@ export function ProvidersSection() {
                 capabilities: model.capabilities,
               })),
             })
-            setCreating(false)
+            setCreating(null)
           }}
         />
       )}
@@ -918,7 +934,19 @@ export function ProvidersSection() {
       })}
 
       {!creating && (
-        <Button variant="secondary" className="self-start" onClick={() => setCreating(true)}>
+        <Button
+          variant="secondary"
+          className="self-start"
+          onClick={() =>
+            setCreating({
+              id: makeId('provider'),
+              label: '',
+              kind: 'openai-compatible',
+              endpointUrl: '',
+              models: [],
+            })
+          }
+        >
           <Plus size={14} />
           Add provider profile
         </Button>
