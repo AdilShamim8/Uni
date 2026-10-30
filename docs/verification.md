@@ -640,3 +640,35 @@ Notes:
   and scroll were confirmed programmatically before each capture.
 - Backend suite intentionally not re-run: no backend file changed this
   wave (last recorded state 117/117; CI covers it on push).
+
+## Knowledge base wave (2026-10-30, third) — 8 commits, pushed one at a time
+
+Scope: Wave 1 K1+K2 from PRODUCT_STRATEGY §6 — the local knowledge base
+(heading-aware chunking, BM25-style lexical retrieval, store + slice,
+Library section, workspace-backup integration) and retrieval into chat
+(the knowledge context source + the composer Context entry point).
+All frontend-only; backend untouched this wave.
+
+| Command (frontend/) | Result |
+| --- | --- |
+| Baseline before any change | **394/394 across 57 files** (114.3s) — reproduced the recorded state first |
+| `npx vitest run` (full suite, final state) | **445/445 across 63 files** — 394 pre-existing + 51 new (12 chunking/tokenizer, 13 search/context-block, 9 store, 7 Library UI, 6 chat integration, 2 backup, 2 composer entry) |
+| Per-feature targeted runs during development | Each feature's suite green before its commit (chunking 12/12; search 13/13; store 9/9; Library UI 7/7; knowledge-context 6/6; backup 5/5 incl. 2 new; composer entry 2/2) |
+| `npm run lint` | **Pass** — no findings (one `set-state-in-effect` finding during development was fixed to the codebase's render-phase reset pattern before commit; one unused import fixed before commit) |
+| `npm run typecheck` (both tsconfigs) | **Pass** |
+| `npm run build` (typecheck + vite) | **Pass** — only the known pre-existing chunk-size warning |
+| Screenshots (agent-browser, real dev server on :5177) | 3 fresh 1440×900 captures (knowledge-add, knowledge-library, knowledge-context) from the running app; a fresh browser session re-ran the golden path (send → Context button → attach knowledge → panel shows cited retrieval) with **zero page errors and zero console errors**. One transient React warning observed during HMR while editing `Composer.tsx` mid-session was confirmed absent on a clean reload with final code. |
+
+Notes:
+
+- Each commit was pushed individually per the working agreement; every
+  intermediate commit is self-contained and green. One commit message
+  was amended locally *before* push (wrong test count in prose).
+- `userEvent.upload` was found to honor the file input's `accept`
+  filter in tests — the PDF-rejection guard is therefore covered via
+  `fireEvent.change` (the real user path of overriding the picker).
+- The knowledge-context integration test asserts the exact system
+  prompt content a live send carries (capturing adapter), including
+  per-message retrieval differences between two consecutive sends.
+- Backend suite intentionally not re-run: no backend file changed this
+  wave (last recorded state 117/117; CI covers it on push).

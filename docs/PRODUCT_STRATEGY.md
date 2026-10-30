@@ -1,9 +1,9 @@
 # PRODUCT_STRATEGY.md — where Uni stands, what users love elsewhere, and the plan
 
 Written 30 October 2026, after the provider-freedom wave; updated the same
-day after the free-worldwide wave (commits 363–376). Companion to
-`docs/PROJECT_CONTEXT.md` (product truth) and `docs/backend-roadmap.md`
-(backend gates).
+day after the free-worldwide wave (commits 363–376) and after the knowledge
+base wave (commits 377–383+). Companion to `docs/PROJECT_CONTEXT.md`
+(product truth) and `docs/backend-roadmap.md` (backend gates).
 
 ---
 
@@ -31,7 +31,7 @@ capacity away — and Uni makes all of them one tap away.
 | Area | State |
 | --- | --- |
 | CI | **Green** — Node 22 LTS everywhere (both `CI` and `Frontend CI` passing) |
-| Tests | 394 frontend (359 + 35 new: catalog, hub, guides, gallery, share export) + 117 backend, all passing |
+| Tests | 445 frontend (394 + 51 new: chunking, retrieval, store, Library UI, chat integration, backup, composer entry) + 117 backend, all passing |
 | Frontend | React 19 + Vite + TS, 5 destinations, BYOK streaming, demo mode, dark theme, mobile-first |
 | Backend | B00–B04 complete (auth, conversations, providers, runs, employees, library); B05–B08 not started |
 | Docs | Beginner README with a screenshot-guided tour, honest per-provider guides, pictured free-path walkthrough |
@@ -45,20 +45,16 @@ Research summary (public comparisons and reviews, Oct 2026):
 
 | Project (stars, publicly reported) | What people love | Uni status |
 | --- | --- | --- |
-| **Open WebUI** (~140k) | Local-first + Ollama; **document chat / knowledge base (RAG)**; simple model management; big community | Local models ✅; RAG ❌ (Documents plugin is basic); community 🔨 |
+| **Open WebUI** (~140k) | Local-first + Ollama; **document chat / knowledge base (RAG)**; simple model management; big community | Local models ✅; RAG ✅ (local keyword retrieval, shipped 30 Oct — embeddings are the next step); community 🔨 |
 | **LobeChat** (~70k) | **Agent marketplace** (one-tap agents); **PWA**; polished design; many models built in | Agent templates ✅ (shipped today); PWA ✅ (shipped today); presets ✅ |
 | **LibreChat** (~25k+) | Multi-provider flexibility; presets; multi-user | Multi-provider ✅; presets ✅; multi-user ✅ (backend B02) |
 | **big-AGI** (~15k) | Branching UX, power-user flow | Branching ✅ (tree + variants) |
 
 **Conclusion:** Uni already matches or beats the loved features of these
-projects in chat UX, provider freedom, and honesty. The two biggest gaps:
-
-1. **Document chat / knowledge base (RAG)** — the single most-requested
-   capability across all competitors. Uni's Documents plugin handles
-   attachments, but there is no persistent, searchable knowledge base
-   that chats and agents can draw on.
-2. **Community flywheel** — marketplaces and galleries create
-   shareability and contribution pull (agents, prompts, presets).
+projects in chat UX, provider freedom, and honesty. The single biggest gap
+was closed 30 October: the knowledge base now exists (K1/K2, local mode).
+The remaining gap is the community flywheel — marketplaces and galleries
+create shareability and contribution pull (agents, prompts, presets).
 
 ## 4 · What we shipped today (copy-paste, adapted honestly)
 
@@ -98,16 +94,23 @@ honestly* — now has a front door and a flywheel:
 ## 6 · Future plan (ordered by user value ÷ effort)
 
 ### Wave 1 — Knowledge base / RAG (the Open WebUI draw) 🎯
-- **K1.** Ingest documents (PDF/MD/TXT/DOCX) into a workspace library
-  with chunking + embeddings (local embedding via transformers.js first;
-  provider embeddings optional).
-- **K2.** Retrieval into chat: an explicit `@library` context source —
-  same honesty rules as today's context features (citations, no silent
-  retrieval).
+- **K1.** ✅ *Shipped 30 October 2026 (knowledge base wave, local mode)* —
+  ingest markdown/plain text (paste or `.md`/`.txt`/`.csv`/`.json` files)
+  into a Library knowledge base with heading-aware chunking and honest
+  caps; persisted under `universe:knowledge:v1`; carried in workspace
+  backups. Local **keyword** retrieval (BM25-style + phrase bonus +
+  heading boost) — embeddings (transformers.js local, provider optional)
+  remain the next step, honestly labeled as not-embeddings until then.
+- **K2.** ✅ *Shipped 30 October 2026* — retrieval into chat as an
+  explicit context source: the composer's Context button opens the panel,
+  **Knowledge base retrieval** attaches it, and each send queries the
+  outgoing message locally, injecting only top cited excerpts with an
+  honest method header. Per-document caps; no silent retrieval; empty
+  base shows a labeled unavailable state.
 - **K3.** Agents and Work tasks draw on the same library through the
-  existing Library + plugins grant model.
+  existing Library + plugins grant model. *(Not started.)*
 - Server mode persists vectors in PostgreSQL (pgvector); local mode
-  keeps an on-device index.
+  keeps an on-device index. *(Follows embeddings.)*
 
 ### Wave 2 — Shareability flywheel (the LobeChat draw)
 - **S1.** ✅ *Shipped 30 Oct 2026* — export/import agent profiles as

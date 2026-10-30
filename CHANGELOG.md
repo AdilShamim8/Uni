@@ -4,6 +4,55 @@ All notable changes to Uni are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) with the repo's
 existing `type(scope): summary` commit vocabulary.
 
+## [Unreleased] — knowledge base wave
+
+*Shipped 30 October 2026 (third wave of the day) — the most-requested
+capability from the competitive audit: document chat / RAG, local mode
+first. 7 commits, pushed one at a time. Frontend tests 394 → 445;
+backend unchanged at 117.*
+
+### Added — the knowledge base (K1, local mode)
+
+- **Heading-aware chunking.** Markdown/plain text splits on `#`/`##`/`###`
+  sections (a hit always carries its heading), oversized sections window
+  with overlap and whole-word cuts, CRLF normalized, hard caps enforced
+  and reported honestly (400k chars, 400 chunks per document — oversized
+  input is rejected with the real reason, never silently truncated)
+  (`frontend/src/domain/knowledgeBase.ts`; 12 tests).
+- **Local lexical retrieval.** BM25-style scoring over a postings index
+  (rare terms weigh more), an exact-phrase bonus, a heading-match boost,
+  per-document caps so one document cannot flood results, and bounded
+  snippets with ellipses (13 tests). Honest labeling throughout: this is
+  keyword retrieval, not embeddings — embeddings remain the next step.
+- **Knowledge store + slice.** Documents and chunks persist under
+  `universe:knowledge:v1` with the same quarantine policy as every
+  workspace slice; orphan chunks drop on load; the index rebuilds lazily
+  (9 tests).
+- **Library Knowledge section.** Add-knowledge dialog (paste or load
+  `.md`/`.txt`/`.csv`/`.json` files), document list with chunk/character
+  counts, delete with confirmation, and a retrieval tester that runs the
+  exact search chats use. Non-text files are rejected honestly — PDF/OCR
+  extraction is not claimed (7 tests).
+- **Workspace backups carry the knowledge base.** The optional
+  `knowledge` section validates like every other slice; old backups
+  (pre-knowledge) still parse, and restoring one empties the base —
+  restore REPLACES the workspace, nothing stale survives silently. The
+  Settings copy and restore-confirmation counts say exactly what moves
+  (2 new backup tests).
+
+### Added — retrieval into chat (K2)
+
+- **The knowledge context source.** Chats attach the knowledge base from
+  the Context panel; retrieval is explicit and per-message — the outgoing
+  text is the query, and the send path appends only the top cited
+  excerpts to the system prompt with an honest header stating the method.
+  An empty base resolves to a labeled unavailable state; knowledge
+  content never appears in chat exports (6 tests).
+- **Composer Context button.** The inspector's Context tab previously had
+  no direct entry point in Chat (only side effects opened it). The
+  composer toolbar now has a Context button beside Attach files with a
+  live count badge of selected items (2 tests).
+
 ## [Unreleased] — free-worldwide wave
 
 *Shipped 30 October 2026 (later the same day) — the mission's front
