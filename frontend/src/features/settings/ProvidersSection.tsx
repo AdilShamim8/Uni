@@ -18,7 +18,9 @@ import { useAppStore } from '@/state/store'
 import { testProviderConnection } from '@/services/connection/providerConnection'
 import { suggestedModelsFor } from './suggestedModels'
 import type { FreeRoute } from './freeModels'
+import { freeRouteFor } from './freeModels'
 import { FreeModelsHub } from './FreeModelsHub'
+import { FreeSetupGuide } from './FreeSetupGuide'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
@@ -383,6 +385,11 @@ function ProviderForm({
         hint="Usually ends in /v1. Do not include /chat/completions — that path is added automatically."
         onChange={(event) => setDraft({ ...draft, endpointUrl: event.target.value })}
       />
+
+      {(() => {
+        const freeRoute = freeRouteFor(draft.kind, draft.endpointUrl)
+        return freeRoute ? <FreeSetupGuide route={freeRoute} /> : null
+      })()}
 
       <div>
         <p className="mb-2 text-sm font-medium text-ink">Models (optional)</p>

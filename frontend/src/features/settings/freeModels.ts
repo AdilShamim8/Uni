@@ -211,7 +211,7 @@ export const FREE_ROUTES: readonly FreeRoute[] = [
     steps: [
       'Download Ollama from ollama.com and install it.',
       'Pull a model in a terminal: ollama pull llama3.2',
-      'Leave Ollama running — Connect below works without any key.',
+      'Leave Ollama running, type any word as the key below (it is ignored), and press Connect.',
     ],
     models: [
       { id: 'llama3.2', label: 'Llama 3.2' },
@@ -230,7 +230,7 @@ export const FREE_ROUTES: readonly FreeRoute[] = [
     steps: [
       'Download LM Studio from lmstudio.ai and install it.',
       'Download a model in the app (e.g. a small Llama or Qwen).',
-      'Start the local server (Developer tab) — Connect below needs no key.',
+      'Start the local server (Developer tab), type any word as the key below, and press Connect.',
     ],
     models: [
       { id: 'gpt-oss:20b', label: 'GPT-OSS 20B' },
