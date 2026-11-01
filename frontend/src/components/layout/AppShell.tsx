@@ -21,14 +21,6 @@ import { InspectorHost } from '@/components/layout/InspectorHost'
 
 export interface AppShellProps {
   children: ReactNode
-  /**
-   * When true, the shell renders children without its navigation chrome
-   * (desktop sidebar, mobile drawer mount point, mobile destination bar
-   * and split workspace padding). Used by the marketing home page, which
-   * owns its full-viewport layout. Overlays (CommandPalette, dialogs)
-   * still render through their own portals and keep working.
-   */
-  isChromeHidden?: boolean
 }
 
 const BOTTOM_DESTINATIONS = [
@@ -38,7 +30,7 @@ const BOTTOM_DESTINATIONS = [
   { label: 'Library', icon: <LibraryIcon size={19} />, path: '/library', match: (p: string) => p.startsWith('/library') || p.startsWith('/projects/') },
 ]
 
-export function AppShell({ children, isChromeHidden = false }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
   const mobileSidebarOpen = useAppStore((state) => state.ui.mobileSidebarOpen)
   const setUi = useAppStore((state) => state.setUi)
   const focusMode = useWorkspaceUiStore((state) => state.focusMode)
@@ -122,10 +114,6 @@ export function AppShell({ children, isChromeHidden = false }: AppShellProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileSidebarOpen])
-
-  if (isChromeHidden) {
-    return <div className="h-dvh overflow-hidden">{children}</div>
-  }
 
   return (
     <div className="flex h-dvh overflow-hidden bg-canvas text-ink">
