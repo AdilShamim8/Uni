@@ -3,17 +3,21 @@ import { Link } from 'react-router-dom'
 import './home.css'
 
 /* ------------------------------------------------------------------ */
-/* Faithful port of the ReWoo marketing home (rewoo.tech, MIT)         */
+/* Ported from the ReWoo marketing home (rewoo.tech, MIT)              */
 /* github.com/AdilShamim8/ReWoo — index.html + styles.css + script.js  */
 /*                                                                     */
-/* Kept same-to-same: DOM structure, class names, copy, palette,       */
-/* type scale, the five helper mascots (Woo, Scout, Quill, Tally,      */
-/* Hush), the use-case tabs, the busywork calculator, the FAQ, the     */
-/* hero reviewable-workflow scene, all responsive breakpoints.         */
+/* Kept same-to-same: DOM structure, class names, palette, type        */
+/* scale, the five mascot illustrations, the use-case tabs, the        */
+/* busywork calculator, the FAQ layout, the hero reviewable-workflow   */
+/* scene, all responsive breakpoints.                                  */
 /*                                                                     */
-/* Rewired for Uni: brand name/mark, internal links point at Uni's     */
-/* real destinations (/chat /work /agents /plugins /library) instead   */
-/* of ReWoo's separate static pages.                                   */
+/* Copy adapted to Uni's real product: the five cards now name the    */
+/* five agents that actually ship with the app (Uni, Uni Assistant,   */
+/* Research Analyst, Writing Assistant, Finance Analyst), the FAQ     */
+/* describes Uni's real BYOK / local-first / open-source model, and   */
+/* "Reset local data" clears the universe:* keys the app really uses */
+/* (the original button cleared ReWoo's rewoo.* keys, which nothing   */
+/* in Uni ever writes).                                                */
 /* ------------------------------------------------------------------ */
 
 const HELPER = (name: string) => `/helpers-orig/${name}.svg`
@@ -166,9 +170,9 @@ function SiteHeader({ onClearContext }: { onClearContext: () => void }) {
       id: 'explore',
       label: 'Explore',
       items: [
-        { to: '/agents', strong: 'Meet your helpers', span: 'Five teammates. Real everyday jobs.' },
+        { to: '/agents', strong: 'Meet the agents', span: 'Five ready teammates. Real everyday jobs.' },
         { to: '/work', strong: 'Everyday workflows', span: 'Give repetitive work a clear path.' },
-        { to: '/library', strong: 'Your context, your rules', span: 'Choose what your helpers can use.' },
+        { to: '/library', strong: 'Your context, your rules', span: 'Choose what your agents can use.' },
         { to: '/plugins', strong: 'Tools & connections', span: 'Start with the tools you know.' },
       ],
     },
@@ -254,7 +258,7 @@ function SiteHeader({ onClearContext }: { onClearContext: () => void }) {
           <Link to="/library">Guides</Link>
           <Link to="/chat">Open the app</Link>
           <button type="button" className="text-button" onClick={onClearContext}>
-            Clear demo data
+            Reset local data
           </button>
         </nav>
       )}
@@ -329,9 +333,9 @@ function Hero() {
             </div>
             <div className="workspace-preview-body">
               <div className="preview-greeting">
-                <img src={HELPER('woo')} alt="Woo" width="66" height="66" />
+                <img src={HELPER('woo')} alt="Uni" width="66" height="66" />
                 <div>
-                  <span>WITH WOO</span>
+                  <span>WITH UNI</span>
                   <h3>Let&apos;s make today lighter.</h3>
                 </div>
               </div>
@@ -368,7 +372,7 @@ function Hero() {
             </div>
           </div>
           <div className="orbit-card orbit-right">
-            <img src={HELPER('quill')} alt="Quill" width="115" height="115" />
+            <img src={HELPER('quill')} alt="Writing Assistant" width="115" height="115" />
             <span className="mini-label">YOUR WRITING PARTNER</span>
             <p>
               A draft that
@@ -421,7 +425,7 @@ const CASES = {
     title: 'A plan you can\nactually follow.',
     description:
       'Turn the list in your head into a short, realistic plan. Make room for the things that matter, and keep the decisions yours.',
-    agent: 'WOO · YOUR EVERYDAY ORGANISER',
+    agent: 'UNI · YOUR EVERYDAY TEAMMATE',
     input: '“I have five things to do and no idea where to start.”',
     resultLabel: 'A LIGHTER PLAN',
     result: [
@@ -437,7 +441,7 @@ const CASES = {
     title: 'Your words. A clearer first draft.',
     description:
       'Get past the blank page. Start from your own notes, set the tone and check the details before you send anything.',
-    agent: 'QUILL · YOUR WRITING PARTNER',
+    agent: 'WRITING ASSISTANT · YOUR WRITING PARTNER',
     input: '“Help me follow up after today’s meeting.”',
     resultLabel: 'A DRAFT TO REVIEW',
     result: [
@@ -454,7 +458,7 @@ const CASES = {
     title: 'Less noise. A clearer comparison.',
     description:
       'Organise the options, record what you know and identify the evidence you still need. A confident answer needs a checkable source.',
-    agent: 'SCOUT · YOUR RESEARCH COMPANION',
+    agent: 'RESEARCH ANALYST · YOUR RESEARCH COMPANION',
     input: '“Help me compare the options without guessing.”',
     resultLabel: 'A CHECKABLE COMPARISON',
     result: [
@@ -471,7 +475,7 @@ const CASES = {
     title: 'Good notes. Useful next steps.',
     description:
       'Turn a discussion into an action list your team can understand. Confirm the owners and dates rather than filling gaps with guesses.',
-    agent: 'WOO · YOUR EVERYDAY ORGANISER',
+    agent: 'UNI · YOUR EVERYDAY TEAMMATE',
     input: '“Turn our meeting notes into an action list.”',
     resultLabel: 'A TEAM ACTION LIST',
     result: [
@@ -597,25 +601,30 @@ function UseCaseSection() {
 /* Helpers — the five mascots, original colors and copy               */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* Agents — the five that ship with the app, on the original mascot    */
+/* illustrations and card colors                                       */
+/* ------------------------------------------------------------------ */
+
 const HELPERS = [
   {
-    name: 'Woo',
-    job: 'Your everyday organiser',
+    name: 'Uni',
+    job: 'Your everyday teammate',
     file: 'woo',
     color: 'purple',
-    blurb: 'A calmer day starts here.',
+    blurb: 'Give it real work. Get the finished thing.',
     to: '/chat',
   },
   {
-    name: 'Scout',
-    job: 'Your research companion',
+    name: 'Uni Assistant',
+    job: 'Your personal assistant',
     file: 'scout',
     color: 'blue',
-    blurb: 'Find the signal in the noise.',
-    to: '/library',
+    blurb: 'Remembers what matters. Yours alone.',
+    to: '/agents',
   },
   {
-    name: 'Quill',
+    name: 'Writing Assistant',
     job: 'Your writing partner',
     file: 'quill',
     color: 'coral',
@@ -623,20 +632,20 @@ const HELPERS = [
     to: '/chat',
   },
   {
-    name: 'Tally',
-    job: 'Your planning helper',
+    name: 'Research Analyst',
+    job: 'Your research companion',
     file: 'tally',
     color: 'green',
     blurb: 'Less spreadsheet fog. More clarity.',
     to: '/work',
   },
   {
-    name: 'Hush',
-    job: 'Your private teammate',
+    name: 'Finance Analyst',
+    job: 'Your numbers explainer',
     file: 'hush',
     color: 'yellow',
-    blurb: 'Some things should stay close.',
-    to: '/library',
+    blurb: 'Trade-offs made clear, with assumptions shown.',
+    to: '/work',
   },
 ] as const
 
@@ -648,16 +657,16 @@ function HelpersSection() {
           <div>
             <Eyebrow>A TEAM THAT MAKES SENSE</Eyebrow>
             <h2>
-              Meet your new
+              Five agents,
               <br />
-              “I can do this” team.
+              ready from the first run.
             </h2>
           </div>
           <div>
             <p>
               Different jobs. One familiar place to start.
               <br />
-              Built around the helpers in our open-source app.
+              Every one of them ships with the app.
             </p>
             <TextLink to="/agents">Get to know the team</TextLink>
           </div>
@@ -759,8 +768,8 @@ function JourneySection() {
             </div>
             <h3>Keep what works.</h3>
             <p>
-              Save a useful template. When you&apos;re ready, explore routines in the local app or
-              get setup help.
+              Save a useful template. When you&apos;re ready, explore routines in the app or get
+              setup help.
             </p>
             <TextLink to="/work">Find your next step</TextLink>
           </article>
@@ -797,7 +806,7 @@ function ContextSection() {
               <CheckIcon /> Clear source and review boundaries
             </li>
             <li>
-              <CheckIcon /> A receipt of the context used in the local app
+              <CheckIcon /> A receipt of the context used in every task
             </li>
           </ul>
           <Link to="/library" className="button light">
@@ -908,8 +917,8 @@ function ControlSection() {
             result. Our examples make those steps visible.
           </p>
           <p>
-            The local app adds task traces and approval controls. Start with a draft, then decide
-            what happens next.
+            Every workflow runs with task traces and approval controls. Start with a draft, then
+            decide what happens next.
           </p>
           <Link to="/chat" className="button secondary">
             See a guided workflow
@@ -1068,27 +1077,27 @@ function GuidesSection() {
 const FAQS = [
   {
     q: 'Do I need to know how to code?',
-    a: 'No. The learning guides and interactive examples start with ordinary tasks and plain language. If you need a custom workflow, you can ask Uni for implementation help.',
+    a: 'No. Uni is a chat workspace: you describe the outcome in plain language and review what comes back. Connecting a model is one form — paste an endpoint and a key, pick a model, and you are running.',
   },
   {
-    q: 'Is the website demo using a live AI model?',
-    a: 'No. The website demo uses guided examples and rules to show how a workflow can work. The separate open-source app supports real model connections and includes an offline demo mode.',
+    q: 'How do models and API keys work?',
+    a: 'Bring your own key. Uni talks to any OpenAI-compatible or Anthropic-compatible endpoint, including local model servers. Keys are stored encrypted on your own Uni server and never leave it — they are also excluded from exports and backups by design.',
   },
   {
     q: 'What happens to the information I add?',
-    a: 'The website stores demo context in your browser only when you choose to save it. You can clear it at any time. The open-source app has its own local data store and source controls. Hosting and model-provider choices affect where data is processed.',
+    a: 'Conversations live in your browser until you choose to import them to your Uni server, and imports are previewed before anything is stored. If you sign in, chats, agents and drafts are kept in your own PostgreSQL database. Your model provider only ever sees the messages you actually send.',
   },
   {
     q: 'Will Uni send messages or make decisions for me?',
-    a: 'The website demo does not send messages or act in other apps. The open-source app includes approval controls and email drafting. Start with reviewable output and agree any production automation separately.',
+    a: 'No. Uni drafts, compares and organises — the review step is always yours. Nothing is shared or sent anywhere until you export it yourself, and each run shows its inputs and its result so you can check the work.',
   },
   {
-    q: 'Can you help my small team use AI?',
-    a: 'Yes. Uni offers discovery, workflow implementation and ongoing support. The scope, integrations, pricing and delivery schedule are agreed for your project.',
+    q: 'Is Uni really open source, and can I self-host it?',
+    a: 'Yes. The whole stack — this app and its Fastify + PostgreSQL backend — is open source on GitHub, so you can run it on your own infrastructure with your own database and your own model endpoints whenever the hosted version is not what you want.',
   },
   {
-    q: 'Is Order Desk Pro part of Uni?',
-    a: 'Yes. Order Desk Pro is a separate specialist apparel product. It remains accessible, while this homepage focuses on learning AI and improving everyday work.',
+    q: 'What does it cost?',
+    a: 'The app itself is free and open source. You pay only your model provider for what you use — and if you point Uni at a local model, running it costs nothing but your own hardware.',
   },
 ] as const
 
@@ -1169,7 +1178,7 @@ function SiteFooter({ onClearContext }: { onClearContext: () => void }) {
           <p>
             A little AI. A lot more you.
             <br />
-            Learn, organise and get useful work done.
+            Bring your own key. Keep your own data.
           </p>
           <a
             className="text-link"
@@ -1177,7 +1186,7 @@ function SiteFooter({ onClearContext }: { onClearContext: () => void }) {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Explore the open-source app ↗
+            Explore the source on GitHub ↗
           </a>
         </div>
         <div>
@@ -1200,7 +1209,7 @@ function SiteFooter({ onClearContext }: { onClearContext: () => void }) {
           <Link to="/chat">Our story</Link>
           <Link to="/plugins">Open source</Link>
           <a href="https://github.com/AdilShamim8/Uni" target="_blank" rel="noopener noreferrer">
-            Order Desk Pro
+            Source on GitHub
           </a>
           <a href="mailto:adilshamim696@gmail.com">Email the founder</a>
         </div>
@@ -1211,7 +1220,7 @@ function SiteFooter({ onClearContext }: { onClearContext: () => void }) {
           <Link to="/library">Privacy</Link>
           <Link to="/library">Terms</Link>
           <button type="button" className="text-button" onClick={onClearContext}>
-            Clear demo data
+            Reset local data
           </button>
         </div>
       </div>
@@ -1234,10 +1243,14 @@ export function HomePage() {
 
   const clearContext = () => {
     try {
-      localStorage.removeItem('rewoo.demo.context.v1')
-      localStorage.removeItem('rewoo.demo.templates.v1')
-      localStorage.removeItem('rewoo.learning.v1')
-      setToastMessage('Demo context, learning progress and templates cleared.')
+      // The exact keys the app persists to localStorage. Anything else
+      // (including the historical rewoo.* keys this page once cleared)
+      // is not written by Uni and need not be touched here.
+      const keys = Object.keys(localStorage).filter(
+        (key) => key === 'universe:data' || key.startsWith('universe:'),
+      )
+      for (const key of keys) localStorage.removeItem(key)
+      window.location.reload()
     } catch {
       setToastMessage('Browser storage is unavailable in this session.')
     }
