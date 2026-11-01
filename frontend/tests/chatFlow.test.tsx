@@ -11,7 +11,7 @@ setupAppTest()
 describe('chat flow', () => {
   it('sends a message and streams a deterministic response', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     const composer = screen.getByLabelText('Message Uni')
     await user.type(composer, 'Help me brainstorm ideas for a weekend plan')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
@@ -25,14 +25,14 @@ describe('chat flow', () => {
   })
 
   it('disables sending for empty input', () => {
-    renderApp('/')
+    renderApp('/chat')
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()
   })
 
   it('stops generation and marks the message as stopped', async () => {
     setChatAdapter(createMockAdapter({ chunkDelay: 90, firstTokenDelay: 0 }))
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.type(screen.getByLabelText('Message Uni'), 'Give me ideas for a plan')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
@@ -51,7 +51,7 @@ describe('chat flow', () => {
 
   it('simulates an error with /fail and offers retry', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.type(screen.getByLabelText('Message Uni'), '/fail this one please')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
@@ -63,7 +63,7 @@ describe('chat flow', () => {
 
   it('edits an earlier message into a branch and preserves the original', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.type(screen.getByLabelText('Message Uni'), 'First topic: brainstorm ideas')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
     await screen.findByText(/Start with the smallest useful slice/)
@@ -87,7 +87,7 @@ describe('chat flow', () => {
 
   it('regenerates a response and switches between variants', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.type(screen.getByLabelText('Message Uni'), 'Give me ideas for a plan')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
     await screen.findByText(/Start with the smallest useful slice/)
@@ -104,7 +104,7 @@ describe('chat flow', () => {
 
   it('persists conversations locally and restores them after reload', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.type(screen.getByLabelText('Message Uni'), 'remember this hippopotamus')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
     await screen.findByText(/Here is a take on/i)
@@ -120,7 +120,7 @@ describe('chat flow', () => {
     ).toBe(true)
 
     reloadForTests()
-    renderApp('/')
+    renderApp('/chat')
     const item = await screen.findByText(/remember this hippopotamus/i)
     await user.click(item)
     expect(await screen.findByText(/Here is a take on/i)).toBeInTheDocument()
@@ -128,7 +128,7 @@ describe('chat flow', () => {
 
   it('keeps temporary chats out of local storage and reloads', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'New temporary chat' }))
     // The top-bar temporary toggle reflects the active conversation state.
     expect(await screen.findByRole('button', { name: 'Toggle temporary chat' })).toHaveAttribute(
@@ -150,7 +150,7 @@ describe('chat flow', () => {
     ).toBe(true)
 
     reloadForTests()
-    renderApp('/')
+    renderApp('/chat')
     await screen.findByText('Welcome to Uni')
     expect(screen.queryByText(/ephemeral brainstorm ideas/)).not.toBeInTheDocument()
   })

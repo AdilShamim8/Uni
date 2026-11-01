@@ -8,7 +8,7 @@ setupAppTest()
 
 async function openSettings() {
   const user = userEvent.setup()
-  renderApp('/')
+  renderApp('/chat')
   await user.click(screen.getByRole('button', { name: /Demo user/i }))
   await user.click(await screen.findByRole('menuitem', { name: 'Settings' }))
   return within(await screen.findByRole('dialog', { name: 'Settings' }))
@@ -130,7 +130,7 @@ describe('settings', () => {
 describe('provider quick setup', () => {
   it('deep-links the empty state button straight to Providers & models', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
 
     await user.click(
       screen.getByRole('button', { name: /Connect a supported provider/i }),
@@ -143,7 +143,7 @@ describe('provider quick setup', () => {
 
   it('fills label, kind, and endpoint from a one-tap preset', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
 
     await user.click(
       screen.getByRole('button', { name: /Connect a supported provider/i }),
@@ -167,7 +167,7 @@ describe('provider quick setup', () => {
 
   it('offers xAI Grok and DeepSeek as one-tap presets', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
 
     await user.click(
       screen.getByRole('button', { name: /Connect a supported provider/i }),
@@ -188,7 +188,7 @@ describe('provider quick setup', () => {
 
   it('offers the wider provider catalog as one-tap presets', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
 
     await user.click(
       screen.getByRole('button', { name: /Connect a supported provider/i }),
@@ -218,7 +218,7 @@ describe('provider quick setup', () => {
 
   it('adds a suggested model with one tap after picking a provider', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
 
     await user.click(
       screen.getByRole('button', { name: /Connect a supported provider/i }),
@@ -246,7 +246,7 @@ describe('provider quick setup', () => {
 
   it('offers suggestions when editing an existing provider too', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
 
     await user.click(
       screen.getByRole('button', { name: /Connect a supported provider/i }),
@@ -310,7 +310,7 @@ describe('provider quick setup', () => {
 
   it('suggests free OpenRouter models for the OpenRouter preset', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
 
     await user.click(
       screen.getByRole('button', { name: /Connect a supported provider/i }),
@@ -329,7 +329,7 @@ describe('provider quick setup', () => {
 
 describe('settings keyboard shortcut', () => {
   it('opens Settings with Ctrl/Cmd+, and Escape closes it', async () => {
-    renderApp('/')
+    renderApp('/chat')
     fireEvent.keyDown(window, { key: ',', ctrlKey: true })
 
     const dialog = await screen.findByRole('dialog', { name: 'Settings' })

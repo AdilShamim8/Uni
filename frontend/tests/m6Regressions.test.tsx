@@ -256,7 +256,7 @@ describe('drafts survive switching between Chat, Work, and an employee', () => {
   setupAppTest()
 
   it('keeps three separate drafts and restores each on return', async () => {
-    renderApp('/')
+    renderApp('/chat')
 
     // Chat draft
     await userEvent.type(screen.getByLabelText(/Message Uni/i), 'chat draft thought')

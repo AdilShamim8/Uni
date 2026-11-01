@@ -360,7 +360,7 @@ export function TopBar() {
         destructive
         onConfirm={() => {
           if (conversation) deleteConversation(conversation.id)
-          navigate('/')
+          navigate('/chat')
         }}
       />
     </PageToolbar>

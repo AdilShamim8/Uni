@@ -15,7 +15,7 @@ setupAppTest()
 
 describe('plugins in ordinary chat (F09)', () => {
   it('round-trips a built-in from a normal chat: grant → create → receipt → revoke', async () => {
-    renderApp('/')
+    renderApp('/chat')
 
     // Send a message so a real conversation exists.
     const composer = screen.getByLabelText('Message Uni')
@@ -65,7 +65,7 @@ describe('plugins in ordinary chat (F09)', () => {
   })
 
   it('temporary chats keep grants and receipts out of persistence', async () => {
-    renderApp('/')
+    renderApp('/chat')
 
     // Start a temporary chat and say something.
     fireEvent.click(screen.getByRole('button', { name: /Toggle temporary chat/i }))

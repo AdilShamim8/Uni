@@ -16,8 +16,11 @@ import { resetComposerDraftsForTests } from '@/features/chat/composerDrafts'
 import { resetThreadDraftsForTests } from '@/features/conversation/threadDrafts'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 
-/** Render the full app with an in-memory router. */
-export function renderApp(initialEntry = '/'): ReturnType<typeof render> {
+/**
+ * Render the full app with an in-memory router. The dashboard home is
+ * "/chat" since the marketing home page took over "/".
+ */
+export function renderApp(initialEntry = '/chat'): ReturnType<typeof render> {
   return render(
     <MemoryRouter initialEntries={[initialEntry]}>
       <App />

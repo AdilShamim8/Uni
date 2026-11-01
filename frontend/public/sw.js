@@ -20,7 +20,7 @@
  * piece of the app that runs before everything else.
  */
 
-const SHELL_VERSION = 'uni-shell-v1'
+const SHELL_VERSION = 'uni-shell-v2'
 const SHELL_CACHE = `${SHELL_VERSION}:assets`
 
 self.addEventListener('install', (event) => {
@@ -30,7 +30,14 @@ self.addEventListener('install', (event) => {
       .then((cache) =>
         // Best-effort warm-up: the shell + icons. Failures are fine —
         // runtime caching fills the gaps.
-        cache.addAll(['/', '/universe-mark.svg', '/manifest.webmanifest']).catch(() => undefined),
+        cache
+          .addAll([
+            '/',
+            '/chat',
+            '/universe-mark.svg',
+            '/manifest.webmanifest',
+          ])
+          .catch(() => undefined),
       )
       .then(() => self.skipWaiting()),
   )
@@ -68,10 +75,17 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           const copy = response.clone()
-          caches.open(SHELL_CACHE).then((cache) => cache.put('/', copy)).catch(() => undefined)
+          caches
+            .open(SHELL_CACHE)
+            .then((cache) => cache.put(url.pathname, copy))
+            .catch(() => undefined)
           return response
         })
-        .catch(() => caches.match('/').then((cached) => cached ?? Response.error())),
+        .catch(() =>
+          caches
+            .match(url.pathname)
+            .then((cached) => cached ?? caches.match('/').then((root) => root ?? Response.error())),
+        ),
     )
     return
   }

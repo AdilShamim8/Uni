@@ -507,7 +507,7 @@ describe('live routing through the store', () => {
     vi.stubGlobal('fetch', sessionAwareFetch(fetchMock))
 
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.type(screen.getByLabelText('Message Uni'), 'anybody out there')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
@@ -533,7 +533,7 @@ describe('live routing through the store', () => {
     vi.stubGlobal('fetch', sessionAwareFetch(fetchMock))
 
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.type(screen.getByLabelText('Message Uni'), 'Help me brainstorm ideas')
     await user.click(screen.getByRole('button', { name: 'Send message' }))
 
