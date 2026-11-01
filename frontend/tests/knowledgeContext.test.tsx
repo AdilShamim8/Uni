@@ -27,7 +27,7 @@ function captureAdapter(): { requests: ChatRequest[]; adapter: ChatAdapter } {
 }
 
 async function startConversation(): Promise<string> {
-  renderApp('/')
+  renderApp('/chat')
   const input = screen.getByLabelText('Message Uni')
   await userEvent.type(input, 'How do I onboard?')
   await userEvent.click(screen.getByRole('button', { name: 'Send message' }))

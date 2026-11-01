@@ -8,7 +8,7 @@ setupAppTest()
 
 async function openProvidersSection() {
   const user = userEvent.setup()
-  renderApp('/')
+  renderApp('/chat')
   await user.click(screen.getByRole('button', { name: /Connect a supported provider/i }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
   await user.click(dialog.getByRole('button', { name: 'Providers & models' }))

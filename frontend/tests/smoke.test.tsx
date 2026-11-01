@@ -7,12 +7,30 @@ import { App } from '@/app/App'
 afterEach(cleanup)
 
 describe('scaffold smoke test', () => {
-  it('renders the application placeholder', () => {
+  it('renders the marketing home page at "/" with app entry points', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/']}>
         <App />
       </MemoryRouter>,
     )
+    // The ReWoo-style landing page owns the root route: hero headline,
+    // header CTA into the app, and the five companion cards.
+    expect(
+      screen.getByRole('heading', { name: /you and ai/i }),
+    ).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: /try uni/i }).length).toBeGreaterThan(0)
+    for (const companion of ['Nova', 'Atlas', 'Echo', 'Prism', 'Vault']) {
+      expect(screen.getByRole('heading', { name: companion })).toBeInTheDocument()
+    }
+  })
+
+  it('renders the application placeholder', () => {
+    render(
+      <MemoryRouter initialEntries={['/chat']}>
+        <App />
+      </MemoryRouter>,
+    )
+    // The dashboard home is "/chat" since the marketing page took "/".
     // Empty state shows the welcome composition; the sidebar carries the
     // Uni wordmark, so the top bar no longer duplicates it.
     expect(
@@ -23,7 +41,7 @@ describe('scaffold smoke test', () => {
 
   it('primary action and temporary chat are separate sibling controls', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/chat']}>
         <App />
       </MemoryRouter>,
     )
@@ -51,7 +69,7 @@ describe('scaffold smoke test', () => {
 
   it('primary navigation is a flat list, not a settings-style card', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter initialEntries={['/chat']}>
         <App />
       </MemoryRouter>,
     )

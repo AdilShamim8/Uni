@@ -10,7 +10,7 @@ setupAppTest()
 
 describe('composer context entry point', () => {
   it('opens the inspector Context tab from the composer toolbar', async () => {
-    renderApp('/')
+    renderApp('/chat')
     const input = screen.getByLabelText('Message Uni')
     await userEvent.type(input, 'Hello there')
     await userEvent.click(screen.getByRole('button', { name: 'Send message' }))
@@ -30,7 +30,7 @@ describe('composer context entry point', () => {
   })
 
   it('the badge counts selected context items for the active conversation', async () => {
-    renderApp('/')
+    renderApp('/chat')
     const input = screen.getByLabelText('Message Uni')
     await userEvent.type(input, 'Hello again')
     await userEvent.click(screen.getByRole('button', { name: 'Send message' }))

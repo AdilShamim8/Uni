@@ -32,7 +32,7 @@ function makeSlots(): [CompareSlot, CompareSlot] {
 describe('model comparison', () => {
   it('never auto-runs — the run starts only from the explicit button', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Compare models' }))
 
     // Pick models and type a prompt; nothing runs yet.
@@ -176,7 +176,7 @@ describe('model comparison', () => {
     })
 
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Compare models' }))
 
     // The current run renders; continue its first result in chat.
@@ -213,7 +213,7 @@ describe('model comparison', () => {
     })
 
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Compare models' }))
     await user.click(screen.getAllByRole('button', { name: /Save to Canvas/ })[0])
 
@@ -230,7 +230,7 @@ describe('model comparison', () => {
 
   it('shows the charge warning when a live model is selected', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
 
     // Simulate a connected credential for the demo provider.
     useAppStore.setState((state) => ({

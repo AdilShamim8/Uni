@@ -22,6 +22,7 @@ import { WorkPage } from '@/features/work/WorkPage'
 import { AgentsPage } from '@/features/agents/AgentsPage'
 import { LibraryPage } from '@/features/library/LibraryPage'
 import { PluginsPage } from '@/features/plugins/PluginsPage'
+import { HomePage } from '@/features/home/HomePage'
 
 export function App() {
   const initialize = useAppStore((state) => state.initialize)
@@ -92,10 +93,17 @@ export function App() {
 
   return (
     <ThemeProvider>
-      <AppShell>
+      <Routes location={location}>
+        {/* Home — the marketing landing page. It renders outside the
+            AppShell by design: no sidebar, destination bar or theme
+            materials, just an honest standalone page. */}
+        <Route path="/" element={<HomePage />} />
+      </Routes>
+      <AppShell isChromeHidden={location.pathname === '/'}>
         <Routes location={location}>
-          {/* Chat — existing routes preserved for compatibility */}
-          <Route path="/" element={<ChatPage />} />
+          {/* Chat — the dashboard home since the route move; "/c/:id"
+              is unchanged so existing conversation links keep working. */}
+          <Route path="/chat" element={<ChatPage />} />
           <Route path="/c/:conversationId" element={<ChatPage />} />
           {/* Work — task briefs, demo execution, review */}
           <Route path="/work" element={<WorkPage />} />

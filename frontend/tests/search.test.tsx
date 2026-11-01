@@ -10,7 +10,7 @@ setupAppTest()
 
 describe('workspace command palette', () => {
   it('opens with Ctrl+K as workspace-wide search', async () => {
-    renderApp('/')
+    renderApp('/chat')
     fireEvent.keyDown(window, { key: 'k', ctrlKey: true })
     const dialog = await screen.findByRole('dialog', { name: 'Search workspace' })
     expect(dialog).toBeInTheDocument()
@@ -24,7 +24,7 @@ describe('workspace command palette', () => {
 
   it('focuses the input, filters chat content, and opens the result by keyboard', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Search workspace' }))
 
     const input = await screen.findByPlaceholderText(/Search everything/)
@@ -47,7 +47,7 @@ describe('workspace command palette', () => {
     })
 
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Search workspace' }))
     await user.click(await screen.findByRole('tab', { name: 'Files' }))
 
@@ -60,7 +60,7 @@ describe('workspace command palette', () => {
 
   it('excludes temporary chats from results', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     const temporaryId = useAppStore.getState().newConversation({ temporary: true })
     expect(useAppStore.getState().conversations[temporaryId].temporary).toBe(true)
 
@@ -78,7 +78,7 @@ describe('workspace command palette', () => {
 
   it('runs the New document action end to end', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Search workspace' }))
 
     const action = await screen.findByRole('option', { name: /New document/ })
@@ -103,7 +103,7 @@ describe('workspace command palette', () => {
 
   it('switches theme from the palette action', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Search workspace' }))
 
     const before = document.documentElement.getAttribute('data-theme')
@@ -116,7 +116,7 @@ describe('workspace command palette', () => {
 
   it('shows a useful empty state when nothing matches', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Search workspace' }))
     const input = await screen.findByPlaceholderText(/Search everything/)
     await user.type(input, 'zzzz-no-such-record')
@@ -127,7 +127,7 @@ describe('workspace command palette', () => {
 
   it('navigates with arrow keys through grouped results', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: 'Search workspace' }))
     await screen.findByPlaceholderText(/Search everything/)
 

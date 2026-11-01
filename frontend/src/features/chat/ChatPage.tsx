@@ -36,10 +36,10 @@ export function ChatPage() {
           selectConversation(conversationId)
         }
       } else {
-        navigate('/', { replace: true })
+        navigate('/chat', { replace: true })
       }
     }
-    // When the route is "/", the store keeps its current selection so the
+    // When the route is "/chat", the store keeps its current selection so the
     // sidebar highlight survives; ChatPage simply renders the empty state.
   }, [conversationId, conversations, navigate, selectConversation])
 

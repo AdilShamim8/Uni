@@ -9,7 +9,7 @@ setupAppTest()
 
 describe('Canvas — persistent workspace', () => {
   it('saving a message to Canvas copies the selected variant with source ids, never overwriting', async () => {
-    renderApp('/')
+    renderApp('/chat')
 
     // Send a message to get a reply worth saving.
     const input = screen.getByLabelText('Message Uni')

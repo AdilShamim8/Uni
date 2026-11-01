@@ -7,7 +7,7 @@ setupAppTest()
 
 async function openCreateForm() {
   const user = userEvent.setup()
-  renderApp('/')
+  renderApp('/chat')
   await user.click(screen.getByRole('button', { name: /Connect a supported provider/i }))
   const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
   await user.click(dialog.getByRole('button', { name: 'Providers & models' }))
@@ -67,7 +67,7 @@ describe('free setup guide', () => {
 
   it('shows the guide when picking a route from the free hub too', async () => {
     const user = userEvent.setup()
-    renderApp('/')
+    renderApp('/chat')
     await user.click(screen.getByRole('button', { name: /Connect a supported provider/i }))
     const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
     await user.click(dialog.getByRole('button', { name: 'Providers & models' }))

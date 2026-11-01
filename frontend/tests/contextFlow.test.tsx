@@ -21,7 +21,7 @@ describe('project context — selection, scoping, and cleanup', () => {
       markdown: '# Product notes\n\nThe widget ships in Q3.',
     })
 
-    renderApp('/')
+    renderApp('/chat')
     // Start a conversation so it becomes the context target.
     const input = screen.getByLabelText('Message Uni')
     await userEvent.type(input, 'Summarize my product notes')

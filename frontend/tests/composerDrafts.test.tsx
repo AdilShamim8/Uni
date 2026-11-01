@@ -54,7 +54,7 @@ describe('composer draft ownership (audit D2)', () => {
   it('preserves text typed while a reply streams', async () => {
     const controlled = createControlledAdapter()
     setChatAdapter(controlled.adapter)
-    renderApp('/')
+    renderApp('/chat')
 
     const input = screen.getByLabelText('Message Uni')
     await userEvent.type(input, 'First message')
@@ -77,7 +77,7 @@ describe('composer draft ownership (audit D2)', () => {
   })
 
   it('scopes drafts per conversation and restores them on switch', async () => {
-    renderApp('/')
+    renderApp('/chat')
 
     const input = screen.getByLabelText('Message Uni')
     const { useAppStore } = await import('@/state/store')

@@ -12,7 +12,7 @@ describe('mobile drawer modal semantics (audit D3)', () => {
   setupAppTest()
 
   it('closes on Escape and keeps dialog semantics', async () => {
-    renderApp('/')
+    renderApp('/chat')
 
     await userEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
 
@@ -26,7 +26,7 @@ describe('mobile drawer modal semantics (audit D3)', () => {
   })
 
   it('makes the background inert while open and restores it on close', async () => {
-    renderApp('/')
+    renderApp('/chat')
 
     await userEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
     await screen.findByRole('dialog', { name: 'History and tools' })
@@ -42,7 +42,7 @@ describe('mobile drawer modal semantics (audit D3)', () => {
   })
 
   it('moves focus into the drawer and back to the trigger on close', async () => {
-    renderApp('/')
+    renderApp('/chat')
 
     const trigger = screen.getByRole('button', { name: 'Open navigation' })
     trigger.focus()

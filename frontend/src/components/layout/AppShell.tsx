@@ -19,14 +19,26 @@ import { InspectorHost } from '@/components/layout/InspectorHost'
  * destination usable — it never clears drafts, selections, or panel state.
  */
 
+export interface AppShellProps {
+  children: ReactNode
+  /**
+   * When true, the shell renders children without its navigation chrome
+   * (desktop sidebar, mobile drawer mount point, mobile destination bar
+   * and split workspace padding). Used by the marketing home page, which
+   * owns its full-viewport layout. Overlays (CommandPalette, dialogs)
+   * still render through their own portals and keep working.
+   */
+  isChromeHidden?: boolean
+}
+
 const BOTTOM_DESTINATIONS = [
-  { label: 'Chat', icon: <MessageSquare size={19} />, path: '/', match: (p: string) => p === '/' || p.startsWith('/c/') },
+  { label: 'Chat', icon: <MessageSquare size={19} />, path: '/chat', match: (p: string) => p === '/chat' || p.startsWith('/c/') },
   { label: 'Work', icon: <Briefcase size={19} />, path: '/work', match: (p: string) => p.startsWith('/work') },
   { label: 'Agents', icon: <Bot size={19} />, path: '/agents', match: (p: string) => p.startsWith('/agents') },
   { label: 'Library', icon: <LibraryIcon size={19} />, path: '/library', match: (p: string) => p.startsWith('/library') || p.startsWith('/projects/') },
 ]
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({ children, isChromeHidden = false }: AppShellProps) {
   const mobileSidebarOpen = useAppStore((state) => state.ui.mobileSidebarOpen)
   const setUi = useAppStore((state) => state.setUi)
   const focusMode = useWorkspaceUiStore((state) => state.focusMode)
@@ -110,6 +122,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileSidebarOpen])
+
+  if (isChromeHidden) {
+    return <div className="h-dvh overflow-hidden">{children}</div>
+  }
 
   return (
     <div className="flex h-dvh overflow-hidden bg-canvas text-ink">
