@@ -4,6 +4,48 @@ All notable changes to Uni are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) with the repo's
 existing `type(scope): summary` commit vocabulary.
 
+## [Unreleased] — the marketing home page
+
+*Shipped 1 November 2026 — the root route becomes an honest landing
+page in the visual language of the author's earlier ReWoo project, and
+the dashboard moves to `/chat`. 5 commits, pushed one at a time.
+Frontend tests 445 → 446; backend unchanged at 117.*
+
+### Added
+
+- **The marketing home page (`/`).** All nine ReWoo compositions rebuilt
+  as React under `.uni-home` scoping: hero with the floating reviewable
+  workflow and orbit cards, audience band, four use-case tabs, the five
+  companions, the three-step journey, the dark context board, the review
+  trace, the busywork calculator, guides, FAQ, closing and footer
+  (`frontend/src/features/home/HomePage.tsx` + `home.css`).
+- **Five destination characters.** Nova (Chat), Atlas (Work), Echo
+  (Agents), Prism (Plugins) and Vault (Library) — the ReWoo helper
+  mascots recolored into Uni's palette, self-hosted as
+  `frontend/public/helpers/*.svg` with MIT attribution in
+  `third_party/licenses/rewwo/` and the full reuse map in
+  `docs/rewwo-reuse.md`.
+- **Self-hosted DM Sans + Sora** for the landing page only (OFL notices
+  included); the dashboard keeps its system font stack untouched.
+- **`isChromeHidden` on AppShell** — the landing page renders without
+  sidebar/destination bar while Command Palette, dialogs and toasts keep
+  working through their portals.
+- **Service worker shell v2** — warms and offline-caches both `/` and
+  `/chat` under their own URLs so deep links each keep an offline shell.
+- Smoke coverage for the landing page: hero, Try Uni CTA and the five
+  companion headings.
+
+### Changed
+
+- **Route move: the dashboard chat home is now `/chat`** (was `/`).
+  `/c/:id` conversation links are unchanged and keep resolving. Sidebar
+  chat destination, the mobile destination bar, TopBar post-delete
+  navigation and ChatPage's invalid-id redirect were updated together.
+- **The empty-chat welcome speaks the landing page's language** — the
+  Uni mark in a soft accent tile, the underlined accent word "today" in
+  the headline, and starter chips in the float-pill voice with an
+  accent icon disc. Copy structure and behavior unchanged.
+
 ## [Unreleased] — knowledge base wave
 
 *Shipped 30 October 2026 (third wave of the day) — the most-requested
