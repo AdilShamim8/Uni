@@ -34,7 +34,7 @@ describe('scaffold smoke test', () => {
     // Empty state shows the welcome composition; the sidebar carries the
     // Uni wordmark, so the top bar no longer duplicates it.
     expect(
-      screen.getByRole('heading', { name: /what would you like to create\?/i }),
+      screen.getByRole('heading', { name: /what would you like to create today\?/i }),
     ).toBeInTheDocument()
     expect(screen.getByText('Uni')).toBeInTheDocument()
   })
