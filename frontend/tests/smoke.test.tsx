@@ -13,17 +13,38 @@ describe('scaffold smoke test', () => {
         <App />
       </MemoryRouter>,
     )
-    // The ReWoo home page, ported faithfully, owns the root route: the
-    // hero headline, the header CTA into the app, and the five original
-    // helper cards (Woo, Scout, Quill, Tally, Hush).
+    // The ported ReWoo home page owns the root route: the hero headline,
+    // the header CTA into the app, and the five agent cards — named for
+    // the five agents that actually ship with the app (Uni, Uni
+    // Assistant, Research Analyst, Writing Assistant, Finance Analyst).
     expect(
       screen.getByRole('heading', {
         name: /a little ai\.?\s*a lot more you\./i,
       }),
     ).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /try uni/i }).length).toBeGreaterThan(0)
-    for (const helper of ['Woo', 'Scout', 'Quill', 'Tally', 'Hush']) {
-      expect(screen.getByRole('heading', { name: helper })).toBeInTheDocument()
+    // The agent cards render inside the helpers section; "Uni" alone is
+    // ambiguous because the footer brand is also a heading-level element.
+    const helperSection = screen
+      .getAllByRole('heading', { name: /five agents/i })
+      .map((heading) => heading.closest('section'))
+      .find((section): section is HTMLElement => section !== null)
+    expect(helperSection).toBeDefined()
+    for (const agent of [
+      'Uni',
+      'Uni Assistant',
+      'Research Analyst',
+      'Writing Assistant',
+      'Finance Analyst',
+    ]) {
+      expect(
+        within(helperSection as HTMLElement).getByRole('heading', { name: agent }),
+      ).toBeInTheDocument()
+    }
+    // No fictional helper names or leftover predecessor-product copy.
+    expect(screen.queryByText('Order Desk Pro')).not.toBeInTheDocument()
+    for (const fictional of ['Woo', 'Scout', 'Quill', 'Tally', 'Hush']) {
+      expect(screen.queryByRole('heading', { name: fictional })).not.toBeInTheDocument()
     }
   })
 
