@@ -13,14 +13,17 @@ describe('scaffold smoke test', () => {
         <App />
       </MemoryRouter>,
     )
-    // The ReWoo-style landing page owns the root route: hero headline,
-    // header CTA into the app, and the five companion cards.
+    // The ReWoo home page, ported faithfully, owns the root route: the
+    // hero headline, the header CTA into the app, and the five original
+    // helper cards (Woo, Scout, Quill, Tally, Hush).
     expect(
-      screen.getByRole('heading', { name: /you and ai/i }),
+      screen.getByRole('heading', {
+        name: /a little ai\.?\s*a lot more you\./i,
+      }),
     ).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: /try uni/i }).length).toBeGreaterThan(0)
-    for (const companion of ['Nova', 'Atlas', 'Echo', 'Prism', 'Vault']) {
-      expect(screen.getByRole('heading', { name: companion })).toBeInTheDocument()
+    for (const helper of ['Woo', 'Scout', 'Quill', 'Tally', 'Hush']) {
+      expect(screen.getByRole('heading', { name: helper })).toBeInTheDocument()
     }
   })
 

@@ -1,24 +1,30 @@
-import { useId, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  BookOpen,
-  Briefcase,
-  Compass,
-  Cpu,
-  Feather,
-  Lock,
-  Sparkles,
-} from 'lucide-react'
 import './home.css'
 
 /* ------------------------------------------------------------------ */
-/* Small shared primitives                                             */
+/* Faithful port of the ReWoo marketing home (rewoo.tech, MIT)         */
+/* github.com/AdilShamim8/ReWoo — index.html + styles.css + script.js  */
+/*                                                                     */
+/* Kept same-to-same: DOM structure, class names, copy, palette,       */
+/* type scale, the five helper mascots (Woo, Scout, Quill, Tally,      */
+/* Hush), the use-case tabs, the busywork calculator, the FAQ, the     */
+/* hero reviewable-workflow scene, all responsive breakpoints.         */
+/*                                                                     */
+/* Rewired for Uni: brand name/mark, internal links point at Uni's     */
+/* real destinations (/chat /work /agents /plugins /library) instead   */
+/* of ReWoo's separate static pages.                                   */
 /* ------------------------------------------------------------------ */
+
+const HELPER = (name: string) => `/helpers-orig/${name}.svg`
+const BRAND_MARK = '/helpers-orig/uni-mark.svg'
+
+/* --- the inline icon set, identical strokes to the original ------- */
 
 function Icon({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <svg
-      className={`uh-icon${className ? ` ${className}` : ''}`}
+      className={className ? `icon ${className}` : 'icon'}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -32,216 +38,224 @@ function Icon({ children, className }: { children: ReactNode; className?: string
   )
 }
 
-const Arrow = ({ className }: { className?: string }) => (
-  <Icon className={className}>
+const ArrowIcon = () => (
+  <Icon>
     <path d="M5 12h14m-6-6 6 6-6 6" />
   </Icon>
 )
 
-function PrimaryButton({
-  to,
-  children,
-  small,
-  onClick,
-}: {
-  to?: string
-  children: ReactNode
-  small?: boolean
-  onClick?: () => void
-}) {
-  const classes = `uh-button uh-primary${small ? ' uh-small' : ''}`
-  if (to) {
-    return (
-      <Link to={to} className={classes}>
-        {children}
-        <Arrow />
-      </Link>
-    )
-  }
-  return (
-    <button type="button" className={classes} onClick={onClick}>
-      {children}
-      <Arrow />
-    </button>
-  )
-}
+const MenuIcon = () => (
+  <Icon>
+    <path d="M4 7h16M4 12h16M4 17h16" />
+  </Icon>
+)
 
-function SecondaryButton({
-  to,
-  children,
-  href,
-}: {
-  to?: string
-  children: ReactNode
-  href?: string
-}) {
-  if (to) {
-    return (
-      <Link to={to} className="uh-button uh-secondary">
-        {children}
-        <Arrow />
-      </Link>
-    )
-  }
-  if (href) {
-    return (
-      <a href={href} className="uh-button uh-secondary" target="_blank" rel="noopener noreferrer">
-        {children}
-        <Arrow />
-      </a>
-    )
-  }
-  return null
-}
+const CheckIcon = () => (
+  <Icon>
+    <path d="m5 12 4 4 10-10" />
+  </Icon>
+)
 
-function TextLink({ to, children, href }: { to?: string; children: ReactNode; href?: string }) {
-  if (to) {
-    return (
-      <Link to={to} className="uh-text-link">
-        {children}
-        <Arrow />
-      </Link>
-    )
-  }
-  return (
-    <a href={href} className="uh-text-link" target="_blank" rel="noopener noreferrer">
-      {children}
-      <Arrow />
-    </a>
-  )
-}
+const SparkIcon = () => (
+  <Icon>
+    <path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z" />
+  </Icon>
+)
+
+const BookIcon = () => (
+  <Icon>
+    <path d="M12 5v16M12 5C8 2 4 3 2 4v15c3-1 7-1 10 2 3-3 7-3 10-2V4c-2-1-6-2-10 1Z" />
+  </Icon>
+)
+
+const PenIcon = () => (
+  <Icon>
+    <path d="m4 20 4-1 12-12-3-3L5 16l-1 4Zm10-13 3 3" />
+  </Icon>
+)
+
+const SearchIcon = () => (
+  <Icon>
+    <circle cx="10.5" cy="10.5" r="6.5" />
+    <path d="m16 16 5 5" />
+  </Icon>
+)
+
+const FolderIcon = () => (
+  <Icon>
+    <path d="M3 7V5a2 2 0 0 1 2-2h5l3 4h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z" />
+  </Icon>
+)
+
+const LockIcon = () => (
+  <Icon>
+    <rect x="5" y="10" width="14" height="11" rx="3" />
+    <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2" />
+  </Icon>
+)
+
+const ClockIcon = () => (
+  <Icon>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </Icon>
+)
+
+const PlusIcon = () => (
+  <Icon>
+    <path d="M12 5v14M5 12h14" />
+  </Icon>
+)
+
+const CloseIcon = () => (
+  <Icon>
+    <path d="m6 6 12 12M18 6 6 18" />
+  </Icon>
+)
+
+/* --- shared voice pieces ------------------------------------------ */
 
 function Eyebrow({ children }: { children: ReactNode }) {
-  return <span className="uh-eyebrow">{children}</span>
+  return <span className="eyebrow">{children}</span>
+}
+
+function TextLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={to} className="text-link">
+      {children}
+      <ArrowIcon />
+    </Link>
+  )
 }
 
 /* ------------------------------------------------------------------ */
-/* Header + mobile nav                                                 */
+/* Site header — same structure: brand, two mega-menu groups, links   */
 /* ------------------------------------------------------------------ */
 
-const NAV_GROUPS: {
-  label: string
-  items: { title: string; blurb: string; href: string; external?: boolean }[]
-}[] = [
-  {
-    label: 'Explore',
-    items: [
-      { title: 'Meet your companions', blurb: 'Five destinations. Real everyday jobs.', href: '#companions' },
-      { title: 'Everyday workflows', blurb: 'Give repetitive work a clear path.', href: '#use-cases' },
-      { title: 'Your context, your rules', blurb: 'Choose what your chats can use.', href: '#context' },
-      { title: 'Tools & connections', blurb: 'Start with the tools you know.', href: '#journey' },
-    ],
-  },
-  {
-    label: 'Learn',
-    items: [
-      { title: 'Start learning AI', blurb: 'Small lessons for useful work.', href: '#guides' },
-      { title: 'Your first AI task', blurb: 'Begin with one simple win.', href: '#guides' },
-      { title: 'Privacy basics', blurb: 'Share less. Understand more.', href: '#context' },
-    ],
-  },
-]
-
-function SiteHeader() {
-  const [openGroup, setOpenGroup] = useState<number | null>(null)
+function SiteHeader({ onClearContext }: { onClearContext: () => void }) {
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const groupRefs = useRef<Record<string, HTMLDivElement | null>>({})
+
+  useEffect(() => {
+    const onDocClick = (event: MouseEvent) => {
+      if (!event.target || !(event.target as HTMLElement).closest('.nav-group')) {
+        setOpenGroup(null)
+      }
+    }
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenGroup(null)
+        setMobileOpen(false)
+      }
+    }
+    document.addEventListener('click', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('click', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [])
+
+  const groups: Array<{
+    id: string
+    label: string
+    items: Array<{ to: string; strong: string; span: string }>
+  }> = [
+    {
+      id: 'explore',
+      label: 'Explore',
+      items: [
+        { to: '/agents', strong: 'Meet your helpers', span: 'Five teammates. Real everyday jobs.' },
+        { to: '/work', strong: 'Everyday workflows', span: 'Give repetitive work a clear path.' },
+        { to: '/library', strong: 'Your context, your rules', span: 'Choose what your helpers can use.' },
+        { to: '/plugins', strong: 'Tools & connections', span: 'Start with the tools you know.' },
+      ],
+    },
+    {
+      id: 'learn',
+      label: 'Learn',
+      items: [
+        { to: '/chat', strong: 'Start using AI', span: 'One useful step at a time.' },
+        { to: '/work', strong: 'Describe an outcome', span: 'Begin with one simple win.' },
+        { to: '/library', strong: 'Privacy basics', span: 'Share less. Understand more.' },
+      ],
+    },
+  ]
 
   return (
-    <header className="uh-site-header">
-      <div className="uh-nav-wrap">
-        <Link to="/" className="uh-brand" aria-label="Uni home">
-          <img src="/universe-mark.svg" alt="" width="32" height="32" />
+    <header className="site-header">
+      <div className="nav-wrap">
+        <Link to="/" className="brand" aria-label="Uni home">
+          <img src={BRAND_MARK} alt="" width="32" height="32" />
           <span>
-            Uni<span className="uh-brand-dot">.</span>
+            Uni<span className="brand-dot">.</span>
           </span>
         </Link>
-
-        <nav className="uh-desktop-nav" aria-label="Main navigation">
-          {NAV_GROUPS.map((group, index) => (
+        <nav className="desktop-nav" aria-label="Main navigation">
+          {groups.map((group) => (
             <div
-              key={group.label}
-              className={`uh-nav-group${openGroup === index ? ' uh-open' : ''}`}
-              onMouseLeave={() => setOpenGroup(null)}
+              key={group.id}
+              ref={(el) => {
+                groupRefs.current[group.id] = el
+              }}
+              className={`nav-group${openGroup === group.id ? ' open' : ''}`}
             >
               <button
                 type="button"
-                className="uh-nav-trigger"
-                aria-expanded={openGroup === index}
-                aria-haspopup="true"
-                onClick={() => setOpenGroup(openGroup === index ? null : index)}
-                onMouseEnter={() => setOpenGroup(index)}
+                className="nav-trigger"
+                aria-expanded={openGroup === group.id}
+                onClick={() => setOpenGroup(openGroup === group.id ? null : group.id)}
               >
                 {group.label}
-                <span className="uh-chevron" />
+                <span className="chevron" />
               </button>
-              <div className="uh-mega-menu">
+              <div className="mega-menu">
                 {group.items.map((item) => (
-                  <a key={item.title} href={item.href}>
-                    <strong>{item.title}</strong>
-                    <span>{item.blurb}</span>
-                  </a>
+                  <Link key={item.strong} to={item.to}>
+                    <strong>{item.strong}</strong>
+                    <span>{item.span}</span>
+                  </Link>
                 ))}
               </div>
             </div>
           ))}
-          <a href="#faq" className="uh-quiet-link">
-            FAQ
-          </a>
-          <TextLink href="https://github.com/AdilShamim8/Uni">Open source</TextLink>
+          <Link to="/work">For teams</Link>
+          <Link to="/library">Guides</Link>
         </nav>
-
-        <div className="uh-nav-actions">
-          <Link to="/chat" className="uh-quiet-link">
+        <div className="nav-actions">
+          <Link to="/chat" className="quiet-link">
             Open the app
           </Link>
-          <Link to="/chat" className="uh-button uh-primary uh-small">
+          <Link to="/chat" className="button small primary">
             Try Uni
-            <Arrow />
+            <ArrowIcon />
           </Link>
           <button
             type="button"
-            className="uh-mobile-toggle"
+            className="mobile-toggle"
             aria-expanded={mobileOpen}
-            aria-controls="uh-mobile-nav"
+            aria-controls="mobile-nav"
             aria-label={mobileOpen ? 'Close navigation' : 'Open navigation'}
             onClick={() => setMobileOpen(!mobileOpen)}
           >
-            {mobileOpen ? (
-              <Icon className="uh-icon">
-                <path d="m6 6 12 12M18 6 6 18" />
-              </Icon>
-            ) : (
-              <Icon className="uh-icon">
-                <path d="M4 7h16M4 12h16M4 17h16" />
-              </Icon>
-            )}
+            {mobileOpen ? <CloseIcon /> : <MenuIcon />}
           </button>
         </div>
       </div>
-
-      {mobileOpen && (
-        <nav id="uh-mobile-nav" className="uh-mobile-nav" aria-label="Mobile navigation">
-          <a href="#companions" onClick={() => setMobileOpen(false)}>
-            Meet your companions
-          </a>
-          <a href="#use-cases" onClick={() => setMobileOpen(false)}>
-            Workflows
-          </a>
-          <a href="#journey" onClick={() => setMobileOpen(false)}>
-            Learn AI
-          </a>
-          <a href="#context" onClick={() => setMobileOpen(false)}>
-            Memory &amp; privacy
-          </a>
-          <a href="#control" onClick={() => setMobileOpen(false)}>
-            Review &amp; control
-          </a>
-          <a href="#faq" onClick={() => setMobileOpen(false)}>
-            FAQ
-          </a>
-          <Link to="/chat" onClick={() => setMobileOpen(false)}>
-            Open the app
-          </Link>
+      {!mobileOpen ? null : (
+        <nav id="mobile-nav" className="mobile-nav" aria-label="Mobile navigation">
+          <Link to="/agents">Meet your helpers</Link>
+          <Link to="/work">Workflows</Link>
+          <Link to="/chat">Use AI</Link>
+          <Link to="/work">For teams</Link>
+          <Link to="/library">Memory &amp; privacy</Link>
+          <Link to="/plugins">Connections</Link>
+          <Link to="/library">Guides</Link>
+          <Link to="/chat">Open the app</Link>
+          <button type="button" className="text-button" onClick={onClearContext}>
+            Clear demo data
+          </button>
         </nav>
       )}
     </header>
@@ -249,53 +263,63 @@ function SiteHeader() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Hero                                                                */
+/* Hero — announcement, headline, the reviewable workflow scene       */
 /* ------------------------------------------------------------------ */
 
 function Hero() {
   return (
-    <section className="uh-home-hero">
-      <div className="uh-container">
-        <a className="uh-announcement" href="#free">
-          <span className="uh-status-dot" />
-          The $0 premium AI workspace starts here
-          <Arrow />
-        </a>
+    <section className="hero home-hero">
+      <div className="container">
+        <Link to="/chat" className="announcement">
+          <span className="status-dot" />
+          Your next chapter with AI starts here
+          <ArrowIcon />
+        </Link>
         <h1>
-          You and AI.
+          A little AI.
           <br />
-          A lot more <span className="uh-accent-word">done<svg viewBox="0 0 210 16" aria-hidden="true"><path d="M3 12Q90-3 205 8" /></svg></span>.
+          A lot more{' '}
+          <span className="accent-word">
+            you
+            <svg viewBox="0 0 210 16" aria-hidden="true">
+              <path d="M3 12Q90-3 205 8" />
+            </svg>
+          </span>
+          .
         </h1>
-        <p className="uh-hero-intro">
-          Less &ldquo;where do I start?&rdquo; More &ldquo;I&rsquo;ve got this.&rdquo;
+        <p className="hero-intro">
+          Less “where do I start?” More “I&apos;ve got this.”
           <br />
-          Bring your own key, keep your own data, and turn everyday tasks into useful workflows.
+          Learn AI, find your rhythm and turn everyday tasks into useful workflows.
         </p>
-        <div className="uh-button-row">
-          <PrimaryButton to="/chat">Open your workspace</PrimaryButton>
-          <a className="uh-button uh-secondary" href="#use-cases">
+        <div className="button-row">
+          <Link to="/chat" className="button primary">
+            Find my first workflow
+            <ArrowIcon />
+          </Link>
+          <a href="#first-workflow" className="button secondary">
             Show me how it works
-            <Arrow />
+            <ArrowIcon />
           </a>
         </div>
-        <p className="uh-hero-note">No account. No coding. Your keys stay on your device.</p>
-
-        <div className="uh-hero-scene" aria-label="Illustration of a reviewable Uni workflow">
-          <div className="uh-scene-grid" />
-          <div className="uh-orbit-card uh-orbit-left">
-            <span className="uh-mini-label">A CLEARER START</span>
+        <p className="hero-note">No coding. No big leap. One useful step at a time.</p>
+        <div className="hero-scene" aria-label="Illustration of a reviewable Uni workflow">
+          <div className="scene-grid" />
+          <div className="orbit-card orbit-left">
+            <span className="mini-label">A CLEARER START</span>
             <p>
-              &ldquo;Make my week
-              <br />a little lighter.&rdquo;
-            </p>            <span className="uh-tiny-avatars">
-              <img src="/helpers/nova.svg" alt="" width="40" height="40" />
-              <img src="/helpers/atlas.svg" alt="" width="40" height="40" />
+              “Make my week
+              <br />
+              a little lighter.”
+            </p>
+            <span className="tiny-avatars">
+              <img src={HELPER('woo')} alt="" width="40" height="40" />
+              <img src={HELPER('quill')} alt="" width="40" height="40" />
             </span>
           </div>
-
-          <div className="uh-hero-workspace">
-            <div className="uh-window-bar">
-              <div className="uh-window-dots">
+          <div className="hero-workspace">
+            <div className="window-bar">
+              <div className="window-dots">
                 <i />
                 <i />
                 <i />
@@ -303,76 +327,60 @@ function Hero() {
               <span>YOUR FIRST SMALL WIN</span>
               <span>↗</span>
             </div>
-            <div className="uh-workspace-preview-body">
-              <div className="uh-preview-greeting">
-                <img src="/helpers/nova.svg" alt="Nova" width="66" height="66" />
+            <div className="workspace-preview-body">
+              <div className="preview-greeting">
+                <img src={HELPER('woo')} alt="Woo" width="66" height="66" />
                 <div>
-                  <span>WITH NOVA</span>
-                  <h3>Let&rsquo;s make today lighter.</h3>
+                  <span>WITH WOO</span>
+                  <h3>Let&apos;s make today lighter.</h3>
                 </div>
               </div>
-              <div className="uh-preview-prompt">
+              <div className="preview-prompt">
                 Turn my meeting notes into next steps.
                 <span>↵</span>
               </div>
-              <div className="uh-preview-step">
-                <span className="uh-step-dot">1</span>
+              <div className="preview-step">
+                <span className="step-dot">1</span>
                 <div>
                   <strong>Understand the notes</strong>
                   <small>Use only the information you provide</small>
                 </div>
-                <span className="uh-preview-check">
-                  <Icon className="uh-icon">
-                    <path d="m5 12 4 4 10-10" />
-                  </Icon>
+                <span className="preview-check">
+                  <CheckIcon />
                 </span>
               </div>
-              <div className="uh-preview-step">
-                <span className="uh-step-dot">2</span>
+              <div className="preview-step">
+                <span className="step-dot">2</span>
                 <div>
                   <strong>Make an action list</strong>
                   <small>Flag missing owners and dates</small>
                 </div>
-                <span className="uh-preview-check">
-                  <Icon className="uh-icon">
-                    <path d="m5 12 4 4 10-10" />
-                  </Icon>
+                <span className="preview-check">
+                  <CheckIcon />
                 </span>
               </div>
-              <div className="uh-preview-approval">
+              <div className="preview-approval">
                 <span>
-                  <Icon className="uh-icon">
-                    <rect x="5" y="10" width="14" height="11" rx="3" />
-                    <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2" />
-                  </Icon>{' '}
-                  You review the next step.
+                  <LockIcon /> You review the next step.
                 </span>
-                <span className="uh-approval-pill">Ready to review</span>
+                <span className="approval-pill">Ready to review</span>
               </div>
             </div>
           </div>
-
-          <div className="uh-orbit-card uh-orbit-right">
-            <img src="/helpers/echo.svg" alt="Echo" width="115" height="115" />
-            <span className="uh-mini-label">YOUR AI TEAMMATES</span>
+          <div className="orbit-card orbit-right">
+            <img src={HELPER('quill')} alt="Quill" width="115" height="115" />
+            <span className="mini-label">YOUR WRITING PARTNER</span>
             <p>
-              Agents that
+              A draft that
               <br />
-              remember you.
+              sounds like you.
             </p>
           </div>
-
-          <div className="uh-float-pill uh-pill-left">
-            <Icon className="uh-icon">
-              <path d="M12 5v16M12 5C8 2 4 3 2 4v15c3-1 7-1 10 2 3-3 7-3 10-2V4c-2-1-6-2-10 1Z" />
-            </Icon>{' '}
-            Learn while you work
+          <div className="float-pill pill-left">
+            <BookIcon /> Learn while you work
           </div>
-          <div className="uh-float-pill uh-pill-right">
-            <Icon className="uh-icon">
-              <path d="m5 12 4 4 10-10" />
-            </Icon>{' '}
-            Your judgement stays in charge
+          <div className="float-pill pill-right">
+            <CheckIcon /> Your judgement stays in charge
           </div>
         </div>
       </div>
@@ -386,10 +394,10 @@ function Hero() {
 
 function AudienceBand() {
   return (
-    <section className="uh-familiar-band">
-      <div className="uh-container">
+    <section className="familiar-band">
+      <div className="container">
         <p>For your workday. Your side project. Your next idea.</p>
-        <div className="uh-audience-row">
+        <div className="audience-row">
           <span>Independent professionals</span>
           <i />
           <span>Small teams</span>
@@ -404,129 +412,111 @@ function AudienceBand() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Use cases                                                           */
+/* Use-case tabs — same four cases, same copy, same demo cards        */
 /* ------------------------------------------------------------------ */
 
-interface UseCase {
-  id: string
-  tabLabel: string
-  tabIcon: ReactNode
-  label: string
-  title: ReactNode
-  description: string
-  agent: string
-  input: string
-  flow: string[]
-  resultLabel: string
-  results: string[]
-  startPath: string
-  startPrompt: string
-}
-
-const USE_CASES: UseCase[] = [
-  {
-    id: 'chat',
-    tabLabel: 'Organise my day',
-    tabIcon: <Compass size={16} />,
+const CASES = {
+  daily: {
     label: 'EVERYDAY ORGANISATION',
-    title: (
-      <>
-        A plan you can
-        <br />
-        actually follow.
-      </>
-    ),
+    title: 'A plan you can\nactually follow.',
     description:
       'Turn the list in your head into a short, realistic plan. Make room for the things that matter, and keep the decisions yours.',
-    agent: 'NOVA · YOUR EVERYDAY COMPANION',
-    input: '&ldquo;I have five things to do and no idea where to start.&rdquo;',
-    flow: ['Understand', 'Organise', 'You review'],
+    agent: 'WOO · YOUR EVERYDAY ORGANISER',
+    input: '“I have five things to do and no idea where to start.”',
     resultLabel: 'A LIGHTER PLAN',
-    results: [
-      "Choose today's most important task",
+    result: [
+      'Choose today’s most important task',
       'Give it one focused work block',
       'Keep a little breathing room',
     ],
-    startPath: '/chat',
-    startPrompt: 'Help me plan my week. I want a realistic priority list and time for focused work.',
+    helper: 'woo',
+    prompt: 'Help me plan my week. I want a realistic priority list and time for focused work.',
   },
-  {
-    id: 'work',
-    tabLabel: 'Run real work',
-    tabIcon: <Briefcase size={16} />,
-    label: 'OUTCOMES, NOT CHORES',
-    title: (
-      <>
-        Describe the outcome.
-        <br />
-        Watch it get done.
-      </>
-    ),
+  writing: {
+    label: 'WRITING WITH CONFIDENCE',
+    title: 'Your words. A clearer first draft.',
     description:
-      'Write a task brief in plain language. A task thread plans, asks inline questions, produces output you refine — not a wall of guesswork.',
-    agent: 'ATLAS · YOUR WORK COMPANION',
-    input: '&ldquo;Draft the quarterly summary from these notes.&rdquo;',
-    flow: ['Clarify', 'Run', 'Refine'],
-    resultLabel: 'WORK YOU CAN REVIEW',
-    results: ['Inline questions instead of guesses', 'Output cards you refine in place', 'A finish line you can see'],
-    startPath: '/work',
-    startPrompt: '',
+      'Get past the blank page. Start from your own notes, set the tone and check the details before you send anything.',
+    agent: 'QUILL · YOUR WRITING PARTNER',
+    input: '“Help me follow up after today’s meeting.”',
+    resultLabel: 'A DRAFT TO REVIEW',
+    result: [
+      'Use only the meeting notes provided',
+      'Leave missing details as placeholders',
+      'Review the draft before sharing',
+    ],
+    helper: 'quill',
+    prompt:
+      'Help me draft a friendly follow-up email after a meeting. Leave unknown names and dates as placeholders.',
   },
-  {
-    id: 'agents',
-    tabLabel: 'Build a teammate',
-    tabIcon: <Cpu size={16} />,
-    label: 'AGENTS WITH MEMORY',
-    title: (
-      <>
-        Teammates that
-        <br />
-        remember you.
-      </>
-    ),
+  research: {
+    label: 'MAKING SENSE OF INFORMATION',
+    title: 'Less noise. A clearer comparison.',
     description:
-      'Persistent AI employees with their own persona, memory notes and assigned work. They keep context across conversations — and you steer them.',
-    agent: 'ECHO · YOUR AGENTS COMPANION',
-    input: '&ldquo;Remember how I like my emails written.&rdquo;',
-    flow: ['Persona', 'Memory', 'You steer'],
-    resultLabel: 'A TEAMMATE YOU OWN',
-    results: ['Memory notes it keeps between chats', 'Its own conversations and tasks', 'Export and share as one file'],
-    startPath: '/agents',
-    startPrompt: '',
+      'Organise the options, record what you know and identify the evidence you still need. A confident answer needs a checkable source.',
+    agent: 'SCOUT · YOUR RESEARCH COMPANION',
+    input: '“Help me compare the options without guessing.”',
+    resultLabel: 'A CHECKABLE COMPARISON',
+    result: [
+      'Choose your comparison criteria',
+      'Record facts and sources together',
+      'Keep missing evidence visible',
+    ],
+    helper: 'scout',
+    prompt:
+      'Help me compare three options. Make a criteria table, include a source column and flag missing evidence.',
   },
-  {
-    id: 'library',
-    tabLabel: 'Ground it in facts',
-    tabIcon: <BookOpen size={16} />,
-    label: 'KNOWLEDGE WITH CITATIONS',
-    title: (
-      <>
-        Less noise.
-        <br />
-        Cited answers.
-      </>
-    ),
+  team: {
+    label: 'A CLEARER TEAM HANDOFF',
+    title: 'Good notes. Useful next steps.',
     description:
-      'Load your documents into a local knowledge base. Chats retrieve from it, cite what they used, and stay honest about what they did not find.',
-    agent: 'VAULT · YOUR LIBRARY COMPANION',
-    input: '&ldquo;Answer from our product notes only.&rdquo;',
-    flow: ['Ingest', 'Retrieve', 'Cite'],
-    resultLabel: 'AN ANSWER YOU CAN CHECK',
-    results: ['Your documents, chunked and searchable', 'A receipt of the context used', 'Missing evidence stays visible'],
-    startPath: '/library',
-    startPrompt: '',
+      'Turn a discussion into an action list your team can understand. Confirm the owners and dates rather than filling gaps with guesses.',
+    agent: 'WOO · YOUR EVERYDAY ORGANISER',
+    input: '“Turn our meeting notes into an action list.”',
+    resultLabel: 'A TEAM ACTION LIST',
+    result: [
+      'Separate decisions from actions',
+      'Confirm owners and deadlines',
+      'Review before handing off to the team',
+    ],
+    helper: 'woo',
+    prompt:
+      'Help me turn meeting notes into a team action list with owners and deadlines. Do not invent missing details.',
   },
+} as const
+
+type CaseKey = keyof typeof CASES
+
+const CASE_TABS: Array<{ key: CaseKey; id: string; label: string; icon: ReactNode }> = [
+  { key: 'daily', id: 'case-daily', label: 'Organise my day', icon: <SparkIcon /> },
+  { key: 'writing', id: 'case-writing', label: 'Write with confidence', icon: <PenIcon /> },
+  { key: 'research', id: 'case-research', label: 'Make sense of information', icon: <SearchIcon /> },
+  { key: 'team', id: 'case-team', label: 'Work better together', icon: <FolderIcon /> },
 ]
 
 function UseCaseSection() {
-  const [active, setActive] = useState(0)
-  const panelId = 'uni-home-use-case-panel'
-  const activeCase = USE_CASES[active]
+  const [active, setActive] = useState<CaseKey>('daily')
+  const panelId = 'use-case-panel'
+  const current = CASES[active]
+
+  const onTabKey = (event: React.KeyboardEvent, index: number) => {
+    const order = CASE_TABS.map((tab) => tab.id)
+    let target: number | undefined
+    if (event.key === 'ArrowRight') target = (index + 1) % order.length
+    if (event.key === 'ArrowLeft') target = (index + order.length - 1) % order.length
+    if (event.key === 'Home') target = 0
+    if (event.key === 'End') target = order.length - 1
+    if (target !== undefined) {
+      event.preventDefault()
+      setActive(CASE_TABS[target].key)
+      document.getElementById(order[target])?.focus()
+    }
+  }
 
   return (
-    <section id="use-cases" className="uh-section uh-use-case-section">
-      <div className="uh-container">
-        <div className="uh-section-heading">
+    <section id="first-workflow" className="section use-case-section">
+      <div className="container">
+        <div className="section-heading">
           <div>
             <Eyebrow>START WITH SOMETHING REAL</Eyebrow>
             <h2>
@@ -536,63 +526,63 @@ function UseCaseSection() {
             </h2>
           </div>
           <p>
-            You don&rsquo;t have to change everything.
+            You don&apos;t have to change everything.
             <br />
             Pick one task you already know.
           </p>
         </div>
-
-        <div className="uh-use-case-tabs" role="tablist" aria-label="Everyday workflow examples">
-          {USE_CASES.map((useCase, index) => (
+        <div className="use-case-tabs" role="tablist" aria-label="Everyday workflow examples">
+          {CASE_TABS.map((tab, index) => (
             <button
-              key={useCase.id}
+              key={tab.key}
               role="tab"
-              aria-selected={index === active}
+              id={tab.id}
+              aria-selected={active === tab.key}
               aria-controls={panelId}
-              id={`uh-case-${useCase.id}`}
-              tabIndex={index === active ? 0 : -1}
-              onClick={() => setActive(index)}
+              tabIndex={active === tab.key ? 0 : -1}
+              onKeyDown={(event) => onTabKey(event, index)}
+              onClick={() => setActive(tab.key)}
             >
-              {useCase.tabIcon} {useCase.tabLabel}
+              {tab.icon} {tab.label}
             </button>
           ))}
         </div>
-
-        <div
-          id={panelId}
-          className="uh-case-panel"
-          role="tabpanel"
-          aria-labelledby={`uh-case-${activeCase.id}`}
-        >
-          <div className="uh-case-copy">
-            <span className="uh-mini-label">{activeCase.label}</span>
-            <h3>{activeCase.title}</h3>
-            <p>{activeCase.description}</p>
-            <PrimaryButton to={activeCase.startPath}>Go there now</PrimaryButton>
-            <p className="uh-small-note">Works instantly in demo mode — no account, no key.</p>
+        <div id={panelId} className="case-panel" role="tabpanel" aria-labelledby={`case-${active}`}>
+          <div className="case-copy">
+            <span className="mini-label" data-case-label>
+              {current.label}
+            </span>
+            <h3 data-case-title>{current.title}</h3>
+            <p data-case-description>{current.description}</p>
+            <Link to="/chat" className="button primary" data-case-link>
+              Try this example <ArrowIcon />
+            </Link>
+            <p className="small-note">Interactive example. No live AI or connected apps.</p>
           </div>
-
-          <div className="uh-case-demo">
-            <div className="uh-demo-topline">
-              <span className="uh-live-dot" />
-              <span>{activeCase.agent}</span>
-              <span className="uh-demo-label">DEMO</span>
+          <div className="case-demo">
+            <div className="demo-topline">
+              <span className="live-dot" />
+              <span data-case-agent>
+                {current.agent}
+              </span>
+              <span className="demo-label">DEMO</span>
             </div>
-            <div className="uh-demo-message">{activeCase.input}</div>
-            <div className="uh-flow-line">
-              {activeCase.flow.map((step, index) => (
-                <span key={step} style={{ display: 'contents' }}>
-                  <span>{step}</span>
-                  {index < activeCase.flow.length - 1 && <i />}
-                </span>
-              ))}
+            <div className="demo-message" data-case-input>
+              {current.input}
             </div>
-            <div className="uh-example-result">
-              <span className="uh-result-label">{activeCase.resultLabel}</span>
-              {activeCase.results.map((result) => (
-                <div key={result} className="uh-result-item">
-                  <span className="uh-check-square" />
-                  {result}
+            <div className="flow-line">
+              <span>Understand</span>
+              <i />
+              <span>Organise</span>
+              <i />
+              <span>You review</span>
+            </div>
+            <div className="example-result" data-case-result>
+              <span className="result-label">{current.resultLabel}</span>
+              {current.result.map((item) => (
+                <div className="result-item" key={item}>
+                  <span className="check-square" />
+                  {item}
                 </div>
               ))}
             </div>
@@ -604,94 +594,94 @@ function UseCaseSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Companions                                                          */
+/* Helpers — the five mascots, original colors and copy               */
 /* ------------------------------------------------------------------ */
 
-const COMPANIONS = [
+const HELPERS = [
   {
-    name: 'Nova',
-    job: 'Your everyday chat',
-    blurb: 'Every conversation, clearer.',
-    art: '/helpers/nova.svg',
-    alt: 'Nova, the Uni Chat companion',
-    tone: 'uh-purple',
+    name: 'Woo',
+    job: 'Your everyday organiser',
+    file: 'woo',
+    color: 'purple',
+    blurb: 'A calmer day starts here.',
     to: '/chat',
   },
   {
-    name: 'Atlas',
-    job: 'Your work runner',
-    blurb: 'Outcomes, not chores.',
-    art: '/helpers/atlas.svg',
-    alt: 'Atlas, the Uni Work companion',
-    tone: 'uh-blue',
+    name: 'Scout',
+    job: 'Your research companion',
+    file: 'scout',
+    color: 'blue',
+    blurb: 'Find the signal in the noise.',
+    to: '/library',
+  },
+  {
+    name: 'Quill',
+    job: 'Your writing partner',
+    file: 'quill',
+    color: 'coral',
+    blurb: 'Sound like yourself. Just clearer.',
+    to: '/chat',
+  },
+  {
+    name: 'Tally',
+    job: 'Your planning helper',
+    file: 'tally',
+    color: 'green',
+    blurb: 'Less spreadsheet fog. More clarity.',
     to: '/work',
   },
   {
-    name: 'Echo',
-    job: 'Your AI teammates',
-    blurb: 'Agents that remember you.',
-    art: '/helpers/echo.svg',
-    alt: 'Echo, the Uni Agents companion',
-    tone: 'uh-coral',
-    to: '/agents',
-  },
-  {
-    name: 'Prism',
-    job: 'Your local tools',
-    blurb: 'Plugins with receipts.',
-    art: '/helpers/prism.svg',
-    alt: 'Prism, the Uni Plugins companion',
-    tone: 'uh-green',
-    to: '/plugins',
-  },
-  {
-    name: 'Vault',
-    job: 'Your knowledge',
-    blurb: 'Answers you can check.',
-    art: '/helpers/vault.svg',
-    alt: 'Vault, the Uni Library companion',
-    tone: 'uh-yellow',
+    name: 'Hush',
+    job: 'Your private teammate',
+    file: 'hush',
+    color: 'yellow',
+    blurb: 'Some things should stay close.',
     to: '/library',
   },
-]
+] as const
 
-function CompanionsSection() {
+function HelpersSection() {
   return (
-    <section id="companions" className="uh-section uh-companions-section">
-      <div className="uh-container">
-        <div className="uh-section-heading">
+    <section className="section helpers-section">
+      <div className="container">
+        <div className="section-heading">
           <div>
             <Eyebrow>A TEAM THAT MAKES SENSE</Eyebrow>
             <h2>
               Meet your new
               <br />
-              &ldquo;I can do this&rdquo; team.
+              “I can do this” team.
             </h2>
           </div>
           <div>
             <p>
               Different jobs. One familiar place to start.
               <br />
-              Every destination below is already in the app.
+              Built around the helpers in our open-source app.
             </p>
-            <TextLink to="/chat">Open the workspace</TextLink>
+            <TextLink to="/agents">Get to know the team</TextLink>
           </div>
         </div>
-
-        <div className="uh-helper-grid">
-          {COMPANIONS.map((companion) => (
-            <Link key={companion.name} to={companion.to} className={`uh-helper-card ${companion.tone}`}>
-              <span className="uh-helper-job">{companion.job}</span>
-              <div className="uh-helper-art">
-                <img src={companion.art} width="240" height="240" alt={companion.alt} loading="lazy" />
+        <div className="helper-grid">
+          {HELPERS.map((helper) => (
+            <Link key={helper.name} className={`helper-card ${helper.color}`} to={helper.to}>
+              <span className="helper-job">{helper.job}</span>
+              <div className="helper-art">
+                <img
+                  src={HELPER(helper.file)}
+                  width="240"
+                  height="240"
+                  alt={`${helper.name}, Uni ${helper.job}`}
+                  loading="lazy"
+                />
               </div>
-              <div className="uh-helper-card-bottom">
-                <h3>{companion.name}</h3>
-                <span className="uh-circle-arrow">
-                  <Arrow />
+              <div className="helper-card-bottom">
+                <h3>{helper.name}</h3>
+                <span className="circle-arrow">
+                  <ArrowIcon />
                 </span>
               </div>
-              <p>{companion.blurb}</p>
+              <p>{helper.blurb}</p>
             </Link>
           ))}
         </div>
@@ -701,96 +691,78 @@ function CompanionsSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Journey                                                             */
+/* Journey — three steps with the paper illustrations                 */
 /* ------------------------------------------------------------------ */
 
 function JourneySection() {
   return (
-    <section id="journey" className="uh-section uh-journey-section">
-      <div className="uh-container">
-        <div className="uh-center-heading">
+    <section className="section journey-section">
+      <div className="container">
+        <div className="center-heading">
           <Eyebrow>FROM CURIOUS TO CAPABLE</Eyebrow>
           <h2>
             Learn it. Try it.
             <br />
             Make it part of your day.
           </h2>
-          <p>You shouldn&rsquo;t have to become an engineer to benefit from AI.</p>
+          <p>You shouldn&apos;t have to become an engineer to benefit from AI.</p>
         </div>
-
-        <div className="uh-journey-grid">
+        <div className="journey-grid">
           <article>
-            <span className="uh-journey-number">01</span>
-            <div className="uh-journey-art">
-              <div className="uh-lesson-paper">
-                <Icon className="uh-icon">
-                  <path d="M12 5v16M12 5C8 2 4 3 2 4v15c3-1 7-1 10 2 3-3 7-3 10-2V4c-2-1-6-2-10 1Z" />
-                </Icon>
+            <span className="journey-number">01</span>
+            <div className="journey-art">
+              <div className="lesson-paper">
+                <BookIcon />
                 <strong>A useful first prompt</strong>
-                <div className="uh-paper-line" />
-                <div className="uh-paper-line uh-short" />
-                <span className="uh-paper-tag">Small lesson. Real skill.</span>
+                <div className="paper-line" />
+                <div className="paper-line short" />
+                <span className="paper-tag">Small lesson. Real skill.</span>
               </div>
             </div>
             <h3>Learn the useful bits.</h3>
             <p>
-              Plain-language guides on prompts, providers and checking an answer. Start wherever
-              you are — the app works in demo mode from the first second.
+              Plain-language guides on prompts, privacy and checking an answer. Start wherever you
+              are.
             </p>
-            <a className="uh-text-link" href="#guides">
-              Explore the guides
-              <Arrow />
-            </a>
+            <TextLink to="/library">Explore the guides</TextLink>
           </article>
-
           <article>
-            <span className="uh-journey-number">02</span>
-            <div className="uh-journey-art">
-              <div className="uh-prompt-paper">
-                <span className="uh-bubble">&ldquo;Help me turn this into a plan.&rdquo;</span>
-                <span className="uh-response-bubble">Let&rsquo;s take it one step at a time.</span>
+            <span className="journey-number">02</span>
+            <div className="journey-art">
+              <div className="prompt-paper">
+                <span className="bubble">“Help me turn this into a plan.”</span>
+                <span className="response-bubble">Let&apos;s take it one step at a time.</span>
               </div>
             </div>
             <h3>Try it on your own work.</h3>
             <p>
-              Connect a provider — or don&rsquo;t — and see the inputs, the steps and the review
-              that a real workflow needs. Everything stays on your device.
+              Use a guided example to see the inputs, the steps and the review that a workflow
+              needs.
             </p>
-            <TextLink to="/chat">Try a conversation</TextLink>
+            <TextLink to="/chat">Try a workflow</TextLink>
           </article>
-
           <article>
-            <span className="uh-journey-number">03</span>
-            <div className="uh-journey-art">
-              <div className="uh-routine-paper">
+            <span className="journey-number">03</span>
+            <div className="journey-art">
+              <div className="routine-paper">
                 <span>MY WEEKLY RESET</span>
                 <div>
-                  <Icon className="uh-icon">
-                    <path d="m5 12 4 4 10-10" />
-                  </Icon>{' '}
-                  Inputs understood
+                  <CheckIcon /> Inputs understood
                 </div>
                 <div>
-                  <Icon className="uh-icon">
-                    <path d="m5 12 4 4 10-10" />
-                  </Icon>{' '}
-                  Review checklist saved
+                  <CheckIcon /> Review checklist saved
                 </div>
                 <div>
-                  <Icon className="uh-icon">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 7v5l3 2" />
-                  </Icon>{' '}
-                  Ready to repeat
+                  <ClockIcon /> Ready to repeat
                 </div>
               </div>
             </div>
             <h3>Keep what works.</h3>
             <p>
-              Save a useful agent or template. Export a conversation when it helped. Build a small
-              toolbox that fits the way you actually work.
+              Save a useful template. When you&apos;re ready, explore routines in the local app or
+              get setup help.
             </p>
-            <TextLink to="/agents">Meet your agents</TextLink>
+            <TextLink to="/work">Find your next step</TextLink>
           </article>
         </div>
       </div>
@@ -799,93 +771,76 @@ function JourneySection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Context (dark)                                                      */
+/* Context — the dark board section                                   */
 /* ------------------------------------------------------------------ */
 
 function ContextSection() {
   return (
-    <section id="context" className="uh-section uh-context-section">
-      <div className="uh-container uh-split">
+    <section className="section context-section">
+      <div className="container split">
         <div>
-          <Eyebrow>ONE WORKSPACE. YOUR BOUNDARIES.</Eyebrow>
+          <Eyebrow>ONE CONTEXT. YOUR BOUNDARIES.</Eyebrow>
           <h2>
             A little understanding
             <br />
             goes a long way.
           </h2>
           <p>
-            Give your chats the background that matters. Choose what they can use. Keep the rest
+            Give your helpers the background that matters. Choose what they can use. Keep the rest
             to yourself.
           </p>
-          <ul className="uh-feature-list">
+          <ul className="feature-list">
             <li>
-              <Icon className="uh-icon">
-                <path d="m5 12 4 4 10-10" />
-              </Icon>{' '}
-              Keys stored on your device, never exported
+              <CheckIcon /> Your preferences, in your words
             </li>
             <li>
-              <Icon className="uh-icon">
-                <path d="m5 12 4 4 10-10" />
-              </Icon>{' '}
-              A local knowledge base your chats cite
+              <CheckIcon /> Clear source and review boundaries
             </li>
             <li>
-              <Icon className="uh-icon">
-                <path d="m5 12 4 4 10-10" />
-              </Icon>{' '}
-              Plugin receipts and per-thread grants
+              <CheckIcon /> A receipt of the context used in the local app
             </li>
           </ul>
-          <a className="uh-button uh-light" href="#control">
-            See how review works
-            <Arrow />
-          </a>
+          <Link to="/library" className="button light">
+            Explore memory &amp; privacy
+            <ArrowIcon />
+          </Link>
         </div>
-
-        <div className="uh-context-visual">
-          <div className="uh-context-board">
-            <div className="uh-context-board-header">
+        <div className="context-visual">
+          <div className="context-board">
+            <div className="context-board-header">
               YOUR CONTEXT
               <span>
-                <Icon className="uh-icon">
-                  <rect x="5" y="10" width="14" height="11" rx="3" />
-                  <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2" />
-                </Icon>{' '}
-                You choose
+                <LockIcon /> You choose
               </span>
             </div>
-            <div className="uh-context-chip">
-              <span className="uh-color-dot uh-coral-dot" />
+            <div className="context-chip">
+              <span className="color-dot coral-dot" />
               <div>
                 <strong>How I write</strong>
                 <small>Friendly. Clear. No jargon.</small>
               </div>
-              <span className="uh-chip-check">✓</span>
+              <span className="chip-check">✓</span>
             </div>
-            <div className="uh-context-chip">
-              <span className="uh-color-dot uh-blue-dot" />
+            <div className="context-chip">
+              <span className="color-dot blue-dot" />
               <div>
-                <strong>What I&rsquo;m working on</strong>
+                <strong>What I&apos;m working on</strong>
                 <small>Notes relevant to this task.</small>
               </div>
-              <span className="uh-chip-check">✓</span>
+              <span className="chip-check">✓</span>
             </div>
-            <div className="uh-context-chip uh-muted-chip">
-              <span className="uh-color-dot uh-yellow-dot" />
+            <div className="context-chip muted-chip">
+              <span className="color-dot yellow-dot" />
               <div>
                 <strong>Private information</strong>
                 <small>Not included in this example.</small>
               </div>
-              <Icon className="uh-icon">
-                <rect x="5" y="10" width="14" height="11" rx="3" />
-                <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2" />
-              </Icon>
+              <LockIcon />
             </div>
-            <div className="uh-context-sharing">
-              <img src="/helpers/nova.svg" alt="Nova" width="52" height="52" />
-              <img src="/helpers/atlas.svg" alt="Atlas" width="52" height="52" />
-              <img src="/helpers/echo.svg" alt="Echo" width="52" height="52" />
+            <div className="context-sharing">
+              <img src={HELPER('woo')} alt="Woo" width="52" height="52" />
+              <img src={HELPER('scout')} alt="Scout" width="52" height="52" />
+              <img src={HELPER('quill')} alt="Quill" width="52" height="52" />
               <span>
                 Useful context.
                 <br />
@@ -900,54 +855,47 @@ function ContextSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Control / trace                                                     */
+/* Control — the review trace                                         */
 /* ------------------------------------------------------------------ */
 
 function ControlSection() {
   return (
-    <section id="control" className="uh-section uh-control-section">
-      <div className="uh-container uh-split">
-        <div className="uh-trace-visual">
-          <div className="uh-trace-heading">
+    <section className="section control-section">
+      <div className="container split">
+        <div className="trace-visual">
+          <div className="trace-heading">
             <span>
-              <Icon className="uh-icon">
-                <path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z" />
-              </Icon>{' '}
-              A WORKFLOW YOU CAN FOLLOW
+              <SparkIcon /> A WORKFLOW YOU CAN FOLLOW
             </span>
-            <span className="uh-demo-label">EXAMPLE</span>
+            <span className="demo-label">EXAMPLE</span>
           </div>
-          <ol className="uh-trace-list">
+          <ol className="trace-list">
             <li>
-              <span className="uh-trace-dot">1</span>
+              <span className="trace-dot">1</span>
               <div>
                 <strong>Read the notes you selected</strong>
-                <small>Source: your knowledge base entry</small>
+                <small>Source: your example meeting notes</small>
               </div>
-              <span className="uh-trace-state">Cited</span>
+              <span className="trace-state">Checked</span>
             </li>
             <li>
-              <span className="uh-trace-dot">2</span>
+              <span className="trace-dot">2</span>
               <div>
                 <strong>Draft the next steps</strong>
                 <small>Missing dates stay visible</small>
               </div>
-              <span className="uh-trace-state">Drafted</span>
+              <span className="trace-state">Drafted</span>
             </li>
-            <li className="uh-trace-review">
-              <span className="uh-trace-dot">3</span>
+            <li className="trace-review">
+              <span className="trace-dot">3</span>
               <div>
                 <strong>Leave the decision with you</strong>
                 <small>Review before anything is shared</small>
               </div>
-              <Icon className="uh-icon">
-                <rect x="5" y="10" width="14" height="11" rx="3" />
-                <path d="M8 10V7a4 4 0 0 1 8 0v3m-4 5v2" />
-              </Icon>
+              <LockIcon />
             </li>
           </ol>
         </div>
-
         <div>
           <Eyebrow>HELPFUL SHOULD ALSO BE UNDERSTANDABLE</Eyebrow>
           <h2>
@@ -956,15 +904,17 @@ function ControlSection() {
             Keep the say.
           </h2>
           <p>
-            AI is easier to trust when you can see its inputs, understand the process and check
-            the result. Uni makes those steps visible — context receipts in chat, task threads
-            with inline questions, plugin grants you approve per thread.
+            AI is easier to trust when you can see its inputs, understand the process and check the
+            result. Our examples make those steps visible.
           </p>
           <p>
-            Anything simulated is labelled as simulated. If a connection test cannot prove your
-            key works, it says so. Honest by design.
+            The local app adds task traces and approval controls. Start with a draft, then decide
+            what happens next.
           </p>
-          <SecondaryButton to="/chat">See it in the app</SecondaryButton>
+          <Link to="/chat" className="button secondary">
+            See a guided workflow
+            <ArrowIcon />
+          </Link>
         </div>
       </div>
     </section>
@@ -978,14 +928,12 @@ function ControlSection() {
 function TimeSection() {
   const [taskCount, setTaskCount] = useState(5)
   const [taskMinutes, setTaskMinutes] = useState(15)
-  const hours = ((taskCount * taskMinutes * 4) / 60).toFixed(1)
-  const countId = useId()
-  const minutesId = useId()
+  const estimate = ((taskCount * taskMinutes * 4) / 60).toFixed(1)
 
   return (
-    <section id="free" className="uh-section uh-time-section">
-      <div className="uh-container">
-        <div className="uh-time-card">
+    <section className="section time-section">
+      <div className="container">
+        <div className="time-card">
           <div>
             <Eyebrow>MAKE THE OPPORTUNITY CONCRETE</Eyebrow>
             <h2>
@@ -998,23 +946,23 @@ function TimeSection() {
               results.
             </p>
           </div>
-          <div className="uh-time-calculator">
-            <label htmlFor={countId}>
+          <div className="time-calculator">
+            <label htmlFor="task-count">
               Tasks you repeat each week <output>{taskCount}</output>
             </label>
             <input
-              id={countId}
+              id="task-count"
               type="range"
               min={1}
               max={30}
               value={taskCount}
               onChange={(event) => setTaskCount(Number(event.target.value))}
             />
-            <label htmlFor={minutesId}>
+            <label htmlFor="task-minutes">
               Minutes per task <output>{taskMinutes}</output>
             </label>
             <input
-              id={minutesId}
+              id="task-minutes"
               type="range"
               min={5}
               max={90}
@@ -1022,8 +970,8 @@ function TimeSection() {
               value={taskMinutes}
               onChange={(event) => setTaskMinutes(Number(event.target.value))}
             />
-            <div className="uh-time-result">
-              <strong>{hours}</strong>
+            <div className="time-result">
+              <strong>{estimate}</strong>
               <span>
                 hours of work per four-week month
                 <br />
@@ -1043,45 +991,42 @@ function TimeSection() {
 
 const GUIDES = [
   {
+    href: '/chat',
     number: '01',
     tag: 'START HERE',
-    minutes: '5 min read',
-    kind: 'Practical guide',
+    cover: 'cover-0',
+    icon: <SparkIcon />,
+    meta: '6 min read · Practical guide',
     title: 'Your first useful AI task',
     blurb: 'Choose one small job, write a clear request and check the result.',
-    coverClass: '',
-    icon: <Sparkles strokeWidth={1} />,
-    to: '/chat',
   },
   {
+    href: '/chat',
     number: '02',
     tag: 'PRACTICAL SKILL',
-    minutes: '8 min read',
-    kind: 'Practical guide',
-    title: 'A clearer prompt, a better answer',
+    cover: 'cover-1',
+    icon: <PenIcon />,
+    meta: '8 min read · Practical guide',
+    title: 'A clearer prompt, a better starting point',
     blurb: 'A simple four-part method for asking AI for useful help.',
-    coverClass: 'uh-cover-1',
-    icon: <Feather strokeWidth={1} />,
-    to: '/chat',
   },
   {
+    href: '/library',
     number: '03',
     tag: 'GOOD HABITS',
-    minutes: '7 min read',
-    kind: 'Practical guide',
+    cover: 'cover-2',
+    icon: <LockIcon />,
+    meta: '7 min read · Practical guide',
     title: 'Know what you share with AI',
-    blurb: 'Understand local storage, your own keys and what a task really needs.',
-    coverClass: 'uh-cover-2',
-    icon: <Lock strokeWidth={1} />,
-    to: '/chat',
+    blurb: 'Understand browser storage, local models and the information a task needs.',
   },
-]
+] as const
 
 function GuidesSection() {
   return (
-    <section id="guides" className="uh-section uh-learn-section">
-      <div className="uh-container">
-        <div className="uh-section-heading">
+    <section className="section learn-section">
+      <div className="container">
+        <div className="section-heading">
           <div>
             <Eyebrow>NO JARGON REQUIRED</Eyebrow>
             <h2>
@@ -1090,30 +1035,22 @@ function GuidesSection() {
               starts with one small skill.
             </h2>
           </div>
-          <TextLink href="https://github.com/AdilShamim8/Uni/blob/main/README.md">
-            The full guide in the README
-          </TextLink>
+          <TextLink to="/library">All practical guides</TextLink>
         </div>
-
-        <div className="uh-guide-grid">
+        <div className="guide-grid">
           {GUIDES.map((guide) => (
-            <Link key={guide.number} to={guide.to} className="uh-guide-card">
-              <div className={`uh-guide-cover ${guide.coverClass}`}>
+            <Link key={guide.number} className="guide-card" to={guide.href}>
+              <div className={`guide-cover ${guide.cover}`}>
                 <span>{guide.number}</span>
-                <span className="uh-icon" aria-hidden="true">
-                  {guide.icon}
-                </span>
+                {guide.icon}
                 <small>{guide.tag}</small>
               </div>
-              <div className="uh-guide-body">
-                <div className="uh-meta">
-                  {guide.minutes} · {guide.kind}
-                </div>
+              <div className="guide-body">
+                <div className="meta">{guide.meta}</div>
                 <h3>{guide.title}</h3>
                 <p>{guide.blurb}</p>
-                <span className="uh-text-link">
-                  Read the guide
-                  <Arrow />
+                <span className="text-link">
+                  Read the guide <ArrowIcon />
                 </span>
               </div>
             </Link>
@@ -1125,59 +1062,57 @@ function GuidesSection() {
 }
 
 /* ------------------------------------------------------------------ */
-/* FAQ                                                                 */
+/* FAQ — the same six questions                                       */
 /* ------------------------------------------------------------------ */
 
 const FAQS = [
   {
-    q: 'Is Uni really free?',
-    a: 'Yes — MIT-licensed, no accounts required, no paywalled features. Model usage is billed by whoever issues your API key; with a free-tier provider (or local models) that is $0 too.',
+    q: 'Do I need to know how to code?',
+    a: 'No. The learning guides and interactive examples start with ordinary tasks and plain language. If you need a custom workflow, you can ask Uni for implementation help.',
   },
   {
-    q: 'Where are my API keys stored?',
-    a: 'In your browser, in a dedicated slice that is never included in exports. They are sent only to the endpoint you configured. In optional server mode, keys are stored AES-256-GCM-encrypted and never leave the backend unencrypted.',
+    q: 'Is the website demo using a live AI model?',
+    a: 'No. The website demo uses guided examples and rules to show how a workflow can work. The separate open-source app supports real model connections and includes an offline demo mode.',
   },
   {
-    q: 'Can I use multiple providers at once?',
-    a: 'Yes — add as many profiles as you like and switch models from the top bar. The compare dialog even runs one prompt through two models side by side.',
+    q: 'What happens to the information I add?',
+    a: 'The website stores demo context in your browser only when you choose to save it. You can clear it at any time. The open-source app has its own local data store and source controls. Hosting and model-provider choices affect where data is processed.',
   },
   {
-    q: 'Does Uni need an account?',
-    a: 'No. Local mode works instantly with no account and no key — a built-in demo adapter lets you explore everything first. Connect a provider when you are ready.',
+    q: 'Will Uni send messages or make decisions for me?',
+    a: 'The website demo does not send messages or act in other apps. The open-source app includes approval controls and email drafting. Start with reviewable output and agree any production automation separately.',
   },
   {
-    q: 'Can I share an agent I built?',
-    a: 'Yes — every agent exports as a small .agent.json file. The file carries the persona only (never your keys or local ids); whoever receives it imports it from the Agents page in one tap.',
+    q: 'Can you help my small team use AI?',
+    a: 'Yes. Uni offers discovery, workflow implementation and ongoing support. The scope, integrations, pricing and delivery schedule are agreed for your project.',
   },
   {
-    q: 'What is the knowledge base?',
-    a: 'A local document collection chats can retrieve from. Paste text or load .md / .txt files in Library → Knowledge base, then attach it from the composer. Chats cite what they used.',
+    q: 'Is Order Desk Pro part of Uni?',
+    a: 'Yes. Order Desk Pro is a separate specialist apparel product. It remains accessible, while this homepage focuses on learning AI and improving everyday work.',
   },
-]
+] as const
 
 function FaqSection() {
   return (
-    <section id="faq" className="uh-section uh-faq-section">
-      <div className="uh-container uh-faq-layout">
+    <section className="section faq-section">
+      <div className="container faq-layout">
         <div>
           <Eyebrow>A FEW GOOD QUESTIONS</Eyebrow>
           <h2>
             Curious?
             <br />
-            You&rsquo;re in good company.
+            You&apos;re in good company.
           </h2>
           <p>Start with the basics. Ask the next question.</p>
-          <TextLink href="https://github.com/AdilShamim8/Uni">Read the full FAQ</TextLink>
+          <TextLink to="/chat">Talk to us</TextLink>
         </div>
-        <div className="uh-faq-list">
+        <div className="faq-list">
           {FAQS.map((faq) => (
             <details key={faq.q}>
               <summary>
                 {faq.q}
                 <span>
-                  <Icon className="uh-icon">
-                    <path d="M12 5v14M5 12h14" />
-                  </Icon>
+                  <PlusIcon />
                 </span>
               </summary>
               <p>{faq.a}</p>
@@ -1195,12 +1130,10 @@ function FaqSection() {
 
 function Closing() {
   return (
-    <section className="uh-section uh-closing">
-      <div className="uh-container">
-        <div className="uh-closing-orb" aria-hidden="true">
-          <Icon className="uh-icon">
-            <path d="m12 3 2.2 6.8L21 12l-6.8 2.2L12 21l-2.2-6.8L3 12l6.8-2.2Z" />
-          </Icon>
+    <section className="closing section">
+      <div className="container">
+        <div className="closing-orb" aria-hidden="true">
+          <SparkIcon />
         </div>
         <Eyebrow>YOUR NEXT SMALL WIN</Eyebrow>
         <h2>
@@ -1209,65 +1142,77 @@ function Closing() {
           You just need a place to start.
         </h2>
         <p>Bring a task. Leave with a clearer way to do it.</p>
-        <div className="uh-button-row">
-          <PrimaryButton to="/chat">Open your workspace</PrimaryButton>
-          <a className="uh-button uh-secondary" href="#use-cases">
-            Show me how it works
-            <Arrow />
-          </a>
+        <div className="button-row">
+          <Link to="/chat" className="button primary">
+            Find your first workflow
+            <ArrowIcon />
+          </Link>
+          <Link to="/library" className="button secondary">
+            Learn the basics
+            <ArrowIcon />
+          </Link>
         </div>
       </div>
     </section>
   )
 }
 
-function SiteFooter() {
+function SiteFooter({ onClearContext }: { onClearContext: () => void }) {
   return (
-    <footer className="uh-site-footer">
-      <div className="uh-container uh-footer-top">
-        <div className="uh-footer-brand">
-          <Link to="/" className="uh-brand">
-            <img src="/universe-mark.svg" alt="" width="34" height="34" />
+    <footer className="site-footer">
+      <div className="container footer-top">
+        <div className="footer-brand">
+          <Link to="/" className="brand">
+            <img src={BRAND_MARK} alt="" width="34" height="34" />
             <span>Uni.</span>
           </Link>
           <p>
-            You and AI. A lot more done.
+            A little AI. A lot more you.
             <br />
-            Free, open-source, your own data.
+            Learn, organise and get useful work done.
           </p>
-          <TextLink href="https://github.com/AdilShamim8/Uni">Explore the open-source app ↗</TextLink>
+          <a
+            className="text-link"
+            href="https://github.com/AdilShamim8/Uni"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Explore the open-source app ↗
+          </a>
         </div>
         <div>
           <h3>Explore</h3>
-          <Link to="/chat">Chat</Link>
-          <Link to="/work">Work</Link>
-          <Link to="/agents">Agents</Link>
-          <Link to="/library">Library</Link>
-          <Link to="/plugins">Plugins</Link>
+          <Link to="/agents">AI helpers</Link>
+          <Link to="/work">Workflows</Link>
+          <Link to="/library">Memory &amp; privacy</Link>
+          <Link to="/plugins">Connections</Link>
+          <Link to="/chat">Interactive demo</Link>
         </div>
         <div>
           <h3>Get started</h3>
-          <a href="#use-cases">Workflows</a>
-          <a href="#journey">Learn AI</a>
-          <a href="#guides">Guides</a>
-          <TextLink href="https://universe-mu-two.vercel.app/">Live demo</TextLink>
+          <Link to="/chat">Use AI</Link>
+          <Link to="/library">Guides</Link>
+          <Link to="/work">For teams</Link>
+          <Link to="/chat">Talk to Uni</Link>
         </div>
         <div>
           <h3>Uni</h3>
-          <a href="#faq">FAQ</a>
+          <Link to="/chat">Our story</Link>
+          <Link to="/plugins">Open source</Link>
           <a href="https://github.com/AdilShamim8/Uni" target="_blank" rel="noopener noreferrer">
-            Open source
+            Order Desk Pro
           </a>
-          <a href="https://github.com/AdilShamim8/Uni/blob/main/README.md" target="_blank" rel="noopener noreferrer">
-            Documentation
-          </a>
+          <a href="mailto:adilshamim696@gmail.com">Email the founder</a>
         </div>
       </div>
-      <div className="uh-container uh-footer-bottom">
+      <div className="container footer-bottom">
         <span>© 2026 Uni. Built for people.</span>
         <div>
-          <a href="https://github.com/AdilShamim8/Uni/blob/main/README.md">Privacy</a>
-          <a href="https://github.com/AdilShamim8/Uni/blob/main/README.md">Terms</a>
+          <Link to="/library">Privacy</Link>
+          <Link to="/library">Terms</Link>
+          <button type="button" className="text-button" onClick={onClearContext}>
+            Clear demo data
+          </button>
         </div>
       </div>
     </footer>
@@ -1275,27 +1220,40 @@ function SiteFooter() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Page                                                                */
+/* Toast + page                                                        */
 /* ------------------------------------------------------------------ */
 
-/**
- * The marketing home page for Uni — the ReWoo visual language with
- * Uni copy and links into the real app. It deliberately renders
- * OUTSIDE the AppShell: no sidebar, no destination bar, no theme
- * materials — just an honest, self-contained landing page.
- */
 export function HomePage() {
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!toastMessage) return
+    const timer = setTimeout(() => setToastMessage(null), 3500)
+    return () => clearTimeout(timer)
+  }, [toastMessage])
+
+  const clearContext = () => {
+    try {
+      localStorage.removeItem('rewoo.demo.context.v1')
+      localStorage.removeItem('rewoo.demo.templates.v1')
+      localStorage.removeItem('rewoo.learning.v1')
+      setToastMessage('Demo context, learning progress and templates cleared.')
+    } catch {
+      setToastMessage('Browser storage is unavailable in this session.')
+    }
+  }
+
   return (
     <div className="uni-home">
-      <a className="uh-skip-link" href="#uh-main">
+      <a className="skip-link" href="#main">
         Skip to content
       </a>
-      <SiteHeader />
-      <main id="uh-main">
+      <SiteHeader onClearContext={clearContext} />
+      <main id="main">
         <Hero />
         <AudienceBand />
         <UseCaseSection />
-        <CompanionsSection />
+        <HelpersSection />
         <JourneySection />
         <ContextSection />
         <ControlSection />
@@ -1304,7 +1262,12 @@ export function HomePage() {
         <FaqSection />
         <Closing />
       </main>
-      <SiteFooter />
+      <SiteFooter onClearContext={clearContext} />
+      {toastMessage ? (
+        <div className="toast show" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      ) : null}
     </div>
   )
 }

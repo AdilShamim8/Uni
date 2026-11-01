@@ -91,34 +91,34 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [setUi])
 
+  // The marketing home is a standalone page: no AppShell at all (the
+  // shell would otherwise render an empty full-height div behind it).
+  const isMarketingRoute = location.pathname === '/'
+
   return (
     <ThemeProvider>
-      <Routes location={location}>
-        {/* Home — the marketing landing page. It renders outside the
-            AppShell by design: no sidebar, destination bar or theme
-            materials, just an honest standalone page. */}
-        <Route path="/" element={<HomePage />} />
-      </Routes>
-      <AppShell isChromeHidden={location.pathname === '/'}>
-        <Routes location={location}>
-          {/* Chat — the dashboard home since the route move; "/c/:id"
-              is unchanged so existing conversation links keep working. */}
-          <Route path="/chat" element={<ChatPage />} />
-          <Route path="/c/:conversationId" element={<ChatPage />} />
-          {/* Work — task briefs, demo execution, review */}
-          <Route path="/work" element={<WorkPage />} />
-          <Route path="/work/:taskId" element={<WorkPage />} />
-          {/* Agents — reusable profiles and the personal assistant.
-              `/agents/new` is handled by the :agentId route (id === 'new'). */}
-          <Route path="/agents" element={<AgentsPage />} />
-          <Route path="/agents/:agentId" element={<AgentsPage />} />
-          {/* Library — shared local artifacts and projects */}
-          <Route path="/library" element={<LibraryPage />} />
-          {/* Plugins — enable and inspect local tools (calm destination) */}
-          <Route path="/plugins" element={<PluginsPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </AppShell>
+      {isMarketingRoute ? <HomePage /> : (
+        <AppShell>
+          <Routes location={location}>
+            {/* Chat — the dashboard home since the route move; "/c/:id"
+                is unchanged so existing conversation links keep working. */}
+            <Route path="/chat" element={<ChatPage />} />
+            <Route path="/c/:conversationId" element={<ChatPage />} />
+            {/* Work — task briefs, demo execution, review */}
+            <Route path="/work" element={<WorkPage />} />
+            <Route path="/work/:taskId" element={<WorkPage />} />
+            {/* Agents — reusable profiles and the personal assistant.
+                `/agents/new` is handled by the :agentId route (id === 'new'). */}
+            <Route path="/agents" element={<AgentsPage />} />
+            <Route path="/agents/:agentId" element={<AgentsPage />} />
+            {/* Library — shared local artifacts and projects */}
+            <Route path="/library" element={<LibraryPage />} />
+            {/* Plugins — enable and inspect local tools (calm destination) */}
+            <Route path="/plugins" element={<PluginsPage />} />
+            <Route path="*" element={<Navigate to="/chat" replace />} />
+          </Routes>
+        </AppShell>
+      )}
       <CommandPalette />
       <CompareDialog />
       <SettingsDialog />
