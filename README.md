@@ -13,7 +13,7 @@ through one honest interface that costs **$0** and runs from your browser.
 
 [Live demo](https://universe-mu-two.vercel.app/) · [Quick start](#-quick-start-3-commands) · [Connect a provider](#-connect-your-first-provider-step-by-step) · [The 100% free path](#-the-100-free-path)
 
-<img src="docs/screenshots/desktop-light-home.png" alt="Uni home screen — a clean chat interface with a sidebar of conversations and a large message box" width="860">
+<img src="docs/screenshots/desktop-light-home.png" alt="Uni chat workspace — a clean chat interface with a sidebar of conversations and a large message box" width="860">
 
 </div>
 
@@ -59,7 +59,13 @@ Never used Uni before? This is everything you'll see, in the order you'll
 meet it. Every picture below is the real app — running in **demo mode**,
 which works instantly with no account and no key.
 
-### 1 · Home — where every conversation starts
+> **Where do I land?** Opening the site root (`/`) shows the **marketing
+> home page** — what Uni is, the five companions, and honest answers.
+> One click on **Try Uni** opens the workspace itself at `/chat`; every
+> other destination (`/work`, `/agents`, `/plugins`, `/library`) is a
+> direct link from the landing page too.
+
+### 1 · Chat — where every conversation starts ( `/chat` )
 
 The left sidebar holds your chats and the four other destinations. The big
 box in the middle is where you type. That's it — you already know how to
@@ -67,7 +73,7 @@ use this part.
 
 <img src="docs/screenshots/tour/home-light.png" alt="Uni home screen: a sidebar of past chats on the left, and a large message box in the middle asking What would you like to create?" width="820">
 
-### 2 · Chat — talk to any model, branch any answer
+### 2 · Talk to any model, branch any answer
 
 Type a message, get a streamed reply. Want a different take? **Branch**
 the conversation and try another model on the same message — both versions
