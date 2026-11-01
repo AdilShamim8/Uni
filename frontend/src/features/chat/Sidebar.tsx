@@ -6,6 +6,7 @@ import {
   ChevronDown,
   Ghost,
   Library as LibraryIcon,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
@@ -22,6 +23,7 @@ import { useWorkStore } from '@/state/workStore'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useLibraryStore } from '@/state/libraryStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
+import { useServerSessionStore } from '@/state/serverSessionStore'
 import { UniMark } from '@/components/layout/UniMark'
 import { SidebarActivityRow } from '@/components/layout/HeaderExtras'
 import { searchShortcutLabel } from '@/features/search/platform'
@@ -154,6 +156,8 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
   const artifacts = useLibraryStore((state) => state.artifacts)
   const projects = useLibraryStore((state) => state.projects)
   const addArtifact = useLibraryStore((state) => state.addArtifact)
+  const account = useServerSessionStore((state) => state.account)
+  const signOut = useServerSessionStore((state) => state.signOut)
 
   const selectedProjectId = useWorkspaceUiStore((state) => state.selectedProjectId)
   const setSelectedProject = useWorkspaceUiStore((state) => state.setSelectedProject)
@@ -646,9 +650,11 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
                 U
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-ink">Demo user</span>
+                <span className="block truncate text-sm font-medium text-ink">
+                  {account?.user.name || 'Demo user'}
+                </span>
                 <span className="block truncate text-xs text-ink-faint">
-                  Local — no account
+                  {account ? account.user.email : 'Local — no account'}
                 </span>
               </span>
               <ChevronDown size={15} className="shrink-0 text-ink-faint" />
@@ -671,6 +677,16 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
           >
             New temporary chat
           </MenuItem>
+          {account ? (
+            <MenuItem
+              icon={<LogOut size={15} />}
+              onClick={() => {
+                void signOut()
+              }}
+            >
+              Sign out
+            </MenuItem>
+          ) : null}
         </Menu>
       </div>
     </div>
