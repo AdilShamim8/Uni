@@ -26,10 +26,12 @@ const SUGGESTIONS = [
 ] as const
 
 /**
- * The greeting half of the empty-chat welcome composition: a small centered
- * mark, a large short headline, and one concise supporting sentence. The
- * composer renders directly below this (see ChatPage), so the greeting,
- * input, starters, and recent work read as one centered unit.
+ * The greeting half of the empty-chat welcome composition: the Uni mark,
+ * a large short headline in the marketing display voice (the accent word
+ * carries the hand-drawn underline from the home page), and one concise
+ * supporting sentence. The composer renders directly below this (see
+ * ChatPage), so the greeting, input, starters, and recent work read as
+ * one centered unit.
  *
  * Headline targets 44–52px on desktop and 32–36px on phones via a single
  * fluid clamp; it never wraps awkwardly thanks to the generous measure.
@@ -37,9 +39,22 @@ const SUGGESTIONS = [
 export function WelcomeHeading() {
   return (
     <section className="pb-7 pt-[max(9vh,3.25rem)] text-center">
-      <UniMark size={36} className="mx-auto text-ink" />
-      <h2 className="mx-auto mt-4 max-w-[15ch] text-balance text-[clamp(2rem,4.1vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.022em] text-ink">
-        What would you like to create?
+      <span className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] border border-line/80 bg-accent-soft/60 shadow-soft">
+        <UniMark size={30} className="text-ink" />
+      </span>
+      <h2 className="mx-auto mt-2 max-w-[15ch] text-balance text-[clamp(2rem,4.1vw,3.2rem)] font-semibold leading-[1.08] tracking-[-0.022em] text-ink">
+        What would you like to create{' '}
+        <span className="relative inline-block text-accent">
+          today
+          <svg
+            viewBox="0 0 210 16"
+            aria-hidden="true"
+            className="absolute -bottom-1.5 left-0 h-[10px] w-full fill-none stroke-accent/40 [stroke-width:3]"
+          >
+            <path d="M3 12Q90-3 205 8" />
+          </svg>
+        </span>
+        ?
       </h2>
       <p className="mx-auto mt-3 max-w-[46ch] text-[15.5px] leading-relaxed text-ink-soft">
         Ask anything, draft something new, or pick up where you left off.
@@ -49,8 +64,9 @@ export function WelcomeHeading() {
 }
 
 /**
- * The compact starter row that sits below the composer — small quiet chips,
- * never dominant cards competing with the input for attention.
+ * The compact starter row that sits below the composer — small quiet chips
+ * in the home page's float-pill voice: an accent-tinted icon disc plus a
+ * quiet label, never dominant cards competing with the input.
  */
 export function StarterRow({ onSuggestion }: { onSuggestion: (text: string) => void }) {
   return (
@@ -61,9 +77,12 @@ export function StarterRow({ onSuggestion }: { onSuggestion: (text: string) => v
             key={suggestion.title}
             type="button"
             onClick={() => onSuggestion(suggestion.prompt)}
-            className="press min-touch inline-flex items-center gap-1.5 rounded-full border border-line/80 bg-raised/70 px-3.5 py-1.5 text-[13.5px] font-medium text-ink-soft transition-[background-color,border-color,color] duration-[var(--motion-fast)] hover:border-line-strong hover:bg-raised hover:text-ink"
+            className="press min-touch inline-flex items-center gap-2 rounded-full border border-line/80 bg-raised/70 py-1.5 pl-1.5 pr-3.5 text-[13.5px] font-medium text-ink-soft shadow-soft transition-[background-color,border-color,color,box-shadow] duration-[var(--motion-fast)] hover:border-line-strong hover:bg-raised hover:text-ink"
           >
-            <span aria-hidden="true" className="text-ink-faint">
+            <span
+              aria-hidden="true"
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-accent-soft text-accent"
+            >
               {suggestion.icon}
             </span>
             {suggestion.title}
