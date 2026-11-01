@@ -18,7 +18,42 @@ import './home.css'
 /* "Reset local data" clears the universe:* keys the app really uses */
 /* (the original button cleared ReWoo's rewoo.* keys, which nothing   */
 /* in Uni ever writes).                                                */
+/*                                                                     */
+/* Motion layer (see the bottom of home.css): hero entrance, scroll   */
+/* reveals and micro-interactions, all gated so reduced-motion        */
+/* users, tests and no-JS browsers always get the finished page.      */
 /* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Scroll-reveal — elements tagged .reveal rise in when they enter     */
+/* the viewport. Hiding applies only once the root carries             */
+/* .reveal-ready (set here, only when IntersectionObserver exists),    */
+/* so tests, no-JS browsers and reduced-motion users always see the   */
+/* full page.                                                          */
+/* ------------------------------------------------------------------ */
+
+function useReveal() {
+  useEffect(() => {
+    const root = document.querySelector('.uni-home')
+    if (!root || typeof IntersectionObserver === 'undefined') return
+    const targets = root.querySelectorAll('.reveal')
+    if (targets.length === 0) return
+    root.classList.add('reveal-ready')
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('revealed')
+            observer.unobserve(entry.target)
+          }
+        }
+      },
+      { rootMargin: '0px 0px -8% 0px' },
+    )
+    targets.forEach((target) => observer.observe(target))
+    return () => observer.disconnect()
+  }, [])
+}
 
 const HELPER = (name: string) => `/helpers-orig/${name}.svg`
 const BRAND_MARK = '/helpers-orig/uni-mark.svg'
@@ -286,7 +321,7 @@ function Hero() {
           <span className="accent-word">
             you
             <svg viewBox="0 0 210 16" aria-hidden="true">
-              <path d="M3 12Q90-3 205 8" />
+              <path d="M3 12Q90-3 205 8" pathLength={1} />
             </svg>
           </span>
           .
@@ -401,7 +436,7 @@ function AudienceBand() {
     <section className="familiar-band">
       <div className="container">
         <p>For your workday. Your side project. Your next idea.</p>
-        <div className="audience-row">
+        <div className="audience-row reveal">
           <span>Independent professionals</span>
           <i />
           <span>Small teams</span>
@@ -520,7 +555,7 @@ function UseCaseSection() {
   return (
     <section id="first-workflow" className="section use-case-section">
       <div className="container">
-        <div className="section-heading">
+        <div className="section-heading reveal">
           <div>
             <Eyebrow>START WITH SOMETHING REAL</Eyebrow>
             <h2>
@@ -551,7 +586,7 @@ function UseCaseSection() {
             </button>
           ))}
         </div>
-        <div id={panelId} className="case-panel" role="tabpanel" aria-labelledby={`case-${active}`}>
+        <div id={panelId} className="case-panel reveal" role="tabpanel" aria-labelledby={`case-${active}`}>
           <div className="case-copy">
             <span className="mini-label" data-case-label>
               {current.label}
@@ -653,7 +688,7 @@ function HelpersSection() {
   return (
     <section className="section helpers-section">
       <div className="container">
-        <div className="section-heading">
+        <div className="section-heading reveal">
           <div>
             <Eyebrow>A TEAM THAT MAKES SENSE</Eyebrow>
             <h2>
@@ -673,7 +708,7 @@ function HelpersSection() {
         </div>
         <div className="helper-grid">
           {HELPERS.map((helper) => (
-            <Link key={helper.name} className={`helper-card ${helper.color}`} to={helper.to}>
+            <Link key={helper.name} className={`helper-card reveal ${helper.color}`} to={helper.to}>
               <span className="helper-job">{helper.job}</span>
               <div className="helper-art">
                 <img
@@ -707,7 +742,7 @@ function JourneySection() {
   return (
     <section className="section journey-section">
       <div className="container">
-        <div className="center-heading">
+        <div className="center-heading reveal">
           <Eyebrow>FROM CURIOUS TO CAPABLE</Eyebrow>
           <h2>
             Learn it. Try it.
@@ -717,7 +752,7 @@ function JourneySection() {
           <p>You shouldn&apos;t have to become an engineer to benefit from AI.</p>
         </div>
         <div className="journey-grid">
-          <article>
+          <article className="reveal">
             <span className="journey-number">01</span>
             <div className="journey-art">
               <div className="lesson-paper">
@@ -735,7 +770,7 @@ function JourneySection() {
             </p>
             <TextLink to="/library">Explore the guides</TextLink>
           </article>
-          <article>
+          <article className="reveal">
             <span className="journey-number">02</span>
             <div className="journey-art">
               <div className="prompt-paper">
@@ -750,7 +785,7 @@ function JourneySection() {
             </p>
             <TextLink to="/chat">Try a workflow</TextLink>
           </article>
-          <article>
+          <article className="reveal">
             <span className="journey-number">03</span>
             <div className="journey-art">
               <div className="routine-paper">
@@ -786,7 +821,7 @@ function JourneySection() {
 function ContextSection() {
   return (
     <section className="section context-section">
-      <div className="container split">
+      <div className="container split reveal">
         <div>
           <Eyebrow>ONE CONTEXT. YOUR BOUNDARIES.</Eyebrow>
           <h2>
@@ -870,7 +905,7 @@ function ContextSection() {
 function ControlSection() {
   return (
     <section className="section control-section">
-      <div className="container split">
+      <div className="container split reveal">
         <div className="trace-visual">
           <div className="trace-heading">
             <span>
@@ -942,7 +977,7 @@ function TimeSection() {
   return (
     <section className="section time-section">
       <div className="container">
-        <div className="time-card">
+        <div className="time-card reveal">
           <div>
             <Eyebrow>MAKE THE OPPORTUNITY CONCRETE</Eyebrow>
             <h2>
@@ -1035,7 +1070,7 @@ function GuidesSection() {
   return (
     <section className="section learn-section">
       <div className="container">
-        <div className="section-heading">
+        <div className="section-heading reveal">
           <div>
             <Eyebrow>NO JARGON REQUIRED</Eyebrow>
             <h2>
@@ -1048,7 +1083,7 @@ function GuidesSection() {
         </div>
         <div className="guide-grid">
           {GUIDES.map((guide) => (
-            <Link key={guide.number} className="guide-card" to={guide.href}>
+            <Link key={guide.number} className="guide-card reveal" to={guide.href}>
               <div className={`guide-cover ${guide.cover}`}>
                 <span>{guide.number}</span>
                 {guide.icon}
@@ -1104,7 +1139,7 @@ const FAQS = [
 function FaqSection() {
   return (
     <section className="section faq-section">
-      <div className="container faq-layout">
+      <div className="container faq-layout reveal">
         <div>
           <Eyebrow>A FEW GOOD QUESTIONS</Eyebrow>
           <h2>
@@ -1140,7 +1175,7 @@ function FaqSection() {
 function Closing() {
   return (
     <section className="closing section">
-      <div className="container">
+      <div className="container reveal">
         <div className="closing-orb" aria-hidden="true">
           <SparkIcon />
         </div>
@@ -1233,6 +1268,7 @@ function SiteFooter({ onClearContext }: { onClearContext: () => void }) {
 /* ------------------------------------------------------------------ */
 
 export function HomePage() {
+  useReveal()
   const [toastMessage, setToastMessage] = useState<string | null>(null)
 
   useEffect(() => {

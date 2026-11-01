@@ -41,3 +41,120 @@ body:has(.uni-home) {
 @media(max-width:360px){.uni-home .home-hero h1{font-size:56px}.uni-home .hero-workspace{width:100%}.uni-home .preview-approval{font-size:8px}.uni-home .container{padding-inline:17px}.uni-home .nav-wrap{padding-inline:17px}.uni-home .nav-actions>.button .icon{display:none}.uni-home .journey-grid article{grid-template-columns:120px minmax(0,1fr);gap:8px 15px}.uni-home .journey-art{height:175px}.uni-home .page-hero h1{font-size:37px}.uni-home .workspace-title h1{font-size:27px}}
 @media(prefers-reduced-motion:reduce){.uni-home{scroll-behavior:auto}.uni-home *, .uni-home *:before, .uni-home *:after{animation:none!important;transition:none!important}.uni-home .orbit-card{translate:0 0}}
 @media print{.uni-home .site-header, .uni-home .site-footer, .uni-home .closing, .uni-home .button, .uni-home .toast{display:none}.uni-home .section{padding-block:25px}.uni-home .container{padding-inline:0}.uni-home .page-hero{padding-top:0}.uni-home .article-layout{display:block}.uni-home .article-layout aside{position:static}.uni-home .hero-scene{display:none}.uni-home{background:#fff;color:#000}.uni-home a{text-decoration:underline}.uni-home .helper-card, .uni-home .case-panel{break-inside:avoid}}
+
+/* ------------------------------------------------------------------- */
+/* Motion layer — entrances, scroll reveals and micro-interactions.    */
+/* Hiding is gated behind .reveal-ready (set by JS only when the       */
+/* browser supports IntersectionObserver), so tests, no-JS and        */
+/* reduced-motion users always see the finished page.                  */
+/* ------------------------------------------------------------------- */
+
+/* --- Hero entrance -------------------------------------------------- */
+
+@keyframes rise-in{from{opacity:0;translate:0 22px}to{opacity:1;translate:0 0}}
+
+.uni-home .home-hero .announcement,.uni-home .home-hero h1,.uni-home .home-hero .hero-intro,.uni-home .home-hero .button-row,.uni-home .home-hero .hero-note,.uni-home .home-hero .hero-scene{animation:rise-in .65s cubic-bezier(.2,.7,.25,1) both}
+.uni-home .home-hero h1{animation-delay:.08s}
+.uni-home .home-hero .hero-intro{animation-delay:.16s}
+.uni-home .home-hero .button-row{animation-delay:.24s}
+.uni-home .home-hero .hero-note{animation-delay:.3s}
+.uni-home .home-hero .hero-scene{animation-delay:.36s}
+
+/* The accent underline draws itself once, under the hero word. */
+
+@keyframes draw-line{from{stroke-dasharray:1;stroke-dashoffset:1}to{stroke-dasharray:1;stroke-dashoffset:0}}
+
+.uni-home .accent-word svg path{animation:draw-line .9s cubic-bezier(.3,.7,.3,1) .55s both}
+
+/* The hero scene grid drifts one full tile (38px) so the loop is seamless. */
+
+@keyframes grid-drift{from{background-position:0 0}to{background-position:38px 38px}}
+
+.uni-home .scene-grid{animation:grid-drift 14s linear infinite}
+
+/* Float pills bob on their own cadence, offset from the orbit cards. */
+
+@keyframes bob-pill{0%,100%{translate:0 0}50%{translate:0 -8px}}
+
+.uni-home .float-pill{animation:bob-pill 6s ease-in-out infinite}
+.uni-home .pill-right{animation-delay:-2.4s}
+
+/* --- Scroll reveal --------------------------------------------------- */
+
+.uni-home.reveal-ready .reveal{opacity:0;translate:0 26px;transition:opacity .6s cubic-bezier(.2,.7,.25,1),translate .6s cubic-bezier(.2,.7,.25,1)}
+.uni-home.reveal-ready .reveal.revealed{opacity:1;translate:0 0}
+
+/* Cards that share a row stagger, so grids rise as a wave. */
+
+.uni-home.reveal-ready .helper-grid .reveal:nth-child(2),.uni-home.reveal-ready .journey-grid .reveal:nth-child(2),.uni-home.reveal-ready .guide-grid .reveal:nth-child(2){transition-delay:.12s}
+.uni-home.reveal-ready .helper-grid .reveal:nth-child(3),.uni-home.reveal-ready .journey-grid .reveal:nth-child(3),.uni-home.reveal-ready .guide-grid .reveal:nth-child(3){transition-delay:.24s}
+.uni-home.reveal-ready .helper-grid .reveal:nth-child(4){transition-delay:.36s}
+.uni-home.reveal-ready .helper-grid .reveal:nth-child(5){transition-delay:.48s}
+
+/* --- Micro-interactions ---------------------------------------------- */
+
+/* Buttons: the arrow leans into the click. */
+
+.uni-home .button .icon{transition:translate .25s cubic-bezier(.2,.7,.25,1)}
+.uni-home .button:hover .icon,.uni-home .button:focus-visible .icon{translate:4px 0}
+
+/* Helper cards: lift with a shadow; the arrow badge fills with ink. */
+
+.uni-home .helper-card{transition:transform .3s cubic-bezier(.2,.7,.25,1),box-shadow .3s;box-shadow:0 0 0 #28243200}
+.uni-home .helper-card:hover{transform:translateY(-7px);box-shadow:0 18px 40px #28243214}
+.uni-home .circle-arrow{transition:background .25s,border-color .25s,color .25s}
+.uni-home .helper-card:hover .circle-arrow{background:var(--ink);border-color:var(--ink);color:#fff}
+
+/* Guide cards: lift and let the cover icon settle upright. */
+
+.uni-home .guide-card{transition:transform .28s cubic-bezier(.2,.7,.25,1),box-shadow .28s,border-color .28s;box-shadow:0 0 0 #28243200}
+.uni-home .guide-card:hover{transform:translateY(-5px);border-color:#c4bfef;box-shadow:0 16px 36px #28243212}
+.uni-home .guide-cover .icon{transition:transform .4s cubic-bezier(.2,.7,.25,1)}
+.uni-home .guide-card:hover .guide-cover .icon{transform:rotate(0deg) scale(1.06)}
+
+/* Case demo card: the whole card lifts slightly toward you. */
+
+.uni-home .case-demo{transition:transform .3s cubic-bezier(.2,.7,.25,1),box-shadow .3s}
+.uni-home .case-panel:hover .case-demo{transform:translateY(-4px);box-shadow:0 22px 55px #2824321a}
+
+/* Context board: leans a little less when hovered, like being picked up. */
+
+.uni-home .context-board{transition:transform .35s cubic-bezier(.2,.7,.25,1)}
+.uni-home .context-visual:hover .context-board{transform:rotate(.5deg) translateY(-4px)}
+
+/* FAQ: the question turns purple on hover and while open. */
+
+.uni-home .faq-list summary{transition:color .2s}
+.uni-home .faq-list summary:hover{color:var(--purple)}
+.uni-home .faq-list details[open] summary{color:var(--purple)}
+.uni-home .faq-list summary .icon{transition:transform .25s cubic-bezier(.2,.7,.25,1)}
+
+/* Use-case tabs: a soft tint on hover. */
+
+.uni-home .use-case-tabs button{transition:color .2s,border-color .2s,background .2s}
+.uni-home .use-case-tabs button:hover{color:var(--ink);background:#6056e80a}
+
+/* Announcement pill: the status dot breathes. */
+
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 4px #6056e810}50%{box-shadow:0 0 0 7px #6056e808}}
+
+.uni-home .announcement .status-dot{animation:pulse-dot 2.6s ease-in-out infinite}
+
+/* Mega menu items: slide a touch as they appear. */
+
+.uni-home .mega-menu a{transition:background .15s,padding-left .18s}
+.uni-home .mega-menu a:hover{padding-left:19px}
+
+/* Closing orb: slow, quiet spin so the section feels alive. */
+
+@keyframes slow-spin{to{rotate:360deg}}
+
+.uni-home .closing-orb{animation:slow-spin 26s linear infinite}
+
+/* --- Reduced motion: everything settles instantly -------------------- */
+
+@media (prefers-reduced-motion: reduce){
+  .uni-home *,.uni-home *::before,.uni-home *::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .uni-home .scene-grid,.uni-home .closing-orb,.uni-home .announcement .status-dot{animation:none}
+  .uni-home.reveal-ready .reveal{opacity:1;translate:0 0}
+}
