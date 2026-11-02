@@ -53,10 +53,12 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
     const credential = state.activeProviderId
       ? state.credentials[state.activeProviderId]
       : undefined
+    const provider = state.providers.find((p) => p.id === state.activeProviderId)
+    // Local providers connect keylessly (U012): an empty key is genuine.
     return (
       !!state.activeModelId &&
       credential?.status === 'connected' &&
-      !!credential.apiKey
+      (!!credential.apiKey || provider?.kind === 'local')
     )
   })
   const isTemporary = useAppStore((state) => {

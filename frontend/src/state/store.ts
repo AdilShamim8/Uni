@@ -202,8 +202,12 @@ function resolveAdapter(preference?: { providerId: string | null; modelId: strin
   }
   const provider = providers.find((p) => p.id === activeProviderId)
   const credential = activeProviderId ? credentials[activeProviderId] : undefined
-  if (provider && activeModelId && credential?.status === 'connected' && credential.apiKey) {
-    return createLiveAdapter(provider, credential.apiKey, activeModelId)
+  // Local providers connect keylessly (U012): an empty key is genuine,
+  // and the live adapter simply sends no credential header.
+  const usableCredential =
+    credential?.status === 'connected' && (credential.apiKey || provider?.kind === 'local')
+  if (provider && activeModelId && usableCredential) {
+    return createLiveAdapter(provider, credential.apiKey ?? '', activeModelId)
   }
   return activeAdapter
 }

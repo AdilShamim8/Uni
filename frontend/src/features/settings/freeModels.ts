@@ -80,7 +80,7 @@ export const FREE_ROUTES: readonly FreeRoute[] = [
       'Paste the key below and press Connect.',
     ],
     models: [
-      { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash', note: 'fast' },
+      { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash', note: 'balanced' },
       { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash', note: 'budget' },
     ],
     local: false,
@@ -99,9 +99,9 @@ export const FREE_ROUTES: readonly FreeRoute[] = [
       'Paste the key below and press Connect — the :free models appear in the discovered list.',
     ],
     models: [
-      { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B', note: 'free' },
-      { id: 'nvidia/nemotron-3.5-lightning:free', label: 'Nemotron 3.5 Lightning', note: 'free' },
-      { id: 'thinkingmachines/inkling:free', label: 'Inkling', note: 'free' },
+      { id: 'google/gemma-3-27b-it:free', label: 'Gemma 3 27B', note: 'free' },
+      { id: 'deepseek/deepseek-chat-v3-0324:free', label: 'DeepSeek V3', note: 'free' },
+      { id: 'meta-llama/llama-3.3-70b-instruct:free', label: 'Llama 3.3 70B', note: 'free' },
     ],
     local: false,
   },
@@ -121,25 +121,6 @@ export const FREE_ROUTES: readonly FreeRoute[] = [
     models: [
       { id: 'mistral-small-latest', label: 'Mistral Small', note: 'stable alias' },
       { id: 'open-mistral-nemo', label: 'Mistral Nemo', note: 'budget' },
-    ],
-    local: false,
-  },
-  {
-    id: 'github-models',
-    label: 'GitHub Models',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://models.github.ai/inference',
-    headline: 'GPT and Llama behind your GitHub account',
-    limits: 'Free tier with rate limits for GitHub accounts; a personal token works as the key.',
-    signupUrl: 'https://github.com/marketplace/models',
-    steps: [
-      'Open github.com/marketplace/models with your GitHub account.',
-      'Pick a model and press Try it / Get started to create a token (classic PAT with no scopes, or the fine-grained models scope).',
-      'Paste the token below as the API key and press Connect.',
-    ],
-    models: [
-      { id: 'openai/gpt-4o-mini', label: 'GPT-4o mini', note: 'free tier' },
-      { id: 'meta-llama/Llama-3.3-70B-Instruct', label: 'Llama 3.3 70B' },
     ],
     local: false,
   },
@@ -177,7 +158,7 @@ export const FREE_ROUTES: readonly FreeRoute[] = [
     ],
     models: [
       { id: 'meta/llama-3.3-70b-instruct', label: 'Llama 3.3 70B' },
-      { id: 'nvidia/nemotron-3.5-lightning', label: 'Nemotron 3.5 Lightning' },
+      { id: 'nvidia/llama-3.1-nemotron-70b-instruct', label: 'Llama 3.1 Nemotron 70B' },
     ],
     local: false,
   },
@@ -211,7 +192,7 @@ export const FREE_ROUTES: readonly FreeRoute[] = [
     steps: [
       'Download Ollama from ollama.com and install it.',
       'Pull a model in a terminal: ollama pull llama3.2',
-      'Leave Ollama running, type any word as the key below (it is ignored), and press Connect.',
+      'Leave Ollama running — no key is needed, just press Connect.',
     ],
     models: [
       { id: 'llama3.2', label: 'Llama 3.2' },
@@ -230,7 +211,7 @@ export const FREE_ROUTES: readonly FreeRoute[] = [
     steps: [
       'Download LM Studio from lmstudio.ai and install it.',
       'Download a model in the app (e.g. a small Llama or Qwen).',
-      'Start the local server (Developer tab), type any word as the key below, and press Connect.',
+      'Start the local server (Developer tab) — no key is needed, just press Connect.',
     ],
     models: [
       { id: 'gpt-oss:20b', label: 'GPT-OSS 20B' },
@@ -254,4 +235,38 @@ export function freeRouteFor(kind: ProviderKind, endpointUrl: string): FreeRoute
       (route) => route.endpointUrl === trimmed && route.kind === kind,
     ) ?? null
   )
+}
+
+/**
+ * A free route that has been RETIRED from the catalog (U018): it no
+ * longer appears as an active choice, but existing profiles pointing at
+ * it get an honest explanation. Uni NEVER moves a stored credential to
+ * another host automatically — the user decides where a key goes next.
+ */
+export interface RetiredRoute {
+  id: string
+  label: string
+  /** Hostnames whose profiles should see the retirement explanation. */
+  hosts: string[]
+  explanation: string
+}
+
+export const RETIRED_FREE_ROUTES: readonly RetiredRoute[] = [
+  {
+    id: 'github-models',
+    label: 'GitHub Models',
+    hosts: ['models.github.ai', 'models.inference.ai.azure.com'],
+    explanation:
+      'GitHub Models was retired as a curated free route — its catalog and terms changed, so Uni no longer recommends it or onboards new setups through it. This profile and its key stay exactly as you saved them: nothing was moved to another host. You can keep using it if it still works for you, or move the key yourself to any other route above.',
+  },
+]
+
+/** The retirement explanation for a provider's endpoint, when one applies. */
+export function retiredRouteFor(endpointUrl: string): RetiredRoute | null {
+  try {
+    const hostname = new URL(endpointUrl).hostname.toLowerCase()
+    return RETIRED_FREE_ROUTES.find((route) => route.hosts.includes(hostname)) ?? null
+  } catch {
+    return null
+  }
 }

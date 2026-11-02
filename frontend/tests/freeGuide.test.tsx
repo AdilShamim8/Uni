@@ -44,7 +44,7 @@ describe('free setup guide', () => {
 
     expect(dialog.getByText('No key to get — it runs on your machine')).toBeInTheDocument()
     expect(
-      dialog.getByText(/type any word as the key below \(it is ignored\)/i),
+      dialog.getByText(/no key is needed/i),
     ).toBeInTheDocument()
     // A local route has no signup link at all.
     expect(dialog.queryByRole('link', { name: /Open /i })).not.toBeInTheDocument()

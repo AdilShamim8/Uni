@@ -23,7 +23,7 @@ import {
 } from '@/domain/modelCapabilities'
 import { suggestedModelsFor } from './suggestedModels'
 import type { FreeRoute } from './freeModels'
-import { freeRouteFor } from './freeModels'
+import { freeRouteFor, retiredRouteFor } from './freeModels'
 import { FreeModelsHub } from './FreeModelsHub'
 import { FreeSetupGuide } from './FreeSetupGuide'
 import { Button } from '@/components/ui/Button'
@@ -745,7 +745,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
           variant="primary"
           size="sm"
           className="mt-6"
-          disabled={!keyDraft.trim() || testing}
+          disabled={(!keyDraft.trim() && provider.kind !== 'local') || testing}
           onClick={() => void connect(keyDraft)}
         >
           {testing ? <Spinner size={13} /> : <Zap size={13} />}
@@ -981,6 +981,17 @@ export function ProvidersSection() {
                 <p className="mt-0.5 break-all text-xs text-ink-faint/80">
                   {provider.endpointUrl}
                 </p>
+                {retiredRouteFor(provider.endpointUrl) && (
+                  <p
+                    role="note"
+                    className="mt-2 rounded-control bg-subtle px-3 py-2 text-xs leading-relaxed text-ink-soft"
+                  >
+                    <strong className="font-semibold text-ink">
+                      {retiredRouteFor(provider.endpointUrl)!.label} was retired as a free route.
+                    </strong>{' '}
+                    {retiredRouteFor(provider.endpointUrl)!.explanation}
+                  </p>
+                )}
 
                 <div className="mt-3">
                   <p className="text-xs font-medium text-ink-soft">

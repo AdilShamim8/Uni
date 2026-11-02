@@ -4,7 +4,8 @@ import type { ProviderKind } from '@/domain/types'
 
 describe('free-models catalog integrity', () => {
   it('has a curated set of routes covering cloud and local', () => {
-    expect(FREE_ROUTES.length).toBeGreaterThanOrEqual(10)
+    // GitHub Models was retired (U018): 9 curated routes remain.
+    expect(FREE_ROUTES.length).toBeGreaterThanOrEqual(9)
     expect(FREE_ROUTES.some((route) => route.local)).toBe(true)
     expect(FREE_ROUTES.some((route) => !route.local)).toBe(true)
   })
