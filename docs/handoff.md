@@ -1,3 +1,28 @@
+## Current state (updated 2026-11-02, audit-repair Wave 1 complete)
+
+- **Branch:** `task/urgent-correctness-wave1` (pushed; one commit per
+  item U001–U010, all green). Main was at audited HEAD `1c5ba05f6`.
+- **Shipped:** IPv4/IPv6 CIDR guard (F01), one pinned guarded transport
+  for discovery + probes + SDK generation (F09), three-state OpenRouter
+  key verification (F03), free-first catalog ordering before caps (F04),
+  one Anthropic base policy for discovery and generation (F08), BYOK
+  terminal-evidence streaming with an `interrupted` outcome (F05), a
+  standards-aware server-run SSE client with cursor reconnect to the
+  same run (F06), session-generation fencing of every async server
+  write (F07), and single-origin SPA+API routing with JSON precedence
+  (F02/U010) plus `frontend/vercel.json` SPA rewrites.
+- **Verification:** frontend 468/468 + lint/build; backend 206/206 +
+  typecheck/build; `qa:live` 125/125 incl. the new single-origin phase.
+  Per-item evidence: `docs/task-ledger.md`.
+- **Next action:** Wave 2 (U011–U020): shared provider descriptors,
+  no-auth local profiles, deliberate server provider/model selection,
+  verification bound to endpoint/credential version, bounded/cancelable
+  checks, manual model entry, GitHub Models retirement; then Wave 3
+  (workspace modes + main-Chat server journey).
+- **Blockers/limits:** the linked Vercel deployment still needs project
+  settings pointed at a real backend (repo-side routing is done);
+  single-process run ownership unchanged until U036.
+
 # handoff.md — resumption checkpoint
 
 Keep short and factual: current commit, completed gate, exact commands and

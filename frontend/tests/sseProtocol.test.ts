@@ -101,7 +101,7 @@ describe('SSE protocol hardening (F13)', () => {
     vi.unstubAllGlobals()
   })
 
-  it('delivers a trailing event without a final blank line', async () => {
+  it('delivers a trailing event without a final blank line — but never as complete', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       sseResponse(['data: {"choices":[{"delta":{"content":"first"}}]}\n\ndata: {"choices":[{"delta":{"content":"last"}}]}']),
     )
@@ -109,7 +109,54 @@ describe('SSE protocol hardening (F13)', () => {
     const handlers = makeHandlers()
     await createLiveAdapter(profile, 'sk-key', 'm').stream(REQUEST, handlers, new AbortController().signal)
     expect(handlers.deltas).toEqual(['first', 'last'])
+    // No [DONE] and no finish reason: EOF is not completion evidence.
+    expect(handlers.done).toEqual(['interrupted'])
+    vi.unstubAllGlobals()
+  })
+
+  it('a content delta followed by early EOF ends interrupted, not complete (F05)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      sseResponse(['data: {"choices":[{"delta":{"content":"partial answer"}}]}\n\n']),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const handlers = makeHandlers()
+    await createLiveAdapter(profile, 'sk-key', 'm').stream(REQUEST, handlers, new AbortController().signal)
+    // Partial text is preserved …
+    expect(handlers.deltas).toEqual(['partial answer'])
+    // … but the turn is reported interrupted, never complete.
+    expect(handlers.done).toEqual(['interrupted'])
+    expect(handlers.errors).toEqual([])
+    vi.unstubAllGlobals()
+  })
+
+  it('a finish reason without [DONE] is terminal evidence and completes', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      sseResponse([
+        'data: {"choices":[{"delta":{"content":"done"}}]}\n\n',
+        'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\n',
+      ]),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const handlers = makeHandlers()
+    await createLiveAdapter(profile, 'sk-key', 'm').stream(REQUEST, handlers, new AbortController().signal)
+    expect(handlers.deltas).toEqual(['done'])
     expect(handlers.done).toEqual(['complete'])
+    vi.unstubAllGlobals()
+  })
+
+  it('an Anthropic stream ending without message_stop ends interrupted', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      sseResponse([
+        'event: message_start\ndata: {"type":"message_start"}\n\n',
+        'event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"text":"part"}}\n\n',
+      ]),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const handlers = makeHandlers()
+    await createLiveAdapter(anthropicProfile, 'key', 'claude').stream(REQUEST, handlers, new AbortController().signal)
+    expect(handlers.deltas).toEqual(['part'])
+    expect(handlers.done).toEqual(['interrupted'])
+    expect(handlers.errors).toEqual([])
     vi.unstubAllGlobals()
   })
 

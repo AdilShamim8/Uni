@@ -818,6 +818,15 @@ async function runAssistantTurn(conversationId: string, userNode: MessageNode): 
           updateNode(conversationId, assistant.id, { content: current.content + text })
         },
         onDone: (reason) => {
+          if (reason === 'interrupted') {
+            // EOF without completion evidence: keep the partial reply,
+            // mark it stopped, and say why — never 'complete' (F05).
+            updateNode(conversationId, assistant.id, {
+              status: 'stopped',
+              statusPrefix: 'Interrupted — the reply may be incomplete',
+            })
+            return
+          }
           updateNode(conversationId, assistant.id, {
             status: reason === 'stopped' ? 'stopped' : 'complete',
           })

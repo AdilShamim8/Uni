@@ -12,7 +12,7 @@
 import { spawn } from 'node:child_process'
 import { createServer } from 'node:http'
 import EmbeddedPostgres from 'embedded-postgres'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 
@@ -115,6 +115,18 @@ const listen = (server, host = '127.0.0.1') =>
 /* ------------------------------------------------------------------ */
 
 const scratch = await mkdtemp(join(tmpdir(), 'uni-qa-'))
+
+// Fixture SPA dist for the single-origin routing phase (F02/U010):
+// same shape as a real Vite build (index.html + hashed asset), so the
+// sweep verifies routing without depending on a frontend build.
+const spaDist = join(scratch, 'spa-dist')
+await mkdir(join(spaDist, 'assets'), { recursive: true })
+await writeFile(
+  join(spaDist, 'index.html'),
+  '<!doctype html><html><head><title>Uni QA</title></head><body>spa-shell</body></html>',
+)
+await writeFile(join(spaDist, 'assets', 'app-QA1.js'), 'export default "qa"\n')
+
 const pg = new EmbeddedPostgres({
   databaseDir: join(scratch, 'pg'),
   user: 'uni',
@@ -160,6 +172,7 @@ const server = spawn('node', ['dist/server.js'], {
     RUN_CREATE_RATE_PER_MINUTE: '1000',
     ALLOW_LOCAL_MODEL_ENDPOINTS: 'false',
     LOCAL_MODEL_ENDPOINT_ALLOWLIST: '127.0.0.1',
+    FRONTEND_DIST_DIR: spaDist,
   },
   stdio: ['ignore', 'pipe', 'pipe'],
 })
@@ -304,6 +317,68 @@ async function runAllChecks() {
     check('/health/ready answers 200 with database up', ready.status === 200, `status ${ready.status}`)
     const idEcho = ready.headers.get('x-request-id')
     check('x-request-id is echoed on responses', typeof idEcho === 'string' && idEcho.length > 0)
+  }
+
+  /* ---------------------------------------------------------------- */
+  /* Phase 1 — single-origin routing (F02/U010)                        */
+  /* ---------------------------------------------------------------- */
+
+  phase('single-origin routing')
+  {
+    // Deep links load the SPA shell over a real socket.
+    const shell = await fetch(`${base}/chat`)
+    const shellText = await shell.text()
+    check(
+      'deep link /chat serves the SPA shell (200 html)',
+      shell.status === 200 &&
+        (shell.headers.get('content-type') ?? '').includes('text/html') &&
+        shellText.includes('spa-shell'),
+      `status ${shell.status}`,
+    )
+    check(
+      'index.html revalidates (no-cache)',
+      (shell.headers.get('cache-control') ?? '').includes('no-cache'),
+      shell.headers.get('cache-control') ?? 'none',
+    )
+
+    // Real files win over the fallback and cache immutably.
+    const asset = await fetch(`${base}/assets/app-QA1.js`)
+    const assetText = await asset.text()
+    check(
+      'hashed asset serves as itself with immutable cache',
+      asset.status === 200 &&
+        assetText.includes('qa') &&
+        (asset.headers.get('cache-control') ?? '').includes('immutable'),
+      `status ${asset.status}`,
+    )
+
+    // API/health precedence: JSON, never the HTML fallback.
+    const session = await fetch(`${base}/api/auth/get-session`)
+    check(
+      '/api/auth/get-session answers JSON, never the HTML fallback',
+      (session.headers.get('content-type') ?? '').includes('application/json'),
+      `status ${session.status}, type ${session.headers.get('content-type')}`,
+    )
+
+    const unknownApi = await fetch(`${base}/api/v1/nope`)
+    let unknownJson = null
+    try {
+      unknownJson = JSON.parse(await unknownApi.text())
+    } catch {
+      unknownJson = null
+    }
+    check(
+      'unknown /api path answers the JSON error envelope (404)',
+      unknownApi.status === 404 && !!unknownJson && typeof unknownJson.requestId === 'string',
+      `status ${unknownApi.status}`,
+    )
+
+    const healthWithSpa = await fetch(`${base}/health/ready`)
+    check(
+      '/health/ready still answers JSON with the SPA enabled',
+      (healthWithSpa.headers.get('content-type') ?? '').includes('application/json'),
+      `status ${healthWithSpa.status}`,
+    )
   }
 
   /* ---------------------------------------------------------------- */

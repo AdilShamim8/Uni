@@ -4,6 +4,7 @@ import type { LanguageModel } from 'ai'
 import type { ProviderDto } from '@uni/contracts'
 import { resolveProviderEndpoint } from '../../lib/urlGuard.js'
 import { createGuardedFetch, urlGuardOptions } from '../../lib/guardedTransport.js'
+import { anthropicApiBase } from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
 
 /**
@@ -35,8 +36,13 @@ export async function buildModelForRun(
   const guardedFetch = createGuardedFetch(env, env.RUN_TIMEOUT_MS)
 
   if (provider.kind === 'anthropic') {
+    // The SDK appends `/messages` to this base (and only inserts `/v1`
+    // for its exact official host), so generation must receive the
+    // same versioned base that discovery probes `<base>/models` on
+    // (F08). Root, `/v1`, and custom gateway prefixes all normalize
+    // through anthropicApiBase — never a bare `/messages` route.
     const anthropic = createAnthropic({
-      baseURL: endpointUrl,
+      baseURL: anthropicApiBase(provider.endpointUrl),
       apiKey: provider.apiKey,
       fetch: guardedFetch,
     })

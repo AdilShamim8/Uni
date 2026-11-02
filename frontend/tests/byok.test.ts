@@ -278,8 +278,101 @@ describe('provider connection testing', () => {
     vi.unstubAllGlobals()
   })
 
-  it('orders OpenRouter discovery with free models first', async () => {
+  it.each([
+    ['rate limited', new Response('slow down', { status: 429 })],
+    ['server error', new Response('boom', { status: 500 })],
+  ])('never reports verified when the OpenRouter /key check is inconclusive (%s)', async (_label, keyResponse) => {
     const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        // /models is public and answers 200 — that alone proves nothing.
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [{ id: 'vendor/paid' }] }), { status: 200 }),
+        )
+        .mockResolvedValueOnce(keyResponse),
+    )
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('could not be verified')
+    expect(result.message).not.toContain('rejected')
+    vi.unstubAllGlobals()
+  })
+
+  it('never reports verified when the OpenRouter /key check fails at the network level', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [{ id: 'vendor/paid' }] }), { status: 200 }),
+        )
+        .mockRejectedValueOnce(new TypeError('Failed to fetch')),
+    )
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('could not be verified')
+    vi.unstubAllGlobals()
+  })
+
+  it('never reports verified when the OpenRouter /key 200 body is not valid JSON', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [{ id: 'vendor/paid' }] }), { status: 200 }),
+        )
+        .mockResolvedValueOnce(new Response('not-json(', { status: 200 })),
+    )
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('could not be verified')
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps a free model discoverable when 205 paid models sort before it', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    // The audited failure (F04): the browser truncated the list to 200
+    // BEFORE partitioning free models, so a free id listed after 205
+    // alphabetically-early paid ids disappeared.
+    const bigCatalog = {
+      data: [
+        ...Array.from({ length: 205 }, (_, index) => ({
+          id: `a${String(index).padStart(3, '0')}/paid`,
+        })),
+        { id: 'z-free:free' },
+      ],
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify(bigCatalog), { status: 200 }))
+        .mockResolvedValueOnce(new Response('{}', { status: 200 })),
+    )
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.ok).toBe(true)
+    expect(result.models?.[0]).toBe('z-free:free')
+    expect(result.models).toHaveLength(200)
+  })
+
+  it('orders OpenRouter discovery with free models first', async () => {    const openRouterProfile: ProviderProfile = {
       ...profile,
       endpointUrl: 'https://openrouter.ai/api/v1',
     }
@@ -378,6 +471,35 @@ describe('live chat adapter', () => {
     const [, plainInit] = plainMock.mock.calls[0] as [string, RequestInit]
     expect((plainInit.headers as Record<string, string>)['X-Title']).toBeUndefined()
     vi.unstubAllGlobals()
+  })
+
+  it('normalizes Anthropic bases identically for discovery and generation (F08)', async () => {
+    const cases: Array<[string, string]> = [
+      ['https://api.anthropic.com', 'https://api.anthropic.com/v1'],
+      ['https://api.anthropic.com/', 'https://api.anthropic.com/v1'],
+      ['https://gw.example/anthropic', 'https://gw.example/anthropic/v1'],
+      ['https://gw.example/anthropic/v1', 'https://gw.example/anthropic/v1'],
+    ]
+    for (const [endpointUrl, expectedBase] of cases) {
+      const anthropic: ProviderProfile = {
+        ...anthropicProfile,
+        endpointUrl,
+      }
+      // Discovery probes <base>/models …
+      expect(modelsListUrl(anthropic)).toBe(`${expectedBase}/models`)
+
+      // … and the live adapter streams to <base>/messages on the SAME base.
+      const fetchMock = vi.fn().mockResolvedValue(sseResponse(['data: [DONE]\n\n']))
+      vi.stubGlobal('fetch', fetchMock)
+      const adapter = createLiveAdapter(anthropic, 'ant-key', 'claude-test')
+      await adapter.stream(
+        { prompt: 'hi', history: [], tools: [], attachments: [], nickname: '', traits: '' },
+        makeHandlers(),
+        new AbortController().signal,
+      )
+      expect(fetchMock.mock.calls[0]?.[0]).toBe(`${expectedBase}/messages`)
+      vi.unstubAllGlobals()
+    }
   })
 
   it('streams Anthropic SSE events with the native protocol', async () => {

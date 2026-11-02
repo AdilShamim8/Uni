@@ -13,6 +13,7 @@ import {
 } from '../../lib/secretBox.js'
 import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { UrlGuardError } from '../../lib/urlGuard.js'
+import { providerDiscoveryUrl, providerAuthHeaders, type ProviderProtocol } from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
 import type {
   CreateProviderRequest,
@@ -226,27 +227,25 @@ export async function readCredential(
 /* Connection test + model discovery (SSRF-guarded)                    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * URL/header construction is delegated to the shared provider
+ * descriptor registry (U011): the protocol's base policy, discovery
+ * path, and auth style all come from one place, shared with the
+ * generation path and (mirrored until U022) the browser adapters.
+ */
+function providerProtocol(kind: ProviderRow['kind']): ProviderProtocol {
+  // The DB column is a plain string; rows are only written through the
+  // validated contract, but an unknown value fails closed here.
+  if (kind === 'anthropic' || kind === 'openai-compatible') return kind
+  throw new Error(`Unsupported provider protocol: ${kind}`)
+}
+
 function modelsUrl(kind: ProviderRow['kind'], endpointUrl: string): string {
-  const base = endpointUrl.replace(/\/+$/, '')
-  if (kind === 'anthropic') {
-    // Anthropic exposes GET /v1/models; OpenAI-compatible servers /models.
-    return /\/v1$/.test(base) ? `${base}/models` : `${base}/v1/models`
-  }
-  return `${base}/models`
+  return providerDiscoveryUrl(providerProtocol(kind), endpointUrl)
 }
 
 function authHeaders(kind: ProviderRow['kind'], apiKey: string): Record<string, string> {
-  if (kind === 'anthropic') {
-    return {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      accept: 'application/json',
-    }
-  }
-  return {
-    authorization: `Bearer ${apiKey}`,
-    accept: 'application/json',
-  }
+  return providerAuthHeaders(providerProtocol(kind), apiKey)
 }
 
 /**
@@ -266,6 +265,14 @@ function isOpenRouterEndpoint(endpointUrl: string): boolean {
 function openRouterKeyUrl(endpointUrl: string): string {
   return `${endpointUrl.replace(/\/+$/, '')}/key`
 }
+
+/**
+ * Hard bound on catalog parsing: a hostile or gigantic endpoint cannot
+ * exhaust server memory. Ordering and persistence caps happen AFTER
+ * this, so classification (free-first partitioning) is never applied to
+ * an already-truncated list.
+ */
+const MAX_PARSED_MODELS = 2000
 
 /** OpenRouter orders its catalog with the free tier first (zero-cost path). */
 function orderOpenRouterModels(models: string[]): string[] {
@@ -323,34 +330,64 @@ async function runConnectionCheck(
       ? body.data
           .map((entry) => (typeof entry?.id === 'string' ? entry.id : null))
           .filter((id): id is string => id !== null)
-          .slice(0, 100)
+          .slice(0, MAX_PARSED_MODELS)
       : []
 
-    // OpenRouter's /models is public: verify the key against the
-    // auth-protected /key endpoint before claiming the connection works,
-    // and surface the free tier first in the discovered list.
+    // OpenRouter's /models is public: only the auth-protected /key
+    // endpoint can speak for the key. Three distinct outcomes —
+    // verified (2xx + valid body), rejected (401/403), unknown
+    // (rate-limited, 5xx, network failure, unparseable body) — and
+    // only "verified" may claim the connection works. A public catalog
+    // is never evidence of a working key.
     if (isOpenRouterEndpoint(provider.endpointUrl)) {
+      let verification:
+        | { state: 'verified' }
+        | { state: 'rejected' }
+        | { state: 'unknown'; reason: string }
       try {
         const keyResponse = await guardedProviderFetch(env, openRouterKeyUrl(provider.endpointUrl), {
           method: 'GET',
           headers: authHeaders(provider.kind, apiKey),
         })
         if (keyResponse.status === 401 || keyResponse.status === 403) {
-          return {
-            ok: false,
-            message:
-              'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys.',
-            models: null,
-          }
+          verification = { state: 'rejected' }
+        } else if (!keyResponse.ok) {
+          verification = { state: 'unknown', reason: `HTTP ${keyResponse.status}` }
+        } else {
+          const body = await keyResponse.json().catch(() => null)
+          verification =
+            body !== null && typeof body === 'object'
+              ? { state: 'verified' }
+              : { state: 'unknown', reason: 'unexpected response body' }
         }
       } catch (error) {
         if (error instanceof UrlGuardError) {
           return { ok: false, message: error.message, models: null }
         }
-        // The key check is a bonus signal: a network hiccup there must not
-        // fail an endpoint that already answered the models request.
+        verification = { state: 'unknown', reason: 'network error' }
+      }
+
+      if (verification.state === 'rejected') {
+        return {
+          ok: false,
+          message:
+            'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys.',
+          models: null,
+        }
+      }
+      if (verification.state === 'unknown') {
+        return {
+          ok: false,
+          message: `OpenRouter’s key check is unavailable (${verification.reason}) — the key could not be verified. The model list is public, so reachability alone is not a pass; try again in a moment.`,
+          models: null,
+        }
       }
       models = orderOpenRouterModels(models)
+    } else {
+      // Plain providers: deterministic order, capped only AFTER parsing
+      // and sorting — the cap is a persistence bound, never a
+      // classification-time truncation.
+      models = models.slice().sort((a, b) => a.localeCompare(b)).slice(0, 100)
     }
 
     return { ok: true, message: 'Connected — the key works.', models }

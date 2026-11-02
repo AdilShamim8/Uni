@@ -715,3 +715,28 @@ Notes:
   the production path shape. The linked Vercel deployment's hosting
   settings are outside this repository's control and are not claimed
   fixed by a code change alone.
+
+## Wave-1 urgency repair (2026-11-02, branch `task/urgent-correctness-wave1`)
+
+Scope: audit items U001–U010 (F01–F09), one commit per item, each with
+its regression tests in the same commit. Red-first evidence recorded in
+docs/task-ledger.md (21 urlGuard fixtures and 2 session-fencing
+fixtures fail against the pre-fix code).
+
+| Command | Result |
+| --- | --- |
+| `cd frontend && npm run lint` / `npm run build` | **Pass** / **Pass** |
+| `npm run test -- --maxWorkers=1 --minWorkers=1` (frontend, final) | **468/468 across 65 files** (446 baseline + 22 new) |
+| `cd backend && npm run typecheck` / `npm run build` | **Pass** / **Pass** |
+| `npm test` (backend, final) | **206/206 across 18 files** (117 baseline + 89 new) |
+| `npm run qa:live` (backend) | **125/125 checks** — full sweep incl. the new single-origin routing phase over real sockets: deep link `/chat` serves the SPA shell, hashed assets cache immutably, `/api/auth/get-session` + `/health/ready` answer JSON, unknown `/api` paths give the 404 envelope. One earlier run under concurrent build load showed 4 flaky run-phase timing failures; a clean re-run passed everything, and the vitest suites cover the same behavior deterministically. |
+
+Notes:
+
+- The linked Vercel deployment (universe-mu-two) still serves no
+  backend: U010's code + `frontend/vercel.json` give the repo correct
+  routing for both deployment shapes, but the Vercel project settings
+  need to point at a real backend — outside this repository's control,
+  not claimed fixed.
+- Single-process assumption unchanged (F10 deferred to U036+);
+  idempotency/admission concurrency fixes are U031+.
