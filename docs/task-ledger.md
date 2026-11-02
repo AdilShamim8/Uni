@@ -33,3 +33,22 @@ U011–U020 (provider descriptors, no-auth locals, deliberate selection,
 bounded checks), U021–U030 (workspace modes + main-UI server chat),
 U031–U040 (atomic idempotency/admission — the concurrency fixes the
 audit flagged as needing fresh multi-request integration tests).
+
+## Wave 2 + U021 — session 2026-11-02 (branch task/urgent-correctness-wave1)
+
+All items below are implemented, tested, committed and pushed one by one
+(frontend 528/528, backend 224/224 at the final commit):
+
+- U011 (8b748f1c1) provider descriptor registry in @uni/contracts + mirrored browser registry; both adapters consume it.
+- U012 (c1a309245) genuinely no-auth local model connections: connect/discover/GENERATE with no stored credential; key-requiring protocols still fail honestly; egress policy unchanged.
+- U013 (85eaa3cbf) deliberate server provider+model selection (serverChatSelection); insert/reorder/delete of other providers never changes the choice.
+- U014 (e18e3d97d) verification state bound to the checked endpoint+credential: edits reset readiness; mid-check edits fence out stale results (IS NOT DISTINCT FROM guard).
+- U015 (721a87ffb) verified model capability metadata: discovery-captured modalities/supported_parameters + documented families, unknown labeled unknown; adapters declare capabilities; controls enabled only when BOTH sides support.
+- U016 (01c45ba50) bounded + cancellable checks: deadline + Stop button browser-side; 2 MB body caps on both sides; /key body capped at 64 KB.
+- U017 (cb6f27345) manual model entry when /models is 404/501: verified by a real one-token generation; distinct failures for unknown model / rejected key / unreachable.
+- U018 (a9d2f7781) catalog refresh: GitHub Models retired (existing profiles get an honest banner, no credential auto-moves); invented model ids replaced; local routes now honestly keyless.
+- U019 (6174cb925) typed provider diagnostics: auth/quota/invalid-model/timeout/network-CORS/unknown with retry steps; credential-shaped snippets redacted; leak tests both sides.
+- U020 (14d468515) docs/provider-compatibility.md matrix (tested contract) + opt-in scripts/provider-smoke.mjs (real providers, cost stated, results to git-ignored smoke-results.json, keys never recorded).
+- U021 (a86539e3b) domain repository interfaces + session-scoped workspaceMode; one backend per operation; mode switches never copy/split writes; server repo refuses ops while signed out.
+
+Not started yet: U022-U030 (Wave 3 remainder: shared-contract wiring, server conversation mapping into the main surface, main composer through the server adapter, sidebar actions, branching, temporary policy, import, settings explanations, browser coverage) and Waves 4-10 (U031-U100).
