@@ -200,4 +200,45 @@ describe('providers — OpenRouter key verification', () => {
       expect(provider?.credential.status).not.toBe('connected')
     },
   )
+
+  it('keeps a free model discoverable when 205 paid models sort before it (F04)', async () => {
+    const providerId = await createOpenRouterProvider()
+    await testApp.app.inject({
+      method: 'PUT',
+      url: `/api/v1/providers/${providerId}/credential`,
+      headers: { cookie },
+      payload: { apiKey: API_KEY },
+    })
+
+    // The audited failure: the catalog was truncated to 100 BEFORE the
+    // free/paid partition, so a free model listed after early paid ids
+    // vanished. 205 alphabetically-early paid models + one late free id.
+    const bigCatalog = {
+      data: [
+        ...Array.from({ length: 205 }, (_, index) => ({ id: `a${String(index).padStart(3, '0')}/paid` })),
+        { id: 'z-free:free' },
+      ],
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: unknown) => {
+        const url = input instanceof Request ? input.url : String(input)
+        if (url.endsWith('/models')) return new Response(JSON.stringify(bigCatalog), { status: 200 })
+        if (url.endsWith('/key')) return new Response('{}', { status: 200 })
+        return new Response('not found', { status: 404 })
+      }),
+    )
+
+    const discover = await testApp.app.inject({
+      method: 'POST',
+      url: `/api/v1/providers/${providerId}/models`,
+      headers: { cookie },
+    })
+    expect(discover.statusCode).toBe(200)
+    const result = providerTestResponseSchema.parse(discover.json())
+    expect(result.ok).toBe(true)
+    // The free model is FIRST (free-first ordering) and never clipped.
+    expect(result.discoveredModels?.[0]).toBe('z-free:free')
+    expect(result.discoveredModels).toHaveLength(100)
+  })
 })

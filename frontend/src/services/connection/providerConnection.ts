@@ -74,15 +74,24 @@ function describeHttpError(status: number, bodyText: string): string {
   }
 }
 
+/**
+ * Hard bound on catalog parsing: a hostile or gigantic endpoint cannot
+ * exhaust browser memory. Ordering and display caps happen AFTER this,
+ * in the caller, so classification (free-first partitioning) is never
+ * applied to an already-truncated list.
+ */
+const MAX_PARSED_MODEL_IDS = 2000
+
 function parseModelIds(bodyText: string): string[] {
   try {
     const parsed: unknown = JSON.parse(bodyText)
     if (typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { data?: unknown }).data)) {
       const ids: string[] = []
       for (const entry of (parsed as { data: Array<Record<string, unknown>> }).data) {
+        if (ids.length >= MAX_PARSED_MODEL_IDS) break
         if (typeof entry?.id === 'string' && entry.id.length > 0) ids.push(entry.id)
       }
-      return ids.sort((a, b) => a.localeCompare(b)).slice(0, 200)
+      return ids
     }
   } catch {
     /* not JSON — treat as opaque success without model list */
@@ -93,11 +102,13 @@ function parseModelIds(bodyText: string): string[] {
 /**
  * OpenRouter sorts its huge catalog with free models first, so the free
  * tier (the fastest path to a zero-cost setup) is visible at the top of
- * the discovered list instead of buried under hundreds of paid ids.
+ * the discovered list instead of buried under hundreds of paid ids. The
+ * free/paid partition happens BEFORE the display cap — a free model
+ * that sorts after the first 200 paid ids must stay discoverable.
  */
 function orderOpenRouterModels(ids: string[]): string[] {
   const free = ids.filter((id) => id.endsWith(':free')).sort((a, b) => a.localeCompare(b))
-  const paid = ids.filter((id) => !id.endsWith(':free'))
+  const paid = ids.filter((id) => !id.endsWith(':free')).sort((a, b) => a.localeCompare(b))
   return [...free, ...paid].slice(0, 200)
 }
 
@@ -208,6 +219,9 @@ export async function testProviderConnection(
     const models = isOpenRouter(profile)
       ? orderOpenRouterModels(parseModelIds(bodyText))
       : parseModelIds(bodyText)
+          .slice()
+          .sort((a, b) => a.localeCompare(b))
+          .slice(0, 200)
     return {
       ok: true,
       message:
