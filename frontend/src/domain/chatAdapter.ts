@@ -40,7 +40,14 @@ export interface ChatError {
 export interface ChatStreamHandlers {
   onStart: (draft: AssistantDraft) => void
   onDelta: (text: string) => void
-  onDone: (reason: 'complete' | 'stopped') => void
+  /**
+   * 'complete' — the provider established protocol-level completion
+   * (finish reason / [DONE] / message_stop). 'stopped' — the user
+   * cancelled. 'interrupted' — the transport ended WITHOUT completion
+   * evidence: partial output is preserved, but the reply may be cut
+   * short and must never be presented as complete (audit F05).
+   */
+  onDone: (reason: 'complete' | 'stopped' | 'interrupted') => void
   onError: (error: ChatError) => void
 }
 
