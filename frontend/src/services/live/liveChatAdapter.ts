@@ -1,6 +1,7 @@
 import type { ChatAdapter, ChatRequest, ChatStreamHandlers } from '@/domain/chatAdapter'
 import type { ProviderProfile } from '@/domain/types'
 import { anthropicApiBase } from '@/services/connection/providerConnection'
+import { findEventBoundary, parseSseBlock } from '@/services/sse/sseParser'
 
 /**
  * Live chat adapter: streams completions straight from the user's own
@@ -75,32 +76,6 @@ interface AnthropicEvent {
   type?: string
   delta?: { text?: string }
   error?: { message?: string }
-}
-
-/** One parsed SSE event: joined multiline data + optional event name. */
-interface SseEvent {
-  event?: string
-  data: string
-}
-
-function parseSseBlock(block: string): SseEvent | null {
-  const dataLines: string[] = []
-  let eventName: string | undefined
-  for (const rawLine of block.split('\n')) {
-    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine
-    if (line.startsWith(':')) continue // comment / keep-alive
-    if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''))
-    else if (line.startsWith('event:')) eventName = line.slice(6).replace(/^ /, '').trim()
-  }
-  if (dataLines.length === 0) return null
-  // The SSE spec joins multiple data lines with newlines.
-  return { event: eventName, data: dataLines.join('\n') }
-}
-
-function findEventBoundary(buffer: string): { end: number } | null {
-  const match = buffer.match(/\r?\n\r?\n/)
-  if (!match || match.index === undefined) return null
-  return { end: match.index + match[0].length }
 }
 
 async function readSseStream(
