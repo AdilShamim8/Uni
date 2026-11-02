@@ -66,7 +66,7 @@ function buildSystemPrompt(request: ChatRequest): string | undefined {
 }
 
 interface OpenAiChunk {
-  choices?: Array<{ delta?: { content?: string | null } }>
+  choices?: Array<{ delta?: { content?: string | null }; finish_reason?: string | null }>
   /** Providers stream errors as data payloads — terminal, never "complete". */
   error?: { message?: string }
 }
@@ -132,7 +132,7 @@ async function readSseStream(
         const block = buffer.slice(0, boundary.end)
         buffer = buffer.slice(boundary.end)
         const parsed = parseSseBlock(block)
-        if (parsed && parsed.data.length > 0 && parsed.data !== '[DONE]') {
+        if (parsed && parsed.data.length > 0) {
           onEvent(parsed.data, parsed.event)
         }
       }
@@ -141,7 +141,7 @@ async function readSseStream(
     // final blank line — previously silently dropped (F13).
     buffer += decoder.decode()
     const trailing = parseSseBlock(buffer)
-    if (trailing && trailing.data.length > 0 && trailing.data !== '[DONE]') {
+    if (trailing && trailing.data.length > 0) {
       onEvent(trailing.data, trailing.event)
     }
   } finally {
@@ -249,6 +249,7 @@ export function createLiveAdapter(
 
       let receivedAny = false
       let errored = false
+      let sawTerminal = false
 
       function emitDelta(text: string) {
         if (!text) return
@@ -282,6 +283,12 @@ export function createLiveAdapter(
               }
               return
             }
+            // The OpenAI-compatible [DONE] sentinel is protocol-level
+            // terminal evidence (F05).
+            if (payload === '[DONE]') {
+              sawTerminal = true
+              return
+            }
             try {
               const parsed: unknown = JSON.parse(payload)
               if (anthropic) {
@@ -290,6 +297,10 @@ export function createLiveAdapter(
                   emitProviderError(
                     event.error?.message ?? 'The provider reported an error mid-stream — the reply may be incomplete.',
                   )
+                  return
+                }
+                if (event.type === 'message_stop') {
+                  sawTerminal = true
                   return
                 }
                 if (event.type === 'content_block_delta' && typeof event.delta?.text === 'string') {
@@ -303,7 +314,11 @@ export function createLiveAdapter(
                   )
                   return
                 }
-                const delta = chunk.choices?.[0]?.delta?.content
+                const choice = chunk.choices?.[0]
+                if (typeof choice?.finish_reason === 'string' && choice.finish_reason.length > 0) {
+                  sawTerminal = true
+                }
+                const delta = choice?.delta?.content
                 if (typeof delta === 'string') emitDelta(delta)
               }
             } catch {
@@ -320,7 +335,11 @@ export function createLiveAdapter(
           })
           return
         }
-        handlers.onDone(signal.aborted ? 'stopped' : 'complete')
+        // EOF is not proof of completion (F05): without protocol-level
+        // terminal evidence ([DONE], a finish reason, or message_stop)
+        // the turn ends 'interrupted' — partial text preserved, never
+        // presented as complete.
+        handlers.onDone(signal.aborted ? 'stopped' : sawTerminal ? 'complete' : 'interrupted')
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
           handlers.onDone('stopped')

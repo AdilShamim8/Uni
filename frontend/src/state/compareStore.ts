@@ -298,7 +298,9 @@ async function runSlot(
     },
     onDone: (reason) => {
       patchResult(runId, slotIndex, {
-        status: reason === 'stopped' ? 'stopped' : 'complete',
+        // 'interrupted' (EOF without completion evidence) maps to
+        // stopped, never to complete (F05).
+        status: reason === 'complete' ? 'complete' : 'stopped',
         endedAt: Date.now(),
       })
       finalize(runId)
