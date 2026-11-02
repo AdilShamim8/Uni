@@ -519,6 +519,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
   const showToast = useAppStore((state) => state.showToast)
 
   const [keyDraft, setKeyDraft] = useState('')
+  const [manualModelDraft, setManualModelDraft] = useState('')
   const [reveal, setReveal] = useState(false)
   const [testing, setTesting] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
@@ -531,7 +532,9 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
     setMessage(null)
     const controller = new AbortController()
     testAbortRef.current = controller
-    const result = await testProviderConnection(provider, apiKey, controller.signal)
+    const result = await testProviderConnection(provider, apiKey, controller.signal, {
+      manualModelId: manualModelDraft,
+    })
     testAbortRef.current = null
     setTesting(false)
 
@@ -714,6 +717,28 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
             <span className="break-all">{provider.endpointUrl}</span> — never to anything else.
             {provider.endpointUrl.includes('openrouter.ai') &&
               ' OpenRouter lists its free models (ids ending in ":free") first after connecting.'}
+          </p>
+          {/* Manual model entry (U017): for endpoints without /models. */}
+          <label
+            htmlFor={`manual-model-${provider.id}`}
+            className="mt-2 block text-sm font-medium text-ink"
+          >
+            Model id <span className="font-normal text-ink-faint">(optional — for endpoints without /models)</span>
+          </label>
+          <input
+            id={`manual-model-${provider.id}`}
+            type="text"
+            value={manualModelDraft}
+            autoComplete="off"
+            spellCheck={false}
+            placeholder="e.g. my-model:latest"
+            aria-describedby={`manual-model-note-${provider.id}`}
+            onChange={(event) => setManualModelDraft(event.target.value)}
+            className="mt-1.5 w-full rounded-control border border-line bg-raised px-3 py-2 text-sm text-ink placeholder:text-ink-faint transition-[border-color,box-shadow] duration-[var(--motion-fast)] focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+          />
+          <p id={`manual-model-note-${provider.id}`} className="mt-1 text-xs leading-relaxed text-ink-faint">
+            Endpoints that offer no model list can still be used: enter the exact model id and Uni
+            verifies it with a one-token test generation instead of discovery.
           </p>
         </div>
         <Button

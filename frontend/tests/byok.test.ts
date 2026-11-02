@@ -222,7 +222,11 @@ describe('provider connection testing', () => {
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('nope', { status: 404 })))
     const notFound = await testProviderConnection(profile, 'sk-key')
-    expect(notFound.message).toContain('404 Not found')
+    // A 404 on /models means the endpoint has no discovery: the honest
+    // guidance points at the manual model path (U017), not a generic
+    // 404 — with a manual model supplied it would verify by generation.
+    expect(notFound.ok).toBe(false)
+    expect(notFound.message).toContain('does not support model discovery')
     vi.unstubAllGlobals()
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('slow down', { status: 429 })))

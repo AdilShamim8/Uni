@@ -226,11 +226,72 @@ async function verifyOpenRouterKey(
   }
 }
 
+/**
+ * Verify a MANUALLY entered model by actually generating with it (U017):
+ * some valid inference endpoints expose no /models at all. A minimal
+ * one-token request either proves endpoint+key+model work together or
+ * reports an honest, distinct failure.
+ */
+async function verifyModelByGeneration(
+  profile: ProviderProfile,
+  apiKey: string,
+  modelId: string,
+  signal: AbortSignal,
+  latencyMs: number,
+): Promise<ConnectionTestResult> {
+  const anthropic = profile.kind === 'anthropic'
+  const base = profile.endpointUrl.replace(/\/+$/, '')
+  const url = anthropic
+    ? `${normalizeProviderBase('anthropic', profile.endpointUrl)}/messages`
+    : /\/chat\/completions\/?$/.test(base)
+      ? base
+      : `${base}/chat/completions`
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...providerAuthHeaders(anthropic ? 'anthropic' : 'openai-compatible', apiKey),
+      },
+      body: JSON.stringify({ model: modelId, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] }),
+      signal,
+    })
+    if (response.status === 401 || response.status === 403) {
+      return { ok: false, latencyMs, message: describeHttpError(response.status, '') }
+    }
+    if (response.status === 404) {
+      return {
+        ok: false,
+        latencyMs,
+        message: `The endpoint does not know the model “${modelId}” — check the exact model id.`,
+      }
+    }
+    if (!response.ok) {
+      const bodyText = await boundedText(response, MAX_ERROR_SNIPPET_BYTES).catch(() => '')
+      return { ok: false, latencyMs, message: describeHttpError(response.status, bodyText) }
+    }
+    return {
+      ok: true,
+      latencyMs,
+      message: `Connected — “${modelId}” answered a test generation (manual setup; discovery is unavailable on this endpoint).`,
+      models: [modelId],
+    }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return { ok: false, message: 'Connection test cancelled.' }
+    }
+    return {
+      ok: false,
+      message: 'The endpoint could not be reached for a test generation — check the URL and CORS.',
+    }
+  }
+}
+
 export async function testProviderConnection(
   profile: ProviderProfile,
   apiKey: string,
   signal?: AbortSignal,
-  options?: { timeoutMs?: number },
+  options?: { timeoutMs?: number; manualModelId?: string },
 ): Promise<ConnectionTestResult> {
   const trimmedKey = apiKey.trim()
   // A genuinely no-auth connection (local runtimes like Ollama) sends
@@ -277,7 +338,22 @@ export async function testProviderConnection(
     const latencyMs = Math.round(performance.now() - started)
 
     if (!response.ok) {
+      // Manual model setup (U017): endpoints with no /models (404/501)
+      // can still be verified by generating with the manually entered
+      // model — without one, this is an honest failure, not a guess.
+      const manualModelId = options?.manualModelId?.trim()
+      if ((response.status === 404 || response.status === 501) && manualModelId) {
+        return verifyModelByGeneration(profile, trimmedKey, manualModelId, deadline.signal, latencyMs)
+      }
       const bodyText = await boundedText(response, MAX_ERROR_SNIPPET_BYTES).catch(() => '')
+      if (response.status === 404 || response.status === 501) {
+        return {
+          ok: false,
+          latencyMs,
+          message:
+            'This endpoint does not support model discovery (no /models). Enter a model id manually, then Test again to verify it with a test generation.',
+        }
+      }
       return { ok: false, message: describeHttpError(response.status, bodyText), latencyMs }
     }
 

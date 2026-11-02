@@ -14,6 +14,7 @@ import {
 import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { UrlGuardError } from '../../lib/urlGuard.js'
 import {
+  normalizeProviderBase,
   providerDiscoveryUrl,
   providerAuthHeaders,
   providerRequiresCredential,
@@ -363,6 +364,73 @@ interface ConnectionResult {
   models: string[] | null
 }
 
+/** Generation paths per protocol, for manual verification (U017). */
+function generationUrl(kind: ProviderRow['kind'], endpointUrl: string): string {
+  const protocol = providerProtocol(kind)
+  if (protocol === 'anthropic') {
+    return `${normalizeProviderBase('anthropic', endpointUrl)}/messages`
+  }
+  const base = endpointUrl.replace(/\/+$/, '')
+  return /\/chat\/completions\/?$/.test(base) ? base : `${base}/chat/completions`
+}
+
+/**
+ * Verify a MANUALLY entered model by actually generating with it (U017):
+ * some valid inference endpoints expose no /models at all. A minimal
+ * one-token request either proves endpoint+key+model work together or
+ * reports an honest, distinct failure.
+ */
+async function verifyModelByGeneration(
+  env: Env,
+  provider: ProviderRow,
+  apiKey: string,
+  modelId: string,
+): Promise<ConnectionResult> {
+  const url = generationUrl(provider.kind, provider.endpointUrl)
+  try {
+    const response = await guardedProviderFetch(env, url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', ...authHeaders(provider.kind, apiKey) },
+      body: JSON.stringify(
+        providerProtocol(provider.kind) === 'anthropic'
+          ? { model: modelId, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] }
+          : { model: modelId, max_tokens: 1, messages: [{ role: 'user', content: 'ping' }] },
+      ),
+    })
+    if (response.status === 401 || response.status === 403) {
+      return { ok: false, message: 'The provider rejected the API key.', models: null }
+    }
+    if (response.status === 404) {
+      return {
+        ok: false,
+        message: `The endpoint does not know the model “${modelId}” — check the exact model id.`,
+        models: null,
+      }
+    }
+    if (!response.ok) {
+      return {
+        ok: false,
+        message: `The provider endpoint answered ${response.status} for a test generation.`,
+        models: null,
+      }
+    }
+    return {
+      ok: true,
+      message: `Connected — “${modelId}” answered a test generation (manual setup; discovery is unavailable on this endpoint).`,
+      models: [modelId],
+    }
+  } catch (error) {
+    if (error instanceof UrlGuardError) {
+      return { ok: false, message: error.message, models: null }
+    }
+    return {
+      ok: false,
+      message: 'The provider endpoint could not be reached for a test generation.',
+      models: null,
+    }
+  }
+}
+
 async function runConnectionCheck(
   env: Env,
   provider: ProviderRow,
@@ -377,6 +445,20 @@ async function runConnectionCheck(
 
     if (response.status === 401 || response.status === 403) {
       return { ok: false, message: 'The provider rejected the API key.', models: null }
+    }
+    // Manual model setup (U017): endpoints with no /models (404/501)
+    // can still be verified by generating with the manually configured
+    // model — without one, this is an honest failure, not a guess.
+    if (response.status === 404 || response.status === 501) {
+      if (provider.modelId) {
+        return verifyModelByGeneration(env, provider, apiKey, provider.modelId)
+      }
+      return {
+        ok: false,
+        message:
+          'This endpoint does not support model discovery (no /models). Set a model id manually on the provider, then run Test again to verify it with a test generation.',
+        models: null,
+      }
     }
     if (!response.ok) {
       return {
