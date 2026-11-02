@@ -95,6 +95,11 @@ import {
   extractVerifiedModelMetadata,
   type VerifiedModelMetadata,
 } from '@/domain/modelCapabilities'
+import {
+  diagnoseHttpStatus,
+  diagnoseTransportError,
+  diagnosticMessage,
+} from '@/domain/providerDiagnostics'
 
 export { normalizeProviderBase, providerDiscoveryUrl, type ProviderProtocol }
 
@@ -116,19 +121,9 @@ function buildHeaders(profile: ProviderProfile, apiKey: string): HeadersInit {
 }
 
 function describeHttpError(status: number, bodyText: string): string {
-  const bodySnippet = bodyText.slice(0, 180).replace(/\s+/g, ' ').trim()
-  switch (status) {
-    case 401:
-      return `401 Unauthorized — check the API key${bodySnippet ? ` (${bodySnippet})` : ''}`
-    case 403:
-      return `403 Forbidden — the key lacks access to this endpoint${bodySnippet ? ` (${bodySnippet})` : ''}`
-    case 404:
-      return `404 Not found — check the base URL (it usually ends in /v1, and should not include /chat/completions)`
-    case 429:
-      return `429 Rate limited — try again shortly${bodySnippet ? ` (${bodySnippet})` : ''}`
-    default:
-      return `HTTP ${status}${bodySnippet ? ` — ${bodySnippet}` : ''}`
-  }
+  // Typed diagnostics (U019): every failure kind carries a concrete
+  // retry step; message format keeps the historical prefixes.
+  return diagnosticMessage(diagnoseHttpStatus(status, bodyText))
 }
 
 /**
@@ -405,11 +400,9 @@ export async function testProviderConnection(
     if (error instanceof Error && error.message === 'deadline') {
       return { ok: false, message: 'The provider endpoint timed out.' }
     }
-    return {
-      ok: false,
-      message:
-        'Could not reach the endpoint from this browser — check the URL, your network, and whether the provider allows direct browser (CORS) requests.',
-    }
+    // Typed transport diagnostics (U019): network vs CORS guidance with
+    // a concrete retry step, never a credential echo.
+    return { ok: false, message: diagnosticMessage(diagnoseTransportError(error)) }
   } finally {
     clearTimeout(timer)
   }

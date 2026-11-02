@@ -2,6 +2,11 @@ import type { ChatAdapter, ChatRequest, ChatStreamHandlers } from '@/domain/chat
 import type { ProviderProfile } from '@/domain/types'
 import { normalizeProviderBase, providerAuthHeaders } from '@/domain/providerDescriptors'
 import { TEXT_ONLY_ADAPTER } from '@/domain/modelCapabilities'
+import {
+  diagnoseTransportError,
+  diagnosticMessage,
+  redactSecrets,
+} from '@/domain/providerDiagnostics'
 import { findEventBoundary, parseSseBlock } from '@/services/sse/sseParser'
 
 /**
@@ -198,21 +203,23 @@ export function createLiveAdapter(
           handlers.onDone('stopped')
           return
         }
+        // Typed transport diagnostics (U019): network vs CORS guidance.
         handlers.onError({
           code: 'provider_error',
-          message:
-            'Could not reach the provider from this browser — check the endpoint URL, your network, and whether the provider allows direct browser (CORS) requests.',
+          message: diagnosticMessage(diagnoseTransportError(error)),
         })
         return
       }
 
       if (!response.ok) {
         const text = await response.text().catch(() => '')
-        const snippet = text.slice(0, 200).replace(/\s+/g, ' ').trim()
-        if (response.status === 401) {
+        // Snippets are redacted: a hostile endpoint echoing the
+        // credential back must not get it re-displayed (U019).
+        const snippet = redactSecrets(text.slice(0, 200).replace(/\s+/g, ' ').trim())
+        if (response.status === 401 || response.status === 403) {
           handlers.onError({
             code: 'provider_error',
-            message: '401 Unauthorized — the saved API key was rejected. Reconnect the provider in Settings.',
+            message: `${response.status === 401 ? '401 Unauthorized' : '403 Forbidden'} — the saved API key was rejected. Reconnect the provider in Settings.`,
           })
           return
         }
@@ -220,6 +227,13 @@ export function createLiveAdapter(
           handlers.onError({
             code: 'provider_error',
             message: `404 Not found — the model “${modelId}” or endpoint path may be wrong for this provider.`,
+          })
+          return
+        }
+        if (response.status === 429) {
+          handlers.onError({
+            code: 'provider_error',
+            message: `429 Rate limited — the provider limit is exhausted${snippet ? ` (${snippet})` : ''}. Wait a moment and send again, or switch models.`,
           })
           return
         }
