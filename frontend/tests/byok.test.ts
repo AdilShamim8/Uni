@@ -278,8 +278,72 @@ describe('provider connection testing', () => {
     vi.unstubAllGlobals()
   })
 
-  it('orders OpenRouter discovery with free models first', async () => {
+  it.each([
+    ['rate limited', new Response('slow down', { status: 429 })],
+    ['server error', new Response('boom', { status: 500 })],
+  ])('never reports verified when the OpenRouter /key check is inconclusive (%s)', async (_label, keyResponse) => {
     const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        // /models is public and answers 200 — that alone proves nothing.
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [{ id: 'vendor/paid' }] }), { status: 200 }),
+        )
+        .mockResolvedValueOnce(keyResponse),
+    )
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('could not be verified')
+    expect(result.message).not.toContain('rejected')
+    vi.unstubAllGlobals()
+  })
+
+  it('never reports verified when the OpenRouter /key check fails at the network level', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [{ id: 'vendor/paid' }] }), { status: 200 }),
+        )
+        .mockRejectedValueOnce(new TypeError('Failed to fetch')),
+    )
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('could not be verified')
+    vi.unstubAllGlobals()
+  })
+
+  it('never reports verified when the OpenRouter /key 200 body is not valid JSON', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ data: [{ id: 'vendor/paid' }] }), { status: 200 }),
+        )
+        .mockResolvedValueOnce(new Response('not-json(', { status: 200 })),
+    )
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('could not be verified')
+    vi.unstubAllGlobals()
+  })
+
+  it('orders OpenRouter discovery with free models first', async () => {    const openRouterProfile: ProviderProfile = {
       ...profile,
       endpointUrl: 'https://openrouter.ai/api/v1',
     }

@@ -102,15 +102,22 @@ function orderOpenRouterModels(ids: string[]): string[] {
 }
 
 /**
- * OpenRouter's /models endpoint is public — a wrong key still returns a
- * model list. The /key endpoint requires a valid key, so it is the honest
- * auth check for OpenRouter specifically.
+ * Outcome of OpenRouter's auth-protected /key check. Its /models list
+ * is public, so only /key can speak for the key. When /key cannot
+ * answer conclusively (rate limit, 5xx, network failure, unexpected
+ * body) the honest result is UNKNOWN — never "verified" (a public
+ * catalog proves nothing about the key) and never a false "rejected".
  */
+type OpenRouterKeyVerification =
+  | { state: 'verified' }
+  | { state: 'rejected'; message: string }
+  | { state: 'unknown'; message: string }
+
 async function verifyOpenRouterKey(
   base: string,
   apiKey: string,
   signal?: AbortSignal,
-): Promise<{ ok: true } | { ok: false; message: string }> {
+): Promise<OpenRouterKeyVerification> {
   try {
     const response = await fetch(`${base.replace(/\/+$/, '')}/key`, {
       method: 'GET',
@@ -119,19 +126,35 @@ async function verifyOpenRouterKey(
     })
     if (response.status === 401 || response.status === 403) {
       return {
-        ok: false,
+        state: 'rejected',
         message:
           'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys (the model list itself is public, so only /key proves the key).',
       }
     }
-    return { ok: true }
+    if (!response.ok) {
+      return {
+        state: 'unknown',
+        message: `OpenRouter’s key check is unavailable right now (HTTP ${response.status}) — the key could not be verified. The model list is public, so reachability alone proves nothing; try again in a moment.`,
+      }
+    }
+    const body = await response.json().catch(() => null)
+    if (body === null || typeof body !== 'object') {
+      return {
+        state: 'unknown',
+        message:
+          'OpenRouter’s key check returned an unexpected response — the key could not be verified. Try again.',
+      }
+    }
+    return { state: 'verified' }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return { ok: false, message: 'Connection test cancelled.' }
+      return { state: 'unknown', message: 'Connection test cancelled.' }
     }
-    // The key check is a bonus signal — a network failure here should not
-    // fail an otherwise reachable endpoint.
-    return { ok: true }
+    return {
+      state: 'unknown',
+      message:
+        'OpenRouter’s key check could not be reached from this browser — the key could not be verified. Check the network and try again.',
+    }
   }
 }
 
@@ -173,11 +196,11 @@ export async function testProviderConnection(
     const bodyText = await response.text().catch(() => '')
 
     // OpenRouter's model list is public: a successful /models fetch proves
-    // reachability, not the key. Verify the key against the auth-protected
-    // /key endpoint before claiming "connected".
+    // reachability, not the key. Only a verified /key response may claim
+    // "connected"; rejected and unknown are distinct honest failures.
     if (isOpenRouter(profile)) {
       const verified = await verifyOpenRouterKey(profile.endpointUrl, trimmedKey, signal)
-      if (!verified.ok) {
+      if (verified.state !== 'verified') {
         return { ok: false, message: verified.message, latencyMs }
       }
     }

@@ -11,6 +11,9 @@ import { signUpUser, startTestApp, type TestApp } from './harness.js'
  * Covered behaviors (mirrored on the frontend side in byok.test.ts):
  * - a key /key rejects fails the test even though /models answered 200
  * - a working key connects and discovery lists the free tier first
+ * - an INCONCLUSIVE /key (429/5xx/network error/unparseable body) never
+ *   reports verified — it fails honestly as "could not be verified"
+ *   without claiming the key is invalid (audit F03 / U004)
  * - both outbound calls carry the decrypted bearer key
  */
 
@@ -31,7 +34,12 @@ const CATALOG = {
   ],
 }
 
-function stubFetch(keyStatus: number): void {
+/** What /key does: a status with an optional raw body, or a thrown error. */
+type KeyBehavior =
+  | { status: number; body?: string }
+  | { throw: Error }
+
+function stubFetch(key: KeyBehavior): void {
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: unknown) => {
@@ -40,10 +48,10 @@ function stubFetch(keyStatus: number): void {
         return new Response(JSON.stringify(CATALOG), { status: 200 })
       }
       if (url.endsWith('/key')) {
-        return new Response(
-          keyStatus === 200 ? '{}' : JSON.stringify({ error: { message: 'invalid key' } }),
-          { status: keyStatus },
-        )
+        if ('throw' in key) throw key.throw
+        return new Response(key.body ?? (key.status === 200 ? '{}' : JSON.stringify({ error: { message: 'invalid key' } })), {
+          status: key.status,
+        })
       }
       return new Response('not found', { status: 404 })
     }),
@@ -90,7 +98,7 @@ describe('providers — OpenRouter key verification', () => {
     })
 
     // /models answers 200 (it is public); /key rejects the key with 401.
-    stubFetch(401)
+    stubFetch({ status: 401 })
     const test = await testApp.app.inject({
       method: 'POST',
       url: `/api/v1/providers/${providerId}/test`,
@@ -121,7 +129,7 @@ describe('providers — OpenRouter key verification', () => {
       payload: { apiKey: API_KEY },
     })
 
-    stubFetch(200)
+    stubFetch({ status: 200 })
     const discover = await testApp.app.inject({
       method: 'POST',
       url: `/api/v1/providers/${providerId}/models`,
@@ -149,4 +157,47 @@ describe('providers — OpenRouter key verification', () => {
       expect(url).toMatch(/^https:\/\/openrouter\.ai\/api\/v1\/(models|key)$/)
     }
   })
+
+  it.each([
+    { label: 'rate limited (429)', key: { status: 429 } },
+    { label: 'server error (500)', key: { status: 500 } },
+    { label: 'network failure', key: { throw: new TypeError('fetch failed') } },
+    { label: 'unparseable 200 body', key: { status: 200, body: 'not-json(' } },
+  ])(
+    'an inconclusive /key (%s) never reports verified — and never claims the key is invalid',
+    async ({ key }) => {
+      const providerId = await createOpenRouterProvider()
+      await testApp.app.inject({
+        method: 'PUT',
+        url: `/api/v1/providers/${providerId}/credential`,
+        headers: { cookie },
+        payload: { apiKey: API_KEY },
+      })
+
+      stubFetch(key)
+      const test = await testApp.app.inject({
+        method: 'POST',
+        url: `/api/v1/providers/${providerId}/test`,
+        headers: { cookie },
+      })
+      expect(test.statusCode).toBe(200)
+      const result = providerTestResponseSchema.parse(test.json())
+      // Not verified (audit F03): a public /models 200 plus an
+      // inconclusive /key must not claim the connection works.
+      expect(result.ok).toBe(false)
+      expect(result.message).toContain('could not be verified')
+      // But not "rejected" either — the key's validity is simply unknown.
+      expect(result.message).not.toContain('rejected')
+
+      // The provider is never marked connected by an inconclusive check.
+      const list = await testApp.app.inject({
+        method: 'GET',
+        url: '/api/v1/providers',
+        headers: { cookie },
+      })
+      const provider = (list.json() as { items: Array<{ id: string; credential: { status: string } }> })
+        .items.find((item) => item.id === providerId)
+      expect(provider?.credential.status).not.toBe('connected')
+    },
+  )
 })
