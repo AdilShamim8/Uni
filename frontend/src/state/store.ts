@@ -60,6 +60,14 @@ export interface AppStore {
   hydrated: boolean
   conversations: Record<string, Conversation>
   activeConversationId: string | null
+  /**
+   * Which backend workspace operations use (U021): 'local' (this
+   * browser) or 'server' (the signed-in Uni workspace). Session-scoped
+   * — deliberately NOT persisted, so a fresh session always starts in
+   * the local mode. Switching changes only where SUBSEQUENT operations
+   * go; it never copies data or moves active pointers.
+   */
+  workspaceMode: 'local' | 'server'
   preferences: Preferences
   providers: ProviderProfile[]
   activeProviderId: string | null
@@ -73,6 +81,8 @@ export interface AppStore {
   resetDemoData: () => void
   clearHistory: () => void
   exportAllData: () => string
+  /** Switch the workspace backend for subsequent operations (U021). */
+  setWorkspaceMode: (mode: 'local' | 'server') => void
 
   newConversation: (options?: { temporary?: boolean; agentId?: string }) => string
   /** Find (or create) the ongoing conversation for a saved agent. */
@@ -218,6 +228,7 @@ function resolveAdapter(preference?: { providerId: string | null; modelId: strin
 
 export const useAppStore = create<AppStore>()((set, get) => ({
   hydrated: false,
+  workspaceMode: 'local',
   conversations: {},
   activeConversationId: null,
   preferences: { ...DEFAULT_PREFERENCES },
@@ -265,6 +276,13 @@ export const useAppStore = create<AppStore>()((set, get) => ({
         )
       }
     }
+  },
+
+  setWorkspaceMode: (mode) => {
+    // Only the routing changes (U021): neither store's data, active
+    // pointers, or credentials are touched — mode switching can never
+    // split or copy a write between the local and server backends.
+    set({ workspaceMode: mode })
   },
 
   resetDemoData: () => {
