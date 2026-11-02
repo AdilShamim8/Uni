@@ -326,29 +326,54 @@ async function runConnectionCheck(
           .slice(0, 100)
       : []
 
-    // OpenRouter's /models is public: verify the key against the
-    // auth-protected /key endpoint before claiming the connection works,
-    // and surface the free tier first in the discovered list.
+    // OpenRouter's /models is public: only the auth-protected /key
+    // endpoint can speak for the key. Three distinct outcomes —
+    // verified (2xx + valid body), rejected (401/403), unknown
+    // (rate-limited, 5xx, network failure, unparseable body) — and
+    // only "verified" may claim the connection works. A public catalog
+    // is never evidence of a working key.
     if (isOpenRouterEndpoint(provider.endpointUrl)) {
+      let verification:
+        | { state: 'verified' }
+        | { state: 'rejected' }
+        | { state: 'unknown'; reason: string }
       try {
         const keyResponse = await guardedProviderFetch(env, openRouterKeyUrl(provider.endpointUrl), {
           method: 'GET',
           headers: authHeaders(provider.kind, apiKey),
         })
         if (keyResponse.status === 401 || keyResponse.status === 403) {
-          return {
-            ok: false,
-            message:
-              'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys.',
-            models: null,
-          }
+          verification = { state: 'rejected' }
+        } else if (!keyResponse.ok) {
+          verification = { state: 'unknown', reason: `HTTP ${keyResponse.status}` }
+        } else {
+          const body = await keyResponse.json().catch(() => null)
+          verification =
+            body !== null && typeof body === 'object'
+              ? { state: 'verified' }
+              : { state: 'unknown', reason: 'unexpected response body' }
         }
       } catch (error) {
         if (error instanceof UrlGuardError) {
           return { ok: false, message: error.message, models: null }
         }
-        // The key check is a bonus signal: a network hiccup there must not
-        // fail an endpoint that already answered the models request.
+        verification = { state: 'unknown', reason: 'network error' }
+      }
+
+      if (verification.state === 'rejected') {
+        return {
+          ok: false,
+          message:
+            'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys.',
+          models: null,
+        }
+      }
+      if (verification.state === 'unknown') {
+        return {
+          ok: false,
+          message: `OpenRouter’s key check is unavailable (${verification.reason}) — the key could not be verified. The model list is public, so reachability alone is not a pass; try again in a moment.`,
+          models: null,
+        }
       }
       models = orderOpenRouterModels(models)
     }
