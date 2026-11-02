@@ -4,7 +4,6 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import * as schema from '../../db/schema.js'
 import { providerConnections } from '../../db/schema.js'
 import { badRequest, notFound } from '../../lib/errors.js'
-import { withTimeout } from '../../lib/timeout.js'
 import {
   decryptSecret,
   encryptSecret,
@@ -12,7 +11,8 @@ import {
   parseMasterKey,
   type SecretEnvelope,
 } from '../../lib/secretBox.js'
-import { resolveProviderEndpoint, UrlGuardError } from '../../lib/urlGuard.js'
+import { createGuardedFetch } from '../../lib/guardedTransport.js'
+import { UrlGuardError } from '../../lib/urlGuard.js'
 import type { Env } from '../../config/env.js'
 import type {
   CreateProviderRequest,
@@ -275,10 +275,9 @@ function orderOpenRouterModels(models: string[]): string[] {
 }
 
 /**
- * SSRF-guarded outbound fetch for provider endpoints. DNS resolves and
- * validates against private/link-local/metadata ranges BEFORE the
- * request; redirects are refused (a redirect must not silently bypass
- * the guard); the operator's local-model allowlist applies explicitly.
+ * SSRF-guarded outbound fetch for provider endpoints: the shared
+ * guarded transport (validation, DNS pinning, redirect refusal, real
+ * abort deadlines) wrapped in the signature this module's callers use.
  */
 export async function guardedProviderFetch(
   env: Env,
@@ -286,18 +285,8 @@ export async function guardedProviderFetch(
   init: RequestInit,
   timeoutMs = 10_000,
 ): Promise<Response> {
-  const resolved = await resolveProviderEndpoint(url, {
-    allowLocalEndpoints: env.ALLOW_LOCAL_MODEL_ENDPOINTS === 'true',
-    allowlist: env.LOCAL_MODEL_ENDPOINT_ALLOWLIST.split(',')
-      .map((entry) => entry.trim())
-      .filter((entry) => entry.length > 0),
-  })
-
-  const request = new Request(resolved.url.toString(), {
-    ...init,
-    redirect: 'error',
-  })
-  return (await withTimeout(fetch(request), timeoutMs, 'provider request timeout')) as Response
+  const guardedFetch = createGuardedFetch(env, timeoutMs)
+  return guardedFetch(url, init)
 }
 
 interface ConnectionResult {
