@@ -40,34 +40,26 @@ function isOpenRouter(profile: ProviderProfile): boolean {
 }
 
 /**
- * Normalize an Anthropic endpoint to its versioned API base: strip
- * trailing slashes, keep a base that already ends in `/v1`, and append
- * `/v1` to anything else (bare host or custom gateway prefix). The
- * same policy feeds `/models` discovery here and `/messages`
- * generation in liveChatAdapter — the two can never diverge for one
- * saved provider (audit F08).
+ * Protocol shape comes from the shared provider descriptor registry
+ * (U011, mirrored from @uni/contracts): base policy, discovery path,
+ * and auth style all live in one place, consumed identically by
+ * discovery here and generation in liveChatAdapter.
  */
-export function anthropicApiBase(endpointUrl: string): string {
-  const base = endpointUrl.replace(/\/+$/, '')
-  return /\/v1$/.test(base) ? base : `${base}/v1`
-}
+import {
+  normalizeProviderBase,
+  providerDiscoveryUrl,
+  providerAuthHeaders,
+  type ProviderProtocol,
+} from '@/domain/providerDescriptors'
+
+export { normalizeProviderBase, providerDiscoveryUrl, type ProviderProtocol }
 
 export function modelsListUrl(profile: ProviderProfile): string {
-  if (usesAnthropicProtocol(profile.kind)) {
-    return `${anthropicApiBase(profile.endpointUrl)}/models`
-  }
-  return `${profile.endpointUrl.replace(/\/+$/, '')}/models`
+  return providerDiscoveryUrl(profile.kind, profile.endpointUrl)
 }
 
 function buildHeaders(profile: ProviderProfile, apiKey: string): HeadersInit {
-  if (usesAnthropicProtocol(profile.kind)) {
-    return {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    }
-  }
-  return { Authorization: `Bearer ${apiKey}` }
+  return providerAuthHeaders(profile.kind, apiKey)
 }
 
 function describeHttpError(status: number, bodyText: string): string {
