@@ -13,7 +13,7 @@ import {
 } from '../../lib/secretBox.js'
 import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { UrlGuardError } from '../../lib/urlGuard.js'
-import { anthropicApiBase } from '../../lib/providerUrls.js'
+import { providerDiscoveryUrl, providerAuthHeaders, type ProviderProtocol } from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
 import type {
   CreateProviderRequest,
@@ -227,28 +227,25 @@ export async function readCredential(
 /* Connection test + model discovery (SSRF-guarded)                    */
 /* ------------------------------------------------------------------ */
 
+/**
+ * URL/header construction is delegated to the shared provider
+ * descriptor registry (U011): the protocol's base policy, discovery
+ * path, and auth style all come from one place, shared with the
+ * generation path and (mirrored until U022) the browser adapters.
+ */
+function providerProtocol(kind: ProviderRow['kind']): ProviderProtocol {
+  // The DB column is a plain string; rows are only written through the
+  // validated contract, but an unknown value fails closed here.
+  if (kind === 'anthropic' || kind === 'openai-compatible') return kind
+  throw new Error(`Unsupported provider protocol: ${kind}`)
+}
+
 function modelsUrl(kind: ProviderRow['kind'], endpointUrl: string): string {
-  if (kind === 'anthropic') {
-    // One normalization policy for discovery AND generation (F08):
-    // the same anthropicApiBase feeds the SDK's baseURL, so /models
-    // and /messages always sit under the same versioned base.
-    return `${anthropicApiBase(endpointUrl)}/models`
-  }
-  return `${endpointUrl.replace(/\/+$/, '')}/models`
+  return providerDiscoveryUrl(providerProtocol(kind), endpointUrl)
 }
 
 function authHeaders(kind: ProviderRow['kind'], apiKey: string): Record<string, string> {
-  if (kind === 'anthropic') {
-    return {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-      accept: 'application/json',
-    }
-  }
-  return {
-    authorization: `Bearer ${apiKey}`,
-    accept: 'application/json',
-  }
+  return providerAuthHeaders(providerProtocol(kind), apiKey)
 }
 
 /**

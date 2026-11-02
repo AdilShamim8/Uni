@@ -1,6 +1,6 @@
 import type { ChatAdapter, ChatRequest, ChatStreamHandlers } from '@/domain/chatAdapter'
 import type { ProviderProfile } from '@/domain/types'
-import { anthropicApiBase } from '@/services/connection/providerConnection'
+import { normalizeProviderBase } from '@/domain/providerDescriptors'
 import { findEventBoundary, parseSseBlock } from '@/services/sse/sseParser'
 
 /**
@@ -37,11 +37,11 @@ function chatCompletionsUrl(profile: ProviderProfile): string {
 }
 
 function messagesUrl(profile: ProviderProfile): string {
-  const base = profile.endpointUrl.replace(/\/+$/, '')
   if (usesAnthropicProtocol(profile)) {
-    // Same versioned base as discovery (F08): root, `/v1`, and custom
-    // gateway prefixes all normalize through anthropicApiBase.
-    return `${anthropicApiBase(base)}/messages`
+    // The descriptor registry's versioned-base policy (U011): the same
+    // normalization feeds discovery's /models and this /messages route,
+    // so root, `/v1`, and gateway prefixes can never diverge.
+    return `${normalizeProviderBase('anthropic', profile.endpointUrl)}/messages`
   }
   return chatCompletionsUrl(profile)
 }
