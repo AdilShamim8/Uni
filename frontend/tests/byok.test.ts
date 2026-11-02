@@ -343,6 +343,35 @@ describe('provider connection testing', () => {
     vi.unstubAllGlobals()
   })
 
+  it('keeps a free model discoverable when 205 paid models sort before it', async () => {
+    const openRouterProfile: ProviderProfile = {
+      ...profile,
+      endpointUrl: 'https://openrouter.ai/api/v1',
+    }
+    // The audited failure (F04): the browser truncated the list to 200
+    // BEFORE partitioning free models, so a free id listed after 205
+    // alphabetically-early paid ids disappeared.
+    const bigCatalog = {
+      data: [
+        ...Array.from({ length: 205 }, (_, index) => ({
+          id: `a${String(index).padStart(3, '0')}/paid`,
+        })),
+        { id: 'z-free:free' },
+      ],
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(new Response(JSON.stringify(bigCatalog), { status: 200 }))
+        .mockResolvedValueOnce(new Response('{}', { status: 200 })),
+    )
+    const result = await testProviderConnection(openRouterProfile, 'sk-or-key')
+    expect(result.ok).toBe(true)
+    expect(result.models?.[0]).toBe('z-free:free')
+    expect(result.models).toHaveLength(200)
+  })
+
   it('orders OpenRouter discovery with free models first', async () => {    const openRouterProfile: ProviderProfile = {
       ...profile,
       endpointUrl: 'https://openrouter.ai/api/v1',

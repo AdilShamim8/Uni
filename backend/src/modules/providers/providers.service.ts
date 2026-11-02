@@ -267,6 +267,14 @@ function openRouterKeyUrl(endpointUrl: string): string {
   return `${endpointUrl.replace(/\/+$/, '')}/key`
 }
 
+/**
+ * Hard bound on catalog parsing: a hostile or gigantic endpoint cannot
+ * exhaust server memory. Ordering and persistence caps happen AFTER
+ * this, so classification (free-first partitioning) is never applied to
+ * an already-truncated list.
+ */
+const MAX_PARSED_MODELS = 2000
+
 /** OpenRouter orders its catalog with the free tier first (zero-cost path). */
 function orderOpenRouterModels(models: string[]): string[] {
   const free = models.filter((id) => id.endsWith(':free')).sort((a, b) => a.localeCompare(b))
@@ -323,7 +331,7 @@ async function runConnectionCheck(
       ? body.data
           .map((entry) => (typeof entry?.id === 'string' ? entry.id : null))
           .filter((id): id is string => id !== null)
-          .slice(0, 100)
+          .slice(0, MAX_PARSED_MODELS)
       : []
 
     // OpenRouter's /models is public: only the auth-protected /key
@@ -376,6 +384,11 @@ async function runConnectionCheck(
         }
       }
       models = orderOpenRouterModels(models)
+    } else {
+      // Plain providers: deterministic order, capped only AFTER parsing
+      // and sorting — the cap is a persistence bound, never a
+      // classification-time truncation.
+      models = models.slice().sort((a, b) => a.localeCompare(b)).slice(0, 100)
     }
 
     return { ok: true, message: 'Connected — the key works.', models }
