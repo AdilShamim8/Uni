@@ -1,5 +1,6 @@
 import type { ChatAdapter, ChatRequest, ChatStreamHandlers } from '@/domain/chatAdapter'
 import type { ProviderProfile } from '@/domain/types'
+import { anthropicApiBase } from '@/services/connection/providerConnection'
 
 /**
  * Live chat adapter: streams completions straight from the user's own
@@ -37,7 +38,9 @@ function chatCompletionsUrl(profile: ProviderProfile): string {
 function messagesUrl(profile: ProviderProfile): string {
   const base = profile.endpointUrl.replace(/\/+$/, '')
   if (usesAnthropicProtocol(profile)) {
-    return /\/v1$/.test(base) ? `${base}/messages` : `${base}/v1/messages`
+    // Same versioned base as discovery (F08): root, `/v1`, and custom
+    // gateway prefixes all normalize through anthropicApiBase.
+    return `${anthropicApiBase(base)}/messages`
   }
   return chatCompletionsUrl(profile)
 }

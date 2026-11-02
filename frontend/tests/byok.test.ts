@@ -473,6 +473,35 @@ describe('live chat adapter', () => {
     vi.unstubAllGlobals()
   })
 
+  it('normalizes Anthropic bases identically for discovery and generation (F08)', async () => {
+    const cases: Array<[string, string]> = [
+      ['https://api.anthropic.com', 'https://api.anthropic.com/v1'],
+      ['https://api.anthropic.com/', 'https://api.anthropic.com/v1'],
+      ['https://gw.example/anthropic', 'https://gw.example/anthropic/v1'],
+      ['https://gw.example/anthropic/v1', 'https://gw.example/anthropic/v1'],
+    ]
+    for (const [endpointUrl, expectedBase] of cases) {
+      const anthropic: ProviderProfile = {
+        ...anthropicProfile,
+        endpointUrl,
+      }
+      // Discovery probes <base>/models …
+      expect(modelsListUrl(anthropic)).toBe(`${expectedBase}/models`)
+
+      // … and the live adapter streams to <base>/messages on the SAME base.
+      const fetchMock = vi.fn().mockResolvedValue(sseResponse(['data: [DONE]\n\n']))
+      vi.stubGlobal('fetch', fetchMock)
+      const adapter = createLiveAdapter(anthropic, 'ant-key', 'claude-test')
+      await adapter.stream(
+        { prompt: 'hi', history: [], tools: [], attachments: [], nickname: '', traits: '' },
+        makeHandlers(),
+        new AbortController().signal,
+      )
+      expect(fetchMock.mock.calls[0]?.[0]).toBe(`${expectedBase}/messages`)
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('streams Anthropic SSE events with the native protocol', async () => {
     const chunks = [
       'data: {"type":"message_start"}\n\n',
