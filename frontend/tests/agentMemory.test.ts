@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { TEXT_ONLY_ADAPTER } from '@/domain/modelCapabilities'
 import type { ChatAdapter, ChatRequest } from '@/domain/chatAdapter'
 import {
   setChatAdapter,
@@ -23,6 +24,7 @@ const captured: ChatRequest[] = []
 const capturingAdapter: ChatAdapter = {
   id: 'test-capture',
   label: 'Capture',
+    capabilities: TEXT_ONLY_ADAPTER,
   stream: async (request, handlers) => {
     captured.push(request)
     handlers.onStart({})

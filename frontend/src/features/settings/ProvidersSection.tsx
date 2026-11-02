@@ -16,6 +16,11 @@ import type { Capability, ModelInfo, ProviderKind, ProviderProfile } from '@/dom
 import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
 import { testProviderConnection } from '@/services/connection/providerConnection'
+import {
+  resolveModelCapabilities,
+  type CapabilitySupport,
+  type ModelCapabilitySet,
+} from '@/domain/modelCapabilities'
 import { suggestedModelsFor } from './suggestedModels'
 import type { FreeRoute } from './freeModels'
 import { freeRouteFor } from './freeModels'
@@ -537,10 +542,20 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
 
       // Adopt the endpoint's model list, and activate the first model when
       // this provider is (or becomes) the natural place to chat from.
+      // Capability detail is resolved from VERIFIED discovery metadata
+      // first, documented families second — anything unverified stays
+      // honestly 'unknown' (U015).
       const discovered = result.models ?? []
+      const verified = result.modelMetadata ?? {}
       const nextModels: ModelInfo[] =
         discovered.length > 0
-          ? discovered.map((id) => ({ id, label: id, demo: false, capabilities: ['chat'] }))
+          ? discovered.map((id) => ({
+              id,
+              label: id,
+              demo: false,
+              capabilities: ['chat'] as Capability[],
+              capabilityDetail: resolveModelCapabilities(id, verified[id]),
+            }))
           : provider.models
       updateProvider({ ...provider, demo: false, models: nextModels })
       if (discovered.length > 0) {
@@ -712,6 +727,40 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
 /** Models shown before the list collapses; beyond this a toggle appears. */
 const MODEL_CHIPS_PREVIEW = 12
 
+/**
+ * Compact capability badges (U015): per-capability support with an
+ * honest 'unknown' for anything unverified. ✓ supported, ✗
+ * unsupported, ? unknown.
+ */
+function CapabilityBadges({ detail }: { detail: ModelCapabilitySet }) {
+  const marks: Array<{ label: string; support: CapabilitySupport }> = [
+    { label: 'img', support: detail.imageInput },
+    { label: 'audio', support: detail.audioInput },
+    { label: 'tools', support: detail.toolUse },
+    { label: 'reason', support: detail.reasoning },
+  ]
+  return (
+    <p className="flex items-center gap-1.5 pl-1 text-[10px] leading-none text-ink-faint">
+      {marks.map((mark) => (
+        <span
+          key={mark.label}
+          title={
+            mark.support === 'supported'
+              ? 'Supported (verified or documented)'
+              : mark.support === 'unsupported'
+                ? 'Not supported (reported by the provider)'
+                : 'Unknown — not verified, treat with care'
+          }
+        >
+          {mark.label}{' '}
+          {mark.support === 'supported' ? '✓' : mark.support === 'unsupported' ? '✗' : '?'}
+        </span>
+      ))}
+    </p>
+  )
+}
+
+
 function ModelChips({
   provider,
   isActiveProvider,
@@ -732,7 +781,7 @@ function ModelChips({
       {visible.map((model) => {
         const isActiveModel = isActiveProvider && model.id === activeModelId
         return (
-          <li key={model.id}>
+          <li key={model.id} className="flex flex-col items-start gap-1">
             <button
               type="button"
               aria-pressed={isActiveModel}
@@ -747,6 +796,7 @@ function ModelChips({
               {model.label}
               {model.demo && <span className="text-[10px] text-ink-faint">demo</span>}
             </button>
+            {model.capabilityDetail && <CapabilityBadges detail={model.capabilityDetail} />}
           </li>
         )
       })}

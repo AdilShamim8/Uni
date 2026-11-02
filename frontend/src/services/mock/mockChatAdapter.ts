@@ -5,6 +5,7 @@ import type {
   ChatStreamHandlers,
 } from '@/domain/chatAdapter'
 import type { SourceRef } from '@/domain/types'
+import { TEXT_ONLY_ADAPTER } from '@/domain/modelCapabilities'
 
 /**
  * Deterministic mock chat adapter.
@@ -206,6 +207,9 @@ export function createMockAdapter(options: MockAdapterOptions = {}): ChatAdapter
   return {
     id: 'universe-mock-adapter',
     label: 'Uni local demo adapter',
+    // The demo adapter fabricates text locally and sends nothing to any
+    // provider (U015): image/audio/tool/reasoning controls stay off.
+    capabilities: TEXT_ONLY_ADAPTER,
 
     async stream(
       request: ChatRequest,

@@ -1,4 +1,5 @@
 import type { AttachmentMeta, SourceRef, ToolId } from './types'
+import type { AdapterCapabilities } from './modelCapabilities'
 
 /**
  * Vendor-neutral chat adapter contract.
@@ -54,6 +55,13 @@ export interface ChatStreamHandlers {
 export interface ChatAdapter {
   id: string
   label: string
+  /**
+   * What this adapter can actually send or do (U015): capability
+   * controls in the UI are enabled only when BOTH the adapter and the
+   * selected model support the capability. Adapters declare honestly —
+   * a text-only adapter never enables image/voice controls.
+   */
+  capabilities: AdapterCapabilities
   stream(
     request: ChatRequest,
     handlers: ChatStreamHandlers,

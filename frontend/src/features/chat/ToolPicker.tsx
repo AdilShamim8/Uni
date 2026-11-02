@@ -1,5 +1,6 @@
 import { Shapes } from 'lucide-react'
 import type { Capability, ToolId } from '@/domain/types'
+import type { ControlVerdict } from '@/domain/modelCapabilities'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { TOOL_REGISTRY } from './toolRegistry'
 
@@ -7,18 +8,29 @@ export interface ToolPickerProps {
   selected: ToolId[]
   onToggle: (tool: ToolId) => void
   capabilities: Capability[]
+  /**
+   * Per-tool capability verdicts (U015): when present, a verdict wins
+   * over the coarse capabilities list — the control is enabled only
+   * when BOTH the adapter and the model support it, and the reason
+   * line labels every disabled or unknown state honestly.
+   */
+  verdicts?: Partial<Record<ToolId, ControlVerdict>>
 }
 
 /**
  * Labeled "Tools" trigger consolidating the composer's tool selection.
  * Unselected tools live in the menu; selected tools surface as removable
  * chips in the composer. Availability follows the active model's
- * advertised capabilities.
+ * advertised capabilities — and for adapter-bound capabilities, the
+ * combined adapter+model verdict.
  */
-export function ToolPicker({ selected, onToggle, capabilities }: ToolPickerProps) {
-  const availableCount = TOOL_REGISTRY.filter((tool) =>
-    capabilities.includes(tool.capability),
-  ).length
+export function ToolPicker({ selected, onToggle, capabilities, verdicts }: ToolPickerProps) {
+  const entries = TOOL_REGISTRY.map((tool) => {
+    const verdict = verdicts?.[tool.id]
+    const available = verdict ? verdict.enabled : capabilities.includes(tool.capability)
+    return { tool, available, verdict }
+  })
+  const availableCount = entries.filter((entry) => entry.available).length
 
   return (
     <Menu
@@ -53,20 +65,24 @@ export function ToolPicker({ selected, onToggle, capabilities }: ToolPickerProps
           The selected model does not advertise tool capabilities.
         </p>
       )}
-      {TOOL_REGISTRY.map((tool) => {
-        const available = capabilities.includes(tool.capability)
+      {entries.map(({ tool, available, verdict }) => {
         const isSelected = selected.includes(tool.id)
         return (
           <MenuItem
             key={tool.id}
             icon={tool.icon}
-            description={tool.description}
+            description={verdict && !verdict.enabled ? verdict.reason : tool.description}
             selection="checkbox"
             selected={isSelected}
             disabled={!available}
             onClick={() => onToggle(tool.id)}
           >
             {tool.label}
+            {verdict?.state === 'unknown' && (
+              <span className="ml-1.5 text-[10px] font-normal uppercase tracking-wide text-ink-faint">
+                unknown
+              </span>
+            )}
           </MenuItem>
         )
       })}

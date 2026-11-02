@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { TEXT_ONLY_ADAPTER } from '@/domain/modelCapabilities'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import {
@@ -58,6 +59,8 @@ describe('Work revision request includes real multi-turn context', () => {
     const fakeAdapter: ChatAdapter = {
       id: 'fake-live',
       label: 'Fake live',
+
+        capabilities: TEXT_ONLY_ADAPTER,
       stream: (request, handlers) => {
         capturedPrompt = request.prompt
         capturedSystem = request.system ?? ''
@@ -123,6 +126,8 @@ describe('Work revision request includes real multi-turn context', () => {
     const fakeAdapter: ChatAdapter = {
       id: 'fake-live',
       label: 'Fake live',
+
+        capabilities: TEXT_ONLY_ADAPTER,
       stream: (request, handlers) => {
         capturedPrompt = request.prompt
         handlers.onStart?.({})

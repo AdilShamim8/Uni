@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { TEXT_ONLY_ADAPTER } from '@/domain/modelCapabilities'
 import type { ChatAdapter } from '@/domain/chatAdapter'
 import { setChatAdapter } from '@/state/store'
 import { renderApp, setupAppTest } from './helpers'
@@ -14,6 +15,7 @@ function createControlledAdapter() {
   const adapter: ChatAdapter = {
     id: 'controlled-test-adapter',
     label: 'Controlled test adapter',
+    capabilities: TEXT_ONLY_ADAPTER,
     stream(_request, handlers, signal) {
       return new Promise<void>((resolve) => {
         release = () => {

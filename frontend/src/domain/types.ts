@@ -1,5 +1,7 @@
 /** Core domain types for the Uni chat frontend. */
 
+import type { ModelCapabilitySet } from './modelCapabilities'
+
 export type ToolId = 'search' | 'research' | 'images' | 'voice' | 'canvas'
 
 export type Capability =
@@ -77,6 +79,12 @@ export interface ModelInfo {
   /** Demo models are explicitly labeled as configuration examples. */
   demo: boolean
   capabilities: Capability[]
+  /**
+   * Resolved per-capability support (U015): 'supported' only from
+   * verified provider metadata or documented families; anything
+   * unverified is 'unknown' and never silently enabled.
+   */
+  capabilityDetail?: ModelCapabilitySet
 }
 
 export interface ProviderProfile {

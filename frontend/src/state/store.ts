@@ -21,6 +21,7 @@ import {
   siblingsOf,
   switchToNode,
 } from '@/domain/conversationTree'
+import type { AdapterCapabilities } from '@/domain/modelCapabilities'
 import type { ChatAdapter, ChatTurn } from '@/domain/chatAdapter'
 import { createMockAdapter } from '@/services/mock/mockChatAdapter'
 import { createLiveAdapter } from '@/services/live/liveChatAdapter'
@@ -158,6 +159,15 @@ export function buildAgentMemoryBlock(agentId: string): string | null {
   if (lines.length === 0) return null
   const scope = `Known facts and preferences the user asked this employee to remember (up to ${AGENT_MEMORY_MAX_NOTES} notes, ~${AGENT_MEMORY_MAX_CHARS} characters; oldest beyond the limit are dropped${truncated ? ' — some notes were left out this time' : ''}):`
   return `${scope}\n${lines.join('\n')}`
+}
+
+/**
+ * The effective adapter's declared capabilities (U015): what the
+ * connection that would serve the NEXT send can actually do. Capability
+ * controls are enabled only when BOTH this and the model support them.
+ */
+export function selectAdapterCapabilities(): AdapterCapabilities {
+  return resolveAdapter().capabilities
 }
 
 /** Replace the chat adapter (used by tests; the UI never needs this). */

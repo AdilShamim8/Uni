@@ -2,12 +2,11 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
-  useRef,
+  useMemo, useRef,
   useState,
 } from 'react'
 import { ArrowUp, FileText, FolderKanban, Paperclip, Square, X } from 'lucide-react'
 import type { AttachmentMeta, ToolId } from '@/domain/types'
-import { selectActiveModel, useAppStore } from '@/state/store'
 import { useContextStore } from '@/state/contextStore'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { IconButton } from '@/components/ui/IconButton'
@@ -29,6 +28,12 @@ import {
 import { shouldSubmit } from './sendKey'
 import { ToolPicker } from './ToolPicker'
 import { TOOL_REGISTRY } from './toolRegistry'
+import { selectAdapterCapabilities, selectActiveModel, useAppStore } from '@/state/store'
+import {
+  controlVerdict,
+  resolveModelCapabilities,
+  type ControlVerdict,
+} from '@/domain/modelCapabilities'
 
 export interface ComposerHandle {
   addFiles: (files: File[]) => void
@@ -60,6 +65,29 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
       : null
     return conversation?.temporary ?? false
   })
+
+  // Capability verdicts (U015): image/voice controls are enabled only
+  // when BOTH the effective adapter and the selected model support the
+  // capability; unknown model support is labeled unknown, never enabled.
+  const capabilityVerdicts = useMemo(() => {
+    const adapter = selectAdapterCapabilities()
+    const modelCaps =
+      activeModel?.model.capabilityDetail ??
+      (activeModel ? resolveModelCapabilities(activeModel.model.id) : undefined)
+    if (!modelCaps) return undefined
+    const modelLabel = activeModel?.model.label ?? 'This model'
+    const adapterLabel = isLive ? 'live connection' : 'local demo'
+    return {
+      images: controlVerdict('imageInput', adapter, modelCaps, {
+        model: modelLabel,
+        adapter: adapterLabel,
+      }),
+      voice: controlVerdict('audioInput', adapter, modelCaps, {
+        model: modelLabel,
+        adapter: adapterLabel,
+      }),
+    } satisfies Partial<Record<ToolId, ControlVerdict>>
+  }, [activeModel, isLive])
 
   // Selected context count for the active conversation — the badge that
   // makes the Context button answer "what will this chat see?".
@@ -418,6 +446,7 @@ export const Composer = forwardRef<ComposerHandle>(function Composer(_props, ref
             selected={tools}
             onToggle={toggleTool}
             capabilities={activeModel?.model.capabilities ?? ['chat']}
+            verdicts={capabilityVerdicts}
           />
 
           <div className="flex-1" />

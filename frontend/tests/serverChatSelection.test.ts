@@ -51,7 +51,7 @@ const conversationDetail = {
   updatedAt: 1,
   messageCount: 2,
   nodes: [
-    { id: NODE_ID, parentId: null, role: 'user', status: 'complete', content: 'hi', createdAt: 1, feedback: null },
+    { id: NODE_ID, parentId: null, role: 'user' as const, status: 'complete' as const, content: 'hi', createdAt: 1, feedback: null },
   ],
 }
 
@@ -60,7 +60,7 @@ function stubFetchForSend(): void {
     const url = typeof input === 'string' ? input : String(input)
     if (url.endsWith('/nodes')) {
       return jsonResponse({
-        node: { id: NODE_ID, parentId: null, role: 'user', status: 'complete', content: 'hi', createdAt: 1, feedback: null },
+        node: { id: NODE_ID, parentId: null, role: 'user' as const, status: 'complete' as const, content: 'hi', createdAt: 1, feedback: null },
         conversation: conversationDetail,
         reused: false,
       })

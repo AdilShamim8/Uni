@@ -1,6 +1,7 @@
 import type { ChatAdapter, ChatRequest, ChatStreamHandlers } from '@/domain/chatAdapter'
 import type { ProviderProfile } from '@/domain/types'
 import { normalizeProviderBase, providerAuthHeaders } from '@/domain/providerDescriptors'
+import { TEXT_ONLY_ADAPTER } from '@/domain/modelCapabilities'
 import { findEventBoundary, parseSseBlock } from '@/services/sse/sseParser'
 
 /**
@@ -134,6 +135,10 @@ export function createLiveAdapter(
   return {
     id: `live:${profile.id}`,
     label,
+    // Text-only today (U015): the adapter does not yet send image/audio
+    // content parts or tool calls, so those controls stay disabled
+    // regardless of what the model supports (content parts land in U083).
+    capabilities: TEXT_ONLY_ADAPTER,
 
     async stream(
       request: ChatRequest,
@@ -148,7 +153,10 @@ export function createLiveAdapter(
       // runtimes): no credential header at all, never a fake key.
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...providerAuthHeaders(profile.kind, apiKey),
+        ...providerAuthHeaders(
+          profile.kind === 'anthropic' ? 'anthropic' : 'openai-compatible',
+          apiKey,
+        ),
       }
       if (!anthropic && apiKey !== '' && isOpenRouter(profile)) {
         // OpenRouter's optional attribution header (their docs recommend it

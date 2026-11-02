@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { TEXT_ONLY_ADAPTER } from '@/domain/modelCapabilities'
 import type { ChatAdapter, ChatRequest } from '@/domain/chatAdapter'
 import { setChatAdapter, useAppStore } from '@/state/store'
 import { useContextStore } from '@/state/contextStore'
@@ -16,6 +17,7 @@ function captureAdapter(): { requests: ChatRequest[]; adapter: ChatAdapter } {
   const adapter: ChatAdapter = {
     id: 'capture',
     label: 'Capture',
+    capabilities: TEXT_ONLY_ADAPTER,
     stream: async (request, handlers) => {
       requests.push(request)
       handlers.onStart({})

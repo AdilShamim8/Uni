@@ -17,8 +17,10 @@ import {
   listServerProviders,
   setServerProviderCredential,
   type ServerProvider,
-  type ServerProviderTestResponse,
 } from '@/services/api/serverProviders'
+
+export type { ServerProvider } from '@/services/api/serverProviders'
+import type { ServerProviderTestResponse } from '@/services/api/serverProviders'
 import {
   cancelServerRun,
   createServerRun,

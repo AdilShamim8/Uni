@@ -24,6 +24,12 @@ export interface ConnectionTestResult {
   latencyMs?: number
   /** Model ids discovered from the endpoint, when the API provides them. */
   models?: string[]
+  /**
+   * Verified per-model capability metadata captured from the discovery
+   * response (U015) — e.g. OpenRouter's input modalities and supported
+   * parameters. Only fields the provider actually reports are present.
+   */
+  modelMetadata?: Record<string, VerifiedModelMetadata>
 }
 
 /** True when the endpoint is OpenRouter (its /models list is public). */
@@ -48,15 +54,28 @@ import {
   providerRequiresCredential,
   type ProviderProtocol,
 } from '@/domain/providerDescriptors'
+import {
+  extractVerifiedModelMetadata,
+  type VerifiedModelMetadata,
+} from '@/domain/modelCapabilities'
 
 export { normalizeProviderBase, providerDiscoveryUrl, type ProviderProtocol }
 
+/**
+ * Map the domain's provider kinds (which include legacy labels like
+ * 'openai'/'google'/'local') onto the two wire protocols the registry
+ * describes: everything except Anthropic speaks OpenAI-compatible.
+ */
+function providerProtocol(kind: ProviderProfile['kind']): ProviderProtocol {
+  return kind === 'anthropic' ? 'anthropic' : 'openai-compatible'
+}
+
 export function modelsListUrl(profile: ProviderProfile): string {
-  return providerDiscoveryUrl(profile.kind, profile.endpointUrl)
+  return providerDiscoveryUrl(providerProtocol(profile.kind), profile.endpointUrl)
 }
 
 function buildHeaders(profile: ProviderProfile, apiKey: string): HeadersInit {
-  return providerAuthHeaders(profile.kind, apiKey)
+  return providerAuthHeaders(providerProtocol(profile.kind), apiKey)
 }
 
 function describeHttpError(status: number, bodyText: string): string {
@@ -181,7 +200,7 @@ export async function testProviderConnection(
   // whose descriptor allows it may connect keylessly; OpenRouter is a
   // hosted service whose models list is public, so it always needs a
   // real key.
-  if (!trimmedKey && (providerRequiresCredential(profile.kind) || isOpenRouter(profile))) {
+  if (!trimmedKey && (providerRequiresCredential(providerProtocol(profile.kind)) || isOpenRouter(profile))) {
     return { ok: false, message: 'Enter an API key first.' }
   }
 
@@ -228,6 +247,10 @@ export async function testProviderConnection(
           .slice()
           .sort((a, b) => a.localeCompare(b))
           .slice(0, 200)
+    // Verified capability metadata captured from what the provider
+    // actually reported (U015) — providers that say nothing leave
+    // capabilities unknown, never guessed.
+    const modelMetadata = extractVerifiedModelMetadata(bodyText)
     return {
       ok: true,
       message:
@@ -236,6 +259,7 @@ export async function testProviderConnection(
           : `Connected in ${latencyMs}ms.`,
       latencyMs,
       models,
+      ...(modelMetadata.size > 0 ? { modelMetadata: Object.fromEntries(modelMetadata) } : {}),
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {

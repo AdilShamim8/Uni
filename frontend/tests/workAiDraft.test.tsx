@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { TEXT_ONLY_ADAPTER } from '@/domain/modelCapabilities'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ChatAdapter, ChatStreamHandlers } from '@/domain/chatAdapter'
@@ -27,6 +28,7 @@ function fakeAdapter(script: FakeScript): ChatAdapter {
   return {
     id: 'fake-live',
     label: 'Fake live',
+    capabilities: TEXT_ONLY_ADAPTER,
     async stream(_request, handlers: ChatStreamHandlers, signal: AbortSignal) {
       handlers.onStart({})
       for (const chunk of script.chunks) {
