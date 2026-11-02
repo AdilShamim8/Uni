@@ -1,5 +1,7 @@
 import type { ChatAdapter, ChatRequest, ChatStreamHandlers } from '@/domain/chatAdapter'
 import type { ProviderProfile } from '@/domain/types'
+import { normalizeProviderBase } from '@/domain/providerDescriptors'
+import { findEventBoundary, parseSseBlock } from '@/services/sse/sseParser'
 
 /**
  * Live chat adapter: streams completions straight from the user's own
@@ -35,9 +37,11 @@ function chatCompletionsUrl(profile: ProviderProfile): string {
 }
 
 function messagesUrl(profile: ProviderProfile): string {
-  const base = profile.endpointUrl.replace(/\/+$/, '')
   if (usesAnthropicProtocol(profile)) {
-    return /\/v1$/.test(base) ? `${base}/messages` : `${base}/v1/messages`
+    // The descriptor registry's versioned-base policy (U011): the same
+    // normalization feeds discovery's /models and this /messages route,
+    // so root, `/v1`, and gateway prefixes can never diverge.
+    return `${normalizeProviderBase('anthropic', profile.endpointUrl)}/messages`
   }
   return chatCompletionsUrl(profile)
 }
@@ -63,7 +67,7 @@ function buildSystemPrompt(request: ChatRequest): string | undefined {
 }
 
 interface OpenAiChunk {
-  choices?: Array<{ delta?: { content?: string | null } }>
+  choices?: Array<{ delta?: { content?: string | null }; finish_reason?: string | null }>
   /** Providers stream errors as data payloads — terminal, never "complete". */
   error?: { message?: string }
 }
@@ -72,32 +76,6 @@ interface AnthropicEvent {
   type?: string
   delta?: { text?: string }
   error?: { message?: string }
-}
-
-/** One parsed SSE event: joined multiline data + optional event name. */
-interface SseEvent {
-  event?: string
-  data: string
-}
-
-function parseSseBlock(block: string): SseEvent | null {
-  const dataLines: string[] = []
-  let eventName: string | undefined
-  for (const rawLine of block.split('\n')) {
-    const line = rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine
-    if (line.startsWith(':')) continue // comment / keep-alive
-    if (line.startsWith('data:')) dataLines.push(line.slice(5).replace(/^ /, ''))
-    else if (line.startsWith('event:')) eventName = line.slice(6).replace(/^ /, '').trim()
-  }
-  if (dataLines.length === 0) return null
-  // The SSE spec joins multiple data lines with newlines.
-  return { event: eventName, data: dataLines.join('\n') }
-}
-
-function findEventBoundary(buffer: string): { end: number } | null {
-  const match = buffer.match(/\r?\n\r?\n/)
-  if (!match || match.index === undefined) return null
-  return { end: match.index + match[0].length }
 }
 
 async function readSseStream(
@@ -129,7 +107,7 @@ async function readSseStream(
         const block = buffer.slice(0, boundary.end)
         buffer = buffer.slice(boundary.end)
         const parsed = parseSseBlock(block)
-        if (parsed && parsed.data.length > 0 && parsed.data !== '[DONE]') {
+        if (parsed && parsed.data.length > 0) {
           onEvent(parsed.data, parsed.event)
         }
       }
@@ -138,7 +116,7 @@ async function readSseStream(
     // final blank line — previously silently dropped (F13).
     buffer += decoder.decode()
     const trailing = parseSseBlock(buffer)
-    if (trailing && trailing.data.length > 0 && trailing.data !== '[DONE]') {
+    if (trailing && trailing.data.length > 0) {
       onEvent(trailing.data, trailing.event)
     }
   } finally {
@@ -246,6 +224,7 @@ export function createLiveAdapter(
 
       let receivedAny = false
       let errored = false
+      let sawTerminal = false
 
       function emitDelta(text: string) {
         if (!text) return
@@ -279,6 +258,12 @@ export function createLiveAdapter(
               }
               return
             }
+            // The OpenAI-compatible [DONE] sentinel is protocol-level
+            // terminal evidence (F05).
+            if (payload === '[DONE]') {
+              sawTerminal = true
+              return
+            }
             try {
               const parsed: unknown = JSON.parse(payload)
               if (anthropic) {
@@ -287,6 +272,10 @@ export function createLiveAdapter(
                   emitProviderError(
                     event.error?.message ?? 'The provider reported an error mid-stream — the reply may be incomplete.',
                   )
+                  return
+                }
+                if (event.type === 'message_stop') {
+                  sawTerminal = true
                   return
                 }
                 if (event.type === 'content_block_delta' && typeof event.delta?.text === 'string') {
@@ -300,7 +289,11 @@ export function createLiveAdapter(
                   )
                   return
                 }
-                const delta = chunk.choices?.[0]?.delta?.content
+                const choice = chunk.choices?.[0]
+                if (typeof choice?.finish_reason === 'string' && choice.finish_reason.length > 0) {
+                  sawTerminal = true
+                }
+                const delta = choice?.delta?.content
                 if (typeof delta === 'string') emitDelta(delta)
               }
             } catch {
@@ -317,7 +310,11 @@ export function createLiveAdapter(
           })
           return
         }
-        handlers.onDone(signal.aborted ? 'stopped' : 'complete')
+        // EOF is not proof of completion (F05): without protocol-level
+        // terminal evidence ([DONE], a finish reason, or message_stop)
+        // the turn ends 'interrupted' — partial text preserved, never
+        // presented as complete.
+        handlers.onDone(signal.aborted ? 'stopped' : sawTerminal ? 'complete' : 'interrupted')
       } catch (error) {
         if (error instanceof DOMException && error.name === 'AbortError') {
           handlers.onDone('stopped')

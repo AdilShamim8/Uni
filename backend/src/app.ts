@@ -19,6 +19,7 @@ import { runsRoutes } from './modules/runs/runs.routes.js'
 import { employeesRoutes } from './modules/employees/employees.routes.js'
 import { memoryRoutes } from './modules/memory/memory.routes.js'
 import { libraryRoutes } from './modules/library/library.routes.js'
+import { spaRoutes } from './modules/static/spa.routes.js'
 
 export interface BuildAppOptions {
   env?: Env
@@ -90,6 +91,12 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
   })
 
   await app.register(healthRoutes)
+
+  // Single-origin mode (F02/U010): serve the built frontend with SPA
+  // deep-link fallback when FRONTEND_DIST_DIR is configured. API and
+  // health routes keep JSON precedence — the wildcard can never shadow
+  // a registered route, and reserved prefixes answer JSON 404s.
+  await app.register(spaRoutes)
 
   return app
 }

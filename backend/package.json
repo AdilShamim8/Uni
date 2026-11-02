@@ -23,6 +23,7 @@
     "@ai-sdk/anthropic": "^4.0.88",
     "@ai-sdk/openai-compatible": "^3.0.78",
     "@fastify/cors": "^11.3.1",
+    "@fastify/static": "^10.1.8",
     "@uni/contracts": "file:../packages/contracts",
     "ai": "^7.0.153",
     "better-auth": "^1.7.13",
