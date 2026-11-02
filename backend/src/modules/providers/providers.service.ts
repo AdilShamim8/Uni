@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import * as schema from '../../db/schema.js'
 import { providerConnections } from '../../db/schema.js'
@@ -115,7 +115,19 @@ export async function patchProvider(
     .update(providerConnections)
     .set({
       ...(request.label !== undefined ? { label: request.label } : {}),
-      ...(request.endpointUrl !== undefined ? { endpointUrl: request.endpointUrl } : {}),
+      ...(request.endpointUrl !== undefined
+        ? {
+            endpointUrl: request.endpointUrl,
+            // The verification and discovered catalog belong to the OLD
+            // endpoint (U014): editing it resets readiness to untested
+            // and drops the stale model list — a deliberate check is
+            // required again before the provider claims to work.
+            credentialStatus: 'untested',
+            credentialLastCheckedAt: null,
+            credentialLastError: null,
+            models: [],
+          }
+        : {}),
       ...(request.modelId !== undefined ? { modelId: request.modelId } : {}),
       ...(request.models !== undefined ? { models: request.models } : {}),
       updatedAt: new Date(),
@@ -416,13 +428,24 @@ async function runConnectionCheck(
   }
 }
 
+/** A snapshot of what a check ran against, for staleness fencing (U014). */
+interface CheckedConfiguration {
+  endpointUrl: string
+  credentialEnvelope: string | null
+}
+
 async function applyTestResult(
   db: ProvidersDatabase,
   workspaceId: string,
   providerId: string,
   result: ConnectionResult,
   persistModels: boolean,
-): Promise<ProviderDto> {
+  checked: CheckedConfiguration,
+): Promise<{ provider: ProviderDto; stale: boolean }> {
+  // Fence: only apply a check result while the endpoint AND credential
+  // are still exactly what the check ran against. An edit that landed
+  // mid-check must never be overwritten with the old configuration's
+  // readiness (U014).
   const updated = await db
     .update(providerConnections)
     .set({
@@ -436,13 +459,24 @@ async function applyTestResult(
       and(
         eq(providerConnections.id, providerId),
         eq(providerConnections.workspaceId, workspaceId),
+        eq(providerConnections.endpointUrl, checked.endpointUrl),
+        sql`${providerConnections.credentialEnvelope} IS NOT DISTINCT FROM ${checked.credentialEnvelope}`,
       ),
     )
     .returning()
   const row = updated[0]
-  if (!row) throw notFound('Provider not found.')
-  return serializeProvider(row)
+  if (row) return { provider: serializeProvider(row), stale: false }
+
+  // Nothing matched: the configuration changed mid-check. Return the
+  // CURRENT row untouched — the stale result is discarded.
+  const current = await findProvider(db, workspaceId, providerId)
+  if (!current) throw notFound('Provider not found.')
+  return { provider: serializeProvider(current), stale: true }
 }
+
+/** Honest response when a check result was fenced out by a config edit. */
+const STALE_CHECK_MESSAGE =
+  'The provider configuration changed while checking — run Test again against the new setup.'
 
 export interface ProviderActionResult extends ProviderTestResponse {
   provider: ProviderDto
@@ -471,7 +505,23 @@ export async function testProviderConnection(
   const startedAt = Date.now()
   const result = await runConnectionCheck(env, provider, apiKey)
   const latencyMs = Date.now() - startedAt
-  const providerDto = await applyTestResult(db, workspaceId, providerId, result, false)
+  const { provider: providerDto, stale } = await applyTestResult(
+    db,
+    workspaceId,
+    providerId,
+    result,
+    false,
+    { endpointUrl: provider.endpointUrl, credentialEnvelope: provider.credentialEnvelope },
+  )
+  if (stale) {
+    return {
+      ok: false,
+      message: STALE_CHECK_MESSAGE,
+      latencyMs,
+      discoveredModels: null,
+      provider: providerDto,
+    }
+  }
   return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: providerDto }
 }
 
@@ -498,6 +548,22 @@ export async function discoverProviderModels(
   const startedAt = Date.now()
   const result = await runConnectionCheck(env, provider, apiKey)
   const latencyMs = Date.now() - startedAt
-  const providerDto = await applyTestResult(db, workspaceId, providerId, result, true)
+  const { provider: providerDto, stale } = await applyTestResult(
+    db,
+    workspaceId,
+    providerId,
+    result,
+    true,
+    { endpointUrl: provider.endpointUrl, credentialEnvelope: provider.credentialEnvelope },
+  )
+  if (stale) {
+    return {
+      ok: false,
+      message: STALE_CHECK_MESSAGE,
+      latencyMs,
+      discoveredModels: null,
+      provider: providerDto,
+    }
+  }
   return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: providerDto }
 }
