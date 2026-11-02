@@ -291,6 +291,50 @@ function openRouterKeyUrl(endpointUrl: string): string {
  */
 const MAX_PARSED_MODELS = 2000
 
+/** Hard cap on discovery response bodies (U016). */
+const MAX_DISCOVERY_BYTES = 2_000_000
+/** The /key verification body is tiny; anything bigger is rejected. */
+const MAX_KEY_BODY_BYTES = 64_000
+
+/**
+ * Read a response body with a hard byte cap (U016): content-length is
+ * checked first, then the stream is read until the limit — an oversized
+ * body throws instead of being buffered. The deadline/abort half of the
+ * bound already lives in the guarded transport.
+ */
+async function boundedJson(response: Response, maxBytes: number): Promise<unknown> {
+  const declared = Number(response.headers.get('content-length') ?? '')
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new Error('response too large')
+  }
+  if (!response.body) {
+    const text = await response.text()
+    if (text.length > maxBytes) throw new Error('response too large')
+    return JSON.parse(text)
+  }
+  const reader = response.body.getReader()
+  let received = 0
+  const chunks: Uint8Array[] = []
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    received += value?.byteLength ?? 0
+    if (received > maxBytes) {
+      await reader.cancel().catch(() => undefined)
+      throw new Error('response too large')
+    }
+    if (value) chunks.push(value)
+  }
+  const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0)
+  const merged = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    merged.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return JSON.parse(new TextDecoder().decode(merged))
+}
+
 /** OpenRouter orders its catalog with the free tier first (zero-cost path). */
 function orderOpenRouterModels(models: string[]): string[] {
   const free = models.filter((id) => id.endsWith(':free')).sort((a, b) => a.localeCompare(b))
@@ -342,7 +386,9 @@ async function runConnectionCheck(
       }
     }
 
-    const body = (await response.json()) as { data?: Array<{ id?: string }> }
+    // Bounded read (U016): a gigantic catalog is rejected by byte cap,
+    // never fully buffered.
+    const body = (await boundedJson(response, MAX_DISCOVERY_BYTES)) as { data?: Array<{ id?: string }> }
     let models = Array.isArray(body.data)
       ? body.data
           .map((entry) => (typeof entry?.id === 'string' ? entry.id : null))
@@ -371,7 +417,9 @@ async function runConnectionCheck(
         } else if (!keyResponse.ok) {
           verification = { state: 'unknown', reason: `HTTP ${keyResponse.status}` }
         } else {
-          const body = await keyResponse.json().catch(() => null)
+          const body = (await boundedJson(keyResponse, MAX_KEY_BODY_BYTES).catch(() => null)) as
+            | Record<string, unknown>
+            | null
           verification =
             body !== null && typeof body === 'object'
               ? { state: 'verified' }
@@ -416,6 +464,13 @@ async function runConnectionCheck(
   } catch (error) {
     if (error instanceof UrlGuardError) {
       return { ok: false, message: error.message, models: null }
+    }
+    if (error instanceof Error && error.message === 'response too large') {
+      return {
+        ok: false,
+        message: `The provider's response was too large (over ${Math.round(MAX_DISCOVERY_BYTES / 1_000_000)} MB) — Uni stopped reading it.`,
+        models: null,
+      }
     }
     const message = error instanceof Error ? error.message : 'connection failed'
     return {

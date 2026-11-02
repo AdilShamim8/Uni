@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import {
   Check,
   Eye,
@@ -522,11 +522,17 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
   const [reveal, setReveal] = useState(false)
   const [testing, setTesting] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  // Cancels a hanging connection check (U016): the abort controller of
+  // the in-flight test, owned by this block.
+  const testAbortRef = useRef<AbortController | null>(null)
 
   async function connect(apiKey: string) {
     setTesting(true)
     setMessage(null)
-    const result = await testProviderConnection(provider, apiKey)
+    const controller = new AbortController()
+    testAbortRef.current = controller
+    const result = await testProviderConnection(provider, apiKey, controller.signal)
+    testAbortRef.current = null
     setTesting(false)
 
     if (result.ok) {
@@ -640,7 +646,18 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
         )}
 
         <p aria-live="polite" className="mt-1.5 text-xs font-medium">
-          {testing && <span className="text-ink-soft">Testing connection…</span>}
+          {testing && (
+            <span className="text-ink-soft">
+              Testing connection…{' '}
+              <button
+                type="button"
+                className="font-semibold text-danger underline underline-offset-2"
+                onClick={() => testAbortRef.current?.abort()}
+              >
+                Stop
+              </button>
+            </span>
+          )}
           {message && (
             <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
           )}
@@ -711,7 +728,18 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
         </Button>
       </div>
       <p aria-live="polite" className="mt-1.5 text-xs font-medium">
-        {testing && <span className="text-ink-soft">Testing connection…</span>}
+        {testing && (
+            <span className="text-ink-soft">
+              Testing connection…{' '}
+              <button
+                type="button"
+                className="font-semibold text-danger underline underline-offset-2"
+                onClick={() => testAbortRef.current?.abort()}
+              >
+                Stop
+              </button>
+            </span>
+          )}
         {message && (
           <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
         )}

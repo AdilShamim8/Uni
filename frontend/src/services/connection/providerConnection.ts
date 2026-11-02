@@ -41,6 +41,43 @@ function isOpenRouter(profile: ProviderProfile): boolean {
   }
 }
 
+/** Hard cap on discovery response bodies (U016): oversized catalogs are rejected, never fully read. */
+export const MAX_DISCOVERY_BYTES = 2_000_000
+/** Error bodies are only read for a short human snippet. */
+const MAX_ERROR_SNIPPET_BYTES = 16_000
+
+/**
+ * Read a response body with a hard byte cap (U016): the content-length
+ * header is checked first, then the stream is read until the limit —
+ * an oversized body aborts instead of exhausting memory.
+ */
+export async function boundedText(response: Response, maxBytes: number): Promise<string> {
+  const declared = Number(response.headers.get('content-length') ?? '')
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    throw new Error('response too large')
+  }
+  if (!response.body) {
+    const text = await response.text()
+    if (text.length > maxBytes) throw new Error('response too large')
+    return text
+  }
+  const reader = response.body.getReader()
+  const decoder = new TextDecoder()
+  let received = 0
+  let text = ''
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    received += value.byteLength
+    if (received > maxBytes) {
+      await reader.cancel().catch(() => undefined)
+      throw new Error('response too large')
+    }
+    text += decoder.decode(value, { stream: true })
+  }
+  return text
+}
+
 /**
  * Protocol shape comes from the shared provider descriptor registry
  * (U011, mirrored from @uni/contracts): base policy, discovery path,
@@ -193,6 +230,7 @@ export async function testProviderConnection(
   profile: ProviderProfile,
   apiKey: string,
   signal?: AbortSignal,
+  options?: { timeoutMs?: number },
 ): Promise<ConnectionTestResult> {
   const trimmedKey = apiKey.trim()
   // A genuinely no-auth connection (local runtimes like Ollama) sends
@@ -215,27 +253,41 @@ export async function testProviderConnection(
     return { ok: false, message: 'The endpoint must use http(s).' }
   }
 
+  // Bounded and cancellable work (U016): every outbound request runs
+  // under a deadline and can be stopped; oversized bodies are rejected
+  // before they can exhaust memory.
+  const deadline = new AbortController()
+  let deadlineFired = false
+  const timer = setTimeout(() => {
+    deadlineFired = true
+    deadline.abort(new Error('deadline'))
+  }, options?.timeoutMs ?? 20_000)
+  if (signal) {
+    if (signal.aborted) deadline.abort(signal.reason)
+    else signal.addEventListener('abort', () => deadline.abort(signal.reason), { once: true })
+  }
+
   const started = performance.now()
   try {
     const response = await fetch(url, {
       method: 'GET',
       headers: buildHeaders(profile, trimmedKey),
-      signal,
+      signal: deadline.signal,
     })
     const latencyMs = Math.round(performance.now() - started)
 
     if (!response.ok) {
-      const bodyText = await response.text().catch(() => '')
+      const bodyText = await boundedText(response, MAX_ERROR_SNIPPET_BYTES).catch(() => '')
       return { ok: false, message: describeHttpError(response.status, bodyText), latencyMs }
     }
 
-    const bodyText = await response.text().catch(() => '')
+    const bodyText = await boundedText(response, MAX_DISCOVERY_BYTES)
 
     // OpenRouter's model list is public: a successful /models fetch proves
     // reachability, not the key. Only a verified /key response may claim
     // "connected"; rejected and unknown are distinct honest failures.
     if (isOpenRouter(profile)) {
-      const verified = await verifyOpenRouterKey(profile.endpointUrl, trimmedKey, signal)
+      const verified = await verifyOpenRouterKey(profile.endpointUrl, trimmedKey, deadline.signal)
       if (verified.state !== 'verified') {
         return { ok: false, message: verified.message, latencyMs }
       }
@@ -262,13 +314,27 @@ export async function testProviderConnection(
       ...(modelMetadata.size > 0 ? { modelMetadata: Object.fromEntries(modelMetadata) } : {}),
     }
   } catch (error) {
+    if (error instanceof Error && error.message === 'response too large') {
+      return {
+        ok: false,
+        message: `The provider's response was too large (over ${Math.round(MAX_DISCOVERY_BYTES / 1_000_000)} MB) — Uni stopped reading it. Use a smaller catalog or a different endpoint.`,
+      }
+    }
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return { ok: false, message: 'Connection test cancelled.' }
+      return {
+        ok: false,
+        message: deadlineFired ? 'The provider endpoint timed out.' : 'Connection test cancelled.',
+      }
+    }
+    if (error instanceof Error && error.message === 'deadline') {
+      return { ok: false, message: 'The provider endpoint timed out.' }
     }
     return {
       ok: false,
       message:
         'Could not reach the endpoint from this browser — check the URL, your network, and whether the provider allows direct browser (CORS) requests.',
     }
+  } finally {
+    clearTimeout(timer)
   }
 }
