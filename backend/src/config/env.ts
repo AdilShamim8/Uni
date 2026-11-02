@@ -42,6 +42,12 @@ const envSchema = z.object({
   ALLOW_LOCAL_MODEL_ENDPOINTS: z.enum(['true', 'false']).default('false'),
   /** Comma-separated hostnames/IPs explicitly allowed for local model endpoints. */
   LOCAL_MODEL_ENDPOINT_ALLOWLIST: z.string().default(''),
+  /**
+   * Directory of the built frontend (frontend/dist) for single-origin
+   * deployments: the API serves the SPA with deep-link fallback while
+   * /api/* and /health/* keep JSON precedence. Empty = API-only.
+   */
+  FRONTEND_DIST_DIR: z.string().default(''),
   /** Run execution limits (B03): overall deadline per run. */
   RUN_TIMEOUT_MS: z.coerce.number().int().positive().default(120_000),
   /** Run execution limits (B03): provider-side output token cap. */
