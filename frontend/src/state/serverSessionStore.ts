@@ -99,6 +99,13 @@ interface ServerSessionState {
   serverProviderError: string | null
   /** Outcome of the last provider Test, shown verbatim (honest feedback). */
   serverProviderTest: (ServerProviderTestResponse & { providerId: string }) | null
+  /**
+   * The user's deliberate provider+model choice for server chat (U013).
+   * When set, sends use exactly this pair — inserting, reordering, or
+   * deleting ANOTHER provider can never silently change it; deleting
+   * the chosen one asks for a new choice instead of guessing.
+   */
+  serverChatSelection: { providerId: string; modelId: string } | null
 
   /** The run currently streaming into the open conversation, if any. */
   activeRun: {
@@ -119,6 +126,8 @@ interface ServerSessionState {
     apiKey: string
   }) => Promise<boolean>
   testServerProviderById: (providerId: string) => Promise<void>
+  /** Deliberate provider+model choice for server chat (U013). */
+  setServerChatSelection: (providerId: string, modelId: string) => void
 
   newServerConversation: (title: string) => Promise<string | null>
   sendServerMessage: (text: string) => Promise<boolean>
@@ -161,6 +170,7 @@ const clearedServerData: Pick<
   | 'serverProvidersLoading'
   | 'serverProviderError'
   | 'serverProviderTest'
+  | 'serverChatSelection'
   | 'activeRun'
   | 'runError'
 > = {
@@ -175,8 +185,14 @@ const clearedServerData: Pick<
   serverProvidersLoading: false,
   serverProviderError: null,
   serverProviderTest: null,
+  serverChatSelection: null,
   activeRun: null,
   runError: null,
+}
+
+/** True when a provider can serve a run: credentialed, or a no-auth local runtime marked connected (U012). */
+export function isServerProviderUsable(provider: ServerProvider): boolean {
+  return provider.credential.present || provider.credential.status === 'connected'
 }
 
 export const useServerSessionStore = create<ServerSessionState>()((set, get) => {
@@ -372,6 +388,14 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       }
     },
 
+    setServerChatSelection: (providerId, modelId) => {
+      const provider = get().serverProviders.find((entry) => entry.id === providerId)
+      if (!provider) return
+      const trimmed = modelId.trim()
+      if (!trimmed) return
+      set({ serverChatSelection: { providerId, modelId: trimmed }, runError: null })
+    },
+
     testServerProviderById: async (providerId) => {
       set({ serverProviderError: null, serverProviderTest: null })
       const generation = get().sessionGeneration
@@ -409,9 +433,11 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
 
   /**
    * Send a message in the open server conversation: append the user
-   * node, create a run against the first credentialed server provider,
-   * and stream the run's events into a live assistant bubble. On any
-   * failure the error is shown honestly — never a fabricated reply.
+   * node, create a run against the DELIBERATELY chosen provider+model
+   * when one is selected (U013 — inserting/reordering/deleting another
+   * provider can never silently change that choice), falling back to
+   * the first usable provider otherwise. On any failure the error is
+   * shown honestly — never a fabricated reply.
    */
   sendServerMessage: async (text) => {
     const trimmed = text.trim()
@@ -420,18 +446,41 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     if (!trimmed || !conversationId || !conversation) return false
     if (get().activeRun) return false
 
-    const provider = get().serverProviders.find((entry) => entry.credential.present)
-    if (!provider) {
-      set({ runError: 'Add a server provider with an API key first (panel above).' })
-      return false
-    }
-    const modelId = provider.modelId ?? provider.models[0] ?? null
-    if (!modelId) {
-      set({
-        runError:
-          'That server provider has no model yet — click Test on it (Server providers above) to check the key and discover its models.',
-      })
-      return false
+    const selection = get().serverChatSelection
+    let provider: ServerProvider | undefined
+    let modelId: string | null
+    if (selection) {
+      provider = get().serverProviders.find((entry) => entry.id === selection.providerId)
+      if (!provider) {
+        // The chosen provider is gone: say so and ask for a new choice —
+        // never silently fall back to a different provider.
+        set({
+          serverChatSelection: null,
+          runError: 'The selected provider no longer exists — choose a provider again.',
+        })
+        return false
+      }
+      if (!isServerProviderUsable(provider)) {
+        set({
+          runError: `The selected provider (${provider.label}) is not connected — run Test on it or choose another.`,
+        })
+        return false
+      }
+      modelId = selection.modelId
+    } else {
+      provider = get().serverProviders.find(isServerProviderUsable)
+      if (!provider) {
+        set({ runError: 'Add a server provider with an API key first (panel above).' })
+        return false
+      }
+      modelId = provider.modelId ?? provider.models[0] ?? null
+      if (!modelId) {
+        set({
+          runError:
+            'That server provider has no model yet — click Test on it (Server providers above) to check the key and discover its models.',
+        })
+        return false
+      }
     }
 
     set({ runError: null })

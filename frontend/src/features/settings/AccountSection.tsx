@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup'
-import { useServerSessionStore } from '@/state/serverSessionStore'
+import { isServerProviderUsable, useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerConversationDetail } from '@/state/serverSessionStore'
 import { readFileText } from '@/services/readFileText'
 import type { ImportCommitResponse, ImportPreviewResponse } from '@/services/api/serverContracts'
@@ -645,6 +645,8 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
   const activeRun = useServerSessionStore((state) => state.activeRun)
   const runError = useServerSessionStore((state) => state.runError)
   const serverProviders = useServerSessionStore((state) => state.serverProviders)
+  const serverChatSelection = useServerSessionStore((state) => state.serverChatSelection)
+  const setServerChatSelection = useServerSessionStore((state) => state.setServerChatSelection)
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
 
@@ -661,7 +663,19 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
     activeRun !== null &&
     activeRun.conversationId === detail.id &&
     (activeRun.status === 'running' || activeRun.status === 'cancelling')
-  const hasProvider = serverProviders.some((provider) => provider.credential.present)
+
+  // Deliberate provider/model selection (U013): exactly what the user
+  // chose is what each send uses — list order can never change it.
+  const usableProviders = serverProviders.filter(isServerProviderUsable)
+  const selectedProvider =
+    usableProviders.find((provider) => provider.id === serverChatSelection?.providerId) ??
+    usableProviders[0]
+  const selectedModelId =
+    serverChatSelection?.modelId ??
+    selectedProvider?.modelId ??
+    selectedProvider?.models[0] ??
+    ''
+  const hasProvider = usableProviders.length > 0
 
   async function send() {
     const text = draft.trim()
@@ -718,6 +732,56 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
           </li>
         )}
       </ol>
+
+      {hasProvider && (
+        <div className="mt-2.5 flex flex-wrap items-center gap-2" aria-label="Server chat provider and model">
+          <label className="flex items-center gap-1.5 text-[12px] text-ink-faint">
+            Provider
+            <select
+              aria-label="Server chat provider"
+              value={selectedProvider?.id ?? ''}
+              onChange={(event) => {
+                const provider = usableProviders.find((entry) => entry.id === event.target.value)
+                if (!provider) return
+                const nextModel = provider.modelId ?? provider.models[0] ?? ''
+                if (nextModel) setServerChatSelection(provider.id, nextModel)
+              }}
+              className="max-w-52 rounded-control border border-line bg-raised px-2 py-1 text-[12px] text-ink"
+            >
+              {usableProviders.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.label}
+                  {provider.credential.present ? '' : ' · no key'}
+                </option>
+              ))}
+            </select>
+          </label>
+          {selectedProvider && (
+            <label className="flex min-w-0 items-center gap-1.5 text-[12px] text-ink-faint">
+              Model
+              <select
+                aria-label="Server chat model"
+                value={selectedModelId}
+                onChange={(event) =>
+                  setServerChatSelection(selectedProvider.id, event.target.value)
+                }
+                className="max-w-60 flex-1 rounded-control border border-line bg-raised px-2 py-1 text-[12px] text-ink"
+              >
+                {(selectedProvider.models.length > 0
+                  ? selectedProvider.models
+                  : selectedModelId
+                    ? [selectedModelId]
+                    : []
+                ).map((model) => (
+                  <option key={model} value={model}>
+                    {model}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
+      )}
 
       <form
         className="mt-2.5 flex items-end gap-2"

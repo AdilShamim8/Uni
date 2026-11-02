@@ -26,10 +26,6 @@ export interface ConnectionTestResult {
   models?: string[]
 }
 
-function usesAnthropicProtocol(kind: ProviderProfile['kind']): boolean {
-  return kind === 'anthropic'
-}
-
 /** True when the endpoint is OpenRouter (its /models list is public). */
 function isOpenRouter(profile: ProviderProfile): boolean {
   try {
