@@ -39,12 +39,24 @@ function isOpenRouter(profile: ProviderProfile): boolean {
   }
 }
 
+/**
+ * Normalize an Anthropic endpoint to its versioned API base: strip
+ * trailing slashes, keep a base that already ends in `/v1`, and append
+ * `/v1` to anything else (bare host or custom gateway prefix). The
+ * same policy feeds `/models` discovery here and `/messages`
+ * generation in liveChatAdapter — the two can never diverge for one
+ * saved provider (audit F08).
+ */
+export function anthropicApiBase(endpointUrl: string): string {
+  const base = endpointUrl.replace(/\/+$/, '')
+  return /\/v1$/.test(base) ? base : `${base}/v1`
+}
+
 export function modelsListUrl(profile: ProviderProfile): string {
-  const base = profile.endpointUrl.replace(/\/+$/, '')
   if (usesAnthropicProtocol(profile.kind)) {
-    return /\/v1$/.test(base) ? `${base}/models` : `${base}/v1/models`
+    return `${anthropicApiBase(profile.endpointUrl)}/models`
   }
-  return `${base}/models`
+  return `${profile.endpointUrl.replace(/\/+$/, '')}/models`
 }
 
 function buildHeaders(profile: ProviderProfile, apiKey: string): HeadersInit {

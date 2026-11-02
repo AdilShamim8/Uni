@@ -13,6 +13,7 @@ import {
 } from '../../lib/secretBox.js'
 import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { UrlGuardError } from '../../lib/urlGuard.js'
+import { anthropicApiBase } from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
 import type {
   CreateProviderRequest,
@@ -227,12 +228,13 @@ export async function readCredential(
 /* ------------------------------------------------------------------ */
 
 function modelsUrl(kind: ProviderRow['kind'], endpointUrl: string): string {
-  const base = endpointUrl.replace(/\/+$/, '')
   if (kind === 'anthropic') {
-    // Anthropic exposes GET /v1/models; OpenAI-compatible servers /models.
-    return /\/v1$/.test(base) ? `${base}/models` : `${base}/v1/models`
+    // One normalization policy for discovery AND generation (F08):
+    // the same anthropicApiBase feeds the SDK's baseURL, so /models
+    // and /messages always sit under the same versioned base.
+    return `${anthropicApiBase(endpointUrl)}/models`
   }
-  return `${base}/models`
+  return `${endpointUrl.replace(/\/+$/, '')}/models`
 }
 
 function authHeaders(kind: ProviderRow['kind'], apiKey: string): Record<string, string> {
