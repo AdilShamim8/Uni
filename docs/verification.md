@@ -672,3 +672,46 @@ Notes:
   per-message retrieval differences between two consecutive sends.
 - Backend suite intentionally not re-run: no backend file changed this
   wave (last recorded state 117/117; CI covers it on push).
+
+## Wave-1 urgency baseline (2026-11-02, HEAD `1c5ba05f6`)
+
+Scope: fresh baseline for the 2 Nov 2026 backend-audit repair waves
+(`Uni_Backend_Audit_2026-11-02.md`, items U001–U010 first). Environment:
+Node v24.22.1, npm 11.19.1, 2 vCPU, 4 GB RAM, Linux sandbox running as a
+non-root OS account — `embedded-postgres` (real PostgreSQL 18 binaries
+under gitignored `.tmp/`) **works here**, so the DB integration suites
+run; the audit environment's root-account blocker does not apply.
+
+HEAD `1c5ba05f6ac57f1b71c769352ec44b84754665f3` is byte-identical to the
+audited snapshot (audit dated 2 Nov 2026): clean clone, clean working
+tree, no commits between.
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm ci && npm run build && npm run typecheck` | **Pass** |
+| `cd frontend && npm ci` | Pass (install-script warnings only) |
+| `npm run lint` (frontend) | **Pass** — no findings |
+| `npm run build` (frontend) | **Pass** — known pre-existing mixed-import/chunk-size warnings only |
+| `npm run test -- --maxWorkers=1 --minWorkers=1` (frontend) | **446/446 across 63 files** (119.2s) — exactly matches the audit's 446; no drift since the snapshot |
+| `cd backend && npm ci` | Pass |
+| `npm run typecheck` (backend) | **Pass** |
+| `npm run build` (backend) | **Pass** |
+| `npm test` (backend) | **117/117 across 14 files** (30.5s) — all 10 DB suites ran via embedded PostgreSQL under the non-root account. This improves on the audit environment (53 passed / 64 skipped after root-only embedded-PG failures); nothing here is an environment failure relabeled as a pass. |
+
+Notes:
+
+- Historical 117/117 records from 26–30 Oct are reproduced as a fresh
+  local pass today, not copied.
+- The audit's reproduced failures (F01 IPv6 guard, F03 OpenRouter
+  fail-open, F04 catalog clipping, F05 BYOK early-EOF completion, F06
+  server SSE parser, F07 sign-out race, F08 Anthropic path divergence,
+  F09 unpinned DNS) are addressed one per commit, each with its own
+  regression test written against the audited behavior first (red),
+  then fixed (green) inside the same commit — keeping every pushed
+  commit green while the fixture still captures the failure it guards.
+- F02 (deployed 404s on `/chat`, `/api/auth/get-session`,
+  `/health/ready`) is a deployment-routing property; its fix (U010) is
+  verified through a locally built frontend + real backend exercising
+  the production path shape. The linked Vercel deployment's hosting
+  settings are outside this repository's control and are not claimed
+  fixed by a code change alone.
