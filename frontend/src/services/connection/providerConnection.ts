@@ -49,6 +49,7 @@ import {
   normalizeProviderBase,
   providerDiscoveryUrl,
   providerAuthHeaders,
+  providerRequiresCredential,
   type ProviderProtocol,
 } from '@/domain/providerDescriptors'
 
@@ -179,7 +180,12 @@ export async function testProviderConnection(
   signal?: AbortSignal,
 ): Promise<ConnectionTestResult> {
   const trimmedKey = apiKey.trim()
-  if (!trimmedKey) {
+  // A genuinely no-auth connection (local runtimes like Ollama) sends
+  // NO credential header — never a fake stored key. Only protocols
+  // whose descriptor allows it may connect keylessly; OpenRouter is a
+  // hosted service whose models list is public, so it always needs a
+  // real key.
+  if (!trimmedKey && (providerRequiresCredential(profile.kind) || isOpenRouter(profile))) {
     return { ok: false, message: 'Enter an API key first.' }
   }
 

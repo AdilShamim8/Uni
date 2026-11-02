@@ -13,7 +13,12 @@ import {
 } from '../../lib/secretBox.js'
 import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { UrlGuardError } from '../../lib/urlGuard.js'
-import { providerDiscoveryUrl, providerAuthHeaders, type ProviderProtocol } from '../../lib/providerUrls.js'
+import {
+  providerDiscoveryUrl,
+  providerAuthHeaders,
+  providerRequiresCredential,
+  type ProviderProtocol,
+} from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
 import type {
   CreateProviderRequest,
@@ -390,6 +395,11 @@ async function runConnectionCheck(
       models = models.slice().sort((a, b) => a.localeCompare(b)).slice(0, 100)
     }
 
+    if (apiKey === '') {
+      // Genuinely no-auth connection (local runtime): honest success
+      // wording that does not claim a key was verified.
+      return { ok: true, message: 'Connected — this endpoint needs no key.', models }
+    }
     return { ok: true, message: 'Connected — the key works.', models }
   } catch (error) {
     if (error instanceof UrlGuardError) {
@@ -446,7 +456,8 @@ export async function testProviderConnection(
 ): Promise<ProviderActionResult> {
   const provider = await findProvider(db, workspaceId, providerId)
   if (!provider) throw notFound('Provider not found.')
-  if (provider.credentialEnvelope === null) {
+  const keyless = provider.credentialEnvelope === null
+  if (keyless && providerRequiresCredential(providerProtocol(provider.kind))) {
     return {
       ok: false,
       message: 'No API key stored for this provider yet.',
@@ -456,7 +467,7 @@ export async function testProviderConnection(
     }
   }
 
-  const apiKey = await readCredential(db, env, workspaceId, providerId)
+  const apiKey = keyless ? '' : await readCredential(db, env, workspaceId, providerId)
   const startedAt = Date.now()
   const result = await runConnectionCheck(env, provider, apiKey)
   const latencyMs = Date.now() - startedAt
@@ -472,7 +483,8 @@ export async function discoverProviderModels(
 ): Promise<ProviderActionResult> {
   const provider = await findProvider(db, workspaceId, providerId)
   if (!provider) throw notFound('Provider not found.')
-  if (provider.credentialEnvelope === null) {
+  const keyless = provider.credentialEnvelope === null
+  if (keyless && providerRequiresCredential(providerProtocol(provider.kind))) {
     return {
       ok: false,
       message: 'No API key stored for this provider yet.',
@@ -482,7 +494,7 @@ export async function discoverProviderModels(
     }
   }
 
-  const apiKey = await readCredential(db, env, workspaceId, providerId)
+  const apiKey = keyless ? '' : await readCredential(db, env, workspaceId, providerId)
   const startedAt = Date.now()
   const result = await runConnectionCheck(env, provider, apiKey)
   const latencyMs = Date.now() - startedAt

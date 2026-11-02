@@ -155,10 +155,12 @@ describe('provider connection testing', () => {
     )
   })
 
-  it('rejects an empty key before touching the network', async () => {
+  it('rejects an empty key before touching the network (key-requiring protocols)', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
-    const result = await testProviderConnection(profile, '   ')
+    // Anthropic requires a credential; only no-auth protocols (local
+    // runtimes) may connect keylessly (U012) — covered separately.
+    const result = await testProviderConnection(anthropicProfile, '   ')
     expect(result.ok).toBe(false)
     expect(result.message).toBe('Enter an API key first.')
     expect(fetchMock).not.toHaveBeenCalled()

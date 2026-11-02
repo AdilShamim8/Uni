@@ -7,7 +7,7 @@ import {
   providerDiscoveryUrl,
   providerAuthHeaders,
 } from '@/domain/providerDescriptors'
-import { modelsListUrl } from '@/services/connection/providerConnection'
+import { modelsListUrl, testProviderConnection } from '@/services/connection/providerConnection'
 import { createLiveAdapter } from '@/services/live/liveChatAdapter'
 import { vi } from 'vitest'
 
@@ -102,6 +102,69 @@ describe('browser adapters consume the registry (U011)', () => {
     )
     const [url] = fetchMock.mock.calls[0] as [string]
     expect(url).toBe('https://gw.example/anthropic/v1/messages')
+    vi.unstubAllGlobals()
+  })
+})
+
+describe('genuinely no-auth connections (U012)', () => {
+  it('a keyless local profile connects with no Authorization header at all', async () => {
+    const local = profile('openai-compatible', 'http://127.0.0.1:11434/v1')
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ data: [{ id: 'llama3' }] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await testProviderConnection(local, '')
+    expect(result.ok).toBe(true)
+    expect(result.models).toEqual(['llama3'])
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('http://127.0.0.1:11434/v1/models')
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined()
+    expect((init.headers as Record<string, string>).authorization).toBeUndefined()
+    vi.unstubAllGlobals()
+  })
+
+  it('protocols that require a key fail honestly instead of sending a fake one', async () => {
+    const anthropic = profile('anthropic', 'https://api.anthropic.com')
+    const result = await testProviderConnection(anthropic, '')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('Enter an API key first.')
+
+    const openRouter = profile('openai-compatible', 'https://openrouter.ai/api/v1')
+    const openRouterResult = await testProviderConnection(openRouter, '')
+    expect(openRouterResult.ok).toBe(false)
+    expect(openRouterResult.message).toContain('Enter an API key first.')
+  })
+
+  it('keyless generation sends no credential header (no X-Title either)', async () => {
+    const local = profile('openai-compatible', 'http://127.0.0.1:11434/v1')
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('data: {"choices":[{"delta":{"content":"Hi"}}]}\n\ndata: [DONE]\n\n', {
+        status: 200,
+        headers: { 'content-type': 'text/event-stream' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const adapter = createLiveAdapter(local, '', 'llama3')
+    let text = ''
+    await adapter.stream(
+      { prompt: 'hi', history: [], tools: [], attachments: [], nickname: '', traits: '' },
+      {
+        onStart: () => undefined,
+        onDelta: (delta) => {
+          text += delta
+        },
+        onDone: () => undefined,
+        onError: () => undefined,
+      },
+      new AbortController().signal,
+    )
+    expect(text).toBe('Hi')
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('http://127.0.0.1:11434/v1/chat/completions')
+    const headers = init.headers as Record<string, string>
+    expect(headers.Authorization).toBeUndefined()
+    expect(headers['X-Title']).toBeUndefined()
     vi.unstubAllGlobals()
   })
 })

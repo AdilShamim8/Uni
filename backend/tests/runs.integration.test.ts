@@ -665,15 +665,17 @@ describe('runs — streamed execution, events, cancel, guard', () => {
     }
   })
 
-  it('rejects runs against a provider without a stored credential', async () => {
+  it('rejects runs against a key-requiring provider without a stored credential', async () => {
     const created = await testApp.app.inject({
       method: 'POST',
       url: '/api/v1/providers',
       headers: { cookie: alice.cookie },
       payload: {
         label: 'No credential',
-        kind: 'openai-compatible',
-        endpointUrl: fake.url,
+        // Anthropic requires a credential — keyless runs are only legal
+        // for no-auth protocols under operator policy (U012).
+        kind: 'anthropic',
+        endpointUrl: 'https://api.anthropic.com',
         modelId: 'model-alpha',
       },
     })

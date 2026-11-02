@@ -8,6 +8,7 @@ export {
   normalizeProviderBase,
   providerDiscoveryUrl,
   providerAuthHeaders,
+  providerRequiresCredential,
   type ProviderProtocol,
   type ProviderDescriptor,
 } from '@uni/contracts'

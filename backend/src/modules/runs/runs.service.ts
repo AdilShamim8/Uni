@@ -24,6 +24,7 @@ import {
 } from '../../db/schema.js'
 import { badRequest, notFound, rateLimited } from '../../lib/errors.js'
 import { decryptSecret, parseMasterKey } from '../../lib/secretBox.js'
+import { providerRequiresCredential } from '../../lib/providerUrls.js'
 import { RepetitionWatch } from '../../vendor/openclaw/repetition-guard.js'
 import type { Env } from '../../config/env.js'
 import { buildModelForRun } from './modelClient.js'
@@ -153,7 +154,11 @@ async function resolveRunInputs(
     .limit(1)
   const provider = providerRows[0]
   if (!provider) return null
-  if (!provider.credentialEnvelope) {
+  // Keyless generation is real for no-auth protocols (local runtimes
+  // under operator policy): an empty envelope means "no credential
+  // header", never a fake key. The egress guard still decides whether
+  // the endpoint may be contacted at all.
+  if (!provider.credentialEnvelope && providerRequiresCredential(providerKindOf(provider))) {
     throw badRequest('This provider has no saved credential.')
   }
   const modelId = request.modelId ?? provider.modelId ?? ''
@@ -165,12 +170,18 @@ async function resolveRunInputs(
     parentNodeId: request.parentNodeId,
     provider: {
       id: provider.id,
-      kind: provider.kind as 'openai-compatible' | 'anthropic',
+      kind: providerKindOf(provider),
       endpointUrl: provider.endpointUrl,
       modelId,
-      credentialEnvelope: provider.credentialEnvelope,
+      credentialEnvelope: provider.credentialEnvelope ?? '',
     },
   }
+}
+
+/** DB row kind -> protocol union, failing closed on unknown values. */
+function providerKindOf(provider: { kind: string }): 'openai-compatible' | 'anthropic' {
+  if (provider.kind === 'anthropic' || provider.kind === 'openai-compatible') return provider.kind
+  throw new Error(`Unsupported provider protocol: ${provider.kind}`)
 }
 
 async function findRunByIdempotencyKey(
@@ -477,12 +488,17 @@ async function executeRun(
   try {
     // Decrypt the credential (write-only at the API boundary; used only
     // for the outbound provider request). Scope-bound to this workspace +
-    // provider, so a copied envelope is undecryptable elsewhere.
+    // provider, so a copied envelope is undecryptable elsewhere. An empty
+    // envelope is a genuinely no-auth (local runtime) provider: no
+    // credential header is sent, never a fake key.
     const masterKey = parseMasterKey(env.CREDENTIAL_MASTER_KEY)
-    const { plaintext: apiKey } = decryptSecret(masterKey, credentialEnvelope, {
-      workspaceId: row.workspaceId,
-      providerId: row.providerId ?? '',
-    })
+    const apiKey =
+      credentialEnvelope === ''
+        ? ''
+        : decryptSecret(masterKey, credentialEnvelope, {
+            workspaceId: row.workspaceId,
+            providerId: row.providerId ?? '',
+          }).plaintext
 
     const { model } = await buildModelForRun(
       {

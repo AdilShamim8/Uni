@@ -1,6 +1,6 @@
 import type { ChatAdapter, ChatRequest, ChatStreamHandlers } from '@/domain/chatAdapter'
 import type { ProviderProfile } from '@/domain/types'
-import { normalizeProviderBase } from '@/domain/providerDescriptors'
+import { normalizeProviderBase, providerAuthHeaders } from '@/domain/providerDescriptors'
 import { findEventBoundary, parseSseBlock } from '@/services/sse/sseParser'
 
 /**
@@ -144,16 +144,16 @@ export function createLiveAdapter(
       const anthropic = usesAnthropicProtocol(profile)
       const url = messagesUrl(profile)
 
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (anthropic) {
-        headers['x-api-key'] = apiKey
-        headers['anthropic-version'] = '2023-06-01'
-        headers['anthropic-dangerous-direct-browser-access'] = 'true'
-      } else {
-        headers.Authorization = `Bearer ${apiKey}`
+      // Keyless generation is real for no-auth protocols (local
+      // runtimes): no credential header at all, never a fake key.
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...providerAuthHeaders(profile.kind, apiKey),
+      }
+      if (!anthropic && apiKey !== '' && isOpenRouter(profile)) {
         // OpenRouter's optional attribution header (their docs recommend it
         // so requests from Uni show up under an app name, not "unknown").
-        if (isOpenRouter(profile)) headers['X-Title'] = 'Uni'
+        headers['X-Title'] = 'Uni'
       }
 
       const body = anthropic

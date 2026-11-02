@@ -882,10 +882,12 @@ async function runAllChecks() {
     res = await A.req('/api/v1/runs/00000000-0000-0000-0000-000000000000/cancel', { method: 'POST', body: {} })
     check('cancel unknown run is 404', res.status === 404, `status ${res.status}`)
 
-    // Provider without credential -> 400, not 404/500.
+    // Key-requiring provider without credential -> 400, not 404/500.
+    // (OpenAI-compatible providers may be genuinely keyless under
+    // operator policy — U012 — so the rejection case uses anthropic.)
     const noKeyProvider = await A.req('/api/v1/providers', {
       method: 'POST',
-      body: { label: 'No Key Runs', kind: 'openai-compatible', endpointUrl: providerUrl, modelId: 'qa-model-mini' },
+      body: { label: 'No Key Runs', kind: 'anthropic', endpointUrl: 'https://api.anthropic.com', modelId: 'qa-model-mini' },
     })
     res = await A.req(`/api/v1/conversations/${runConv}/runs`, {
       method: 'POST',

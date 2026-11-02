@@ -68,13 +68,23 @@ export function providerDiscoveryUrl(protocol: ProviderProtocol, endpointUrl: st
   return `${normalizeProviderBase(protocol, endpointUrl)}${getProviderDescriptor(protocol).discoveryPath}`
 }
 
+/** True when the protocol cannot work without a credential. */
+export function providerRequiresCredential(protocol: ProviderProtocol): boolean {
+  return !getProviderDescriptor(protocol).allowsNoAuth
+}
+
 /**
  * Credential headers for API requests under a protocol's auth style.
- * The Anthropic protocol additionally carries their documented header
- * for direct browser calls.
+ * An EMPTY key is only valid for protocols that allow no-auth
+ * connections (local runtimes like Ollama): those requests carry no
+ * credential header at all — never a fake or placeholder key.
  */
 export function providerAuthHeaders(protocol: ProviderProtocol, apiKey: string): Record<string, string> {
-  if (getProviderDescriptor(protocol).auth === 'x-api-key') {
+  const descriptor = getProviderDescriptor(protocol)
+  if (apiKey === '' && descriptor.allowsNoAuth) {
+    return descriptor.auth === 'x-api-key' ? { accept: 'application/json' } : {}
+  }
+  if (descriptor.auth === 'x-api-key') {
     return {
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
