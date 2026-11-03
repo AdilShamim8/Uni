@@ -21,6 +21,7 @@ import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerConversationDetail } from '@/state/serverSessionStore'
 import type { ServerProvider } from '@/services/api/serverProviders'
 import { ReadinessStrip } from './ReadinessStrip'
+import { MODEL_PICKER_THRESHOLD, SearchableModelPicker } from './SearchableModelPicker'
 import { readFileText } from '@/services/readFileText'
 import type { ImportCommitResponse, ImportPreviewResponse } from '@/services/api/serverContracts'
 
@@ -941,24 +942,47 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
             ))}
           </select>
         </label>
-        {selectedProvider && (
-          <label className="flex items-center gap-1.5 text-[11.5px] text-ink-faint">
-            Model
-            <select
-              aria-label="Server chat model"
-              value={serverSelection?.modelId ?? ''}
-              disabled={runIsLive || (selectedProvider.models.length === 0 && !manualModelOpen)}
-              onChange={(event) => {
-                // "Type a model id…" opens manual entry (N010); every
-                // real option still selects by exact id.
-                if (event.target.value === '__manual__') {
-                  setManualModelOpen(true)
-                  return
+        {selectedProvider &&
+          (selectedProvider.models.length > MODEL_PICKER_THRESHOLD ? (
+            <>
+              {/* Searchable bounded catalog (N011): a large discovered
+                  list filters as you type and never renders unbounded
+                  options; manual entry (N010) stays one action away
+                  inside the panel. */}
+              <SearchableModelPicker
+                models={selectedProvider.models}
+                value={
+                  serverSelection?.providerId === selectedProvider.id
+                    ? serverSelection.modelId
+                    : null
                 }
-                setServerSelection(selectedProvider.id, event.target.value)
-              }}
-              className="max-w-[13rem] truncate rounded-control border border-line bg-raised px-2 py-1 text-[12px] text-ink disabled:opacity-60"
-            >
+                onSelect={(modelId) => setServerSelection(selectedProvider.id, modelId)}
+                onManualEntry={() => setManualModelOpen(true)}
+                disabled={runIsLive}
+              />
+              {/* The picker is self-labeled (its trigger carries the
+                  "Server chat model" aria-label); this text keeps the
+                  visual parity with the small-catalog select. */}
+              <span className="sr-only">Model</span>
+            </>
+          ) : (
+            <label className="flex items-center gap-1.5 text-[11.5px] text-ink-faint">
+              Model
+              <select
+                aria-label="Server chat model"
+                value={serverSelection?.modelId ?? ''}
+                disabled={runIsLive || (selectedProvider.models.length === 0 && !manualModelOpen)}
+                onChange={(event) => {
+                  // "Type a model id…" opens manual entry (N010); every
+                  // real option still selects by exact id.
+                  if (event.target.value === '__manual__') {
+                    setManualModelOpen(true)
+                    return
+                  }
+                  setServerSelection(selectedProvider.id, event.target.value)
+                }}
+                className="max-w-[13rem] truncate rounded-control border border-line bg-raised px-2 py-1 text-[12px] text-ink disabled:opacity-60"
+              >
               {serverSelection && !selectedModelKnown && (
                 <option value={serverSelection.modelId}>
                   {serverSelection.modelId} — no longer offered
@@ -983,8 +1007,8 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
               ))}
               <option value="__manual__">Type a model id…</option>
             </select>
-          </label>
-        )}
+            </label>
+          ))}
         {manualModelOpen && selectedProvider && (
           <form
             className="flex flex-wrap items-center gap-1.5"

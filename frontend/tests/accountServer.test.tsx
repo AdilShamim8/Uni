@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AccountSection } from '@/features/settings/AccountSection'
 import { useServerSessionStore } from '@/state/serverSessionStore'
@@ -58,6 +58,8 @@ function createFetchMock() {
     sessionUser: null as typeof USER | null,
     providers: [] as Array<Record<string, unknown>>,
     conversationDetail: structuredClone(CONVERSATION_DETAIL),
+    /** Optional large discovered catalog for the first provider (N011). */
+    bigCatalog: null as string[] | null,
   }
   const calls: Array<{ url: string; method: string; body?: unknown }> = []
 
@@ -191,7 +193,9 @@ function createFetchMock() {
           readiness: { reachability: 'unknown', catalog: 'unknown', credential: 'unknown', generation: 'unknown' },
         })
       }
-      const discovered = provider.id === 'sp-1' ? ['grok-3-mini', 'grok-4'] : ['model-b-one', 'model-b-two']
+      const discovered = provider.id === 'sp-1'
+        ? (state.bigCatalog ?? ['grok-3-mini', 'grok-4'])
+        : ['model-b-one', 'model-b-two']
       provider.models = discovered
       provider.credential = { ...provider.credential, status: 'connected', lastCheckedAt: 99, lastError: null }
       return jsonResponse(200, {
@@ -818,6 +822,108 @@ describe('Account section — server session and deliberate import', () => {
     expect(
       screen.getByRole('option', { name: /grok-4-fast-reasoning — set manually/i }),
     ).toBeInTheDocument()
+  })
+
+  it('offers a searchable, bounded picker for a large discovered catalog (N011)', async () => {
+    // A 40-model catalog (OpenRouter-sized) — far past the 12-option
+    // threshold where a bare <select> stops being a usable picker.
+    mock.state.bigCatalog = Array.from({ length: 40 }, (_, index) => `model-${String(index).padStart(2, '0')}`)
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'Big catalog')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-big')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('Big catalog')).toBeInTheDocument()
+    await userEvent.click(screen.getAllByRole('button', { name: 'Test' })[0]!)
+    expect(await screen.findByText(/40 models discovered/i)).toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('New server conversation title'), 'Big picker')
+    await userEvent.click(screen.getByRole('button', { name: 'New' }))
+
+    // The model control is the searchable picker button (not a select).
+    const trigger = await screen.findByRole('button', { name: 'Server chat model' })
+    expect(screen.queryByRole('combobox', { name: 'Server chat model' })).toBeNull()
+    expect(trigger).toHaveTextContent('model-00')
+
+    await userEvent.click(trigger)
+    const filter = screen.getByLabelText('Filter models')
+    const listbox = screen.getByRole('listbox', { name: 'Server chat models' })
+    // Bounded display: 30 of 40 shown, with the honest +10 note.
+    expect(within(listbox).getAllByRole('option')).toHaveLength(30)
+    expect(screen.getByText(/\+10 more match/)).toBeInTheDocument()
+
+    // Filter narrows the list; the chosen id is exact.
+    await userEvent.type(filter, 'model-3')
+    expect(within(listbox).getAllByRole('option')).toHaveLength(10)
+    expect(screen.queryByText(/\+10 more match/)).toBeNull()
+    await userEvent.click(within(listbox).getByRole('option', { name: 'model-37' }))
+
+    expect(useServerSessionStore.getState().serverSelection).toEqual({
+      providerId: 'sp-1',
+      modelId: 'model-37',
+    })
+    // The trigger shows the exact chosen model; the panel is closed.
+    expect(screen.getByRole('button', { name: 'Server chat model' })).toHaveTextContent('model-37')
+    expect(screen.queryByLabelText('Filter models')).toBeNull()
+
+    // A send addresses the EXACT filtered choice — not the first model.
+    const composer = screen.getByLabelText('Message the server assistant')
+    await userEvent.type(composer, 'send to 37')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(await screen.findByText('Server reply streamed back.')).toBeInTheDocument()
+    const runCall = mock.calls.find(
+      (call) => /^\/api\/v1\/conversations\/c-9\/runs$/.test(call.url) && call.method === 'POST',
+    )
+    expect(runCall?.body).toMatchObject({ providerId: 'sp-1', modelId: 'model-37' })
+  })
+
+  it('picker keyboard flow: Enter commits the first match, no-match stays honest, manual entry handoff (N011)', async () => {
+    mock.state.bigCatalog = Array.from({ length: 40 }, (_, index) => `model-${String(index).padStart(2, '0')}`)
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'Big catalog')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-big')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('Big catalog')).toBeInTheDocument()
+    await userEvent.click(screen.getAllByRole('button', { name: 'Test' })[0]!)
+    await screen.findByText(/40 models discovered/i)
+
+    await userEvent.type(screen.getByLabelText('New server conversation title'), 'Keyboard flow')
+    await userEvent.click(screen.getByRole('button', { name: 'New' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Server chat model' }))
+
+    // Enter commits the first shown match for the typed filter.
+    await userEvent.type(screen.getByLabelText('Filter models'), '7{enter}')
+    expect(useServerSessionStore.getState().serverSelection?.modelId).toBe('model-07')
+
+    // Reopen: a filter with no matches is honest and changes nothing.
+    await userEvent.click(screen.getByRole('button', { name: 'Server chat model' }))
+    await userEvent.type(screen.getByLabelText('Filter models'), 'zzz')
+    expect(screen.getByText(/No model matches “zzz”\./i)).toBeInTheDocument()
+
+    // Manual entry handoff (N010) from inside the picker panel.
+    await userEvent.click(screen.getByRole('button', { name: /Type a model id…/i }))
+    expect(screen.queryByLabelText('Filter models')).toBeNull()
+    const manualInput = await screen.findByLabelText('Model id for server chat')
+    await userEvent.type(manualInput, 'hidden-model-id')
+    await userEvent.click(screen.getByRole('button', { name: 'Set model' }))
+    const patchCall = mock.calls.find(
+      (call) => call.url === '/api/v1/providers/sp-1' && call.method === 'PATCH',
+    )
+    expect(patchCall?.body).toEqual({ modelId: 'hidden-model-id' })
+    expect(useServerSessionStore.getState().serverSelection?.modelId).toBe('hidden-model-id')
   })
 
   it('marks a replayed import honestly instead of claiming new records', async () => {
