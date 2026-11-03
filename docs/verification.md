@@ -740,3 +740,46 @@ Notes:
   not claimed fixed.
 - Single-process assumption unchanged (F10 deferred to U036+);
   idempotency/admission concurrency fixes are U031+.
+
+## Production-300 session 1 — provider foundations (2026-11-03)
+
+Environment: Node v24.22.2, Linux sandbox, non-root user, embedded
+PostgreSQL via `embedded-postgres` (works without root). Base
+`START_SHA = 89acd256e`, branch `task/uni-production-300`, five
+meaningful commits pushed one at a time (remote SHA verified after
+each push). Draft PR #46 exposes CI checks.
+
+### Fresh baseline at START_SHA (before any change)
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm ci && npm run build && npm run typecheck` | Pass |
+| `cd backend && npm ci && npm run typecheck && npm run build` | Pass |
+| `cd backend && npm test` | **206/206** pass |
+| `cd frontend && npm ci && npm run typecheck` | **FAIL** — 4 errors: `ProviderKind` passed where `ProviderProtocol` expected in providerConnection.ts (real U011 regression; fixed as commit `bb09e74f8`) |
+| `cd frontend && npm run lint` | **FAIL** — unused `usesAnthropicProtocol` (same root cause) |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **474/474** pass |
+
+### After each slice (cumulative final state)
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm run build && npm run typecheck` | Pass |
+| `cd backend && npm run typecheck && npm run build` | Pass |
+| `cd backend && npm test` | **217/217** (206 baseline + 11 new: 8 keyless/auth-mode in `providers-keyless.integration.test.ts`, 2 N006 revision/race, 1 N008 abort; plus 1 updated keyed-rejection case). Two consecutive full runs green. |
+| `cd frontend && npm run lint && npm run typecheck` | Pass |
+| `cd frontend && npm run build` | Pass (pre-existing chunk-size warning only) |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **482/482** (474 baseline + 8 new: keyless connect, keyless live generation, auth-mode headers, abort-cancel, N004 exact-destination, N005 no-fallback) |
+
+### Provider verification honesty
+
+All provider behavior verified against deterministic fake servers over
+REAL sockets (local http servers; the guarded transport, DNS pinning,
+abort semantics all exercised for real). No paid provider was contacted;
+no provider key existed in this environment. Live-provider inference
+verification remains pending by design.
+
+### Not run this session
+
+- `npm run qa:live` (backend) — not rerun; no routing change made.
+- Real-provider smoke checks — no credentials/budget (labeled pending).

@@ -126,11 +126,12 @@ function createFetchMock() {
       // The real backend returns a page-shaped envelope.
       if (method === 'GET') return jsonResponse(200, { items: state.providers })
       if (method === 'POST') {
-        const payload = body as { label?: string; kind?: string; endpointUrl?: string; modelId?: string }
+        const payload = body as { label?: string; kind?: string; endpointUrl?: string; modelId?: string; authMode?: string }
         const provider = {
-          id: 'sp-1',
+          id: `sp-${state.providers.length + 1}`,
           label: payload.label ?? '',
           kind: payload.kind ?? 'openai-compatible',
+          authMode: payload.authMode ?? 'none',
           endpointUrl: payload.endpointUrl ?? '',
           // Real backend: no model until the user sets one or discovery
           // persists the endpoint's list.
@@ -144,15 +145,27 @@ function createFetchMock() {
         return jsonResponse(201, provider)
       }
     }
-    if (path === '/api/v1/providers/sp-1/credential' && method === 'PUT') {
-      const provider = state.providers[0]
+    if (/^\/api\/v1\/providers\/(sp-\d+)$/.test(path) && method === 'DELETE') {
+      const id = (path.match(/(sp-\d+)$/) ?? [])[1] ?? ''
+      const index = state.providers.findIndex((provider) => provider.id === id)
+      if (index >= 0) state.providers.splice(index, 1)
+      return new Response(null, { status: 204 })
+    }
+    if (/^\/api\/v1\/providers\/(sp-\d+)\/credential$/.test(path) && method === 'PUT') {
+      const id = (path.match(/(sp-\d+)\/credential$/) ?? [])[1] ?? ''
+      const provider = state.providers.find((entry) => entry.id === id)
+      if (!provider) return jsonResponse(404, { code: 'not_found', message: 'Provider not found.', requestId: 'r-4' })
       provider.credential = { present: true, keyId: 'key-1', status: 'untested', lastCheckedAt: null, lastError: null }
+      provider.authMode = 'bearer'
       return jsonResponse(200, provider)
     }
-    if (path === '/api/v1/providers/sp-1/models' && method === 'POST') {
+    if (/^\/api\/v1\/providers\/(sp-\d+)\/models$/.test(path) && method === 'POST') {
       // The discovery route the Test button uses: tests the key AND
       // persists the discovered models on the provider row.
-      const provider = state.providers[0] as {
+      const id = (path.match(/(sp-\d+)\/models$/) ?? [])[1] ?? ''
+      const provider = (state.providers.find((entry) => entry.id === id) ?? state.providers[0]) as {
+        id: string
+        label: string
         models: string[]
         credential: { present: boolean; keyId: string | null; status: string; lastCheckedAt: number | null; lastError: string | null }
       }
@@ -164,13 +177,14 @@ function createFetchMock() {
           discoveredModels: null,
         })
       }
-      provider.models = ['grok-3-mini', 'grok-4']
+      const discovered = provider.id === 'sp-1' ? ['grok-3-mini', 'grok-4'] : ['model-b-one', 'model-b-two']
+      provider.models = discovered
       provider.credential = { ...provider.credential, status: 'connected', lastCheckedAt: 99, lastError: null }
       return jsonResponse(200, {
         ok: true,
         message: 'Connected — the key works.',
         latencyMs: 42,
-        discoveredModels: ['grok-3-mini', 'grok-4'],
+        discoveredModels: discovered,
       })
     }
     if (path === '/api/v1/conversations' && method === 'POST') {
@@ -310,6 +324,7 @@ describe('Account section — server session and deliberate import', () => {
   beforeEach(() => {
     mock = createFetchMock()
     vi.stubGlobal('fetch', mock.fetchMock)
+    localStorage.clear()
     useServerSessionStore.getState().resetForTests()
   })
 
@@ -493,7 +508,7 @@ describe('Account section — server session and deliberate import', () => {
     const composer = await screen.findByLabelText('Message the server assistant')
     expect(composer).toHaveAttribute(
       'placeholder',
-      'Add a server provider (with a key) above first…',
+      'Add a server provider (key or keyless local) above first…',
     )
   })
 
@@ -547,6 +562,118 @@ describe('Account section — server session and deliberate import', () => {
     const commitCall = mock.calls.find((call) => call.url === '/api/v1/import/commit')
     expect(previewCall?.body).toEqual(BACKUP)
     expect(commitCall?.body).toEqual(BACKUP)
+  })
+
+  it('sends to the explicitly selected provider and model, immune to profile ordering (N004)', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // Provider A (sp-1): keyed, discovered.
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'Provider A')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-a')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('Provider A')).toBeInTheDocument()
+
+    // Provider B (sp-2): keyed, discovered.
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'Provider B')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-b')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('Provider B')).toBeInTheDocument()
+
+    // Test both providers so both have discovered models.
+    const testButtons = await screen.findAllByRole('button', { name: 'Test' })
+    for (const button of testButtons) await userEvent.click(button)
+    await screen.findByText(/2 models discovered/i)
+
+    // A conversation must be open for the destination picker to exist.
+    await userEvent.type(screen.getByLabelText('New server conversation title'), 'Selection chat')
+    await userEvent.click(screen.getByRole('button', { name: 'New' }))
+
+    // Explicitly choose Provider B's second model in the picker.
+    const providerSelect = await screen.findByLabelText('Server chat provider')
+    await userEvent.selectOptions(providerSelect, 'sp-2')
+    const modelSelect = await screen.findByLabelText('Server chat model')
+    await userEvent.selectOptions(modelSelect, 'model-b-two')
+
+    const composer = await screen.findByLabelText('Message the server assistant')
+    await userEvent.type(composer, 'go to B')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(await screen.findByText('Server reply streamed back.')).toBeInTheDocument()
+
+    // The run went to the EXACT selected provider and model — not the
+    // first credentialed one.
+    const runCall = mock.calls.find(
+      (call) => /^\/api\/v1\/conversations\/c-9\/runs$/.test(call.url) && call.method === 'POST',
+    )
+    expect(runCall?.body).toMatchObject({ providerId: 'sp-2', modelId: 'model-b-two' })
+
+    // Adding another profile never changes the chosen destination.
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'Provider C')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-c')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect((await screen.findAllByText('Provider C')).length).toBeGreaterThan(0)
+    expect(useServerSessionStore.getState().serverSelection).toEqual({
+      providerId: 'sp-2',
+      modelId: 'model-b-two',
+    })
+  })
+
+  it('deleting the chosen provider leaves an explicit unavailable state with no fallback (N005)', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // Two keyed providers.
+    for (const label of ['Provider A', 'Provider B']) {
+      await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+      await userEvent.type(screen.getByLabelText(/^Label/i), label)
+      await userEvent.type(screen.getByLabelText(/API key/i), `sk-${label.slice(-1).toLowerCase()}`)
+      await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+      expect(await screen.findByText(label)).toBeInTheDocument()
+    }
+    const testButtons = await screen.findAllByRole('button', { name: 'Test' })
+    for (const button of testButtons) await userEvent.click(button)
+    await screen.findByText(/2 models discovered/i)
+
+    // Default selection: the first usable provider (sp-1).
+    expect(useServerSessionStore.getState().serverSelection?.providerId).toBe('sp-1')
+
+    // Open a conversation so the destination picker is visible.
+    await userEvent.type(screen.getByLabelText('New server conversation title'), 'After delete')
+    await userEvent.click(screen.getByRole('button', { name: 'New' }))
+    await screen.findByLabelText('Message the server assistant')
+
+    // Delete the CHOSEN provider through the confirm dialog.
+    await userEvent.click(screen.getByRole('button', { name: 'Delete provider Provider A' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Delete provider' }))
+
+    // The selection is gone — an explicit unavailable notice is shown,
+    // with no automatic fallback to Provider B (sp-2).
+    expect(
+      await screen.findByText(/selected provider was removed — server chat is unavailable/i),
+    ).toBeInTheDocument()
+    expect(useServerSessionStore.getState().serverSelection).toBeNull()
+    expect(localStorage.getItem('universe:server-selection:v1:w-1')).toBeNull()
+
+    // A send does NOT reach any provider: honest error, no run created.
+    const composer = screen.getByLabelText('Message the server assistant')
+    await userEvent.type(composer, 'should not send')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(await screen.findByText(/Choose a provider and model for server chat/i)).toBeInTheDocument()
+    const runCalls = mock.calls.filter(
+      (call) => /conversations\/c-9\/runs$/.test(call.url) && call.method === 'POST',
+    )
+    expect(runCalls).toHaveLength(0)
   })
 
   it('marks a replayed import honestly instead of claiming new records', async () => {

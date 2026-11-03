@@ -24,6 +24,7 @@ import {
 } from '../../db/schema.js'
 import { badRequest, notFound, rateLimited } from '../../lib/errors.js'
 import { decryptSecret, parseMasterKey } from '../../lib/secretBox.js'
+import { allowsKeyless } from '../../lib/providerUrls.js'
 import { RepetitionWatch } from '../../vendor/openclaw/repetition-guard.js'
 import type { Env } from '../../config/env.js'
 import { buildModelForRun } from './modelClient.js'
@@ -111,9 +112,10 @@ interface ResolvedRunInputs {
   provider: {
     id: string
     kind: 'openai-compatible' | 'anthropic'
+    authMode: 'none' | 'bearer' | 'native'
     endpointUrl: string
     modelId: string
-    credentialEnvelope: string
+    credentialEnvelope: string | null
   }
 }
 
@@ -153,8 +155,16 @@ async function resolveRunInputs(
     .limit(1)
   const provider = providerRows[0]
   if (!provider) return null
-  if (!provider.credentialEnvelope) {
+  // Keyless generation (N002): a genuinely keyless connection (authMode
+  // 'none' on a keyless-capable protocol) needs no stored credential;
+  // a keyed connection without one is still rejected before any
+  // provider invocation.
+  const authMode = provider.authMode as ResolvedRunInputs['provider']['authMode']
+  if (!provider.credentialEnvelope && authMode !== 'none') {
     throw badRequest('This provider has no saved credential.')
+  }
+  if (authMode === 'none' && !allowsKeyless(provider.kind as 'openai-compatible' | 'anthropic')) {
+    throw badRequest('This provider protocol cannot run keyless — add an API key.')
   }
   const modelId = request.modelId ?? provider.modelId ?? ''
   if (!modelId) {
@@ -166,6 +176,7 @@ async function resolveRunInputs(
     provider: {
       id: provider.id,
       kind: provider.kind as 'openai-compatible' | 'anthropic',
+      authMode,
       endpointUrl: provider.endpointUrl,
       modelId,
       credentialEnvelope: provider.credentialEnvelope,
@@ -293,7 +304,7 @@ export async function createRun(
   await appendEvent(db, id, 'started', { text: '' })
 
   const handle = registerRun(id)
-  handle.done = executeRun(db, env, logger, row, inputs.provider.credentialEnvelope)
+  handle.done = executeRun(db, env, logger, row, inputs.provider)
 
   row = (await db.select().from(runs).where(eq(runs.id, id)).limit(1))[0] ?? row
   return {
@@ -371,7 +382,7 @@ async function executeRun(
   env: Env,
   logger: FastifyBaseLogger,
   row: RunRow,
-  credentialEnvelope: string,
+  provider: ResolvedRunInputs['provider'],
 ): Promise<void> {
   const runId = row.id
   let finalized = false
@@ -475,19 +486,26 @@ async function executeRun(
   }
 
   try {
-    // Decrypt the credential (write-only at the API boundary; used only
+    // Resolve the credential (write-only at the API boundary; used only
     // for the outbound provider request). Scope-bound to this workspace +
-    // provider, so a copied envelope is undecryptable elsewhere.
-    const masterKey = parseMasterKey(env.CREDENTIAL_MASTER_KEY)
-    const { plaintext: apiKey } = decryptSecret(masterKey, credentialEnvelope, {
-      workspaceId: row.workspaceId,
-      providerId: row.providerId ?? '',
-    })
+    // provider, so a copied envelope is undecryptable elsewhere. Keyless
+    // connections (authMode 'none') have no envelope — the outbound
+    // request carries no credential header at all (N002).
+    let apiKey: string | null = null
+    if (provider.credentialEnvelope !== null) {
+      const masterKey = parseMasterKey(env.CREDENTIAL_MASTER_KEY)
+      const { plaintext } = decryptSecret(masterKey, provider.credentialEnvelope, {
+        workspaceId: row.workspaceId,
+        providerId: row.providerId ?? '',
+      })
+      apiKey = plaintext
+    }
 
     const { model } = await buildModelForRun(
       {
         id: row.providerId,
         kind: row.providerKind as 'openai-compatible' | 'anthropic',
+        authMode: provider.authMode,
         endpointUrl: row.providerEndpoint,
         modelId: row.modelId,
         apiKey,

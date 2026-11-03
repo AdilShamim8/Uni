@@ -13,7 +13,7 @@ import {
 } from '../../lib/secretBox.js'
 import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { UrlGuardError } from '../../lib/urlGuard.js'
-import { providerDiscoveryUrl, providerAuthHeaders, type ProviderProtocol } from '../../lib/providerUrls.js'
+import { providerDiscoveryUrl, providerAuthHeaders, allowsKeyless, defaultAuthModeFor, type ProviderAuthMode, type ProviderProtocol } from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
 import type {
   CreateProviderRequest,
@@ -35,6 +35,7 @@ function serializeProvider(row: ProviderRow): ProviderDto {
     id: row.id,
     label: row.label,
     kind: row.kind as ProviderDto['kind'],
+    authMode: row.authMode as ProviderAuthMode,
     endpointUrl: row.endpointUrl,
     modelId: row.modelId,
     models: Array.isArray(row.models) ? row.models : [],
@@ -77,12 +78,23 @@ export async function listProviders(
   return rows.map(serializeProvider)
 }
 
+/**
+ * The compatible default auth mode for a new connection (N001):
+ * keyless when the protocol allows it (local OpenAI-compatible
+ * runtimes), the protocol's native keyed transport otherwise.
+ */
+function defaultAuthModeForRow(kind: ProviderRow['kind']): ProviderAuthMode {
+  const protocol = providerProtocol(kind)
+  return allowsKeyless(protocol) ? 'none' : defaultAuthModeFor(protocol)
+}
+
 export async function createProvider(
   db: ProvidersDatabase,
   workspaceId: string,
   request: CreateProviderRequest,
 ): Promise<ProviderDto> {
   const id = randomUUID()
+  const authMode = request.authMode ?? defaultAuthModeForRow(request.kind)
   const inserted = await db
     .insert(providerConnections)
     .values({
@@ -90,6 +102,7 @@ export async function createProvider(
       workspaceId,
       label: request.label,
       kind: request.kind,
+      authMode,
       endpointUrl: request.endpointUrl,
       modelId: request.modelId ?? null,
       models: request.models ?? [],
@@ -106,13 +119,41 @@ export async function patchProvider(
   providerId: string,
   request: PatchProviderRequest,
 ): Promise<ProviderDto> {
+  // Keyless is only valid where the protocol allows it; the contract
+  // validated the request, this is the fail-closed server check.
+  if (request.authMode === 'none') {
+    const row = await findProvider(db, workspaceId, providerId)
+    if (!row) throw notFound('Provider not found.')
+    if (!allowsKeyless(providerProtocol(row.kind))) {
+      throw badRequest('This protocol requires an API key — keyless connections are not supported for it.')
+    }
+  }
+  // N006: endpoint/auth changes invalidate previous verification and
+  // catalog results — the row resets to untested and the discovered
+  // model list (which describes the OLD endpoint) is withdrawn. The
+  // config revision bump also discards any in-flight check result.
+  const current = await findProvider(db, workspaceId, providerId)
+  if (!current) throw notFound('Provider not found.')
+  const configChanged =
+    (request.endpointUrl !== undefined && request.endpointUrl !== current.endpointUrl) ||
+    (request.authMode !== undefined && request.authMode !== current.authMode)
   const updated = await db
     .update(providerConnections)
     .set({
       ...(request.label !== undefined ? { label: request.label } : {}),
+      ...(request.authMode !== undefined ? { authMode: request.authMode } : {}),
       ...(request.endpointUrl !== undefined ? { endpointUrl: request.endpointUrl } : {}),
       ...(request.modelId !== undefined ? { modelId: request.modelId } : {}),
       ...(request.models !== undefined ? { models: request.models } : {}),
+      ...(configChanged
+        ? {
+            configRevision: current.configRevision + 1,
+            credentialStatus: 'untested',
+            credentialLastCheckedAt: null,
+            credentialLastError: null,
+            models: [],
+          }
+        : {}),
       updatedAt: new Date(),
     })
     .where(
@@ -164,10 +205,20 @@ export async function setCredential(
     providerId,
   })
 
+  // Storing a key switches the connection to a keyed transport (N001):
+  // an explicit keyed choice ('bearer' on an Anthropic-protocol gateway,
+  // or 'native') survives key rotation; a keyless connection flips to
+  // its protocol's default keyed transport.
+  const currentMode = provider.authMode as ProviderAuthMode
+  const authMode = currentMode === 'none' ? defaultAuthModeFor(providerProtocol(provider.kind)) : currentMode
+
   const updated = await db
     .update(providerConnections)
     .set({
       credentialEnvelope: JSON.stringify(envelope),
+      authMode,
+      // A new key invalidates in-flight checks of the old one (N006).
+      configRevision: provider.configRevision + 1,
       credentialStatus: 'untested',
       credentialLastCheckedAt: null,
       credentialLastError: null,
@@ -188,10 +239,19 @@ export async function deleteCredential(
   const provider = await findProvider(db, workspaceId, providerId)
   if (!provider) throw notFound('Provider not found.')
 
+  // Removing the key returns keyless-capable protocols to genuinely
+  // keyless operation (N002/N003); Anthropic keeps its keyed transport —
+  // without a key it is honestly unusable, never silently keyless.
+  const authMode = allowsKeyless(providerProtocol(provider.kind))
+    ? 'none'
+    : (provider.authMode as ProviderAuthMode)
+
   const updated = await db
     .update(providerConnections)
     .set({
       credentialEnvelope: null,
+      authMode,
+      configRevision: provider.configRevision + 1,
       credentialStatus: 'untested',
       credentialLastCheckedAt: null,
       credentialLastError: null,
@@ -244,8 +304,8 @@ function modelsUrl(kind: ProviderRow['kind'], endpointUrl: string): string {
   return providerDiscoveryUrl(providerProtocol(kind), endpointUrl)
 }
 
-function authHeaders(kind: ProviderRow['kind'], apiKey: string): Record<string, string> {
-  return providerAuthHeaders(providerProtocol(kind), apiKey)
+function authHeaders(provider: ProviderRow, apiKey: string): Record<string, string> {
+  return providerAuthHeaders(providerProtocol(provider.kind), provider.authMode as ProviderAuthMode, apiKey)
 }
 
 /**
@@ -300,22 +360,47 @@ interface ConnectionResult {
   ok: boolean
   message: string
   models: string[] | null
+  /** True when the caller cancelled the check — proves nothing, writes nothing. */
+  cancelled?: boolean
+}
+
+/**
+ * Whether this connection can be exercised without a stored key —
+ * genuinely keyless (authMode 'none' on a protocol that allows it).
+ * Hosted-egress policy is unaffected: the guarded transport still
+ * applies to every outbound request.
+ */
+function isKeyless(provider: ProviderRow): boolean {
+  return provider.credentialEnvelope === null && provider.authMode === 'none' && allowsKeyless(providerProtocol(provider.kind))
 }
 
 async function runConnectionCheck(
   env: Env,
   provider: ProviderRow,
-  apiKey: string,
+  apiKey: string | null,
+  signal?: AbortSignal,
 ): Promise<ConnectionResult> {
   const url = modelsUrl(provider.kind, provider.endpointUrl)
   try {
+    // Keyless probes send NO credential header (N002): a local runtime
+    // must not receive a dummy Authorization header, and authMode 'none'
+    // means exactly that on the wire. The caller's signal aborts the
+    // real outbound request (N008).
+    const keyless = apiKey === null
     const response = await guardedProviderFetch(env, url, {
       method: 'GET',
-      headers: authHeaders(provider.kind, apiKey),
+      headers: authHeaders(provider, apiKey ?? ''),
+      ...(signal ? { signal } : {}),
     })
 
     if (response.status === 401 || response.status === 403) {
-      return { ok: false, message: 'The provider rejected the API key.', models: null }
+      return {
+        ok: false,
+        message: keyless
+          ? 'The endpoint answered 401/403 — it requires an API key even though this connection is keyless. Add a key or check the endpoint URL.'
+          : 'The provider rejected the API key.',
+        models: null,
+      }
     }
     if (!response.ok) {
       return {
@@ -338,8 +423,9 @@ async function runConnectionCheck(
     // verified (2xx + valid body), rejected (401/403), unknown
     // (rate-limited, 5xx, network failure, unparseable body) — and
     // only "verified" may claim the connection works. A public catalog
-    // is never evidence of a working key.
-    if (isOpenRouterEndpoint(provider.endpointUrl)) {
+    // is never evidence of a working key. A keyless connection claims
+    // no key at all, so there is nothing to verify on /key.
+    if (isOpenRouterEndpoint(provider.endpointUrl) && !keyless) {
       let verification:
         | { state: 'verified' }
         | { state: 'rejected' }
@@ -347,7 +433,8 @@ async function runConnectionCheck(
       try {
         const keyResponse = await guardedProviderFetch(env, openRouterKeyUrl(provider.endpointUrl), {
           method: 'GET',
-          headers: authHeaders(provider.kind, apiKey),
+          headers: authHeaders(provider, apiKey ?? ''),
+          ...(signal ? { signal } : {}),
         })
         if (keyResponse.status === 401 || keyResponse.status === 403) {
           verification = { state: 'rejected' }
@@ -363,6 +450,13 @@ async function runConnectionCheck(
       } catch (error) {
         if (error instanceof UrlGuardError) {
           return { ok: false, message: error.message, models: null }
+        }
+        const aborted =
+          signal?.aborted ||
+          (error instanceof Error && error.name === 'AbortError') ||
+          (error instanceof DOMException && error.name === 'AbortError')
+        if (aborted) {
+          return { ok: false, message: 'Connection check cancelled.', models: null, cancelled: true }
         }
         verification = { state: 'unknown', reason: 'network error' }
       }
@@ -390,10 +484,27 @@ async function runConnectionCheck(
       models = models.slice().sort((a, b) => a.localeCompare(b)).slice(0, 100)
     }
 
-    return { ok: true, message: 'Connected — the key works.', models }
+    return {
+      ok: true,
+      message: keyless
+        ? 'Connected — the endpoint answered without a key.'
+        : 'Connected — the key works.',
+      models,
+    }
   } catch (error) {
     if (error instanceof UrlGuardError) {
       return { ok: false, message: error.message, models: null }
+    }
+    // A cancelled check proves nothing (N008): the outbound request was
+    // aborted — either the caller replaced it or the client went away.
+    // It must not write a status and must not surface as a provider
+    // failure; it is an honest 'cancelled' outcome.
+    const aborted =
+      signal?.aborted ||
+      (error instanceof Error && error.name === 'AbortError') ||
+      (error instanceof DOMException && error.name === 'AbortError')
+    if (aborted) {
+      return { ok: false, message: 'Connection check cancelled.', models: null, cancelled: true }
     }
     const message = error instanceof Error ? error.message : 'connection failed'
     return {
@@ -406,13 +517,21 @@ async function runConnectionCheck(
   }
 }
 
+/**
+ * Outcome of applying a check result to the provider row.
+ * `superseded` means the config changed while the check was in flight
+ * (N006): the result described the OLD configuration and was discarded.
+ */
+type ApplyOutcome = { kind: 'applied'; provider: ProviderDto } | { kind: 'superseded'; provider: ProviderDto }
+
 async function applyTestResult(
   db: ProvidersDatabase,
   workspaceId: string,
   providerId: string,
+  expectedRevision: number,
   result: ConnectionResult,
   persistModels: boolean,
-): Promise<ProviderDto> {
+): Promise<ApplyOutcome> {
   const updated = await db
     .update(providerConnections)
     .set({
@@ -426,12 +545,20 @@ async function applyTestResult(
       and(
         eq(providerConnections.id, providerId),
         eq(providerConnections.workspaceId, workspaceId),
+        eq(providerConnections.configRevision, expectedRevision),
       ),
     )
     .returning()
   const row = updated[0]
-  if (!row) throw notFound('Provider not found.')
-  return serializeProvider(row)
+  // No row at this revision: the endpoint/auth/credential changed while
+  // the check ran. The late result must NOT verify the edited profile —
+  // return the CURRENT row untouched instead.
+  if (!row) {
+    const current = await findProvider(db, workspaceId, providerId)
+    if (!current) throw notFound('Provider not found.')
+    return { kind: 'superseded', provider: serializeProvider(current) }
+  }
+  return { kind: 'applied', provider: serializeProvider(row) }
 }
 
 export interface ProviderActionResult extends ProviderTestResponse {
@@ -443,10 +570,16 @@ export async function testProviderConnection(
   env: Env,
   workspaceId: string,
   providerId: string,
+  signal?: AbortSignal,
 ): Promise<ProviderActionResult> {
   const provider = await findProvider(db, workspaceId, providerId)
   if (!provider) throw notFound('Provider not found.')
-  if (provider.credentialEnvelope === null) {
+
+  // Keyless connections (authMode 'none' on a keyless-capable protocol)
+  // probe reachability without any credential header (N002); keyed
+  // connections still require their stored key and answer honestly
+  // (a soft ok:false, not an error) when none is stored yet.
+  if (!isKeyless(provider) && provider.credentialEnvelope === null) {
     return {
       ok: false,
       message: 'No API key stored for this provider yet.',
@@ -455,13 +588,35 @@ export async function testProviderConnection(
       provider: serializeProvider(provider),
     }
   }
-
-  const apiKey = await readCredential(db, env, workspaceId, providerId)
+  const apiKey = isKeyless(provider) ? null : await readCredential(db, env, workspaceId, providerId)
+  // The revision captured now guards the result: a config/credential
+  // change during the check discards it (N006).
+  const expectedRevision = provider.configRevision
   const startedAt = Date.now()
-  const result = await runConnectionCheck(env, provider, apiKey)
+  const result = await runConnectionCheck(env, provider, apiKey, signal)
   const latencyMs = Date.now() - startedAt
-  const providerDto = await applyTestResult(db, workspaceId, providerId, result, false)
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: providerDto }
+  // A cancelled check writes nothing (N008) — the row keeps its current
+  // truthful state instead of a late failure or success.
+  if (result.cancelled) {
+    return {
+      ok: false,
+      message: result.message,
+      latencyMs,
+      discoveredModels: null,
+      provider: serializeProvider(provider),
+    }
+  }
+  const outcome = await applyTestResult(db, workspaceId, providerId, expectedRevision, result, false)
+  if (outcome.kind === 'superseded') {
+    return {
+      ok: false,
+      message: 'The provider was edited while this check ran — the result was discarded. Test again.',
+      latencyMs,
+      discoveredModels: null,
+      provider: outcome.provider,
+    }
+  }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: outcome.provider }
 }
 
 export async function discoverProviderModels(
@@ -469,10 +624,12 @@ export async function discoverProviderModels(
   env: Env,
   workspaceId: string,
   providerId: string,
+  signal?: AbortSignal,
 ): Promise<ProviderActionResult> {
   const provider = await findProvider(db, workspaceId, providerId)
   if (!provider) throw notFound('Provider not found.')
-  if (provider.credentialEnvelope === null) {
+
+  if (!isKeyless(provider) && provider.credentialEnvelope === null) {
     return {
       ok: false,
       message: 'No API key stored for this provider yet.',
@@ -481,11 +638,29 @@ export async function discoverProviderModels(
       provider: serializeProvider(provider),
     }
   }
-
-  const apiKey = await readCredential(db, env, workspaceId, providerId)
+  const apiKey = isKeyless(provider) ? null : await readCredential(db, env, workspaceId, providerId)
+  const expectedRevision = provider.configRevision
   const startedAt = Date.now()
-  const result = await runConnectionCheck(env, provider, apiKey)
+  const result = await runConnectionCheck(env, provider, apiKey, signal)
   const latencyMs = Date.now() - startedAt
-  const providerDto = await applyTestResult(db, workspaceId, providerId, result, true)
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: providerDto }
+  if (result.cancelled) {
+    return {
+      ok: false,
+      message: result.message,
+      latencyMs,
+      discoveredModels: null,
+      provider: serializeProvider(provider),
+    }
+  }
+  const outcome = await applyTestResult(db, workspaceId, providerId, expectedRevision, result, true)
+  if (outcome.kind === 'superseded') {
+    return {
+      ok: false,
+      message: 'The provider was edited while discovery ran — the result was discarded. Test again.',
+      latencyMs,
+      discoveredModels: null,
+      provider: outcome.provider,
+    }
+  }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: outcome.provider }
 }

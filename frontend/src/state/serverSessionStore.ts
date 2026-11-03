@@ -13,6 +13,7 @@ import {
 } from '@/services/api/serverSession'
 import {
   createServerProvider,
+  deleteServerProvider as deleteServerProviderApi,
   discoverServerProviderModels,
   listServerProviders,
   setServerProviderCredential,
@@ -68,6 +69,57 @@ export interface ServerConversationDetail extends ServerConversationSummary {
 export type ServerSessionStatus = 'loading' | 'signed-out' | 'signed-in'
 
 /**
+ * The explicit server-chat destination (N004): exact provider and model
+ * IDs chosen by the user. Lookups are ALWAYS by ID — creating, deleting
+ * or reordering other profiles can never silently change where a send
+ * goes. Persisted per workspace (server-derived identity, U009-scoped)
+ * so reload preserves the choice; a stale selection (deleted provider
+ * or model) is an explicit unavailable state, never an automatic
+ * fallback (N005).
+ */
+export interface ServerSelection {
+  providerId: string
+  modelId: string
+}
+
+const SERVER_SELECTION_PREFIX = 'universe:server-selection:v1:'
+
+function loadStoredSelection(workspaceId: string): ServerSelection | null {
+  try {
+    const raw = localStorage.getItem(SERVER_SELECTION_PREFIX + workspaceId)
+    if (!raw) return null
+    const parsed: unknown = JSON.parse(raw)
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      typeof (parsed as ServerSelection).providerId === 'string' &&
+      typeof (parsed as ServerSelection).modelId === 'string'
+    ) {
+      return parsed as ServerSelection
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function storeSelection(workspaceId: string, selection: ServerSelection): void {
+  try {
+    localStorage.setItem(SERVER_SELECTION_PREFIX + workspaceId, JSON.stringify(selection))
+  } catch {
+    /* storage unavailable — the in-memory choice still governs this session */
+  }
+}
+
+function clearStoredSelection(workspaceId: string): void {
+  try {
+    localStorage.removeItem(SERVER_SELECTION_PREFIX + workspaceId)
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
  * Session-scoped abort registry (F07/U009): every auth transition
  * starts a fresh scope and aborts the previous one, so in-flight
  * subscriptions (run streams) stop with the session that started them.
@@ -100,6 +152,11 @@ interface ServerSessionState {
   /** Outcome of the last provider Test, shown verbatim (honest feedback). */
   serverProviderTest: (ServerProviderTestResponse & { providerId: string }) | null
 
+  /** The explicit server-chat destination (N004). */
+  serverSelection: ServerSelection | null
+  /** Explicit notice when the chosen destination was removed (N005). */
+  serverSelectionNotice: string | null
+
   /** The run currently streaming into the open conversation, if any. */
   activeRun: {
     runId: string
@@ -116,9 +173,13 @@ interface ServerSessionState {
     kind: 'openai-compatible' | 'anthropic'
     endpointUrl: string
     modelId?: string
-    apiKey: string
+    /** Empty/omitted for keyless connections (N003, keyless-capable protocols only). */
+    apiKey?: string
   }) => Promise<boolean>
   testServerProviderById: (providerId: string) => Promise<void>
+  /** Choose the exact server-chat destination (N004). */
+  setServerSelection: (providerId: string, modelId: string) => void
+  deleteServerProvider: (providerId: string) => Promise<void>
 
   newServerConversation: (title: string) => Promise<string | null>
   sendServerMessage: (text: string) => Promise<boolean>
@@ -161,6 +222,8 @@ const clearedServerData: Pick<
   | 'serverProvidersLoading'
   | 'serverProviderError'
   | 'serverProviderTest'
+  | 'serverSelection'
+  | 'serverSelectionNotice'
   | 'activeRun'
   | 'runError'
 > = {
@@ -175,6 +238,8 @@ const clearedServerData: Pick<
   serverProvidersLoading: false,
   serverProviderError: null,
   serverProviderTest: null,
+  serverSelection: null,
+  serverSelectionNotice: null,
   activeRun: null,
   runError: null,
 }
@@ -205,7 +270,12 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       try {
         const account = await fetchServerAccount()
         if (!stillCurrent(generation)) return
-        set({ status: account ? 'signed-in' : 'signed-out', account, error: null })
+        set({
+          status: account ? 'signed-in' : 'signed-out',
+          account,
+          error: null,
+          serverSelection: account ? loadStoredSelection(account.workspace.id) : null,
+        })
       } catch {
         if (!stillCurrent(generation)) return
         // Backend unreachable: local mode continues to work; server mode
@@ -222,7 +292,12 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         // New session: invalidate anything still in flight from the
         // signed-out (or previous account) era and clear its data.
         bumpSession()
-        set({ ...clearedServerData, status: 'signed-in', account })
+        set({
+          ...clearedServerData,
+          status: 'signed-in',
+          account,
+          serverSelection: loadStoredSelection(account.workspace.id),
+        })
         await get().loadConversations()
         void get().loadServerProviders()
         return true
@@ -239,7 +314,12 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       try {
         const account = await signUpOnServer({ name, email, password })
         bumpSession()
-        set({ ...clearedServerData, status: 'signed-in', account })
+        set({
+          ...clearedServerData,
+          status: 'signed-in',
+          account,
+          serverSelection: loadStoredSelection(account.workspace.id),
+        })
         await get().loadConversations()
         void get().loadServerProviders()
         return true
@@ -345,7 +425,29 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       try {
         const providers = await listServerProviders()
         if (!stillCurrent(generation)) return
+        // N005: an initial default is only allowed when the list had NO
+        // usable destination before this load (fresh sign-in, or the
+        // first usable provider ever). When a usable provider existed —
+        // e.g. the chosen one was just deleted while others remain —
+        // the empty selection stays an explicit unavailable state;
+        // switching to another (possibly paid) provider automatically
+        // would be a silent fallback.
+        const usableWithModel = (entry: ServerProvider): boolean =>
+          (entry.credential.present || entry.authMode === 'none') &&
+          (entry.modelId ?? entry.models[0] ?? null) !== null
+        const hadUsableBefore = get().serverProviders.some(usableWithModel)
         set({ serverProviders: providers, serverProvidersLoading: false, serverProviderError: null })
+        // Initial default only (N004): when the user has never chosen a
+        // destination, the first usable provider with a model becomes it —
+        // visible in the picker and changeable at any time. An EXISTING
+        // selection is never rewritten by list changes.
+        if (!get().serverSelection && !hadUsableBefore) {
+          const first = providers.find(usableWithModel)
+          const modelId = first ? (first.modelId ?? first.models[0] ?? null) : null
+          if (first && modelId) {
+            get().setServerSelection(first.id, modelId)
+          }
+        }
       } catch (error) {
         if (!stillCurrent(generation)) return
         set({ serverProvidersLoading: false, serverProviderError: errorMessage(error) })
@@ -356,14 +458,35 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       set({ serverProviderError: null })
       const generation = get().sessionGeneration
       try {
+        const apiKey = (input.apiKey ?? '').trim()
+        const keyless = apiKey.length === 0
+        if (keyless && input.kind !== 'openai-compatible') {
+          set({ serverProviderError: 'Anthropic connections need an API key.' })
+          return false
+        }
         const provider = await createServerProvider({
           label: input.label,
           kind: input.kind,
+          // Keyless connections are explicit on the server (N001/N002):
+          // authMode 'none' persists the choice; a key switches the row
+          // to its protocol's keyed transport server-side.
+          authMode: keyless ? 'none' : undefined,
           endpointUrl: input.endpointUrl,
           modelId: input.modelId,
         })
-        await setServerProviderCredential(provider.id, input.apiKey)
+        if (!keyless) {
+          await setServerProviderCredential(provider.id, apiKey)
+        }
         await get().loadServerProviders()
+        // First usable provider becomes the initial destination (an
+        // explicit choice the user can change); an EXISTING selection is
+        // never rewritten by adding another profile (N004).
+        if (!get().serverSelection) {
+          const modelId = provider.modelId ?? provider.models[0] ?? null
+          if (modelId) {
+            get().setServerSelection(provider.id, modelId)
+          }
+        }
         return true
       } catch (error) {
         if (!stillCurrent(generation)) return false
@@ -382,6 +505,48 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         const result = await discoverServerProviderModels(providerId)
         if (!stillCurrent(generation)) return
         set({ serverProviderTest: { ...result, providerId } })
+      } catch (error) {
+        if (!stillCurrent(generation)) return
+        set({ serverProviderError: errorMessage(error) })
+      }
+      await get().loadServerProviders()
+    },
+
+    setServerSelection: (providerId, modelId) => {
+      // The destination is stored by exact IDs and validated against the
+      // loaded provider list (N004): reordering or adding profiles can
+      // never change what a send addresses.
+      const provider = get().serverProviders.find((entry) => entry.id === providerId)
+      if (!provider) return
+      const modelKnown =
+        provider.modelId === modelId || provider.models.includes(modelId)
+      if (!modelKnown) return
+      const selection: ServerSelection = { providerId, modelId }
+      set({ serverSelection: selection, runError: null, serverSelectionNotice: null })
+      const account = get().account
+      if (account) storeSelection(account.workspace.id, selection)
+    },
+
+    deleteServerProvider: async (providerId) => {
+      set({ serverProviderError: null })
+      const generation = get().sessionGeneration
+      try {
+        await deleteServerProviderApi(providerId)
+        if (!stillCurrent(generation)) return
+        // Removing the CHOSEN provider leaves an explicit unavailable
+        // state (N005): the selection is cleared with a clear notice —
+        // never an automatic fallback to another (possibly paid) one.
+        const selection = get().serverSelection
+        if (selection?.providerId === providerId) {
+          set({
+            serverSelection: null,
+            runError: null,
+            serverSelectionNotice:
+              'The selected provider was removed — server chat is unavailable until you pick another destination above. Existing conversations are kept.',
+          })
+          const account = get().account
+          if (account) clearStoredSelection(account.workspace.id)
+        }
       } catch (error) {
         if (!stillCurrent(generation)) return
         set({ serverProviderError: errorMessage(error) })
@@ -420,16 +585,36 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     if (!trimmed || !conversationId || !conversation) return false
     if (get().activeRun) return false
 
-    const provider = get().serverProviders.find((entry) => entry.credential.present)
-    if (!provider) {
-      set({ runError: 'Add a server provider with an API key first (panel above).' })
-      return false
-    }
-    const modelId = provider.modelId ?? provider.models[0] ?? null
-    if (!modelId) {
+    // The destination is the user's explicit selection (N004) — looked
+    // up by exact ID, with explicit unavailable states instead of any
+    // automatic fallback (N005).
+    const selection = get().serverSelection
+    if (!selection) {
       set({
         runError:
-          'That server provider has no model yet — click Test on it (Server providers above) to check the key and discover its models.',
+          'Choose a provider and model for server chat — pick them above the composer (Settings → Account).',
+      })
+      return false
+    }
+    const provider = get().serverProviders.find((entry) => entry.id === selection.providerId)
+    if (!provider) {
+      set({
+        runError:
+          'The selected provider is no longer available — it was removed. Pick another provider above the composer; nothing was sent.',
+      })
+      return false
+    }
+    if (!provider.credential.present && provider.authMode !== 'none') {
+      set({
+        runError: `The selected provider (${provider.label}) has no usable key — add one in Settings → Account, or pick a keyless provider.`,
+      })
+      return false
+    }
+    const modelId = selection.modelId
+    const modelStillKnown = provider.modelId === modelId || provider.models.includes(modelId)
+    if (!modelStillKnown) {
+      set({
+        runError: `The selected model (${modelId}) is no longer offered by ${provider.label} — pick a model above the composer.`,
       })
       return false
     }

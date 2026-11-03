@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyReply } from 'fastify'
 import {
   createProviderRequestSchema,
   patchProviderRequestSchema,
@@ -68,14 +68,46 @@ export async function providersRoutes(app: FastifyInstance): Promise<void> {
     return reply.send(provider)
   })
 
+  /**
+   * Client disconnects abort the actual outbound probe (N008): the
+   * guarded transport cancels the real socket, the check reports an
+   * honest 'cancelled' outcome, and nothing is written to the row — a
+   * late response can never mark an abandoned check Connected.
+   *
+   * The disconnect is watched on the RESPONSE: a bodyless request
+   * stream is already closed by the time the handler runs, but
+   * reply.raw 'close' fires early exactly when the client goes away
+   * before the answer is written (and harmlessly after normal
+   * completion, when the probe is already finished).
+   */
+  function probeSignal(reply: FastifyReply): AbortSignal {
+    const controller = new AbortController()
+    reply.raw.on('close', () => {
+      if (!reply.raw.writableFinished) controller.abort()
+    })
+    return controller.signal
+  }
+
   app.post<{ Params: { id: string } }>('/providers/:id/test', async (request, reply) => {
-    const result = await testProviderConnection(db, env, request.workspace!.id, request.params.id)
+    const result = await testProviderConnection(
+      db,
+      env,
+      request.workspace!.id,
+      request.params.id,
+      probeSignal(reply),
+    )
     void providerTestResponseSchema.parse(result)
     return reply.send(result)
   })
 
   app.post<{ Params: { id: string } }>('/providers/:id/models', async (request, reply) => {
-    const result = await discoverProviderModels(db, env, request.workspace!.id, request.params.id)
+    const result = await discoverProviderModels(
+      db,
+      env,
+      request.workspace!.id,
+      request.params.id,
+      probeSignal(reply),
+    )
     void providerTestResponseSchema.parse(result)
     return reply.send(result)
   })

@@ -144,16 +144,25 @@ export function createLiveAdapter(
       const anthropic = usesAnthropicProtocol(profile)
       const url = messagesUrl(profile)
 
+      // Keyless generation (N003): a local runtime is never sent a dummy
+      // Authorization header — an empty key means NO credential header.
+      // The Anthropic protocol always requires its key (the connection
+      // flow blocks keyless Anthropic profiles), so its headers stay
+      // keyed-only.
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (anthropic) {
-        headers['x-api-key'] = apiKey
-        headers['anthropic-version'] = '2023-06-01'
-        headers['anthropic-dangerous-direct-browser-access'] = 'true'
-      } else {
-        headers.Authorization = `Bearer ${apiKey}`
+      if (apiKey) {
+        if (anthropic) {
+          headers['x-api-key'] = apiKey
+          headers['anthropic-version'] = '2023-06-01'
+          headers['anthropic-dangerous-direct-browser-access'] = 'true'
+        } else {
+          headers.Authorization = `Bearer ${apiKey}`
+        }
+      }
+      if (!anthropic && isOpenRouter(profile)) {
         // OpenRouter's optional attribution header (their docs recommend it
         // so requests from Uni show up under an app name, not "unknown").
-        if (isOpenRouter(profile)) headers['X-Title'] = 'Uni'
+        headers['X-Title'] = 'Uni'
       }
 
       const body = anthropic
