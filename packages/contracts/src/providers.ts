@@ -134,6 +134,48 @@ export function unknownReadiness(): ProviderReadiness {
   return { reachability: 'unknown', catalog: 'unknown', credential: 'unknown', generation: 'unknown' }
 }
 
+/**
+ * The stable, machine-readable classification of a failed (or
+ * inconclusive) connection check (N012). The human `message` is for
+ * people; this is for UI states, telemetry, and tests — one vocabulary
+ * shared by the server checks and the browser BYOK path.
+ *
+ * - `unreachable`: network-level failure — DNS, refused, timeout. The
+ *   endpoint never answered.
+ * - `endpoint-not-allowed`: the SSRF guard refused the endpoint (server
+ *   policy; never retried blindly).
+ * - `invalid-endpoint`: the endpoint URL itself is not usable (checked
+ *   client-side before any request).
+ * - `no-credential`: a keyed connection with no stored key yet.
+ * - `rejected-credential`: the endpoint answered and refused the key
+ *   (401/403, or OpenRouter's /key).
+ * - `catalog-unavailable`: the endpoint answered but returned no usable
+ *   model list (404, other non-2xx, non-JSON body, no data array).
+ * - `body-too-large`: the response body passed its N009 bound and was
+ *   refused — nothing was adopted.
+ * - `openrouter-key-unknown`: OpenRouter's auth-protected /key check
+ *   could not answer conclusively; the key is neither verified nor
+ *   rejected.
+ * - `cancelled`: the check was aborted (client disconnect or a
+ *   superseding check); it proved nothing.
+ * - `superseded`: the provider's config changed while the check ran;
+ *   the result described the OLD configuration and was discarded.
+ */
+export const providerErrorKindSchema = z.enum([
+  'unreachable',
+  'endpoint-not-allowed',
+  'invalid-endpoint',
+  'no-credential',
+  'rejected-credential',
+  'catalog-unavailable',
+  'body-too-large',
+  'openrouter-key-unknown',
+  'cancelled',
+  'superseded',
+])
+
+export type ProviderErrorKind = z.infer<typeof providerErrorKindSchema>
+
 export const providerTestResponseSchema = z.object({
   ok: z.boolean(),
   message: z.string(),
@@ -141,6 +183,12 @@ export const providerTestResponseSchema = z.object({
   discoveredModels: z.array(z.string()).nullable(),
   /** The per-axis breakdown behind the aggregate ok (N007). */
   readiness: providerReadinessSchema,
+  /**
+   * The stable classification of the failure (N012); `null` when the
+   * check succeeded. `ok: true` with `errorKind: null` is the only
+   * success shape — an inconclusive check is honestly NOT ok.
+   */
+  errorKind: providerErrorKindSchema.nullable(),
 })
 
 export type ProviderTestResponse = z.infer<typeof providerTestResponseSchema>
