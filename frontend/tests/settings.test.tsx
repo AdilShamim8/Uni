@@ -222,6 +222,15 @@ describe('provider quick setup', () => {
       'HuggingFace Router',
       'Alibaba DashScope · Qwen',
       'Zhipu GLM',
+      // N014 refresh — probe-verified additions.
+      'Pollinations (no key)',
+      'Moonshot AI · Kimi',
+      'MiniMax',
+      'DeepInfra',
+      'Nebius AI Studio',
+      'Tencent Hunyuan',
+      'Volcengine · Doubao',
+      'Baidu Qianfan',
     ]) {
       expect(dialog.getByRole('button', { name: new RegExp('^' + label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')) })).toBeInTheDocument()
     }

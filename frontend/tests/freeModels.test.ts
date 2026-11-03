@@ -35,6 +35,11 @@ describe('free-models catalog integrity', () => {
       if (route.local) {
         expect(route.signupUrl).toBe('')
         expect(route.endpointUrl).toMatch(/^http:\/\/(localhost|127\.0\.0\.1)/)
+      } else if (route.keyless) {
+        // Keyless hosted routes (N014): https endpoint, nothing to sign
+        // up for — the empty signupUrl is the honest value.
+        expect(route.signupUrl).toBe('')
+        expect(route.endpointUrl).toMatch(/^https:\/\//)
       } else {
         expect(route.signupUrl).toMatch(/^https:\/\//)
         expect(route.endpointUrl).toMatch(/^https:\/\//)
