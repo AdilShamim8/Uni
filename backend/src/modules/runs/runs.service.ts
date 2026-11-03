@@ -294,6 +294,24 @@ function checkCreationRate(workspaceId: string, limitPerMinute: number): void {
 }
 
 /* ------------------------------------------------------------------ */
+/* Concurrent same-key creation (N017)                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Postgres unique-violation detector that works through drizzle's
+ * error wrapping: node-postgres errors carry `code` directly, while
+ * drizzle may rethrow them as DrizzleQueryError with the original on
+ * `.cause`.
+ */
+export function isUniqueViolation(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false
+  const candidate = error as { code?: unknown; cause?: unknown }
+  if (candidate.code === '23505') return true
+  const cause = candidate.cause as { code?: unknown } | undefined
+  return typeof cause === 'object' && cause !== null && cause.code === '23505'
+}
+
+/* ------------------------------------------------------------------ */
 /* Create                                                              */
 /* ------------------------------------------------------------------ */
 
@@ -348,35 +366,52 @@ export async function createRun(
         modelId: inputs.provider.modelId,
       })
     : null
-  const inserted = await db
-    .insert(runs)
-    .values({
-      id,
-      workspaceId,
-      conversationId,
-      parentNodeId: inputs.parentNodeId,
-      providerId: inputs.provider.id,
-      providerKind: inputs.provider.kind,
-      providerEndpoint: inputs.provider.endpointUrl,
-      modelId: inputs.provider.modelId,
-      status: 'running',
-      outputText: '',
-      idempotencyKey: request.idempotencyKey ?? null,
-      requestFingerprint,
-    })
-    .returning()
-  let row = inserted[0]
-  if (!row) {
-    // Lost an idempotency race — the winner's row is the answer.
-    if (!request.idempotencyKey) throw new Error('Run insert returned no row')
-    const winner = await findRunByIdempotencyKey(db, workspaceId, request.idempotencyKey)
-    if (!winner) throw new Error('Run insert returned no row')
-    return {
-      run: serializeRun(winner),
-      events: await listRunEventsAfter(db, winner.id, 0),
-      reused: true,
+  let row: RunRow | undefined
+  try {
+    const inserted = await db
+      .insert(runs)
+      .values({
+        id,
+        workspaceId,
+        conversationId,
+        parentNodeId: inputs.parentNodeId,
+        providerId: inputs.provider.id,
+        providerKind: inputs.provider.kind,
+        providerEndpoint: inputs.provider.endpointUrl,
+        modelId: inputs.provider.modelId,
+        status: 'running',
+        outputText: '',
+        idempotencyKey: request.idempotencyKey ?? null,
+        requestFingerprint,
+      })
+      .returning()
+    row = inserted[0]
+  } catch (error) {
+    // N017 — concurrent same-key creation. Two requests that both pass
+    // the replay lookup (no row yet) race at the unique index
+    // (workspace_id, idempotency_key): Postgres blocks the second
+    // insert until the first COMMITS, then raises 23505 — a thrown
+    // error, never an empty `.returning()`. The winner's committed row
+    // IS the answer: reuse it when the effective request matches (one
+    // run, one provider invocation), and conflict when it does not.
+    if (isUniqueViolation(error) && request.idempotencyKey) {
+      const winner = await findRunByIdempotencyKey(db, workspaceId, request.idempotencyKey)
+      if (winner) {
+        if (requestFingerprint !== null && requestFingerprint !== runRequestFingerprintOf(winner)) {
+          throw conflict(
+            'This idempotency key was already used with a different request (conversation, message, provider, or model). Send a new key.',
+          )
+        }
+        return {
+          run: serializeRun(winner),
+          events: await listRunEventsAfter(db, winner.id, 0),
+          reused: true,
+        }
+      }
     }
+    throw error
   }
+  if (!row) throw new Error('Run insert returned no row')
 
   // Started event before the run can produce output.
   await appendEvent(db, id, 'started', { text: '' })
