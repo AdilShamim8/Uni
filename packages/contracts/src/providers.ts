@@ -99,11 +99,48 @@ export const setCredentialRequestSchema = z.object({
 
 export type SetCredentialRequest = z.infer<typeof setCredentialRequestSchema>
 
+/**
+ * One readiness axis of a provider connection check (N007): `unknown`
+ * (this check proved nothing about the axis), `ok` (verified working),
+ * or `fail` (verified broken). The axes are INDEPENDENT — a reachable
+ * endpoint with a rejected key reports reachability ok + credential
+ * fail, never a single blended "error".
+ */
+export const readinessAxisSchema = z.enum(['unknown', 'ok', 'fail'])
+
+export type ReadinessAxis = z.infer<typeof readinessAxisSchema>
+
+/**
+ * The four separate readiness states of a provider connection (N007):
+ * - `reachability`: did the endpoint answer on the network at all?
+ * - `catalog`: did model discovery return a usable model list?
+ * - `credential`: was the key verified? `not-required` when the
+ *   connection is genuinely keyless (there is no key to verify).
+ * - `generation`: was an actual generation exercised? A plain
+ *   connection check does not generate, so this stays `unknown` until
+ *   a generation-probe path (e.g. manual model verification) runs.
+ */
+export const providerReadinessSchema = z.object({
+  reachability: readinessAxisSchema,
+  catalog: readinessAxisSchema,
+  credential: z.enum(['unknown', 'ok', 'fail', 'not-required']),
+  generation: readinessAxisSchema,
+})
+
+export type ProviderReadiness = z.infer<typeof providerReadinessSchema>
+
+/** All-unknown readiness — a cancelled or superseded check proved nothing. */
+export function unknownReadiness(): ProviderReadiness {
+  return { reachability: 'unknown', catalog: 'unknown', credential: 'unknown', generation: 'unknown' }
+}
+
 export const providerTestResponseSchema = z.object({
   ok: z.boolean(),
   message: z.string(),
   latencyMs: z.number().int().nonnegative().nullable(),
   discoveredModels: z.array(z.string()).nullable(),
+  /** The per-axis breakdown behind the aggregate ok (N007). */
+  readiness: providerReadinessSchema,
 })
 
 export type ProviderTestResponse = z.infer<typeof providerTestResponseSchema>
