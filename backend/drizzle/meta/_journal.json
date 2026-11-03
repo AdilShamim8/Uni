@@ -64,6 +64,13 @@
       "when": 1793684818164,
       "tag": "0008_harsh_speedball",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793771218164,
+      "tag": "0009_run_request_fingerprint",
+      "breakpoints": true
     }
   ]
 }

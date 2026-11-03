@@ -22,7 +22,7 @@ import {
   runs,
   type RunRow,
 } from '../../db/schema.js'
-import { badRequest, notFound, rateLimited } from '../../lib/errors.js'
+import { badRequest, conflict, notFound, rateLimited } from '../../lib/errors.js'
 import { decryptSecret, parseMasterKey } from '../../lib/secretBox.js'
 import { allowsKeyless } from '../../lib/providerUrls.js'
 import { RepetitionWatch } from '../../vendor/openclaw/repetition-guard.js'
@@ -31,6 +31,7 @@ import { buildModelForRun } from './modelClient.js'
 import { finishRun, getRunHandle, publishRunEvent, registerRun } from './runRegistry.js'
 import { findEmployeeRow } from '../employees/employees.service.js'
 import { buildMemoryBlock, buildRecall } from '../memory/memory.service.js'
+import { computeRunRequestFingerprint, runRequestFingerprintOf } from './requestFingerprint.js'
 
 export type RunsDatabase = NodePgDatabase<typeof schema>
 
@@ -214,6 +215,44 @@ async function findRunByIdempotencyKey(
   return rows[0] ?? null
 }
 
+/**
+ * The effective model of an incoming request (original N016): the
+ * explicit override, or the provider's current default. Empty string
+ * when unresolvable (provider missing, no default) — the fingerprint
+ * then never matches a real run's binding, which is the honest outcome:
+ * the request can no longer express what the stored run executed.
+ */
+async function resolveEffectiveModelId(
+  db: RunsDatabase,
+  workspaceId: string,
+  request: CreateRunRequest,
+): Promise<string> {
+  if (request.modelId) return request.modelId
+  const rows = await db
+    .select({ modelId: providerConnections.modelId })
+    .from(providerConnections)
+    .where(
+      and(eq(providerConnections.id, request.providerId), eq(providerConnections.workspaceId, workspaceId)),
+    )
+    .limit(1)
+  return rows[0]?.modelId ?? ''
+}
+
+/** The request-side fingerprint of an incoming idempotent create. */
+async function incomingRequestFingerprint(
+  db: RunsDatabase,
+  workspaceId: string,
+  conversationId: string,
+  request: CreateRunRequest,
+): Promise<string> {
+  return computeRunRequestFingerprint({
+    conversationId,
+    parentNodeId: request.parentNodeId,
+    providerId: request.providerId,
+    modelId: await resolveEffectiveModelId(db, workspaceId, request),
+  })
+}
+
 async function countActiveRuns(db: RunsDatabase, workspaceId: string): Promise<number> {
   const rows = await db
     .select({ count: sql<number>`count(*)` })
@@ -266,10 +305,20 @@ export async function createRun(
   conversationId: string,
   request: CreateRunRequest,
 ): Promise<CreateRunResponse | null> {
-  // Idempotent replay: the same client key returns the same run.
+  // Idempotent replay (original N016): the same key replays the same
+  // run ONLY when the canonical effective request matches — conversation,
+  // answered node, provider, and effective model. A different request
+  // reusing the key is a 409 conflict, never a silent replay of an
+  // unrelated stored run.
   if (request.idempotencyKey) {
     const existing = await findRunByIdempotencyKey(db, workspaceId, request.idempotencyKey)
     if (existing) {
+      const incoming = await incomingRequestFingerprint(db, workspaceId, conversationId, request)
+      if (incoming !== runRequestFingerprintOf(existing)) {
+        throw conflict(
+          'This idempotency key was already used with a different request (conversation, message, provider, or model). Send a new key.',
+        )
+      }
       return {
         run: serializeRun(existing),
         events: await listRunEventsAfter(db, existing.id, 0),
@@ -288,6 +337,17 @@ export async function createRun(
   }
 
   const id = randomUUID()
+  // Snapshot of what the idempotency key is bound to (original N016):
+  // computed from the RESOLVED inputs so the stored fingerprint always
+  // describes the row actually written.
+  const requestFingerprint = request.idempotencyKey
+    ? computeRunRequestFingerprint({
+        conversationId,
+        parentNodeId: inputs.parentNodeId,
+        providerId: inputs.provider.id,
+        modelId: inputs.provider.modelId,
+      })
+    : null
   const inserted = await db
     .insert(runs)
     .values({
@@ -302,6 +362,7 @@ export async function createRun(
       status: 'running',
       outputText: '',
       idempotencyKey: request.idempotencyKey ?? null,
+      requestFingerprint,
     })
     .returning()
   let row = inserted[0]
