@@ -117,6 +117,52 @@ function describeHttpError(status: number, bodyText: string): string {
  */
 const MAX_PARSED_MODEL_IDS = 2000
 
+/**
+ * Hard bounds on provider response BODIES (N009): content-length is
+ * checked before a single byte is read and the stream is cancelled the
+ * moment it passes the cap — a hostile or looping endpoint can never
+ * exhaust browser memory through an oversized catalog. A body over its
+ * cap fails honestly with nothing adopted.
+ */
+const MAX_CATALOG_BODY_BYTES = 2 * 1024 * 1024
+const MAX_ERROR_BODY_BYTES = 64 * 1024
+
+async function readBodyBounded(response: Response, capBytes: number): Promise<{ ok: boolean; text: string }> {
+  const declared = Number(response.headers.get('content-length') ?? '')
+  if (Number.isFinite(declared) && declared > capBytes) {
+    // Refused before reading a single byte; cancel the stream so the
+    // connection is released instead of lingering.
+    await response.body?.cancel().catch(() => {})
+    return { ok: false, text: '' }
+  }
+  if (response.body) {
+    const reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let received = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (!value) continue
+      received += value.byteLength
+      if (received > capBytes) {
+        await reader.cancel().catch(() => {})
+        return { ok: false, text: '' }
+      }
+      chunks.push(value)
+    }
+    const total = new Uint8Array(received)
+    let offset = 0
+    for (const chunk of chunks) {
+      total.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    return { ok: true, text: new TextDecoder().decode(total) }
+  }
+  const text = await response.text()
+  if (text.length > capBytes) return { ok: false, text: '' }
+  return { ok: true, text }
+}
+
 function parseModelIds(bodyText: string): string[] {
   try {
     const parsed: unknown = JSON.parse(bodyText)
@@ -261,11 +307,31 @@ export async function testProviderConnection(
       if (response.status === 401 || response.status === 403) {
         readiness.credential = 'fail'
       }
-      const bodyText = await response.text().catch(() => '')
-      return { ok: false, message: describeHttpError(response.status, bodyText), latencyMs, readiness }
+      // The error body is bounded too (N009): only a short snippet is
+      // ever shown, so an oversized error body contributes nothing.
+      const errorBody = await readBodyBounded(response, MAX_ERROR_BODY_BYTES)
+      return {
+        ok: false,
+        message: describeHttpError(response.status, errorBody.ok ? errorBody.text : ''),
+        latencyMs,
+        readiness,
+      }
     }
 
-    const bodyText = await response.text().catch(() => '')
+    // N009: the catalog body is hard-bounded — declared-oversize and
+    // streaming-past-cap responses fail honestly with nothing adopted.
+    const catalogBody = await readBodyBounded(response, MAX_CATALOG_BODY_BYTES)
+    if (!catalogBody.ok) {
+      readiness.catalog = 'fail'
+      return {
+        ok: false,
+        message:
+          'The model list response was too large (over 2 MB) — nothing was adopted from it. This can mean a misconfigured endpoint; nothing was saved.',
+        latencyMs,
+        readiness,
+      }
+    }
+    const bodyText = catalogBody.text
     const { catalog, ids } = bodyHasCatalog(bodyText)
     readiness.catalog = catalog ? 'ok' : 'fail'
 
