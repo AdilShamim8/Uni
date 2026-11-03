@@ -74,28 +74,45 @@ function rowToEvent(row: typeof runEvents.$inferSelect): RunEvent {
 }
 
 /* ------------------------------------------------------------------ */
-/* Event append (single writer per run: the executing process)         */
+/* Event append — sequence assignment is atomic per run (N016)         */
 /* ------------------------------------------------------------------ */
 
-async function appendEvent(
+/**
+ * Append one durable run event with an atomically assigned per-run
+ * sequence (N016). The sequence is still computed as max + 1, but the
+ * read and the insert now happen inside ONE transaction holding a
+ * per-run Postgres advisory lock: concurrent appenders for the same run
+ * serialize at the lock instead of racing the read-then-insert into a
+ * (runId, sequence) primary-key collision. The lock is
+ * transaction-scoped — released automatically at commit/rollback — and
+ * keyed by a hash of the run id, so different runs never block each
+ * other. Event publication still happens AFTER the row is durable.
+ */
+export async function appendEvent(
   db: RunsDatabase,
   runId: string,
   type: RunEventType,
   payload: RunEventPayload,
 ): Promise<RunEvent> {
-  const maxRows = await db
-    .select({ max: sql<number | null>`max(${runEvents.sequence})` })
-    .from(runEvents)
-    .where(eq(runEvents.runId, runId))
-  // Sequences start at 1 so the public cursor semantics stay simple:
-  // "events with sequence strictly greater than N", where N=0 replays
-  // everything.
-  const sequence = (maxRows[0]?.max ?? 0) + 1
-  const inserted = await db
-    .insert(runEvents)
-    .values({ runId, sequence, type, payload })
-    .returning()
-  const row = inserted[0]
+  const row = await db.transaction(async (tx) => {
+    // hashtextextended maps the run id into the 64-bit lock space;
+    // hash collisions between different runs are harmless (they only
+    // over-serialize).
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${runId}, 0))`)
+    const maxRows = await tx
+      .select({ max: sql<number | null>`max(${runEvents.sequence})` })
+      .from(runEvents)
+      .where(eq(runEvents.runId, runId))
+    // Sequences start at 1 so the public cursor semantics stay simple:
+    // "events with sequence strictly greater than N", where N=0 replays
+    // everything.
+    const sequence = (maxRows[0]?.max ?? 0) + 1
+    const inserted = await tx
+      .insert(runEvents)
+      .values({ runId, sequence, type, payload })
+      .returning()
+    return inserted[0]
+  })
   if (!row) throw new Error('Run event insert returned no row')
   const event = rowToEvent(row)
   publishRunEvent(runId, event)
