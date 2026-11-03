@@ -7,6 +7,7 @@ import {
   LogIn,
   LogOut,
   MessageSquare,
+  PenLine,
   Plus,
   RefreshCw,
   Send,
@@ -322,10 +323,16 @@ function ServerProvidersView() {
   const loadServerProviders = useServerSessionStore((state) => state.loadServerProviders)
   const addServerProvider = useServerSessionStore((state) => state.addServerProvider)
   const testServerProviderById = useServerSessionStore((state) => state.testServerProviderById)
+  const setServerProviderModel = useServerSessionStore((state) => state.setServerProviderModel)
   const deleteServerProvider = useServerSessionStore((state) => state.deleteServerProvider)
   const serverSelection = useServerSessionStore((state) => state.serverSelection)
   const [adding, setAdding] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState<ServerProvider | null>(null)
+  // Manual model setup (N010): the provider row whose manual-model form
+  // is open — for endpoints whose discovery found nothing usable.
+  const [manualTarget, setManualTarget] = useState<ServerProvider | null>(null)
+  const [manualDraft, setManualDraft] = useState('')
+  const [settingModel, setSettingModel] = useState(false)
   const [busy, setBusy] = useState(false)
   const [label, setLabel] = useState('')
   const [kind, setKind] = useState<'openai-compatible' | 'anthropic'>('openai-compatible')
@@ -359,6 +366,18 @@ function ServerProvidersView() {
       setLabel('')
       setModelId('')
       setApiKey('')
+    }
+  }
+
+  async function submitManualModel() {
+    const value = manualDraft.trim()
+    if (!manualTarget || !value || settingModel) return
+    setSettingModel(true)
+    const ok = await setServerProviderModel(manualTarget.id, value)
+    setSettingModel(false)
+    if (ok) {
+      setManualTarget(null)
+      setManualDraft('')
     }
   }
 
@@ -446,6 +465,59 @@ function ServerProvidersView() {
                     <span className="font-medium text-ink-soft">{activeModel}</span>
                     {provider.modelId ? '' : ' — first discovered model'}
                   </span>
+                )}
+                {/* Manual model setup (N010): endpoints whose discovery
+                    fails or lists nothing stay usable — the user sets the
+                    exact model id by hand, persisted on the provider row. */}
+                {!activeModel && manualTarget?.id !== provider.id && (
+                  <span className="pl-[21px]">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setManualTarget(provider)
+                        setManualDraft('')
+                      }}
+                    >
+                      <PenLine size={13} />
+                      Set model manually
+                    </Button>
+                  </span>
+                )}
+                {manualTarget?.id === provider.id && (
+                  <form
+                    className="ml-[21px] flex flex-wrap items-center gap-1.5"
+                    onSubmit={(event) => {
+                      event.preventDefault()
+                      void submitManualModel()
+                    }}
+                  >
+                    <input
+                      value={manualDraft}
+                      onChange={(event) => setManualDraft(event.target.value)}
+                      placeholder="model id, e.g. grok-4-fast"
+                      aria-label={`Model id for ${provider.label}`}
+                      autoFocus
+                      className="min-w-[12rem] flex-1 rounded-control border border-line bg-raised px-2.5 py-1.5 text-[12px] text-ink"
+                    />
+                    <Button type="submit" variant="secondary" size="sm" disabled={!manualDraft.trim() || settingModel}>
+                      {settingModel ? 'Setting…' : 'Set model'}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setManualTarget(null)
+                        setManualDraft('')
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <p className="w-full text-[11px] leading-relaxed text-ink-faint">
+                      For endpoints whose model discovery found nothing — the id is saved on the
+                      provider and used exactly as typed.
+                    </p>
+                  </form>
                 )}
                 {testResult && (
                   <div className="ml-[21px]">
@@ -723,8 +795,14 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
   const serverSelection = useServerSessionStore((state) => state.serverSelection)
   const serverSelectionNotice = useServerSessionStore((state) => state.serverSelectionNotice)
   const setServerSelection = useServerSessionStore((state) => state.setServerSelection)
+  const setServerProviderModel = useServerSessionStore((state) => state.setServerProviderModel)
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+  // Manual model entry in the destination picker (N010): typing an exact
+  // id for models the provider's catalog does not list.
+  const [manualModelOpen, setManualModelOpen] = useState(false)
+  const [manualModelDraft, setManualModelDraft] = useState('')
+  const [settingModel, setSettingModel] = useState(false)
 
   // A provider can be a destination when it holds a key or is genuinely
   // keyless (N002/N003). The selection references EXACT ids (N004).
@@ -768,6 +846,20 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
     setDraft('')
     await sendServerMessage(text)
     setSending(false)
+  }
+
+  // Manual model entry (N010): persist the exact id on the provider row;
+  // the store follows the selection because this IS the destination.
+  async function applyManualModel() {
+    const value = manualModelDraft.trim()
+    if (!selectedProvider || !value || settingModel) return
+    setSettingModel(true)
+    const ok = await setServerProviderModel(selectedProvider.id, value)
+    setSettingModel(false)
+    if (ok) {
+      setManualModelOpen(false)
+      setManualModelDraft('')
+    }
   }
 
   return (
@@ -855,10 +947,16 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
             <select
               aria-label="Server chat model"
               value={serverSelection?.modelId ?? ''}
-              disabled={runIsLive || selectedProvider.models.length === 0}
-              onChange={(event) =>
+              disabled={runIsLive || (selectedProvider.models.length === 0 && !manualModelOpen)}
+              onChange={(event) => {
+                // "Type a model id…" opens manual entry (N010); every
+                // real option still selects by exact id.
+                if (event.target.value === '__manual__') {
+                  setManualModelOpen(true)
+                  return
+                }
                 setServerSelection(selectedProvider.id, event.target.value)
-              }
+              }}
               className="max-w-[13rem] truncate rounded-control border border-line bg-raised px-2 py-1 text-[12px] text-ink disabled:opacity-60"
             >
               {serverSelection && !selectedModelKnown && (
@@ -866,14 +964,57 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
                   {serverSelection.modelId} — no longer offered
                 </option>
               )}
-              {selectedProvider.models.length === 0 && <option value="">No models — run Test above</option>}
+              {/* A manually-set model (N010) stays selectable even when
+                  the discovered catalog does not list it. */}
+              {selectedProvider.modelId &&
+                !selectedProvider.models.includes(selectedProvider.modelId) &&
+                selectedModelKnown && (
+                  <option value={selectedProvider.modelId}>
+                    {selectedProvider.modelId} — set manually
+                  </option>
+                )}
+              {selectedProvider.models.length === 0 && !manualModelOpen && (
+                <option value="">No models — Test above or type an id</option>
+              )}
               {selectedProvider.models.map((model) => (
                 <option key={model} value={model}>
                   {model}
                 </option>
               ))}
+              <option value="__manual__">Type a model id…</option>
             </select>
           </label>
+        )}
+        {manualModelOpen && selectedProvider && (
+          <form
+            className="flex flex-wrap items-center gap-1.5"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void applyManualModel()
+            }}
+          >
+            <input
+              value={manualModelDraft}
+              onChange={(event) => setManualModelDraft(event.target.value)}
+              placeholder="model id, e.g. grok-4-fast"
+              aria-label="Model id for server chat"
+              autoFocus
+              className="min-w-[11rem] rounded-control border border-line bg-raised px-2 py-1 text-[12px] text-ink"
+            />
+            <Button type="submit" variant="secondary" size="sm" disabled={!manualModelDraft.trim() || settingModel}>
+              {settingModel ? 'Setting…' : 'Set model'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setManualModelOpen(false)
+                setManualModelDraft('')
+              }}
+            >
+              Cancel
+            </Button>
+          </form>
         )}
       </div>
       {(selectionUnavailable || serverSelectionNotice) && (
