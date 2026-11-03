@@ -31,6 +31,7 @@ repairs (U001–U010) and U011 are **not** new commits — they are history.
 | N005 deletion and selection repair | implemented-verified | N004 | same as N004 + delete API/service action + confirm dialog | Deleting the chosen provider clears the selection with an explicit notice; zero run calls after deletion (regression test caught and removed a real auto-fallback bug in the first draft) | `f7ad18c99` | pushed, verified remotely | — |
 | N006 config revision identity | implemented-verified | N001 | backend/src/db/schema.ts, backend/drizzle/0008_*, backend/src/modules/providers/{providers.service,providers.routes}.ts | config_revision bumped on endpoint/auth/credential change; conditional apply discards late results; endpoint edit resets verification + withdraws catalog while label-only edits do not; slow-endpoint race regression | `0f42d56d2` | pushed, verified remotely | — |
 | N008 probe request cancellation | implemented-verified | N006 (revision guard complements it) | backend/src/modules/providers/{providers.service,providers.routes}.ts, frontend/src/features/settings/ProvidersSection.tsx | Real-socket regression: client abort mid-probe destroys the outbound connection (fake provider records it), the row stays untested, cancelled checks write nothing; BYOK Cancel button + abort-on-unmount; OpenRouter /key honors the signal | `87b313dfd` | pushed, verified remotely | — |
+| N073 CI coverage through the task branch's draft PR | implemented-verified | — (no code change; process evidence) | none (draft PR #46 opened against main; existing workflows) | Draft PR #46 triggers all three required jobs for the pushed SHA `b486defec`: Contracts **success**, Backend (typecheck + integration tests) **success**, Frontend (typecheck + tests) **success**, plus Frontend-CI verify **success** — inspected via the check-runs API after completion | — (PR #46, checks on `b486defec`) | branch pushed; PR open (draft, not merged per the working agreement) | Ongoing: each future push to the branch re-runs these jobs; Gate A evidence checkpoint (N075) remains future work |
 
 ## Verified-existing / skipped
 
@@ -50,12 +51,16 @@ repairs (U001–U010) and U011 are **not** new commits — they are history.
 - N009 bounded catalog/probe bodies, N010 manual model setup,
   N011 searchable bounded catalog, N012 error normalization,
   N013 capability-aware choices, N014 preset refresh, N015 integrated
-  provider journey — rest of Phase 1.
+  provider journey — rest of Phase 1 (N073's CI coverage already
+  delivered early through draft PR #46).
 - Then Phase 2 (N016+ atomicity), Phase 3 (contracts/modes),
   Phase 4 (normal server Chat).
 
 ## Session commit count
 
-- Meaningful new commits this session: **5** (F001, N001–N003, N004–N005,
-  N006, N008) — all pushed individually and verified by `git ls-remote`
-  SHA comparison against local HEAD after each push.
+- Meaningful new commits this session: **5 implementation commits**
+  (F001, N001–N003, N004–N005, N006, N008) plus 1 checkpoint docs
+  commit — all pushed individually and verified by `git ls-remote`
+  SHA comparison against local HEAD after each push. Implemented IDs
+  counting toward the 300: **12** (F001, N001, N002, N003, N004, N005,
+  N006, N008, N073).
