@@ -29,8 +29,13 @@ function keylessFakeProvider(): {
   server: Server
   requests: RecordedRequest[]
   url: string
+  setDelayMs: (ms: number) => void
 } {
   const requests: RecordedRequest[] = []
+  let delayMs = 0
+  const setDelayMs = (ms: number) => {
+    delayMs = ms
+  }
   const server = createServer((request, response) => {
     requests.push({
       url: request.url ?? '/',
@@ -49,6 +54,15 @@ function keylessFakeProvider(): {
       if (hasCredentialHeader) {
         response.writeHead(401, { 'content-type': 'application/json' })
         response.end(JSON.stringify({ error: 'this runtime needs no key — do not send one' }))
+        return
+      }
+      if (delayMs > 0) {
+        // Deferred answer — lets a test edit the provider while the
+        // check is still in flight (the N006 late-response race).
+        setTimeout(() => {
+          response.writeHead(200, { 'content-type': 'application/json' })
+          response.end(JSON.stringify({ data: [{ id: 'llama-local' }, { id: 'qwen-local' }] }))
+        }, delayMs)
         return
       }
       response.writeHead(200, { 'content-type': 'application/json' })
@@ -90,7 +104,7 @@ function keylessFakeProvider(): {
     response.writeHead(404, { 'content-type': 'application/json' })
     response.end(JSON.stringify({ error: 'not found' }))
   })
-  return { server, requests, url: '' }
+  return { server, requests, url: '', setDelayMs }
 }
 
 /** Anthropic-protocol gateway that authenticates with Authorization: Bearer. */
@@ -135,6 +149,7 @@ describe('providers — explicit auth modes and keyless operation (N001–N003)'
   let alice: { cookie: string }
   let keyless: ReturnType<typeof keylessFakeProvider>
   let gateway: ReturnType<typeof bearerAnthropicGateway>
+  let otherEndpoint: ReturnType<typeof keylessFakeProvider>
 
   beforeAll(async () => {
     testApp = await startTestApp()
@@ -143,11 +158,15 @@ describe('providers — explicit auth modes and keyless operation (N001–N003)'
     keyless.url = await listen(keyless.server)
     gateway = bearerAnthropicGateway()
     gateway.url = await listen(gateway.server)
+    otherEndpoint = keylessFakeProvider()
+    otherEndpoint.url = await listen(otherEndpoint.server)
   }, 180_000)
 
   afterAll(async () => {
     if (keyless) await new Promise<void>((resolve) => keyless.server.close(() => resolve()))
     if (gateway) await new Promise<void>((resolve) => gateway.server.close(() => resolve()))
+    if (otherEndpoint)
+      await new Promise<void>((resolve) => otherEndpoint.server.close(() => resolve()))
     await testApp?.stop()
   })
 
@@ -395,6 +414,96 @@ describe('providers — explicit auth modes and keyless operation (N001–N003)'
     const assistant = parsed.nodes.find((n) => n.role === 'assistant')
     expect(assistant?.status).toBe('complete')
     expect(assistant?.content).toContain('Keyless local reply')
+  })
+
+  it('endpoint changes reset verification and withdraw the stale catalog (N006)', async () => {
+    // Connected + discovered catalog against the first endpoint.
+    const created = await createProvider({
+      label: 'Reset on edit',
+      kind: 'openai-compatible',
+      endpointUrl: keyless.url,
+    })
+    const provider = providerDtoSchema.parse(created.json())
+    const discovery = await testApp.app.inject({
+      method: 'POST',
+      url: `/api/v1/providers/${provider.id}/models`,
+      headers: { cookie: alice.cookie },
+    })
+    expect(providerTestResponseSchema.parse(discovery.json()).ok).toBe(true)
+
+    // Editing the endpoint invalidates all of it.
+    const patched = await testApp.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/providers/${provider.id}`,
+      headers: { cookie: alice.cookie },
+      payload: { endpointUrl: otherEndpoint.url },
+    })
+    expect(patched.statusCode).toBe(200)
+    const edited = providerDtoSchema.parse(patched.json())
+    expect(edited.endpointUrl).toBe(otherEndpoint.url)
+    expect(edited.credential.status).toBe('untested')
+    expect(edited.credential.lastCheckedAt).toBeNull()
+    expect(edited.models).toEqual([])
+
+    // A label-only edit must NOT reset verification.
+    const discovered2 = await testApp.app.inject({
+      method: 'POST',
+      url: `/api/v1/providers/${provider.id}/models`,
+      headers: { cookie: alice.cookie },
+    })
+    expect(providerTestResponseSchema.parse(discovered2.json()).ok).toBe(true)
+    const relabeled = await testApp.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/providers/${provider.id}`,
+      headers: { cookie: alice.cookie },
+      payload: { label: 'Renamed only' },
+    })
+    const after = providerDtoSchema.parse(relabeled.json())
+    expect(after.credential.status).toBe('connected')
+    expect(after.models).toEqual(['llama-local', 'qwen-local'])
+  })
+
+  it('a late check response cannot verify an edited profile (N006)', async () => {
+    // Slow first endpoint: the probe is still in flight when the user
+    // edits the provider.
+    keyless.setDelayMs(400)
+    const created = await createProvider({
+      label: 'Race edit',
+      kind: 'openai-compatible',
+      endpointUrl: keyless.url,
+    })
+    const provider = providerDtoSchema.parse(created.json())
+
+    // Start the check (do not await yet).
+    const checkPromise = testApp.app.inject({
+      method: 'POST',
+      url: `/api/v1/providers/${provider.id}/test`,
+      headers: { cookie: alice.cookie },
+    })
+
+    // Edit the endpoint while the probe is in flight.
+    await new Promise((resolve) => setTimeout(resolve, 80))
+    const patched = await testApp.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/providers/${provider.id}`,
+      headers: { cookie: alice.cookie },
+      payload: { endpointUrl: otherEndpoint.url },
+    })
+    expect(patched.statusCode).toBe(200)
+    keyless.setDelayMs(0)
+
+    // The late probe result is discarded — honest superseded answer,
+    // the row stays untested with no stale catalog.
+    const finished = await checkPromise
+    expect(finished.statusCode).toBe(200)
+    const result = providerTestResponseSchema.parse(finished.json())
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('discarded')
+    expect(result.discoveredModels).toBeNull()
+    const body = finished.json() as { provider?: unknown }
+    const after = providerDtoSchema.parse(body.provider)
+    expect(after.credential.status).toBe('untested')
+    expect(after.models).toEqual([])
   })
 
   it('still refuses a keyed run when the provider has no credential', async () => {

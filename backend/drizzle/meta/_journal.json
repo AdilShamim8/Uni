@@ -57,6 +57,13 @@
       "when": 1793682513365,
       "tag": "0007_whole_living_lightning",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793684818164,
+      "tag": "0008_harsh_speedball",
+      "breakpoints": true
     }
   ]
 }

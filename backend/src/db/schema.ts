@@ -178,6 +178,14 @@ export const providerConnections = pgTable(
     kind: text('kind').notNull(),
     authMode: text('auth_mode').notNull().default('none'),
     endpointUrl: text('endpoint_url').notNull(),
+    /**
+     * Monotonic config revision (N006): bumped whenever a change
+     * invalidates in-flight checks — endpoint, auth mode, or credential
+     * changes. A probe captures the revision at start and its result
+     * applies only if the revision is unchanged, so a late response can
+     * never verify an edited profile.
+     */
+    configRevision: integer('config_revision').notNull().default(0),
     modelId: text('model_id'),
     models: jsonb('models').$type<string[]>(),
     credentialEnvelope: text('credential_envelope'),
