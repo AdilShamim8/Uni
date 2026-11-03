@@ -15,7 +15,7 @@ import {
 import type { Capability, ModelInfo, ProviderKind, ProviderProfile } from '@/domain/types'
 import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
-import { testProviderConnection } from '@/services/connection/providerConnection'
+import { testProviderConnection, profileAllowsKeyless } from '@/services/connection/providerConnection'
 import { suggestedModelsFor } from './suggestedModels'
 import type { FreeRoute } from './freeModels'
 import { freeRouteFor } from './freeModels'
@@ -517,6 +517,9 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
   const [reveal, setReveal] = useState(false)
   const [testing, setTesting] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  // Keyless connect (N003): local runtimes (Ollama, LM Studio, vLLM) work
+  // with no key at all — Connect stays enabled with an empty field.
+  const keylessAllowed = profileAllowsKeyless(provider)
 
   async function connect(apiKey: string) {
     setTesting(true)
@@ -586,7 +589,9 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
             {connected ? 'Connected' : 'Connection failed'}
           </span>
           <span className="text-xs text-ink-faint">
-            {maskKey(credential.apiKey)} · checked {formatCheckedAt(credential.lastCheckedAt)}
+            {credential.apiKey
+              ? `${maskKey(credential.apiKey)} · checked ${formatCheckedAt(credential.lastCheckedAt)}`
+              : `Keyless — no key stored · checked ${formatCheckedAt(credential.lastCheckedAt)}`}
           </span>
           <span className="flex-1" />
           <Button
@@ -661,7 +666,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
               aria-describedby={`keynote-${provider.id}`}
               onChange={(event) => setKeyDraft(event.target.value)}
               onKeyDown={(event) => {
-                if (event.key === 'Enter' && keyDraft.trim() && !testing) {
+                if (event.key === 'Enter' && (keyDraft.trim() || keylessAllowed) && !testing) {
                   event.preventDefault()
                   void connect(keyDraft)
                 }
@@ -680,6 +685,8 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
           <p id={`keynote-${provider.id}`} className="mt-1 text-xs leading-relaxed text-ink-faint">
             Stored only in this browser and sent only to{' '}
             <span className="break-all">{provider.endpointUrl}</span> — never to anything else.
+            {keylessAllowed &&
+              ' Local runtimes (Ollama, LM Studio, vLLM) usually need no key — leave the field empty and connect.'}
             {provider.endpointUrl.includes('openrouter.ai') &&
               ' OpenRouter lists its free models (ids ending in ":free") first after connecting.'}
           </p>
@@ -688,7 +695,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
           variant="primary"
           size="sm"
           className="mt-6"
-          disabled={!keyDraft.trim() || testing}
+          disabled={(!keyDraft.trim() && !keylessAllowed) || testing}
           onClick={() => void connect(keyDraft)}
         >
           {testing ? <Spinner size={13} /> : <Zap size={13} />}

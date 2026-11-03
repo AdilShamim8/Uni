@@ -161,7 +161,11 @@ export const conversationNodes = pgTable(
 /**
  * Workspace-scoped provider connections. `credentialEnvelope` holds the
  * AES-256-GCM secret envelope (see lib/secretBox.ts) — it is never
- * returned by any API and never logged.
+ * returned by any API and never logged. `authMode` is the explicit
+ * credential transport (N001): 'none' (genuinely keyless, e.g. local
+ * OpenAI-compatible runtimes), 'bearer', or 'native' (protocol-native
+ * header). Pre-existing rows were backfilled by the migration: keyed
+ * rows kept their protocol's transport, keyless rows became 'none'.
  */
 export const providerConnections = pgTable(
   'provider_connection',
@@ -172,6 +176,7 @@ export const providerConnections = pgTable(
       .references(() => workspaces.id, { onDelete: 'cascade' }),
     label: text('label').notNull(),
     kind: text('kind').notNull(),
+    authMode: text('auth_mode').notNull().default('none'),
     endpointUrl: text('endpoint_url').notNull(),
     modelId: text('model_id'),
     models: jsonb('models').$type<string[]>(),

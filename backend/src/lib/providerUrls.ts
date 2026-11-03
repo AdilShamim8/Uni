@@ -8,8 +8,11 @@ export {
   normalizeProviderBase,
   providerDiscoveryUrl,
   providerAuthHeaders,
+  allowsKeyless,
+  defaultAuthModeFor,
   type ProviderProtocol,
   type ProviderDescriptor,
+  type ProviderAuthMode,
 } from '@uni/contracts'
 
 import { normalizeProviderBase } from '@uni/contracts'

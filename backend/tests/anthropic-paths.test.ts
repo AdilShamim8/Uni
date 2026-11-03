@@ -144,6 +144,7 @@ describe('anthropic generation — the SDK receives the versioned base', () => {
       {
         id: 'provider-anthropic',
         kind: 'anthropic',
+        authMode: 'native',
         endpointUrl: `http://sdk-host.test:${port}${pathPrefix}`,
         modelId: 'claude-test',
         apiKey: 'ant-test-key',

@@ -331,8 +331,14 @@ function ServerProvidersView() {
     void loadServerProviders()
   }, [loadServerProviders])
 
+  // Keyless connections (N003): local runtimes (Ollama, LM Studio, vLLM)
+  // speak OpenAI-compatible and usually need no key — the field stays
+  // optional for that protocol and the server persists authMode 'none'.
+  const keylessAllowed = kind === 'openai-compatible'
+
   async function submit() {
-    if (!label.trim() || !endpointUrl.trim() || !apiKey.trim()) return
+    if (!label.trim() || !endpointUrl.trim()) return
+    if (!apiKey.trim() && !keylessAllowed) return
     setBusy(true)
     const ok = await addServerProvider({
       label: label.trim(),
@@ -362,7 +368,7 @@ function ServerProvidersView() {
             ? 'Loading…'
             : providers.length === 0
               ? 'None yet — add one to use server chat.'
-              : 'Server chat uses the first provider with a saved key.'
+              : 'Server chat uses the first provider with a saved key or a keyless local runtime.'
         }
       >
         <div className="flex items-center gap-2">
@@ -398,12 +404,16 @@ function ServerProvidersView() {
                   </span>
                   <span
                     className={`shrink-0 rounded-full px-2 py-0.5 text-[10.5px] font-semibold ${
-                      provider.credential.present
+                      provider.credential.present || provider.authMode === 'none'
                         ? 'bg-accent-soft text-accent'
                         : 'bg-subtle text-ink-faint'
                     }`}
                   >
-                    {provider.credential.present ? 'Key saved' : 'No key'}
+                    {provider.credential.present
+                      ? 'Key saved'
+                      : provider.authMode === 'none'
+                        ? 'Keyless'
+                        : 'No key'}
                   </span>
                   <Button
                     variant="ghost"
@@ -502,14 +512,18 @@ function ServerProvidersView() {
             />
           </label>
           <label className="flex flex-col gap-1 text-[13px] text-ink-soft">
-            API key
+            API key {keylessAllowed && <span className="text-ink-faint">(optional — local runtimes need none)</span>}
             <input
               type="password"
               value={apiKey}
               onChange={(event) => setApiKey(event.target.value)}
-              required
+              required={!keylessAllowed}
               autoComplete="off"
-              placeholder="Sent once, encrypted on the server"
+              placeholder={
+                keylessAllowed
+                  ? 'Sent once, encrypted on the server — leave empty for a local runtime'
+                  : 'Sent once, encrypted on the server'
+              }
               className="rounded-control border border-line bg-raised px-3 py-2 text-sm text-ink"
             />
           </label>
@@ -520,7 +534,7 @@ function ServerProvidersView() {
           )}
           <Button type="submit" variant="primary" size="sm" disabled={busy}>
             <KeyRound size={14} />
-            {busy ? 'Saving…' : 'Save provider + key'}
+            {busy ? 'Saving…' : apiKey.trim() || !keylessAllowed ? 'Save provider + key' : 'Save keyless provider'}
           </Button>
         </form>
       )}
