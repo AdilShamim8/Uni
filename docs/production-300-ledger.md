@@ -40,7 +40,8 @@ repairs (U001–U010) and U011 are **not** new commits — they are history.
 | N013 capability-aware model choices | implemented-verified | — | frontend/src/{domain/types.ts,features/chat/TopBar.tsx,features/settings/ProvidersSection.tsx}, frontend/tests/modelPicker.test.tsx | Every model item lists what it advertises; capability filter row narrows the choice (only advertised capabilities offered → empty result impossible by construction); provider groups with nothing matching collapse; active chip toggles off; CAPABILITY_ORDER canonical in the domain (picker + editor chips can't drift); 4 tests over the seeded demo profiles | `28d12d8aa` | pushed, verified remotely | — |
 | N014 preset refresh (live-probed) | implemented-verified | — | frontend/src/features/settings/{providerPresets.ts,ProvidersSection.tsx,freeModels.ts,FreeSetupGuide.tsx}, frontend/tests/{providerPresets.test.ts,settings.test.tsx,freeGuide.test.tsx,freeModels.test.ts} | Every endpoint probed LIVE this session (401/403/200/route-shaped = exists; failures excluded — api.liquid.ai/api/v1 dead → inference.liquid.ai/v1, Lambda/Requesty unreachable); 17 verified additions grow the catalog 21→38; Pollinations = first curated keyless HOSTED route (verified unauthenticated live completion) with a third FreeRoute variant; presets exported to providerPresets.ts with probe evidence; form copy derives its count; data-integrity tests pin the catalog shape | `469b13bbd` | pushed, verified remotely | Probe evidence is point-in-time (2026-11-03); re-probe before future catalog edits |
 | N015 integrated provider journey | implemented-verified | N010, N011, existing empty-state CTA | frontend/src/{state/store.ts,features/settings/ProvidersSection.tsx,features/chat/ChatPage.tsx}, frontend/tests/{providerJourney.test.tsx,settings.test.tsx} | Connected provider card with models offers "Chat with {model}": one tap activates the exact first model, closes the dialog, and hands focus to the composer via ui.composerFocusAt (ChatPage owns the composer ref); journey test walks the WHOLE flow as one continuous session over real code paths, ending with a reply streamed through the REAL live adapter against an SSE completion; 2 tests | `efec167c1` | pushed, verified remotely | — |
-| N016 atomic event sequence assignment | implemented-verified | F002 (generalizes its serialization) | backend/src/modules/runs/runs.service.ts, backend/tests/runEvents-atomic.test.ts | appendEvent read+insert now inside ONE transaction holding pg_advisory_xact_lock(hash(runId)): concurrent same-run appenders serialize at the lock, never the PK; different runs never block each other; publication still post-durability. 3-test suite attacks the boundary directly (16 concurrent appends → distinct CONTIGUOUS sequences; two runs concurrently → both progress; raw appends never touch the run row). VERIFIED DISCRIMINATING: fails against the pre-fix implementation (unique-violation rejections, gaps), passes with the lock | `c7a81d621` | pushed, verified remotely | Phase 2 opener; further atomicity items (N017+) remain |
+| F003 (found follow-up) atomic event sequence assignment | implemented-verified | F002 (generalizes its serialization) | backend/src/modules/runs/runs.service.ts, backend/tests/runEvents-atomic.test.ts | appendEvent read+insert now inside ONE transaction holding pg_advisory_xact_lock(hash(runId)): concurrent same-run appenders serialize at the lock, never the PK; different runs never block each other; publication still post-durability. 3-test suite attacks the boundary directly (16 concurrent appends → distinct CONTIGUOUS sequences; two runs concurrently → both progress; raw appends never touch the run row). VERIFIED DISCRIMINATING: fails against the pre-fix implementation (unique-violation rejections, gaps), passes with the lock. RELABELED 2026-11-04: this commit shipped as "[N016]" but the original N016 is request fingerprinting — the advisory-lock work is a follow-up to F002 and now carries ID F003 | `c7a81d621` | pushed, verified remotely | — |
+| N016 run request fingerprint | reopened-pending | — | — | NOT delivered by `c7a81d621` (see F003 above). Original acceptance: bind idempotency keys to canonical effective input, selected model and context revision; same key/different input must conflict instead of silently returning the unrelated stored run (current `findRunByIdempotencyKey` returns any stored run for the key without comparing conversation/parent/provider/model). Scheduled as the first implementation slice of the 2026-11-04 effort on `task/uni-next-release-300` | — | — | First implementation item of the update effort |
 | N073 CI coverage through the task branch's draft PR | implemented-verified | — (no code change; process evidence) | none (draft PR #46 opened against main; existing workflows) | Draft PR #46 triggers all three required jobs for the pushed SHA `b486defec`: Contracts **success**, Backend (typecheck + integration tests) **success**, Frontend (typecheck + tests) **success**, plus Frontend-CI verify **success** — inspected via the check-runs API after completion | — (PR #46, checks on `b486defec`) | branch pushed; PR open (draft, not merged per the working agreement) | Ongoing: each future push to the branch re-runs these jobs; Gate A evidence checkpoint (N075) remains future work |
 
 ## Verified-existing / skipped
@@ -56,8 +57,9 @@ repairs (U001–U010) and U011 are **not** new commits — they are history.
 
 ## Not started (next sessions, dependency order)
 
-- Phase 2 remainder (N017+): further atomicity beyond the event-sequence
-  guarantee delivered in N016.
+- Phase 2 remainder: original N016 request fingerprinting (reopened; see
+  its row) and N017+ atomicity — the event-sequence guarantee delivered by
+  F003 is a prerequisite slice, not the phase's completion.
 - Phase 3 (contracts/modes), Phase 4 (normal server Chat).
 - Deferred polish: server-side persisted selection (workspace settings
   API) once a settings surface exists; N075 Gate A evidence checkpoint.
@@ -69,8 +71,17 @@ repairs (U001–U010) and U011 are **not** new commits — they are history.
 - Session 1.5 (same day, after the checkpoint): N007 and N009 pushed on
   the task branch, merged to main via PR #47.
 - Production-300 session 2 (this checkpoint): **8 implementation
-  commits** (F002, N010, N011, N012, N013, N014, N015, N016) plus this
-  docs commit — every one pushed individually to main and verified by
-  `git ls-remote` SHA comparison against local HEAD after each push.
-- Implemented IDs counting toward the 300: **24** (F001, F002, N001–N006,
-  N007, N008, N009, N010, N011, N012, N013, N014, N015, N016, N073).
+  commits** (F002, N010, N011, N012, N013, N014, N015 + the commit then
+  labelled N016, now F003) plus this docs commit — every one pushed
+  individually to main and verified by `git ls-remote` SHA comparison
+  against local HEAD after each push.
+- Corrected count (2026-11-04; the previous "24 IDs" claim was arithmetically
+  wrong — its own list names 19): **18 code-backed implemented IDs**
+  (F001, F002, F003, N001–N015) plus **N073 as process evidence only**
+  (no implementation SHA). Git between START_SHA and UPDATE_START_SHA:
+  18 non-merge commits (15 implementation + 3 docs) + 2 merges (PRs #46/#47).
+- 2026-11-04 update effort: reopened at UPDATE_START_SHA
+  `526b8cf0e089061ed274e1744ac4c3a8ee4006c5` on branch
+  `task/uni-next-release-300` targeting 300 additional commits. New-work
+  count of record: `docs/update-2026-11-04-commit-manifest.md`. First
+  implementation items: original N016 (request fingerprinting), then N017.
