@@ -43,9 +43,36 @@ export interface FreeRoute {
   models: SuggestedModel[]
   /** True when the route runs on the user's own machine (no key, no cloud). */
   local: boolean
+  /**
+   * True for hosted routes that need NO key at all (N014): unlike
+   * `local`, the models run in the cloud — but connecting is still a
+   * matter of pressing Connect with an empty key field.
+   */
+  keyless?: boolean
 }
 
 export const FREE_ROUTES: readonly FreeRoute[] = [
+  {
+    id: 'pollinations',
+    label: 'Pollinations (no key)',
+    kind: 'openai-compatible',
+    endpointUrl: 'https://text.pollinations.ai/openai',
+    headline: 'Hosted open models with no key and no signup — press Connect',
+    limits:
+      'Free and anonymous, with rate limits per IP and a rotating model catalog; heavy use asks for a token.',
+    signupUrl: '',
+    steps: [
+      'Nothing to sign up for — this hosted endpoint works without any key.',
+      'Leave the API key field empty and press Connect (discovery is optional here).',
+      'Chat live — no account, no key, no cost.',
+    ],
+    models: [
+      { id: 'openai', label: 'OpenAI (alias)', note: 'no key' },
+      { id: 'mistral', label: 'Mistral (alias)', note: 'no key' },
+    ],
+    local: false,
+    keyless: true,
+  },
   {
     id: 'groq',
     label: 'Groq',

@@ -1,4 +1,4 @@
-import { ExternalLink, HardDrive, KeyRound } from 'lucide-react'
+import { ExternalLink, HardDrive, KeyRound, Zap } from 'lucide-react'
 import type { FreeRoute } from './freeModels'
 
 /**
@@ -9,7 +9,9 @@ import type { FreeRoute } from './freeModels'
  * "open this page" to "press Connect", a direct link to the provider's
  * own console (never an affiliate link), and the honest limits note.
  * Local routes get their own variant — no key to fetch at all, just a
- * placeholder word for the Connect button.
+ * placeholder word for the Connect button. Keyless HOSTED routes
+ * (N014) get a third: no key and no local install either — Connect
+ * with an empty field just works.
  */
 
 function signupHost(url: string): string {
@@ -27,12 +29,18 @@ export function FreeSetupGuide({ route }: { route: FreeRoute }) {
       <div className="flex items-start gap-2.5">
         {route.local ? (
           <HardDrive size={15} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
+        ) : route.keyless ? (
+          <Zap size={15} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
         ) : (
           <KeyRound size={15} className="mt-0.5 shrink-0 text-success" aria-hidden="true" />
         )}
         <div className="min-w-0">
           <p className="text-sm font-medium text-ink">
-            {route.local ? 'No key to get — it runs on your machine' : `Free key from ${host}`}
+            {route.local
+              ? 'No key to get — it runs on your machine'
+              : route.keyless
+                ? 'No key to get — it works right away'
+                : `Free key from ${host}`}
           </p>
           <ol className="mt-1.5 flex flex-col gap-1.5">
             {route.steps.map((step, index) => (
@@ -47,7 +55,7 @@ export function FreeSetupGuide({ route }: { route: FreeRoute }) {
               </li>
             ))}
           </ol>
-          {!route.local && (
+          {!route.local && !route.keyless && route.signupUrl && (
             <a
               href={route.signupUrl}
               target="_blank"

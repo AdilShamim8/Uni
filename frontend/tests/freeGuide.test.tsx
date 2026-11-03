@@ -50,6 +50,27 @@ describe('free setup guide', () => {
     expect(dialog.queryByRole('link', { name: /Open /i })).not.toBeInTheDocument()
   })
 
+  it('the keyless hosted route needs no key, no signup, and no local install (N014)', async () => {
+    const { user, dialog } = await openCreateForm()
+
+    await user.click(dialog.getByRole('button', { name: /^Pollinations \(no key\)/ }))
+
+    // The guide explains the third variant: hosted, but keyless.
+    expect(dialog.getByText('No key to get — it works right away')).toBeInTheDocument()
+    expect(
+      dialog.getByText(/works without any key/i),
+    ).toBeInTheDocument()
+    // No console link — there is nothing to sign up for.
+    expect(dialog.queryByRole('link', { name: /Open /i })).not.toBeInTheDocument()
+    // The honest limits note states the real catch.
+    expect(dialog.getByText(/rate limits per IP/i)).toBeInTheDocument()
+
+    // The form carries the preset's endpoint, ready to connect keyless.
+    expect(dialog.getByLabelText('Endpoint base URL')).toHaveValue(
+      'https://text.pollinations.ai/openai',
+    )
+  })
+
   it('disappears when the endpoint no longer matches a free route', async () => {
     const { user, dialog } = await openCreateForm()
 

@@ -18,6 +18,7 @@ import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
 import { testProviderConnection, profileAllowsKeyless, type ProviderErrorKind, type ProviderReadiness } from '@/services/connection/providerConnection'
 import { suggestedModelsFor } from './suggestedModels'
+import { PRESETS } from './providerPresets'
 import type { FreeRoute } from './freeModels'
 import { freeRouteFor } from './freeModels'
 import { FreeModelsHub } from './FreeModelsHub'
@@ -51,113 +52,8 @@ const KIND_ENDPOINTS: Record<ProviderKind, string> = {
   local: 'http://localhost:1234/v1',
 }
 
-/** One-tap templates for popular providers — label, kind, and endpoint.
- * Labels lead with the model family users actually know (GPT, Grok, Claude,
- * Gemini) so the list reads like a model picker, not a company directory.
- * xAI · Grok leads the list — it pairs with the featured Uni teammate.
- * `freeTier` marks providers a key from Uni's providers list can use at no
- * cost — Uni itself is free, and several providers have real free tiers. */
-interface ProviderPreset {
-  label: string
-  kind: ProviderKind
-  endpointUrl: string
-  freeTier?: boolean
-}
-
-const PRESETS: ProviderPreset[] = [
-  { label: 'xAI · Grok', kind: 'openai-compatible', endpointUrl: 'https://api.x.ai/v1' },
-  { label: 'OpenAI · GPT', kind: 'openai', endpointUrl: 'https://api.openai.com/v1' },
-  { label: 'Anthropic · Claude', kind: 'anthropic', endpointUrl: 'https://api.anthropic.com' },
-  {
-    label: 'Google AI Studio · Gemini',
-    kind: 'google',
-    endpointUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-    freeTier: true,
-  },
-  { label: 'DeepSeek', kind: 'openai-compatible', endpointUrl: 'https://api.deepseek.com/v1' },
-  {
-    label: 'Groq',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://api.groq.com/openai/v1',
-    freeTier: true,
-  },
-  {
-    label: 'OpenRouter',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://openrouter.ai/api/v1',
-    freeTier: true,
-  },
-  {
-    label: 'Together',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://api.together.xyz/v1',
-  },
-  {
-    label: 'Mistral',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://api.mistral.ai/v1',
-    freeTier: true,
-  },
-  { label: 'Ollama (local)', kind: 'local', endpointUrl: 'http://localhost:11434/v1', freeTier: true },
-  { label: 'LM Studio (local)', kind: 'local', endpointUrl: 'http://localhost:1234/v1', freeTier: true },
-  {
-    label: 'Cerebras',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://api.cerebras.ai/v1',
-    freeTier: true,
-  },
-  {
-    label: 'Fireworks',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://api.fireworks.ai/inference/v1',
-  },
-  {
-    label: 'Perplexity',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://api.perplexity.ai',
-  },
-  {
-    label: 'SambaNova',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://api.sambanova.ai/v1',
-    freeTier: true,
-  },
-  {
-    label: 'NVIDIA NIM',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://integrate.api.nvidia.com/v1',
-    freeTier: true,
-  },
-  {
-    label: 'Cohere',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://api.cohere.ai/compatibility/v1',
-  },
-  {
-    label: 'GitHub Models',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://models.github.ai/inference',
-    freeTier: true,
-  },
-  {
-    label: 'HuggingFace Router',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://router.huggingface.co/v1',
-    freeTier: true,
-  },
-  {
-    label: 'Alibaba DashScope · Qwen',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
-    freeTier: true,
-  },
-  {
-    label: 'Zhipu GLM',
-    kind: 'openai-compatible',
-    endpointUrl: 'https://open.bigmodel.cn/api/paas/v4',
-    freeTier: true,
-  },
-]
+/** One-tap templates now live in providerPresets.ts (N014 refresh):
+ *  every endpoint there was probed live this session. */
 
 function maskKey(apiKey: string): string {
   const trimmed = apiKey.trim()
@@ -365,11 +261,10 @@ function ProviderForm({
           ))}
         </select>
         <p className="mt-1 text-xs leading-relaxed text-ink-faint">
-          Any OpenAI-compatible endpoint works — the 21 presets plus custom
-          gateways (xAI Grok, DeepSeek, Groq, OpenRouter, Mistral, Cerebras,
-          GitHub Models, Ollama, LM Studio, and more). Anthropic uses its
-          native protocol. The type only decides headers and URL paths — the
-          key and endpoint stay yours.
+          Any OpenAI-compatible endpoint works — the {PRESETS.length} presets plus custom
+          gateways (xAI Grok, DeepSeek, Groq, OpenRouter, Mistral, Moonshot Kimi, DeepInfra,
+          Ollama, LM Studio, and more). Anthropic uses its native protocol. The type only
+          decides headers and URL paths — the key and endpoint stay yours.
         </p>
       </div>
       <TextField
