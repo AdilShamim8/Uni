@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Check,
   Eye,
@@ -520,11 +520,27 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
   // Keyless connect (N003): local runtimes (Ollama, LM Studio, vLLM) work
   // with no key at all — Connect stays enabled with an empty field.
   const keylessAllowed = profileAllowsKeyless(provider)
+  // The in-flight check is abortable (N008): leaving the block or
+  // pressing Cancel destroys the real outbound request — a late answer
+  // can never mark the provider Connected.
+  const checkAbort = useRef<AbortController | null>(null)
+  useEffect(() => {
+    return () => checkAbort.current?.abort()
+  }, [])
 
   async function connect(apiKey: string) {
+    checkAbort.current?.abort()
+    const controller = new AbortController()
+    checkAbort.current = controller
     setTesting(true)
     setMessage(null)
-    const result = await testProviderConnection(provider, apiKey)
+    const result = await testProviderConnection(provider, apiKey, controller.signal)
+    if (controller.signal.aborted) {
+      // Cancelled (N008): reset the busy state, keep the previous
+      // status untouched — the check proved nothing.
+      setTesting(false)
+      return
+    }
     setTesting(false)
 
     if (result.ok) {
@@ -703,7 +719,19 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
         </Button>
       </div>
       <p aria-live="polite" className="mt-1.5 text-xs font-medium">
-        {testing && <span className="text-ink-soft">Testing connection…</span>}
+        {testing && (
+          <span className="flex items-center gap-2">
+            <span className="text-ink-soft">Testing connection…</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 px-2 text-[11px]"
+              onClick={() => checkAbort.current?.abort()}
+            >
+              Cancel
+            </Button>
+          </span>
+        )}
         {message && (
           <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
         )}
