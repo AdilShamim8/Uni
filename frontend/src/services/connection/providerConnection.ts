@@ -25,6 +25,27 @@ export interface ConnectionTestResult {
   latencyMs?: number
   /** Model ids discovered from the endpoint, when the API provides them. */
   models?: string[]
+  /**
+   * Per-axis readiness breakdown (N007), mirroring the server model:
+   * reachability / catalog / credential / generation are INDEPENDENT —
+   * a reachable endpoint with a rejected key reports reachability ok
+   * + credential fail, never one blended state.
+   */
+  readiness?: ProviderReadiness
+}
+
+export type ReadinessAxis = 'unknown' | 'ok' | 'fail'
+
+export interface ProviderReadiness {
+  reachability: ReadinessAxis
+  catalog: ReadinessAxis
+  credential: ReadinessAxis | 'not-required'
+  generation: ReadinessAxis
+}
+
+/** All-unknown readiness — a cancelled check proved nothing (N007). */
+export function unknownReadiness(): ProviderReadiness {
+  return { reachability: 'unknown', catalog: 'unknown', credential: 'unknown', generation: 'unknown' }
 }
 
 /** True when the endpoint is OpenRouter (its /models list is public). */
@@ -183,6 +204,23 @@ async function verifyOpenRouterKey(
   }
 }
 
+/**
+ * Whether the catalog body carried a usable model list: a parseable
+ * `data` array is a catalog (even an empty one); a 200 without it is
+ * not (N007 — the catalog axis fails independently of reachability).
+ */
+function bodyHasCatalog(bodyText: string): { catalog: boolean; ids: string[] } {
+  try {
+    const parsed: unknown = JSON.parse(bodyText)
+    if (typeof parsed === 'object' && parsed !== null && Array.isArray((parsed as { data?: unknown }).data)) {
+      return { catalog: true, ids: parseModelIds(bodyText) }
+    }
+  } catch {
+    /* not JSON — no catalog */
+  }
+  return { catalog: false, ids: [] }
+}
+
 export async function testProviderConnection(
   profile: ProviderProfile,
   apiKey: string,
@@ -205,6 +243,7 @@ export async function testProviderConnection(
     return { ok: false, message: 'The endpoint must use http(s).' }
   }
 
+  const readiness = unknownReadiness()
   const started = performance.now()
   try {
     const response = await fetch(url, {
@@ -214,12 +253,21 @@ export async function testProviderConnection(
     })
     const latencyMs = Math.round(performance.now() - started)
 
+    // Any HTTP answer — including 401/403/404 — proves reachability (N007).
+    readiness.reachability = 'ok'
+
     if (!response.ok) {
+      readiness.catalog = 'fail'
+      if (response.status === 401 || response.status === 403) {
+        readiness.credential = 'fail'
+      }
       const bodyText = await response.text().catch(() => '')
-      return { ok: false, message: describeHttpError(response.status, bodyText), latencyMs }
+      return { ok: false, message: describeHttpError(response.status, bodyText), latencyMs, readiness }
     }
 
     const bodyText = await response.text().catch(() => '')
+    const { catalog, ids } = bodyHasCatalog(bodyText)
+    readiness.catalog = catalog ? 'ok' : 'fail'
 
     // OpenRouter's model list is public: a successful /models fetch proves
     // reachability, not the key. Only a verified /key response may claim
@@ -229,13 +277,19 @@ export async function testProviderConnection(
     if (isOpenRouter(profile) && !keyless) {
       const verified = await verifyOpenRouterKey(profile.endpointUrl, trimmedKey, signal)
       if (verified.state !== 'verified') {
-        return { ok: false, message: verified.message, latencyMs }
+        readiness.credential = verified.state === 'rejected' ? 'fail' : 'unknown'
+        return { ok: false, message: verified.message, latencyMs, readiness }
       }
+      readiness.credential = 'ok'
+    } else {
+      // A 2xx catalog answer speaks for the key on plain providers; a
+      // keyless connection has no key to verify at all (N007).
+      readiness.credential = keyless ? 'not-required' : 'ok'
     }
 
     const models = isOpenRouter(profile)
-      ? orderOpenRouterModels(parseModelIds(bodyText))
-      : parseModelIds(bodyText)
+      ? orderOpenRouterModels(ids)
+      : ids
           .slice()
           .sort((a, b) => a.localeCompare(b))
           .slice(0, 200)
@@ -250,15 +304,20 @@ export async function testProviderConnection(
           : `Connected in ${latencyMs}ms.`,
       latencyMs,
       models,
+      readiness,
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return { ok: false, message: 'Connection test cancelled.' }
+      return { ok: false, message: 'Connection test cancelled.', readiness: unknownReadiness() }
     }
+    // Network-level failure (offline, DNS, CORS): the endpoint was never
+    // reached; every other axis stays honestly unknown (N007).
+    readiness.reachability = 'fail'
     return {
       ok: false,
       message:
         'Could not reach the endpoint from this browser — check the URL, your network, and whether the provider allows direct browser (CORS) requests.',
+      readiness,
     }
   }
 }

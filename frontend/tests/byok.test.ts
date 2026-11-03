@@ -240,6 +240,121 @@ describe('provider connection testing', () => {
     vi.unstubAllGlobals()
   })
 
+  /* --- Separate readiness states (N007) --------------------------- */
+
+  it('reports the four independent readiness axes on a keyed success (N007)', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ data: [{ id: 'model-a' }] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const result = await testProviderConnection(profile, 'sk-key')
+    expect(result.ok).toBe(true)
+    expect(result.readiness).toEqual({
+      reachability: 'ok',
+      catalog: 'ok',
+      credential: 'ok',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('reports credential not-required for a keyless success (N007)', async () => {
+    const localProfile: ProviderProfile = {
+      ...profile,
+      kind: 'local',
+      endpointUrl: 'http://localhost:11434/v1',
+    }
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [{ id: 'llama3.2' }] }), { status: 200 })),
+    )
+    const result = await testProviderConnection(localProfile, '')
+    expect(result.ok).toBe(true)
+    expect(result.readiness).toEqual({
+      reachability: 'ok',
+      catalog: 'ok',
+      credential: 'not-required',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('separates a rejected key from reachability: reachable + credential fail (N007)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('nope', { status: 401 })))
+    const result = await testProviderConnection(profile, 'sk-bad')
+    expect(result.ok).toBe(false)
+    expect(result.readiness).toEqual({
+      reachability: 'ok',
+      catalog: 'fail',
+      credential: 'fail',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('keeps the credential unknown when discovery 404s (N007)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('not found', { status: 404 })))
+    const result = await testProviderConnection(profile, 'sk-key')
+    expect(result.ok).toBe(false)
+    expect(result.readiness).toEqual({
+      reachability: 'ok',
+      catalog: 'fail',
+      credential: 'unknown',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('fails only reachability on a browser-level network failure (N007)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
+    const result = await testProviderConnection(profile, 'sk-key')
+    expect(result.ok).toBe(false)
+    expect(result.readiness).toEqual({
+      reachability: 'fail',
+      catalog: 'unknown',
+      credential: 'unknown',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('reports a 200 without a catalog as catalog fail while the key holds (N007)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ status: 'healthy' }), { status: 200 })),
+    )
+    const result = await testProviderConnection(profile, 'sk-key')
+    expect(result.ok).toBe(true)
+    expect(result.readiness).toEqual({
+      reachability: 'ok',
+      catalog: 'fail',
+      credential: 'ok',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('reports all-unknown readiness when the check is cancelled (N007)', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockImplementation((_url: string, init?: RequestInit) => {
+        if (init?.signal?.aborted) return Promise.reject(new DOMException('Aborted', 'AbortError'))
+        return Promise.resolve(new Response('{}', { status: 200 }))
+      }),
+    )
+    const result = await testProviderConnection(profile, 'sk-key', controller.signal)
+    expect(result.ok).toBe(false)
+    expect(result.readiness).toEqual({
+      reachability: 'unknown',
+      catalog: 'unknown',
+      credential: 'unknown',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
   it('reports success with latency and sorted discovered models', async () => {
     const fetchMock = vi
       .fn()

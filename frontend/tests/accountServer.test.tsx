@@ -175,6 +175,7 @@ function createFetchMock() {
           message: 'No API key stored for this provider yet.',
           latencyMs: null,
           discoveredModels: null,
+          readiness: { reachability: 'unknown', catalog: 'unknown', credential: 'unknown', generation: 'unknown' },
         })
       }
       const discovered = provider.id === 'sp-1' ? ['grok-3-mini', 'grok-4'] : ['model-b-one', 'model-b-two']
@@ -185,6 +186,7 @@ function createFetchMock() {
         message: 'Connected — the key works.',
         latencyMs: 42,
         discoveredModels: discovered,
+        readiness: { reachability: 'ok', catalog: 'ok', credential: 'ok', generation: 'unknown' },
       })
     }
     if (path === '/api/v1/conversations' && method === 'POST') {
