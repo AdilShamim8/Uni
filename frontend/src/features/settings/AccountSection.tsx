@@ -12,11 +12,13 @@ import {
   Send,
   ShieldCheck,
   Square,
+  Trash2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerConversationDetail } from '@/state/serverSessionStore'
+import type { ServerProvider } from '@/services/api/serverProviders'
 import { readFileText } from '@/services/readFileText'
 import type { ImportCommitResponse, ImportPreviewResponse } from '@/services/api/serverContracts'
 
@@ -319,7 +321,10 @@ function ServerProvidersView() {
   const loadServerProviders = useServerSessionStore((state) => state.loadServerProviders)
   const addServerProvider = useServerSessionStore((state) => state.addServerProvider)
   const testServerProviderById = useServerSessionStore((state) => state.testServerProviderById)
+  const deleteServerProvider = useServerSessionStore((state) => state.deleteServerProvider)
+  const serverSelection = useServerSessionStore((state) => state.serverSelection)
   const [adding, setAdding] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState<ServerProvider | null>(null)
   const [busy, setBusy] = useState(false)
   const [label, setLabel] = useState('')
   const [kind, setKind] = useState<'openai-compatible' | 'anthropic'>('openai-compatible')
@@ -422,6 +427,16 @@ function ServerProvidersView() {
                     onClick={() => void testServerProviderById(provider.id)}
                   >
                     Test
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    aria-label={`Delete provider ${provider.label}`}
+                    onClick={() => setConfirmDelete(provider)}
+                  >
+                    <Trash2 size={13} />
+                    Delete
                   </Button>
                 </span>
                 {activeModel && (
@@ -544,6 +559,40 @@ function ServerProvidersView() {
           {providerError}
         </p>
       )}
+
+      {confirmDelete && (
+        <div role="dialog" aria-modal="true" aria-label="Delete server provider" className="rounded-group border border-line bg-panel p-3">
+          <p className="text-[13px] text-ink">
+            Delete <span className="font-medium">{confirmDelete.label}</span> and its encrypted key
+            from the server?
+          </p>
+          <p className="mt-1 text-[12px] text-ink-faint">
+            {serverSelection?.providerId === confirmDelete.id
+              ? 'It is the selected destination for server chat — you will need to pick another provider before sending again. '
+              : ''}
+            Existing conversations are kept. This cannot be undone.
+          </p>
+          <div className="mt-2 flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={busy}
+              onClick={() => {
+                const target = confirmDelete
+                setConfirmDelete(null)
+                setBusy(true)
+                void deleteServerProvider(target.id).then(() => setBusy(false))
+              }}
+            >
+              <Trash2 size={13} />
+              Delete provider
+            </Button>
+          </div>
+        </div>
+      )}
     </SettingsGroup>
   )
 }
@@ -652,15 +701,39 @@ function ServerConversationsView() {
   )
 }
 
-/** The server conversation: transcript + composer + live run bubble. */
+/** The server conversation: transcript + destination picker + composer. */
 function ServerThread({ detail }: { detail: ServerConversationDetail }) {
   const sendServerMessage = useServerSessionStore((state) => state.sendServerMessage)
   const stopActiveServerRun = useServerSessionStore((state) => state.stopActiveServerRun)
   const activeRun = useServerSessionStore((state) => state.activeRun)
   const runError = useServerSessionStore((state) => state.runError)
   const serverProviders = useServerSessionStore((state) => state.serverProviders)
+  const serverSelection = useServerSessionStore((state) => state.serverSelection)
+  const serverSelectionNotice = useServerSessionStore((state) => state.serverSelectionNotice)
+  const setServerSelection = useServerSessionStore((state) => state.setServerSelection)
   const [draft, setDraft] = useState('')
   const [sending, setSending] = useState(false)
+
+  // A provider can be a destination when it holds a key or is genuinely
+  // keyless (N002/N003). The selection references EXACT ids (N004).
+  const usableProviders = serverProviders.filter(
+    (provider) => provider.credential.present || provider.authMode === 'none',
+  )
+  const selectedProvider = serverSelection
+    ? serverProviders.find((provider) => provider.id === serverSelection.providerId) ?? null
+    : null
+  const selectedModelKnown =
+    selectedProvider !== null &&
+    serverSelection !== null &&
+    (selectedProvider.modelId === serverSelection.modelId ||
+      selectedProvider.models.includes(serverSelection.modelId))
+  // N005: a removed/unusable chosen destination is an explicit state —
+  // never an automatic fallback to another provider.
+  const selectionUnavailable =
+    serverSelection !== null &&
+    (selectedProvider === null ||
+      (!selectedProvider.credential.present && selectedProvider.authMode !== 'none') ||
+      !selectedModelKnown)
 
   const activePath = new Set<string>()
   let cursor = detail.activeLeafId
@@ -675,7 +748,6 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
     activeRun !== null &&
     activeRun.conversationId === detail.id &&
     (activeRun.status === 'running' || activeRun.status === 'cancelling')
-  const hasProvider = serverProviders.some((provider) => provider.credential.present)
 
   async function send() {
     const text = draft.trim()
@@ -733,6 +805,72 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
         )}
       </ol>
 
+      {/* The explicit destination (N004): provider + model, stored by
+          exact ids. Adding or removing other profiles never changes it;
+          a stale choice is shown as unavailable, not swapped (N005). */}
+      <div className="mt-2.5 flex flex-wrap items-center gap-2">
+        <label className="flex items-center gap-1.5 text-[11.5px] text-ink-faint">
+          Provider
+          <select
+            aria-label="Server chat provider"
+            value={serverSelection?.providerId ?? ''}
+            disabled={runIsLive || usableProviders.length === 0}
+            onChange={(event) => {
+              const provider = usableProviders.find((entry) => entry.id === event.target.value)
+              if (!provider) return
+              const modelId = provider.modelId ?? provider.models[0] ?? ''
+              if (modelId) setServerSelection(provider.id, modelId)
+            }}
+            className="max-w-[13rem] truncate rounded-control border border-line bg-raised px-2 py-1 text-[12px] text-ink disabled:opacity-60"
+          >
+            {serverSelection && !usableProviders.some((p) => p.id === serverSelection.providerId) && (
+              <option value={serverSelection.providerId}>
+                {selectedProvider ? `${selectedProvider.label} — unavailable` : 'Selected provider was removed'}
+              </option>
+            )}
+            {usableProviders.length === 0 && <option value="">No usable provider yet</option>}
+            {usableProviders.map((provider) => (
+              <option key={provider.id} value={provider.id}>
+                {provider.label}
+                {provider.authMode === 'none' ? ' (keyless)' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+        {selectedProvider && (
+          <label className="flex items-center gap-1.5 text-[11.5px] text-ink-faint">
+            Model
+            <select
+              aria-label="Server chat model"
+              value={serverSelection?.modelId ?? ''}
+              disabled={runIsLive || selectedProvider.models.length === 0}
+              onChange={(event) =>
+                setServerSelection(selectedProvider.id, event.target.value)
+              }
+              className="max-w-[13rem] truncate rounded-control border border-line bg-raised px-2 py-1 text-[12px] text-ink disabled:opacity-60"
+            >
+              {serverSelection && !selectedModelKnown && (
+                <option value={serverSelection.modelId}>
+                  {serverSelection.modelId} — no longer offered
+                </option>
+              )}
+              {selectedProvider.models.length === 0 && <option value="">No models — run Test above</option>}
+              {selectedProvider.models.map((model) => (
+                <option key={model} value={model}>
+                  {model}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+      </div>
+      {(selectionUnavailable || serverSelectionNotice) && (
+        <p role="status" className="mt-1.5 text-[12px] text-danger">
+          {serverSelectionNotice ??
+            'The chosen destination is unavailable — pick a provider and model above. Nothing is sent until you do.'}
+        </p>
+      )}
+
       <form
         className="mt-2.5 flex items-end gap-2"
         onSubmit={(event) => {
@@ -752,9 +890,11 @@ function ServerThread({ detail }: { detail: ServerConversationDetail }) {
           rows={2}
           aria-label="Message the server assistant"
           placeholder={
-            hasProvider
-              ? 'Message runs on your Uni server…'
-              : 'Add a server provider (with a key) above first…'
+            usableProviders.length === 0
+              ? 'Add a server provider (key or keyless local) above first…'
+              : serverSelection
+                ? 'Message runs on your Uni server…'
+                : 'Pick a provider and model above to send…'
           }
           className="min-h-[44px] min-w-0 flex-1 resize-y rounded-control border border-line bg-raised px-3 py-2 text-[13px] text-ink"
         />

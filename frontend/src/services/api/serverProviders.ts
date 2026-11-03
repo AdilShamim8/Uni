@@ -52,6 +52,12 @@ export async function createServerProvider(input: {
   })
 }
 
+export async function deleteServerProvider(providerId: string): Promise<void> {
+  await apiFetch<void>(`${API_ROOT}/providers/${encodeURIComponent(providerId)}`, {
+    method: 'DELETE',
+  })
+}
+
 export async function setServerProviderCredential(
   providerId: string,
   apiKey: string,
