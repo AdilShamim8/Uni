@@ -293,6 +293,13 @@ export const runs = pgTable(
     outputText: text('output_text').notNull().default(''),
     usage: jsonb('usage'),
     idempotencyKey: text('idempotency_key'),
+    /**
+     * sha256 of the canonical effective request the idempotency key is
+     * bound to (original N016): conversation + parent node + provider +
+     * effective model. NULL only on rows created before migration 0009;
+     * replay derives it from the row's own columns in that case.
+     */
+    requestFingerprint: text('request_fingerprint'),
     errorCode: text('error_code'),
     errorMessage: text('error_message'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
