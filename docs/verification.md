@@ -847,3 +847,27 @@ base is inference.liquid.ai/v1; Lambda and Requesty unreachable).
   initially hit 510/511 (an existing `gpt-test` regex newly matched the
   "Chat with" button), fixed by tightening that one assertion —
   recorded here rather than hidden.
+
+## Update 2026-11-04 — session 3, 300-new effort opening (branch task/uni-next-release-300)
+
+Fresh clone at `UPDATE_START_SHA = 526b8cf0e` (identical to main; no
+concurrent upstream changes). New effort branch
+`task/uni-next-release-300` created from that SHA. New-work count of
+record: `docs/update-2026-11-04-commit-manifest.md`.
+
+### Fresh baseline (pristine tree at UPDATE_START_SHA, before any change)
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm ci && npm run build && npm run typecheck` | Pass (clean) |
+| `cd backend && npm ci && npm run typecheck && npm run build` | Pass (clean) |
+| `cd backend && npm test` | **232/232 pass** (22 files, 52s) — reproduced fresh, not copied from history |
+| `cd frontend && npm ci && npm run typecheck && npm run lint && npm run build` | Pass (pre-existing chunk-size warning only) |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **511/511 pass** (69 files, 138s) |
+
+### Push authentication
+
+This sandbox has no stored git credential. Commits are being made
+locally on the branch with the required author identity; each push
+attempt and its exact error will be recorded here. Nothing is counted
+as remotely present until `git ls-remote` shows the SHA.
