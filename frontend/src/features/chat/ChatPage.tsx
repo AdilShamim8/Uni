@@ -48,6 +48,14 @@ export function ChatPage() {
     [conversation],
   )
 
+  // Integrated journey (N015): when a surface outside the chat tree (a
+  // successful provider connect in Settings) requests composer focus,
+  // focus it here — the one place that owns the composer ref.
+  const composerFocusAt = useAppStore((state) => state.ui.composerFocusAt)
+  useEffect(() => {
+    if (composerFocusAt > 0) composerRef.current?.focus()
+  }, [composerFocusAt])
+
   // Plugin scope for this surface (m07/F09): ordinary chats get a
   // conversation-scoped thread; an employee conversation opened through
   // a chat route keeps its agent identity, access rules, and receipts.

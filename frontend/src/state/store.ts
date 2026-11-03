@@ -54,6 +54,12 @@ interface UiState {
   settingsSection: string | null
   mobileSidebarOpen: boolean
   preview: PreviewState | null
+  /**
+   * Timestamp that requests composer focus (N015): surfaces outside the
+   * chat tree (e.g. a successful provider connect in Settings) bump it,
+   * and the ChatPage focuses the composer when it changes. Zero = idle.
+   */
+  composerFocusAt: number
 }
 
 export interface AppStore {
@@ -230,6 +236,7 @@ export const useAppStore = create<AppStore>()((set, get) => ({
     settingsSection: null,
     mobileSidebarOpen: false,
     preview: null,
+    composerFocusAt: 0,
   },
   toast: null,
 
@@ -922,6 +929,7 @@ export function resetStoreForTests(options: { keepStorage?: boolean } = {}): voi
       settingsSection: null,
       mobileSidebarOpen: false,
       preview: null,
+      composerFocusAt: 0,
     },
     toast: null,
   })
