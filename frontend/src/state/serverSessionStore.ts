@@ -16,6 +16,7 @@ import {
   deleteServerProvider as deleteServerProviderApi,
   discoverServerProviderModels,
   listServerProviders,
+  patchServerProviderModel as patchServerProviderModelApi,
   setServerProviderCredential,
   type ServerProvider,
   type ServerProviderTestResponse,
@@ -179,6 +180,16 @@ interface ServerSessionState {
   testServerProviderById: (providerId: string) => Promise<void>
   /** Choose the exact server-chat destination (N004). */
   setServerSelection: (providerId: string, modelId: string) => void
+  /**
+   * Manual model setup (N010): persist an exact model id on the provider
+   * row — for endpoints whose discovery fails or lists nothing usable.
+   * When the provider is the selected destination, the destination
+   * follows the explicit manual choice; when no destination exists yet,
+   * a usable provider with a manual model becomes it (the same explicit
+   * first-destination rule as adding a provider). It never switches
+   * away from a DIFFERENT selected provider (N004).
+   */
+  setServerProviderModel: (providerId: string, modelId: string) => Promise<boolean>
   deleteServerProvider: (providerId: string) => Promise<void>
 
   newServerConversation: (title: string) => Promise<string | null>
@@ -525,6 +536,37 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       set({ serverSelection: selection, runError: null, serverSelectionNotice: null })
       const account = get().account
       if (account) storeSelection(account.workspace.id, selection)
+    },
+
+    setServerProviderModel: async (providerId, modelId) => {
+      set({ serverProviderError: null })
+      const generation = get().sessionGeneration
+      try {
+        const updated = await patchServerProviderModelApi(providerId, modelId)
+        if (!stillCurrent(generation)) return false
+        // Patch the row in place; the discovered catalog is untouched.
+        set({
+          serverProviders: get().serverProviders.map((entry) =>
+            entry.id === providerId ? updated : entry,
+          ),
+        })
+        const selection = get().serverSelection
+        if (selection?.providerId === providerId) {
+          // The selected provider's manual model becomes the
+          // destination's model — an explicit choice, not a fallback.
+          get().setServerSelection(providerId, modelId)
+        } else if (!selection) {
+          // No destination yet: a usable provider with a manual model
+          // becomes it (the same rule as adding the first provider).
+          const usable = updated.credential.present || updated.authMode === 'none'
+          if (usable) get().setServerSelection(providerId, modelId)
+        }
+        return true
+      } catch (error) {
+        if (!stillCurrent(generation)) return false
+        set({ serverProviderError: errorMessage(error) })
+        return false
+      }
     },
 
     deleteServerProvider: async (providerId) => {

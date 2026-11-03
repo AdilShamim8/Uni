@@ -151,6 +151,19 @@ function createFetchMock() {
       if (index >= 0) state.providers.splice(index, 1)
       return new Response(null, { status: 204 })
     }
+    if (/^\/api\/v1\/providers\/(sp-\d+)$/.test(path) && method === 'PATCH') {
+      // Manual model setup (N010): PATCH persists the exact model id on
+      // the provider row without touching the discovered catalog.
+      const id = (path.match(/(sp-\d+)$/) ?? [])[1] ?? ''
+      const provider = state.providers.find((entry) => entry.id === id)
+      if (!provider) return jsonResponse(404, { code: 'not_found', message: 'Provider not found.', requestId: 'r-5' })
+      const payload = body as { modelId?: string }
+      if (typeof payload.modelId === 'string' && payload.modelId.length > 0) {
+        provider.modelId = payload.modelId
+      }
+      provider.updatedAt = 50
+      return jsonResponse(200, provider)
+    }
     if (/^\/api\/v1\/providers\/(sp-\d+)\/credential$/.test(path) && method === 'PUT') {
       const id = (path.match(/(sp-\d+)\/credential$/) ?? [])[1] ?? ''
       const provider = state.providers.find((entry) => entry.id === id)
@@ -676,6 +689,135 @@ describe('Account section — server session and deliberate import', () => {
       (call) => /conversations\/c-9\/runs$/.test(call.url) && call.method === 'POST',
     )
     expect(runCalls).toHaveLength(0)
+  })
+
+  it('sets a manual model on a provider whose discovery found nothing (N010)', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // A keyed provider whose discovery never ran (or found nothing): no
+    // model on the row, so the manual affordance is the honest path.
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'Local runtime')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-local')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('Local runtime')).toBeInTheDocument()
+    expect(screen.queryByText(/Model for server chat/i)).toBeNull()
+
+    // Manual setup: type an exact id and set it on the provider row.
+    await userEvent.click(await screen.findByRole('button', { name: /Set model manually/i }))
+    await userEvent.type(screen.getByLabelText(/Model id for Local runtime/i), 'qwen3-30b-a3b')
+    await userEvent.click(screen.getByRole('button', { name: 'Set model' }))
+
+    // The PATCH carried exactly the typed id.
+    const patchCall = mock.calls.find(
+      (call) => call.url === '/api/v1/providers/sp-1' && call.method === 'PATCH',
+    )
+    expect(patchCall).toBeTruthy()
+    expect(patchCall?.body).toEqual({ modelId: 'qwen3-30b-a3b' })
+
+    // The row names the manual model, and (no selection existed, provider
+    // usable) it became the explicit destination.
+    expect(await screen.findByText(/Model for server chat/i)).toHaveTextContent('qwen3-30b-a3b')
+    expect(useServerSessionStore.getState().serverSelection).toEqual({
+      providerId: 'sp-1',
+      modelId: 'qwen3-30b-a3b',
+    })
+  })
+
+  it('manual model setup on a non-selected provider never moves the selection (N010/N004)', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // Provider A: tested, discovers models, becomes the default selection.
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'Provider A')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-a')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('Provider A')).toBeInTheDocument()
+    await userEvent.click(screen.getAllByRole('button', { name: 'Test' })[0]!)
+    await screen.findByText(/2 models discovered/i)
+    expect(useServerSessionStore.getState().serverSelection).toEqual({
+      providerId: 'sp-1',
+      modelId: 'grok-3-mini',
+    })
+
+    // Provider B: keyed, no discovery — set a manual model on ITS row.
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'Provider B')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-b')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('Provider B')).toBeInTheDocument()
+    await userEvent.click(await screen.findByRole('button', { name: /Set model manually/i }))
+    await userEvent.type(screen.getByLabelText(/Model id for Provider B/i), 'model-b-manual')
+    await userEvent.click(screen.getByRole('button', { name: 'Set model' }))
+
+    const patchCall = mock.calls.find(
+      (call) => call.url === '/api/v1/providers/sp-2' && call.method === 'PATCH',
+    )
+    expect(patchCall?.body).toEqual({ modelId: 'model-b-manual' })
+
+    // The destination still addresses Provider A exactly (N004): setting
+    // a model on another provider's row is configuration, not selection.
+    expect(useServerSessionStore.getState().serverSelection).toEqual({
+      providerId: 'sp-1',
+      modelId: 'grok-3-mini',
+    })
+    const modelLines = await screen.findAllByText(/Model for server chat/i)
+    expect(modelLines.some((line) => line.textContent?.includes('model-b-manual'))).toBe(true)
+  })
+
+  it('types a model id directly in the destination picker (N010)', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // A tested provider with a discovered catalog is the default
+    // destination; the picker offers its models.
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'xAI test')
+    await userEvent.type(screen.getByLabelText(/API key/i), 'sk-x')
+    await userEvent.click(screen.getByRole('button', { name: /Save provider \+ key/i }))
+    expect(await screen.findByText('xAI test')).toBeInTheDocument()
+    await userEvent.click(screen.getAllByRole('button', { name: 'Test' })[0]!)
+    await screen.findByText(/2 models discovered/i)
+
+    await userEvent.type(screen.getByLabelText('New server conversation title'), 'Manual model')
+    await userEvent.click(screen.getByRole('button', { name: 'New' }))
+    const modelSelect = await screen.findByLabelText('Server chat model')
+    expect(modelSelect).toHaveValue('grok-3-mini')
+
+    // The catalog does not list the model the user wants — type it.
+    await userEvent.selectOptions(modelSelect, '__manual__')
+    await userEvent.type(screen.getByLabelText('Model id for server chat'), 'grok-4-fast-reasoning')
+    await userEvent.click(screen.getByRole('button', { name: 'Set model' }))
+
+    const patchCall = mock.calls.find(
+      (call) => call.url === '/api/v1/providers/sp-1' && call.method === 'PATCH',
+    )
+    expect(patchCall?.body).toEqual({ modelId: 'grok-4-fast-reasoning' })
+
+    // The destination now addresses the manually-typed model exactly,
+    // and the picker keeps it selectable (labeled as manually set).
+    expect(useServerSessionStore.getState().serverSelection).toEqual({
+      providerId: 'sp-1',
+      modelId: 'grok-4-fast-reasoning',
+    })
+    expect(await screen.findByLabelText('Server chat model')).toHaveValue('grok-4-fast-reasoning')
+    expect(
+      screen.getByRole('option', { name: /grok-4-fast-reasoning — set manually/i }),
+    ).toBeInTheDocument()
   })
 
   it('marks a replayed import honestly instead of claiming new records', async () => {

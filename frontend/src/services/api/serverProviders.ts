@@ -58,6 +58,22 @@ export async function deleteServerProvider(providerId: string): Promise<void> {
   })
 }
 
+/**
+ * Set the provider's model by exact id (N010) — manual model setup for
+ * endpoints whose discovery fails or lists nothing usable. The id is
+ * persisted on the provider row server-side; it does not have to appear
+ * in the discovered catalog.
+ */
+export async function patchServerProviderModel(
+  providerId: string,
+  modelId: string,
+): Promise<ServerProvider> {
+  return apiFetch<ServerProvider>(`${API_ROOT}/providers/${encodeURIComponent(providerId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ modelId }),
+  })
+}
+
 export async function setServerProviderCredential(
   providerId: string,
   apiKey: string,
