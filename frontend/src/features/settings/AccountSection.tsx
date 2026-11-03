@@ -22,6 +22,7 @@ import type { ServerConversationDetail } from '@/state/serverSessionStore'
 import type { ServerProvider } from '@/services/api/serverProviders'
 import { ReadinessStrip } from './ReadinessStrip'
 import { MODEL_PICKER_THRESHOLD, SearchableModelPicker } from './SearchableModelPicker'
+import { providerErrorLabel } from './providerErrors'
 import { readFileText } from '@/services/readFileText'
 import type { ImportCommitResponse, ImportPreviewResponse } from '@/services/api/serverContracts'
 
@@ -528,6 +529,13 @@ function ServerProvidersView() {
                         testResult.ok ? 'bg-accent-soft/60 text-ink-soft' : 'bg-danger/10 text-danger'
                       }`}
                     >
+                      {!testResult.ok && testResult.errorKind && (
+                        <span
+                          className="mr-1.5 inline-block rounded-full bg-danger/15 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide"
+                        >
+                          {providerErrorLabel(testResult.errorKind)}
+                        </span>
+                      )}
                       {testResult.message}
                       {testResult.ok && testResult.latencyMs !== null && <> · {testResult.latencyMs} ms</>}
                       {testResult.ok && testResult.discoveredModels && (

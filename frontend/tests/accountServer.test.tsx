@@ -191,6 +191,7 @@ function createFetchMock() {
           latencyMs: null,
           discoveredModels: null,
           readiness: { reachability: 'unknown', catalog: 'unknown', credential: 'unknown', generation: 'unknown' },
+          errorKind: 'no-credential',
         })
       }
       const discovered = provider.id === 'sp-1'
@@ -204,6 +205,7 @@ function createFetchMock() {
         latencyMs: 42,
         discoveredModels: discovered,
         readiness: { reachability: 'ok', catalog: 'ok', credential: 'ok', generation: 'unknown' },
+        errorKind: null,
       })
     }
     if (path === '/api/v1/conversations' && method === 'POST') {
@@ -924,6 +926,29 @@ describe('Account section — server session and deliberate import', () => {
     )
     expect(patchCall?.body).toEqual({ modelId: 'hidden-model-id' })
     expect(useServerSessionStore.getState().serverSelection?.modelId).toBe('hidden-model-id')
+  })
+
+  it('shows the stable error classification tag on a failed server check (N012)', async () => {
+    render(<AccountSection />)
+    await screen.findByRole('button', { name: 'Sign in' })
+    await userEvent.type(screen.getByLabelText(/Email/i), 'alice@example.test')
+    await userEvent.type(screen.getByLabelText(/Password/i), 'password-123')
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }))
+    expect(await screen.findByText(/Signed in — alice@example.test/i)).toBeInTheDocument()
+
+    // A provider with no stored key: Test returns the honest classified
+    // failure — the tag names the KIND before the prose explains it.
+    await userEvent.click(await screen.findByRole('button', { name: /Add provider/i }))
+    await userEvent.type(screen.getByLabelText(/^Label/i), 'No key provider')
+    await userEvent.type(screen.getByLabelText(/Endpoint URL/i), 'http://localhost:11434/v1')
+    await userEvent.click(screen.getByRole('button', { name: /Save keyless provider/i }))
+    expect(await screen.findByText('No key provider')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Test' }))
+    const status = await screen.findByRole('status')
+    expect(status).toHaveTextContent('No API key stored for this provider yet.')
+    // The N012 classification tag, from the response's errorKind.
+    expect(status).toHaveTextContent('No key')
   })
 
   it('marks a replayed import honestly instead of claiming new records', async () => {

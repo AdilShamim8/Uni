@@ -20,6 +20,7 @@ import {
   type CreateProviderRequest,
   type PatchProviderRequest,
   type ProviderDto,
+  type ProviderErrorKind,
   type ProviderReadiness,
   type ProviderTestResponse,
 } from '@uni/contracts'
@@ -422,6 +423,13 @@ interface ConnectionResult {
   /** True when the caller cancelled the check — proves nothing, writes nothing. */
   cancelled?: boolean
   /**
+   * The stable failure classification (N012): null on success, one of
+   * the shared vocabulary kinds on every failure branch. Every return
+   * below sets it — the schema parse in the route fails closed if one
+   * is ever forgotten.
+   */
+  errorKind: ProviderErrorKind | null
+  /**
    * The per-axis breakdown behind the aggregate outcome (N007):
    * reachability / catalog / credential / generation are reported
    * INDEPENDENTLY — a reachable endpoint with a rejected key reports
@@ -470,6 +478,7 @@ async function runConnectionCheck(
       readiness.credential = 'fail'
       return {
         ok: false,
+        errorKind: 'rejected-credential',
         message: keyless
           ? 'The endpoint answered 401/403 — it requires an API key even though this connection is keyless. Add a key or check the endpoint URL.'
           : 'The provider rejected the API key.',
@@ -483,6 +492,7 @@ async function runConnectionCheck(
       readiness.catalog = 'fail'
       return {
         ok: false,
+        errorKind: 'catalog-unavailable',
         message: `The provider endpoint answered ${response.status}.`,
         models: null,
         readiness,
@@ -497,6 +507,7 @@ async function runConnectionCheck(
       readiness.catalog = 'fail'
       return {
         ok: false,
+        errorKind: 'body-too-large',
         message:
           'The provider’s model list response was too large (over 2 MB) — nothing was adopted from it. This can mean a misconfigured endpoint; nothing was saved.',
         models: null,
@@ -512,6 +523,7 @@ async function runConnectionCheck(
       readiness.catalog = 'fail'
       return {
         ok: false,
+        errorKind: 'catalog-unavailable',
         message: 'The endpoint answered, but the response was not a readable model list.',
         models: null,
         readiness,
@@ -571,7 +583,7 @@ async function runConnectionCheck(
       } catch (error) {
         if (error instanceof UrlGuardError) {
           readiness.reachability = 'fail'
-          return { ok: false, message: error.message, models: null, readiness }
+          return { ok: false, errorKind: 'endpoint-not-allowed', message: error.message, models: null, readiness }
         }
         const aborted =
           signal?.aborted ||
@@ -580,6 +592,7 @@ async function runConnectionCheck(
         if (aborted) {
           return {
             ok: false,
+            errorKind: 'cancelled',
             message: 'Connection check cancelled.',
             models: null,
             cancelled: true,
@@ -593,6 +606,7 @@ async function runConnectionCheck(
         readiness.credential = 'fail'
         return {
           ok: false,
+          errorKind: 'rejected-credential',
           message:
             'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys.',
           models: null,
@@ -603,6 +617,7 @@ async function runConnectionCheck(
         readiness.credential = 'unknown'
         return {
           ok: false,
+          errorKind: 'openrouter-key-unknown',
           message: `OpenRouter’s key check is unavailable (${verification.reason}) — the key could not be verified. The model list is public, so reachability alone is not a pass; try again in a moment.`,
           models: null,
           readiness,
@@ -623,6 +638,7 @@ async function runConnectionCheck(
 
     return {
       ok: true,
+      errorKind: null,
       message: keyless
         ? 'Connected — the endpoint answered without a key.'
         : 'Connected — the key works.',
@@ -632,7 +648,7 @@ async function runConnectionCheck(
   } catch (error) {
     if (error instanceof UrlGuardError) {
       readiness.reachability = 'fail'
-      return { ok: false, message: error.message, models: null, readiness }
+      return { ok: false, errorKind: 'endpoint-not-allowed', message: error.message, models: null, readiness }
     }
     // A cancelled check proves nothing (N008): the outbound request was
     // aborted — either the caller replaced it or the client went away.
@@ -645,6 +661,7 @@ async function runConnectionCheck(
     if (aborted) {
       return {
         ok: false,
+        errorKind: 'cancelled',
         message: 'Connection check cancelled.',
         models: null,
         cancelled: true,
@@ -657,6 +674,7 @@ async function runConnectionCheck(
     const message = error instanceof Error ? error.message : 'connection failed'
     return {
       ok: false,
+      errorKind: 'unreachable',
       message: message.includes('timeout')
         ? 'The provider endpoint timed out.'
         : 'The provider endpoint could not be reached.',
@@ -735,6 +753,7 @@ export async function testProviderConnection(
       latencyMs: null,
       discoveredModels: null,
       readiness: unknownReadiness(),
+      errorKind: 'no-credential',
       provider: serializeProvider(provider),
     }
   }
@@ -754,6 +773,7 @@ export async function testProviderConnection(
       latencyMs,
       discoveredModels: null,
       readiness: result.readiness,
+      errorKind: 'cancelled',
       provider: serializeProvider(provider),
     }
   }
@@ -765,10 +785,11 @@ export async function testProviderConnection(
       latencyMs,
       discoveredModels: null,
       readiness: unknownReadiness(),
+      errorKind: 'superseded',
       provider: outcome.provider,
     }
   }
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, readiness: result.readiness, provider: outcome.provider }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, readiness: result.readiness, errorKind: result.errorKind, provider: outcome.provider }
 }
 
 export async function discoverProviderModels(
@@ -788,6 +809,7 @@ export async function discoverProviderModels(
       latencyMs: null,
       discoveredModels: null,
       readiness: unknownReadiness(),
+      errorKind: 'no-credential',
       provider: serializeProvider(provider),
     }
   }
@@ -803,6 +825,7 @@ export async function discoverProviderModels(
       latencyMs,
       discoveredModels: null,
       readiness: result.readiness,
+      errorKind: 'cancelled',
       provider: serializeProvider(provider),
     }
   }
@@ -814,8 +837,9 @@ export async function discoverProviderModels(
       latencyMs,
       discoveredModels: null,
       readiness: unknownReadiness(),
+      errorKind: 'superseded',
       provider: outcome.provider,
     }
   }
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, readiness: result.readiness, provider: outcome.provider }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, readiness: result.readiness, errorKind: result.errorKind, provider: outcome.provider }
 }

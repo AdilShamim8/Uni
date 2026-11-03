@@ -108,6 +108,7 @@ describe('providers — OpenRouter key verification', () => {
     const result = providerTestResponseSchema.parse(test.json())
     expect(result.ok).toBe(false)
     expect(result.message).toContain('rejected')
+    expect(result.errorKind).toBe('rejected-credential')
 
     // The provider status reflects the failure honestly.
     const list = await testApp.app.inject({
@@ -186,6 +187,7 @@ describe('providers — OpenRouter key verification', () => {
       // inconclusive /key must not claim the connection works.
       expect(result.ok).toBe(false)
       expect(result.message).toContain('could not be verified')
+      expect(result.errorKind).toBe('openrouter-key-unknown')
       // But not "rejected" either — the key's validity is simply unknown.
       expect(result.message).not.toContain('rejected')
 

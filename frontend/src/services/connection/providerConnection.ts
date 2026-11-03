@@ -26,6 +26,12 @@ export interface ConnectionTestResult {
   /** Model ids discovered from the endpoint, when the API provides them. */
   models?: string[]
   /**
+   * Stable failure classification (N012), mirroring the server's
+   * vocabulary so both settings surfaces and tests speak one language;
+   * undefined on success paths that predate the field.
+   */
+  errorKind?: ProviderErrorKind
+  /**
    * Per-axis readiness breakdown (N007), mirroring the server model:
    * reachability / catalog / credential / generation are INDEPENDENT —
    * a reachable endpoint with a rejected key reports reachability ok
@@ -35,6 +41,22 @@ export interface ConnectionTestResult {
 }
 
 export type ReadinessAxis = 'unknown' | 'ok' | 'fail'
+
+/**
+ * The shared failure vocabulary (N012) — identical to the contract enum
+ * and the server-provider mirror, defined once for the BYOK path.
+ */
+export type ProviderErrorKind =
+  | 'unreachable'
+  | 'endpoint-not-allowed'
+  | 'invalid-endpoint'
+  | 'no-credential'
+  | 'rejected-credential'
+  | 'catalog-unavailable'
+  | 'body-too-large'
+  | 'openrouter-key-unknown'
+  | 'cancelled'
+  | 'superseded'
 
 export interface ProviderReadiness {
   reachability: ReadinessAxis
@@ -275,7 +297,7 @@ export async function testProviderConnection(
   const trimmedKey = apiKey.trim()
   const keyless = trimmedKey.length === 0
   if (keyless && !profileAllowsKeyless(profile)) {
-    return { ok: false, message: 'Enter an API key first.' }
+    return { ok: false, message: 'Enter an API key first.', errorKind: 'no-credential' }
   }
 
   const url = modelsListUrl(profile)
@@ -283,10 +305,10 @@ export async function testProviderConnection(
   try {
     parsedUrl = new URL(url)
   } catch {
-    return { ok: false, message: 'The endpoint URL is not valid — include https:// (or http:// for local servers).' }
+    return { ok: false, message: 'The endpoint URL is not valid — include https:// (or http:// for local servers).', errorKind: 'invalid-endpoint' }
   }
   if (!/^https?:$/.test(parsedUrl.protocol)) {
-    return { ok: false, message: 'The endpoint must use http(s).' }
+    return { ok: false, message: 'The endpoint must use http(s).', errorKind: 'invalid-endpoint' }
   }
 
   const readiness = unknownReadiness()
@@ -312,6 +334,10 @@ export async function testProviderConnection(
       const errorBody = await readBodyBounded(response, MAX_ERROR_BODY_BYTES)
       return {
         ok: false,
+        errorKind:
+          response.status === 401 || response.status === 403
+            ? 'rejected-credential'
+            : 'catalog-unavailable',
         message: describeHttpError(response.status, errorBody.ok ? errorBody.text : ''),
         latencyMs,
         readiness,
@@ -325,6 +351,7 @@ export async function testProviderConnection(
       readiness.catalog = 'fail'
       return {
         ok: false,
+        errorKind: 'body-too-large',
         message:
           'The model list response was too large (over 2 MB) — nothing was adopted from it. This can mean a misconfigured endpoint; nothing was saved.',
         latencyMs,
@@ -344,7 +371,13 @@ export async function testProviderConnection(
       const verified = await verifyOpenRouterKey(profile.endpointUrl, trimmedKey, signal)
       if (verified.state !== 'verified') {
         readiness.credential = verified.state === 'rejected' ? 'fail' : 'unknown'
-        return { ok: false, message: verified.message, latencyMs, readiness }
+        return {
+          ok: false,
+          errorKind: verified.state === 'rejected' ? 'rejected-credential' : 'openrouter-key-unknown',
+          message: verified.message,
+          latencyMs,
+          readiness,
+        }
       }
       readiness.credential = 'ok'
     } else {
@@ -374,13 +407,14 @@ export async function testProviderConnection(
     }
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      return { ok: false, message: 'Connection test cancelled.', readiness: unknownReadiness() }
+      return { ok: false, message: 'Connection test cancelled.', errorKind: 'cancelled', readiness: unknownReadiness() }
     }
     // Network-level failure (offline, DNS, CORS): the endpoint was never
     // reached; every other axis stays honestly unknown (N007).
     readiness.reachability = 'fail'
     return {
       ok: false,
+      errorKind: 'unreachable',
       message:
         'Could not reach the endpoint from this browser — check the URL, your network, and whether the provider allows direct browser (CORS) requests.',
       readiness,

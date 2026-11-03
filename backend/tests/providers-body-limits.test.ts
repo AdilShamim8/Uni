@@ -158,6 +158,7 @@ describe('providers — bounded catalog and probe bodies (N009)', () => {
     const result = providerTestResponseSchema.parse(test.json())
     expect(result.ok).toBe(false)
     expect(result.message).toContain('too large')
+    expect(result.errorKind).toBe('body-too-large')
     expect(result.readiness).toEqual({
       reachability: 'ok',
       catalog: 'fail',
@@ -182,6 +183,7 @@ describe('providers — bounded catalog and probe bodies (N009)', () => {
     const result = providerTestResponseSchema.parse(test.json())
     expect(result.ok).toBe(false)
     expect(result.message).toContain('too large')
+    expect(result.errorKind).toBe('body-too-large')
     expect(result.discoveredModels).toBeNull()
     const row = await rowState(provider.id)
     expect(row?.models).toEqual([])
@@ -234,6 +236,7 @@ describe('providers — bounded catalog and probe bodies (N009)', () => {
     // Honest inconclusive: the key could not be verified (a public
     // catalog proves nothing), and it is NOT claimed to be invalid.
     expect(result.message).toContain('could not be verified')
+    expect(result.errorKind).toBe('openrouter-key-unknown')
     expect(result.readiness.credential).toBe('unknown')
     const row = await rowState(provider.id)
     expect(row?.status).toBe('error')

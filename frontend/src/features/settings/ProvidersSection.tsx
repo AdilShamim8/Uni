@@ -15,13 +15,14 @@ import {
 import type { Capability, ModelInfo, ProviderKind, ProviderProfile } from '@/domain/types'
 import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
-import { testProviderConnection, profileAllowsKeyless, type ProviderReadiness } from '@/services/connection/providerConnection'
+import { testProviderConnection, profileAllowsKeyless, type ProviderErrorKind, type ProviderReadiness } from '@/services/connection/providerConnection'
 import { suggestedModelsFor } from './suggestedModels'
 import type { FreeRoute } from './freeModels'
 import { freeRouteFor } from './freeModels'
 import { FreeModelsHub } from './FreeModelsHub'
 import { FreeSetupGuide } from './FreeSetupGuide'
 import { ReadinessStrip } from './ReadinessStrip'
+import { providerErrorLabel } from './providerErrors'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
@@ -517,7 +518,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
   const [keyDraft, setKeyDraft] = useState('')
   const [reveal, setReveal] = useState(false)
   const [testing, setTesting] = useState(false)
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const [message, setMessage] = useState<{ ok: boolean; text: string; errorKind?: ProviderErrorKind } | null>(null)
   // Per-axis readiness of the last completed check (N007) — reachability,
   // catalog, credential and generation are shown SEPARATELY so a
   // reachable-but-rejected-key endpoint never reads as one blended error.
@@ -588,7 +589,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
           lastError: result.message,
         })
       }
-      setMessage({ ok: false, text: result.message })
+      setMessage({ ok: false, text: result.message, errorKind: result.errorKind })
     }
   }
 
@@ -654,7 +655,14 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
         <p aria-live="polite" className="mt-1.5 text-xs font-medium">
           {testing && <span className="text-ink-soft">Testing connection…</span>}
           {message && (
-            <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
+            <span className={message.ok ? 'text-success' : 'text-danger'}>
+              {!message.ok && message.errorKind && (
+                <span className="mr-1.5 inline-block rounded-full bg-danger/15 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide">
+                  {providerErrorLabel(message.errorKind)}
+                </span>
+              )}
+              {message.text}
+            </span>
           )}
         </p>
         {readiness && (
@@ -745,7 +753,14 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
           </span>
         )}
         {message && (
-          <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
+          <span className={message.ok ? 'text-success' : 'text-danger'}>
+            {!message.ok && message.errorKind && (
+              <span className="mr-1.5 inline-block rounded-full bg-danger/15 px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide">
+                {providerErrorLabel(message.errorKind)}
+              </span>
+            )}
+            {message.text}
+          </span>
         )}
       </p>
       {readiness && <ReadinessStrip readiness={readiness} />}

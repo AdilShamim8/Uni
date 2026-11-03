@@ -148,6 +148,8 @@ describe('providers — separate readiness states (N007)', () => {
       credential: 'ok',
       generation: 'unknown',
     })
+    // Stable classification (N012).
+    expect(result.errorKind).toBe(null)
   })
 
   it('reports credential not-required for a genuinely keyless connection', async () => {
@@ -162,6 +164,8 @@ describe('providers — separate readiness states (N007)', () => {
       credential: 'not-required',
       generation: 'unknown',
     })
+    // Stable classification (N012).
+    expect(result.errorKind).toBe(null)
   })
 
   it('reports credential fail when a keyless probe hits an endpoint that demands a key', async () => {
@@ -176,6 +180,8 @@ describe('providers — separate readiness states (N007)', () => {
       credential: 'fail',
       generation: 'unknown',
     })
+    // Stable classification (N012).
+    expect(result.errorKind).toBe('rejected-credential')
   })
 
   it('separates a rejected key (reachability ok, catalog and credential fail)', async () => {
@@ -189,6 +195,8 @@ describe('providers — separate readiness states (N007)', () => {
       credential: 'fail',
       generation: 'unknown',
     })
+    // Stable classification (N012).
+    expect(result.errorKind).toBe('rejected-credential')
   })
 
   it('separates a missing discovery route (reachability ok, catalog fail, credential unknown)', async () => {
@@ -202,6 +210,8 @@ describe('providers — separate readiness states (N007)', () => {
       credential: 'unknown',
       generation: 'unknown',
     })
+    // Stable classification (N012).
+    expect(result.errorKind).toBe('catalog-unavailable')
   })
 
   it('separates a 200 without a catalog (catalog fail, credential ok, still connected)', async () => {
@@ -217,6 +227,8 @@ describe('providers — separate readiness states (N007)', () => {
       credential: 'ok',
       generation: 'unknown',
     })
+    // Stable classification (N012).
+    expect(result.errorKind).toBe(null)
   })
 
   it('fails only reachability when the endpoint never answers', async () => {
@@ -230,6 +242,8 @@ describe('providers — separate readiness states (N007)', () => {
       credential: 'unknown',
       generation: 'unknown',
     })
+    // Stable classification (N012).
+    expect(result.errorKind).toBe('unreachable')
   })
 
   it('reports all-unknown readiness when no key is stored yet', async () => {
@@ -244,5 +258,7 @@ describe('providers — separate readiness states (N007)', () => {
       credential: 'unknown',
       generation: 'unknown',
     })
+    // Stable classification (N012).
+    expect(result.errorKind).toBe('no-credential')
   })
 })

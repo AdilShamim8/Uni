@@ -203,7 +203,38 @@ describe('provider connection testing', () => {
       'sk-key',
     )
     expect(result.ok).toBe(false)
+    expect(result.errorKind).toBe('invalid-endpoint')
     expect(result.message).toContain('endpoint URL is not valid')
+    vi.unstubAllGlobals()
+  })
+
+  it('classifies the client-side failures with the shared vocabulary (N012)', async () => {
+    // A keyed protocol with no key entered: honest no-credential, not a
+    // fetch.
+    vi.stubGlobal('fetch', vi.fn())
+    const noKey = await testProviderConnection(anthropicProfile, '  ')
+    expect(noKey.ok).toBe(false)
+    expect(noKey.errorKind).toBe('no-credential')
+
+    // A non-http(s) scheme is an invalid endpoint.
+    const ftp = await testProviderConnection(
+      { ...profile, endpointUrl: 'ftp://files.example/v1' },
+      'sk-key',
+    )
+    expect(ftp.ok).toBe(false)
+    expect(ftp.errorKind).toBe('invalid-endpoint')
+    expect(vi.mocked(fetch)).not.toHaveBeenCalled()
+    vi.unstubAllGlobals()
+
+    // Success carries NO errorKind — an inconclusive check is honestly
+    // not ok, and only success is success.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [{ id: 'm-1' }] }), { status: 200 })),
+    )
+    const success = await testProviderConnection(profile, 'sk-key')
+    expect(success.ok).toBe(true)
+    expect(success.errorKind).toBeUndefined()
     vi.unstubAllGlobals()
   })
 
@@ -283,6 +314,7 @@ describe('provider connection testing', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('nope', { status: 401 })))
     const result = await testProviderConnection(profile, 'sk-bad')
     expect(result.ok).toBe(false)
+    expect(result.errorKind).toBe('rejected-credential')
     expect(result.readiness).toEqual({
       reachability: 'ok',
       catalog: 'fail',
@@ -296,6 +328,7 @@ describe('provider connection testing', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('not found', { status: 404 })))
     const result = await testProviderConnection(profile, 'sk-key')
     expect(result.ok).toBe(false)
+    expect(result.errorKind).toBe('catalog-unavailable')
     expect(result.readiness).toEqual({
       reachability: 'ok',
       catalog: 'fail',
@@ -309,6 +342,7 @@ describe('provider connection testing', () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Failed to fetch')))
     const result = await testProviderConnection(profile, 'sk-key')
     expect(result.ok).toBe(false)
+    expect(result.errorKind).toBe('unreachable')
     expect(result.readiness).toEqual({
       reachability: 'fail',
       catalog: 'unknown',
@@ -346,6 +380,7 @@ describe('provider connection testing', () => {
     )
     const result = await testProviderConnection(profile, 'sk-key', controller.signal)
     expect(result.ok).toBe(false)
+    expect(result.errorKind).toBe('cancelled')
     expect(result.readiness).toEqual({
       reachability: 'unknown',
       catalog: 'unknown',
@@ -369,6 +404,7 @@ describe('provider connection testing', () => {
     )
     const result = await testProviderConnection(profile, 'sk-key')
     expect(result.ok).toBe(false)
+    expect(result.errorKind).toBe('body-too-large')
     expect(result.message).toContain('too large')
     expect(result.models).toBeUndefined()
     expect(result.readiness).toEqual({
@@ -394,6 +430,7 @@ describe('provider connection testing', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(stream, { status: 200 })))
     const result = await testProviderConnection(profile, 'sk-key')
     expect(result.ok).toBe(false)
+    expect(result.errorKind).toBe('body-too-large')
     expect(result.message).toContain('too large')
     expect(result.readiness).toEqual({
       reachability: 'ok',
@@ -416,6 +453,7 @@ describe('provider connection testing', () => {
     )
     const result = await testProviderConnection(profile, 'sk-key')
     expect(result.ok).toBe(true)
+    expect(result.errorKind).toBeUndefined()
     expect(result.models).toEqual(['small-model'])
     expect(result.readiness?.catalog).toBe('ok')
     vi.unstubAllGlobals()
@@ -460,11 +498,13 @@ describe('provider connection testing', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('bad key', { status: 401 })))
     const unauthorized = await testProviderConnection(profile, 'sk-key')
     expect(unauthorized.ok).toBe(false)
+    expect(unauthorized.errorKind).toBe('rejected-credential')
     expect(unauthorized.message).toContain('401 Unauthorized')
     vi.unstubAllGlobals()
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('nope', { status: 404 })))
     const notFound = await testProviderConnection(profile, 'sk-key')
+    expect(notFound.errorKind).toBe('catalog-unavailable')
     expect(notFound.message).toContain('404 Not found')
     vi.unstubAllGlobals()
 

@@ -13,6 +13,22 @@ export type ServerProviderKind = 'openai-compatible' | 'anthropic'
 /** Explicit credential transport (N001, mirrors the contract). */
 export type ServerProviderAuthMode = 'none' | 'bearer' | 'native'
 
+/**
+ * Stable failure classification of a connection check (N012, mirrors
+ * the contract vocabulary): `null` on success.
+ */
+export type ServerProviderErrorKind =
+  | 'unreachable'
+  | 'endpoint-not-allowed'
+  | 'invalid-endpoint'
+  | 'no-credential'
+  | 'rejected-credential'
+  | 'catalog-unavailable'
+  | 'body-too-large'
+  | 'openrouter-key-unknown'
+  | 'cancelled'
+  | 'superseded'
+
 export interface ServerProvider {
   id: string
   label: string
@@ -99,6 +115,8 @@ export interface ServerProviderTestResponse {
     credential: 'unknown' | 'ok' | 'fail' | 'not-required'
     generation: 'unknown' | 'ok' | 'fail'
   }
+  /** Stable failure classification (N012); null on success. */
+  errorKind: ServerProviderErrorKind | null
 }
 
 /**
