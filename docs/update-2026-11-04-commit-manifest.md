@@ -56,16 +56,19 @@ section) — historical counts are never copied as fresh results.
 
 | Change ID | Original item IDs | User/system improvement | Acceptance evidence | Commit SHA | Exact remote check | CI | Remaining limit |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| U2-001 | N016 (ledger), N073 (arithmetic) | Open the 300-new effort: this manifest with binding counting rules; corrected ledger N016 mapping (the advisory-lock commit `c7a81d621` is relabeled follow-up F003; original N016 request fingerprinting reopened as pending) and corrected progress arithmetic (18 code-backed rows + N073 process evidence — the old "24 IDs" claim listed 19 entries); fresh baseline section in verification.md; handoff checkpoint | This row + verification.md session-3 baseline table + ledger diff | (this commit) | pending push | pending | 299 after this |
+| U2-001 | N016 (ledger), N073 (arithmetic) | Open the 300-new effort: this manifest with binding counting rules; corrected ledger N016 mapping (advisory-lock commit `c7a81d621` relabeled follow-up F003; original N016 reopened pending); corrected arithmetic (18 code-backed rows + N073 process evidence; old claim said 24); fresh baseline in verification.md | This row + verification.md session-3 baseline table (contracts clean; backend 232/232; frontend 511/511) + ledger diff | `2ae0e5cb2` | push blocked — no credential in this sandbox (exact error in verification.md) | blocked with push | 299 |
+| U2-002 | N016 | Run request fingerprinting: idempotency keys bound (migration 0009) to the canonical effective request — conversation, answered node, provider, effective model; same key + same input replays the one owned run with no second provider invocation; different input → typed 409; legacy NULL-fingerprint rows derive their binding from their own columns; keys stay workspace-scoped | 9-test suite over real app + fake provider + embedded PG; DISCRIMINATING: 6/9 fail against pre-fix service (all conflict cases + legacy-conflict + stored-fingerprint), 3 pass both sides; full backend gate typecheck/build clean 241/241 | `06ecca92f` | push blocked (same) | blocked with push | 298 |
+| U2-003 | N017 | Conflict-safe concurrent run creation: same-key race at the unique index catches Postgres 23505 (thrown, not empty-returning) outside drizzle wrapping; loser reuses the winner's committed run (one run, ONE provider invocation) or gets the typed 409 from N016's binding; isUniqueViolation shared helper | 3-test suite firing genuinely concurrent HTTP creates; DISCRIMINATING over 3 pre-fix runs: mixed-input race failed 3/3 with a raw 500, identical-input 2/3 (third was replay-path timing luck); post-fix deterministic; backend gate 244/244 | `5e7de0518` | push blocked (same) | blocked with push | 297 |
+| U2-004 | N018 | Retry-safe user-node creation: concurrent same-clientId posts at the (conversation_id, client_id) unique index no longer raw-500 — the loser's aborted transaction is caught outside and resolved with one lookup retry that replays the winner's node as reused; retry cannot loop; different clientIds never conflict | 3-test suite; DISCRIMINATING: concurrent test fails pre-fix with a raw 500, sequential-retry and distinct-id tests pass both sides; backend gate 247/247 | `4c4c28345` | push blocked (same) | blocked with push | 296 |
+| U2-005 | — (checkpoint) | Session-3 checkpoint: this row set, ledger N016–N018 rows, verification session-3 slice table + exact push error, handoff current-state | docs only; no code change | (this commit) | push blocked (same) | blocked with push | 295 |
 
 ## Counters
 
-- `new_commits`: 0 (this manifest commit will make 1 once pushed)
-- `new_implementation_commits`: 0
-- `accepted_item_ids`: none yet
-- `verified_existing_ids`: N001–N015, F001, F002, F003 (remapped
-  advisory-lock work), N073 (process evidence only, no implementation SHA)
-- `remote_present_commits`: 0
+- `new_commits`: 5 (2 docs/checkpoint + 3 implementation, counting this checkpoint)
+- `new_implementation_commits`: 3
+- `accepted_item_ids`: N016, N017, N018 (original queue IDs accepted this effort)
+- `verified_existing_ids`: N001–N015, F001, F002, F003 (remapped advisory-lock work), N073 (process evidence only, no implementation SHA)
+- `remote_present_commits`: 0 — push authentication unavailable in this sandbox; all 5 commits retained on local `task/uni-next-release-300`; exact error recorded in verification.md
 - successful push operations: 0
 
 ## Honest status notes
