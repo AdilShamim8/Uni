@@ -1,27 +1,33 @@
-## Current state (updated 2026-11-02, audit-repair Wave 1 complete)
+## Current state (updated 2026-11-03, production-300 session 1)
 
-- **Branch:** `task/urgent-correctness-wave1` (pushed; one commit per
-  item U001–U010, all green). Main was at audited HEAD `1c5ba05f6`.
-- **Shipped:** IPv4/IPv6 CIDR guard (F01), one pinned guarded transport
-  for discovery + probes + SDK generation (F09), three-state OpenRouter
-  key verification (F03), free-first catalog ordering before caps (F04),
-  one Anthropic base policy for discovery and generation (F08), BYOK
-  terminal-evidence streaming with an `interrupted` outcome (F05), a
-  standards-aware server-run SSE client with cursor reconnect to the
-  same run (F06), session-generation fencing of every async server
-  write (F07), and single-origin SPA+API routing with JSON precedence
-  (F02/U010) plus `frontend/vercel.json` SPA rewrites.
-- **Verification:** frontend 468/468 + lint/build; backend 206/206 +
-  typecheck/build; `qa:live` 125/125 incl. the new single-origin phase.
-  Per-item evidence: `docs/task-ledger.md`.
-- **Next action:** Wave 2 (U011–U020): shared provider descriptors,
-  no-auth local profiles, deliberate server provider/model selection,
-  verification bound to endpoint/credential version, bounded/cancelable
-  checks, manual model entry, GitHub Models retirement; then Wave 3
-  (workspace modes + main-Chat server journey).
-- **Blockers/limits:** the linked Vercel deployment still needs project
-  settings pointed at a real backend (repo-side routing is done);
-  single-process run ownership unchanged until U036.
+- **Branch:** `task/uni-production-300` from main `89acd256e`
+  (START_SHA). Draft PR exposing CI: #46. All commits pushed one at a
+  time and verified remotely (`git ls-remote` SHA match).
+- **New commits (5):** `bb09e74f8` frontend kind→protocol mapping fix
+  (typecheck/lint were RED at START_SHA — a real U011 regression);
+  `72c8fad4c` N001–N003 genuine keyless provider support (contracts +
+  DB authMode with backfill migration 0007 + keyless probes/generation
+  with wire-level no-Authorization-header proof + keyless setup in both
+  Settings modes); `f7ad18c99` N004–N005 explicit server provider/model
+  selection by exact ids with delete + explicit-unavailable states and
+  no silent fallback; `0f42d56d2` N006 config revision identity
+  (migration 0008, conditional apply discards late probe results,
+  endpoint edits reset verification/catalog); `87b313dfd` N008
+  abortable connection checks (client disconnect destroys the outbound
+  socket; cancelled checks write nothing; BYOK Cancel button).
+- **Verification this session:** contracts build+typecheck clean;
+  backend typecheck/build clean, **217/217** (206 baseline + 11 new);
+  frontend lint/typecheck/build clean, **482/482** (474 baseline + 8
+  new); embedded PostgreSQL works under this non-root account.
+- **Ledger:** `docs/production-300-ledger.md` (per-ID rows, evidence,
+  push states, verified-existing notes, next-item order).
+- **Next action:** N007 (separate readiness states: reachability /
+  catalog / credential / generation in API and UI), then N009–N015 to
+  finish Phase 1 providers. Resume command in the 300-guide.
+- **Blockers/limits:** no real provider keys in this environment — all
+  provider verification used deterministic fakes over real sockets
+  (labeled as such; live inference verification pending). `qa:live` not
+  rerun this session. Single-process run ownership unchanged (N121+).
 
 # handoff.md — resumption checkpoint
 
