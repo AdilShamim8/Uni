@@ -355,6 +355,72 @@ describe('provider connection testing', () => {
     vi.unstubAllGlobals()
   })
 
+  /* --- Bounded catalog bodies (N009) ------------------------------- */
+
+  it('refuses a declared-oversize catalog before reading it (N009)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response('{"data":[]}', {
+          status: 200,
+          headers: { 'content-length': String(3 * 1024 * 1024) },
+        }),
+      ),
+    )
+    const result = await testProviderConnection(profile, 'sk-key')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('too large')
+    expect(result.models).toBeUndefined()
+    expect(result.readiness).toEqual({
+      reachability: 'ok',
+      catalog: 'fail',
+      credential: 'unknown',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('cancels a streaming catalog at the 2 MB cap (N009)', async () => {
+    const encoder = new TextEncoder()
+    const megabyte = encoder.encode('x'.repeat(1024 * 1024))
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(megabyte)
+        controller.enqueue(megabyte)
+        controller.enqueue(megabyte)
+        controller.close()
+      },
+    })
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(stream, { status: 200 })))
+    const result = await testProviderConnection(profile, 'sk-key')
+    expect(result.ok).toBe(false)
+    expect(result.message).toContain('too large')
+    expect(result.readiness).toEqual({
+      reachability: 'ok',
+      catalog: 'fail',
+      credential: 'unknown',
+      generation: 'unknown',
+    })
+    vi.unstubAllGlobals()
+  })
+
+  it('still reads a normal catalog body under the cap (N009 control)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ data: [{ id: 'small-model' }] }), {
+          status: 200,
+          headers: { 'content-length': '128' },
+        }),
+      ),
+    )
+    const result = await testProviderConnection(profile, 'sk-key')
+    expect(result.ok).toBe(true)
+    expect(result.models).toEqual(['small-model'])
+    expect(result.readiness?.catalog).toBe('ok')
+    vi.unstubAllGlobals()
+  })
+
   it('reports success with latency and sorted discovered models', async () => {
     const fetchMock = vi
       .fn()
