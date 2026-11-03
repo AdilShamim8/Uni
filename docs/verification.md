@@ -783,3 +783,67 @@ verification remains pending by design.
 
 - `npm run qa:live` (backend) — not rerun; no routing change made.
 - Real-provider smoke checks — no credentials/budget (labeled pending).
+
+## Production-300 session 2 — Phase 1 complete + Phase 2 opener (2026-11-03, main)
+
+Fresh clone at `353fdca0c` (HEAD of main after PR #47). All 9 commits
+(1 fix + 7 features + this docs checkpoint) pushed one at a time to
+main, each verified by `git ls-remote` SHA comparison against local
+HEAD immediately after its push.
+
+### Baseline (fresh clone at `353fdca0c`)
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm ci && npm run build && npm run typecheck` | Pass |
+| `cd backend && npm ci && npm run typecheck && npm run build` | Pass |
+| `cd backend && npm test` (run 1) | **227/228** — 1 flaky failure in `runs.integration.test.ts` ("creates, streams, and completes a run end to end": `expect(types).toContain('usage')`) |
+| `cd backend && npm test` (run 2) | **228/228** pass — the flake was REPRODUCED, root-caused (see F002), and fixed rather than re-run away |
+| `cd frontend && npm ci && npm run typecheck && npm run lint` | Pass |
+| `cd frontend && npm run build` | Pass (pre-existing chunk-size warning only) |
+| `cd frontend && npm test` | **492/492** pass |
+
+### Per-commit evidence (each committed only after its full verification)
+
+| Commit | Scope | Backend | Frontend |
+| --- | --- | --- | --- |
+| `4012b123c` F002 usage-append race fix | backend runs | **229/229** (228 + 1 regression; typecheck+build clean) | — (untouched) |
+| `f5f32b363` N010 manual model setup | frontend | — | **495/495** (492 + 3; typecheck/lint/build clean) |
+| `9278eed89` N011 searchable picker | frontend | — | **497/497** (495 + 2) |
+| `326f78cba` N012 error normalization | contracts + backend + frontend | **229/229** (errorKind asserted across readiness/body-limits/openrouter suites) | **499/499** (497 + 2) |
+| `28d12d8aa` N013 capability-aware picker | frontend | — | **503/503** (499 + 4) |
+| `469b13bbd` N014 preset refresh | frontend | — | **509/509** (503 + 6) |
+| `efec167c1` N015 integrated journey | frontend | — | **511/511** (509 + 2; one existing assertion tightened to exact match) |
+| `c7a81d621` N016 atomic sequences | backend | **232/232** (229 + 3; typecheck+build clean) | — (untouched) |
+
+### Discrimination proof (N016)
+
+The atomicity suite was run against a TEMPORARILY reverted (pre-fix)
+`appendEvent`: **2 of 3 tests failed** (unique-violation rejections on
+concurrent appends; gap-laden sequences). The fixed implementation was
+restored from a backup copy and re-verified green — the test
+genuinely pins the guarantee, not the implementation's shape.
+
+### Live endpoint probing (N014)
+
+This sandbox HAS network egress — every preset URL was probed over
+HTTPS with curl this session (`/models` route): 401/403 = endpoint
+exists with auth challenge; 200 = public catalog; 404 = dead path
+(Perplexity verified instead via a 401 on POST /chat/completions;
+Google's compat route verified via 400 on the chat route with a key
+probe). Pollinations was verified end-to-end: an UNAUTHENTICATED
+POST /chat/completions returned a real 200 completion. Failures were
+excluded from the catalog (api.liquid.ai/api/v1 dead path → working
+base is inference.liquid.ai/v1; Lambda and Requesty unreachable).
+
+### Honesty notes
+
+- No paid provider key existed; live inference was exercised only
+  through the verified keyless Pollinations completion (N014) — all
+  other provider behavior remains fake-server-verified over real
+  sockets.
+- `npm run qa:live` not rerun (no backend routing change this session).
+- Frontend full-suite runs happened once per commit; the N015 session
+  initially hit 510/511 (an existing `gpt-test` regex newly matched the
+  "Chat with" button), fixed by tightening that one assertion —
+  recorded here rather than hidden.

@@ -1,3 +1,37 @@
+## Current state (updated 2026-11-03, production-300 session 2 — Phase 1 complete, Phase 2 opened)
+
+- **Branch:** `main` — 9 commits this session (8 implementation + 1 docs
+  checkpoint), each pushed individually and verified remotely
+  (`git ls-remote` SHA match). HEAD after the docs commit.
+- **Session scope shipped:** F002 (usage-append race fix — the baseline
+  e2e flake, root-caused), N010 manual model setup, N011 searchable
+  bounded model picker (threshold 12), N012 ten-kind errorKind
+  vocabulary across contracts/backend/frontend, N013 capability-aware
+  chat model picker (filter chips + per-model summaries), N014
+  live-probed preset refresh (21→38, incl. keyless-hosted Pollinations),
+  N015 integrated provider journey ("Chat with …" closes settings,
+  activates the model, focuses the composer), N016 atomic event
+  sequence assignment (pg_advisory_xact_lock per run; test verified
+  discriminating against the pre-fix code).
+- **Verification this session:** contracts build+typecheck clean;
+  backend typecheck/build clean, **232/232** (228 baseline + 1 F002 +
+  3 N016); frontend lint/typecheck/build clean, **511/511** (492
+  baseline + 19 new across N010–N015). Full per-commit evidence table
+  in `docs/verification.md` (session 2 section).
+- **Ledger:** `docs/production-300-ledger.md` — rows through N016
+  (24 implemented IDs counting toward the 300), including the N007/N009
+  rows from session 1.5 (PR #47) that predated this checkpoint.
+- **Next action:** Phase 2 remainder (N017+ atomicity items), then
+  Phase 3 (contracts/modes) and Phase 4 (normal server Chat). Re-probe
+  preset endpoints before future catalog edits (probe evidence is
+  point-in-time 2026-11-03).
+- **Blockers/limits:** no paid provider keys — live inference verified
+  only through keyless Pollinations (real unauthenticated completion);
+  everything else stays fake-server-verified over real sockets.
+  `qa:live` not rerun (no routing change). Single-process run ownership
+  unchanged (N016 fixed the event-sequence race; pg-boss durable
+  execution is still B06).
+
 ## Current state (updated 2026-11-03, production-300 session 1)
 
 - **Branch:** `task/uni-production-300` from main `89acd256e`
