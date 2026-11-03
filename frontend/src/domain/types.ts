@@ -12,6 +12,22 @@ export type Capability =
   | 'data-analysis'
   | 'code'
 
+/**
+ * The canonical capability order (N013): one definition for the editor
+ * chips in Provider settings and the capability filter in the model
+ * picker, so the vocabulary and its presentation never drift apart.
+ */
+export const CAPABILITY_ORDER: readonly Capability[] = [
+  'chat',
+  'search',
+  'research',
+  'images',
+  'voice',
+  'canvas',
+  'data-analysis',
+  'code',
+]
+
 export interface AttachmentMeta {
   id: string
   name: string

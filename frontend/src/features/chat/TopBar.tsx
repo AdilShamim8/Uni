@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { useAppStore, selectActiveConversation, selectActiveModel } from '@/state/store'
 import { useAgentsStore } from '@/state/agentsStore'
+import { CAPABILITY_ORDER, type Capability, type ProviderProfile } from '@/domain/types'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import { IconButton } from '@/components/ui/IconButton'
@@ -70,6 +71,9 @@ export function TopBar() {
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [draftTitle, setDraftTitle] = useState('')
+  // Capability filter for the model picker (N013): null shows every
+  // model; a capability narrows the choice to models advertising it.
+  const [capabilityFilter, setCapabilityFilter] = useState<Capability | null>(null)
 
   function handleTemporaryToggle() {
     const state = useAppStore.getState()
@@ -115,7 +119,10 @@ export function TopBar() {
         </IconButton>
       </div>
 
-      {/* Provider / model picker — shows selection, provider context, and status */}
+      {/* Provider / model picker — shows selection, provider context, and status.
+          Capability-aware (N013): every model lists what it advertises,
+          and the picker filters by capability so "which of my models can
+          do images?" is one tap instead of a memory exercise. */}
       <Menu
         width="w-72"
         label="Select provider and model"
@@ -136,6 +143,14 @@ export function TopBar() {
           </button>
         }
       >
+        {/* Capability filter — only capabilities at least one model
+            advertises are offered, so an empty result is impossible by
+            construction and every chip is an honest choice. */}
+        <ModelCapabilityFilter
+          providers={providers}
+          filter={capabilityFilter}
+          onChange={setCapabilityFilter}
+        />
         {providers.length === 0 && (
           <p className="px-2.5 py-2 text-sm text-ink-faint">
             No provider profiles configured yet.
@@ -143,6 +158,12 @@ export function TopBar() {
         )}
         {providers.map((provider) => {
           const connected = liveProviderIds.has(provider.id)
+          const matchingModels = capabilityFilter
+            ? provider.models.filter((model) => model.capabilities.includes(capabilityFilter))
+            : provider.models
+          // Groups with nothing to offer under the active filter collapse
+          // away entirely instead of showing an empty shell.
+          if (capabilityFilter && matchingModels.length === 0) return null
           return (
             <div key={provider.id}>
               <p className="flex items-center gap-1.5 px-2.5 pb-1 pt-2 text-[12px] font-medium text-ink-faint">
@@ -166,13 +187,14 @@ export function TopBar() {
               {provider.models.length === 0 && (
                 <p className="px-2.5 py-1 text-xs text-ink-faint">No models</p>
               )}
-              {provider.models.map((model) => {
+              {matchingModels.map((model) => {
                 const isActive = provider.id === activeProviderId && model.id === activeModelId
                 return (
                   <MenuItem
                     key={model.id}
                     icon={isActive ? <Check size={15} /> : undefined}
                     hint={connected ? 'Live' : model.demo ? 'Demo' : undefined}
+                    description={modelCapabilitySummary(model.capabilities)}
                     selection="radio"
                     selected={isActive}
                     onClick={() => setActiveModel(provider.id, model.id)}
@@ -184,6 +206,15 @@ export function TopBar() {
             </div>
           )
         })}
+        {capabilityFilter &&
+          providers.every(
+            (provider) =>
+              !provider.models.some((model) => model.capabilities.includes(capabilityFilter)),
+          ) && (
+            <p className="px-2.5 py-2 text-xs leading-relaxed text-ink-faint">
+              No model advertises “{capabilityFilter}”. Clear the filter to see every model.
+            </p>
+          )}
         <div className="my-1 border-t border-line" />
         <MenuItem onClick={() => setUi({ settingsOpen: true })} hint="Connect your own">
           Manage providers…
@@ -364,5 +395,63 @@ export function TopBar() {
         }}
       />
     </PageToolbar>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Capability-aware model choices (N013)                                */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Compact, honest summary of what a model advertises — always visible
+ * under its name in the picker, so the choice is capability-aware even
+ * before any filter is applied.
+ */
+function modelCapabilitySummary(capabilities: Capability[]): string | undefined {
+  return capabilities.length > 0 ? capabilities.join(', ') : undefined
+}
+
+/**
+ * The capability filter row at the top of the model picker. Only
+ * capabilities that at least one configured model advertises are
+ * offered, so every chip is a real choice and an empty result is
+ * impossible by construction. The active chip toggles off to clear.
+ */
+function ModelCapabilityFilter({
+  providers,
+  filter,
+  onChange,
+}: {
+  providers: ProviderProfile[]
+  filter: Capability | null
+  onChange: (next: Capability | null) => void
+}) {
+  const offered = CAPABILITY_ORDER.filter((capability) =>
+    providers.some((provider) =>
+      provider.models.some((model) => model.capabilities.includes(capability)),
+    ),
+  )
+  if (offered.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1 border-b border-line pb-1.5">
+      {offered.map((capability) => {
+        const active = filter === capability
+        return (
+          <button
+            key={capability}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(active ? null : capability)}
+            className={`rounded-full border px-2 py-0.5 text-[10.5px] font-medium transition-colors ${
+              active
+                ? 'border-accent bg-accent-soft text-accent'
+                : 'border-line text-ink-faint hover:bg-subtle hover:text-ink'
+            }`}
+          >
+            {capability}
+          </button>
+        )
+      })}
+    </div>
   )
 }
