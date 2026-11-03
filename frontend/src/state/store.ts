@@ -40,6 +40,7 @@ import {
   saveCredentials,
 } from '@/services/storage/credentials'
 import { makeId } from '@/domain/ids'
+import { protocolForKind, allowsKeyless } from '@/domain/providerDescriptors'
 import { useAgentsStore } from '@/state/agentsStore'
 import { buildContextBlock, resolveContextItems } from '@/domain/contextResolution'
 
@@ -183,16 +184,26 @@ function resolveAdapter(preference?: { providerId: string | null; modelId: strin
       wantedProvider.models.some((m) => m.id === preference.modelId) ||
       credentials[wantedProvider.id]?.discoveredModels.includes(preference.modelId)
     const credential = credentials[wantedProvider.id]
-    const usable = wantedProvider.demo || credential?.status === 'connected'
+    // Keyless BYOK (N003): a connected credential with an empty key is a
+    // genuinely keyless local runtime — generation runs live without a key.
+    const connected = credential?.status === 'connected'
+    const keyless = connected && !credential.apiKey && allowsKeyless(protocolForKind(wantedProvider.kind))
+    const usable = wantedProvider.demo || connected || keyless
     if (modelAvailable && usable) {
-      return credential?.status === 'connected' && credential.apiKey
+      return connected
         ? createLiveAdapter(wantedProvider, credential.apiKey, preference.modelId)
         : activeAdapter
     }
   }
   const provider = providers.find((p) => p.id === activeProviderId)
   const credential = activeProviderId ? credentials[activeProviderId] : undefined
-  if (provider && activeModelId && credential?.status === 'connected' && credential.apiKey) {
+  const activeConnected = credential?.status === 'connected'
+  const activeKeyless =
+    provider != null &&
+    activeConnected &&
+    !credential.apiKey &&
+    allowsKeyless(protocolForKind(provider.kind))
+  if (provider && activeModelId && activeConnected && (credential.apiKey || activeKeyless)) {
     return createLiveAdapter(provider, credential.apiKey, activeModelId)
   }
   return activeAdapter

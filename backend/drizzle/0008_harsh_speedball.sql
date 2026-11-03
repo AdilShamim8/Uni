@@ -1,0 +1,1 @@
+ALTER TABLE "provider_connection" ADD COLUMN "config_revision" integer DEFAULT 0 NOT NULL;

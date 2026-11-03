@@ -10,10 +10,14 @@ import { API_ROOT, apiFetch } from './client'
 
 export type ServerProviderKind = 'openai-compatible' | 'anthropic'
 
+/** Explicit credential transport (N001, mirrors the contract). */
+export type ServerProviderAuthMode = 'none' | 'bearer' | 'native'
+
 export interface ServerProvider {
   id: string
   label: string
   kind: ServerProviderKind
+  authMode: ServerProviderAuthMode
   endpointUrl: string
   modelId: string | null
   models: string[]
@@ -37,12 +41,20 @@ export async function listServerProviders(): Promise<ServerProvider[]> {
 export async function createServerProvider(input: {
   label: string
   kind: ServerProviderKind
+  /** 'none' = genuinely keyless (only valid for keyless-capable protocols). */
+  authMode?: ServerProviderAuthMode
   endpointUrl: string
   modelId?: string
 }): Promise<ServerProvider> {
   return apiFetch<ServerProvider>(`${API_ROOT}/providers`, {
     method: 'POST',
     body: JSON.stringify(input),
+  })
+}
+
+export async function deleteServerProvider(providerId: string): Promise<void> {
+  await apiFetch<void>(`${API_ROOT}/providers/${encodeURIComponent(providerId)}`, {
+    method: 'DELETE',
   })
 }
 

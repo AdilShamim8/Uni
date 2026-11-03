@@ -158,6 +158,7 @@ describe('modelClient — AI SDK generation flows through the guarded transport'
       {
         id: 'provider-test',
         kind: 'openai-compatible',
+        authMode: 'bearer',
         endpointUrl: `http://sdk-host.test:${port}/v1`,
         modelId: 'test-model',
         apiKey: 'sk-test-key',
@@ -182,6 +183,7 @@ describe('modelClient — AI SDK generation flows through the guarded transport'
         {
           id: 'provider-evil',
           kind: 'openai-compatible',
+          authMode: 'bearer',
           endpointUrl: 'https://169.254.169.254/v1',
           modelId: 'test-model',
           apiKey: 'sk-test-key',

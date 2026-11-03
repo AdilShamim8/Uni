@@ -7,7 +7,8 @@ import type { ProviderProfile } from '@/domain/types'
  * configured. Nothing is proxied through Uni and no credentials are
  * stored anywhere except this browser's localStorage (separate key).
  *
- * Wire protocols:
+ * Wire protocols (resolved through the shared descriptor registry,
+ * including the kind→protocol mapping):
  * - OpenAI-compatible (OpenAI, Groq, OpenRouter, Together, LM Studio,
  *   Ollama's compat layer, Google's compat endpoint):
  *     GET {base}/models  with  Authorization: Bearer <key>
@@ -24,10 +25,6 @@ export interface ConnectionTestResult {
   latencyMs?: number
   /** Model ids discovered from the endpoint, when the API provides them. */
   models?: string[]
-}
-
-function usesAnthropicProtocol(kind: ProviderProfile['kind']): boolean {
-  return kind === 'anthropic'
 }
 
 /** True when the endpoint is OpenRouter (its /models list is public). */
@@ -49,17 +46,30 @@ import {
   normalizeProviderBase,
   providerDiscoveryUrl,
   providerAuthHeaders,
+  protocolForKind,
+  allowsKeyless,
+  authModeForApiKey,
   type ProviderProtocol,
 } from '@/domain/providerDescriptors'
 
 export { normalizeProviderBase, providerDiscoveryUrl, type ProviderProtocol }
 
 export function modelsListUrl(profile: ProviderProfile): string {
-  return providerDiscoveryUrl(profile.kind, profile.endpointUrl)
+  return providerDiscoveryUrl(protocolForKind(profile.kind), profile.endpointUrl)
+}
+
+/**
+ * Whether this profile's protocol can operate genuinely keyless
+ * (N003): every kind except Anthropic speaks OpenAI-compatible, and
+ * local runtimes (Ollama, LM Studio, vLLM) usually need no key.
+ */
+export function profileAllowsKeyless(profile: ProviderProfile): boolean {
+  return allowsKeyless(protocolForKind(profile.kind))
 }
 
 function buildHeaders(profile: ProviderProfile, apiKey: string): HeadersInit {
-  return providerAuthHeaders(profile.kind, apiKey)
+  const protocol = protocolForKind(profile.kind)
+  return providerAuthHeaders(protocol, authModeForApiKey(protocol, apiKey), apiKey)
 }
 
 function describeHttpError(status: number, bodyText: string): string {
@@ -179,7 +189,8 @@ export async function testProviderConnection(
   signal?: AbortSignal,
 ): Promise<ConnectionTestResult> {
   const trimmedKey = apiKey.trim()
-  if (!trimmedKey) {
+  const keyless = trimmedKey.length === 0
+  if (keyless && !profileAllowsKeyless(profile)) {
     return { ok: false, message: 'Enter an API key first.' }
   }
 
@@ -212,8 +223,10 @@ export async function testProviderConnection(
 
     // OpenRouter's model list is public: a successful /models fetch proves
     // reachability, not the key. Only a verified /key response may claim
-    // "connected"; rejected and unknown are distinct honest failures.
-    if (isOpenRouter(profile)) {
+    // "connected"; rejected and unknown are distinct honest failures. A
+    // keyless connection claims no key at all, so there is nothing to
+    // verify on /key.
+    if (isOpenRouter(profile) && !keyless) {
       const verified = await verifyOpenRouterKey(profile.endpointUrl, trimmedKey, signal)
       if (verified.state !== 'verified') {
         return { ok: false, message: verified.message, latencyMs }
@@ -228,8 +241,11 @@ export async function testProviderConnection(
           .slice(0, 200)
     return {
       ok: true,
-      message:
-        models.length > 0
+      message: keyless
+        ? models.length > 0
+          ? `Connected in ${latencyMs}ms without a key — ${models.length} model${models.length === 1 ? '' : 's'} available.`
+          : `Connected in ${latencyMs}ms without a key.`
+        : models.length > 0
           ? `Connected in ${latencyMs}ms — ${models.length} model${models.length === 1 ? '' : 's'} available.`
           : `Connected in ${latencyMs}ms.`,
       latencyMs,

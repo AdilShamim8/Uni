@@ -29,6 +29,17 @@ export type ProviderBasePolicy = 'as-configured' | 'versioned-v1'
 
 export type ProviderAuthStyle = 'authorization-bearer' | 'x-api-key'
 
+/**
+ * The explicit credential transport a connection uses:
+ * - `none`: no credential header at all — genuinely keyless operation,
+ *   only meaningful for protocols whose descriptor `allowsNoAuth`.
+ * - `bearer`: `Authorization: Bearer <key>` regardless of protocol
+ *   (some Anthropic-protocol gateways authenticate this way).
+ * - `native`: the protocol's native credential header — `x-api-key` for
+ *   Anthropic, the bearer header for OpenAI-compatible.
+ */
+export type ProviderAuthMode = 'none' | 'bearer' | 'native'
+
 export interface ProviderDescriptor {
   protocol: ProviderProtocol
   /** Human-readable protocol label. */
@@ -87,8 +98,34 @@ export function providerDiscoveryUrl(protocol: ProviderProtocol, endpointUrl: st
   return `${normalizeProviderBase(protocol, endpointUrl)}${getProviderDescriptor(protocol).discoveryPath}`
 }
 
-/** Credential headers for API requests under a protocol's auth style. */
-export function providerAuthHeaders(protocol: ProviderProtocol, apiKey: string): Record<string, string> {
+/** The default credential transport for a protocol when a key is used. */
+export function defaultAuthModeFor(protocol: ProviderProtocol): ProviderAuthMode {
+  return getProviderDescriptor(protocol).auth === 'x-api-key' ? 'native' : 'bearer'
+}
+
+/** Whether a protocol can operate genuinely keyless (e.g. local runtimes). */
+export function allowsKeyless(protocol: ProviderProtocol): boolean {
+  return getProviderDescriptor(protocol).allowsNoAuth
+}
+
+/** Credential headers for API requests under an explicit auth mode.
+ *
+ * `none` sends NO credential header — a keyless probe or generation
+ * must not smuggle a dummy Authorization header to the endpoint. */
+export function providerAuthHeaders(
+  protocol: ProviderProtocol,
+  authMode: ProviderAuthMode,
+  apiKey: string,
+): Record<string, string> {
+  if (authMode === 'none') {
+    return { accept: 'application/json' }
+  }
+  if (authMode === 'bearer') {
+    return {
+      authorization: `Bearer ${apiKey}`,
+      accept: 'application/json',
+    }
+  }
   if (getProviderDescriptor(protocol).auth === 'x-api-key') {
     return {
       'x-api-key': apiKey,
