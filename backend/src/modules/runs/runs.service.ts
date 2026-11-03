@@ -23,6 +23,7 @@ import {
   type RunRow,
 } from '../../db/schema.js'
 import { badRequest, conflict, notFound, rateLimited } from '../../lib/errors.js'
+import { isUniqueViolation } from '../../lib/pgErrors.js'
 import { decryptSecret, parseMasterKey } from '../../lib/secretBox.js'
 import { allowsKeyless } from '../../lib/providerUrls.js'
 import { RepetitionWatch } from '../../vendor/openclaw/repetition-guard.js'
@@ -291,24 +292,6 @@ function checkCreationRate(workspaceId: string, limitPerMinute: number): void {
   }
   recent.push(now)
   creationTimes.set(workspaceId, recent)
-}
-
-/* ------------------------------------------------------------------ */
-/* Concurrent same-key creation (N017)                                */
-/* ------------------------------------------------------------------ */
-
-/**
- * Postgres unique-violation detector that works through drizzle's
- * error wrapping: node-postgres errors carry `code` directly, while
- * drizzle may rethrow them as DrizzleQueryError with the original on
- * `.cause`.
- */
-export function isUniqueViolation(error: unknown): boolean {
-  if (typeof error !== 'object' || error === null) return false
-  const candidate = error as { code?: unknown; cause?: unknown }
-  if (candidate.code === '23505') return true
-  const cause = candidate.cause as { code?: unknown } | undefined
-  return typeof cause === 'object' && cause !== null && cause.code === '23505'
 }
 
 /* ------------------------------------------------------------------ */
