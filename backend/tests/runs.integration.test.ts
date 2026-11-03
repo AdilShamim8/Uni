@@ -403,6 +403,60 @@ describe('runs — streamed execution, events, cancel, guard', () => {
     for (const event of replay.events) runEventSchema.parse(event)
   })
 
+  it('records every stream event durably and in order — usage never races the final delta flush', async () => {
+    // Regression (found while testing at HEAD): the usage event append
+    // was not serialized against the pending delta flush chain. Both
+    // computed their sequence with SELECT max + 1, so they could collide
+    // on the (runId, sequence) primary key: the losing usage append
+    // surfaced the run as provider_error AFTER the provider succeeded,
+    // and a losing flush silently dropped buffered deltas. The invariants
+    // below fail on both branches.
+    fake.setMode('normal')
+    const providerId = await createProviderAndCredential(alice.cookie)
+    const { conversationId, nodeId } = await createConversationWithUserNode(alice.cookie)
+    const { body } = await startRun(alice.cookie, conversationId, nodeId, providerId, 'e2e-order-key')
+    const created = createRunResponseSchema.parse(body)
+    const finalRun = await waitForRunStatus(created.run.id, alice.cookie, ['complete'])
+    expect(finalRun.outputText).toContain('Live server reply')
+
+    // Replay the full durable history of the completed run.
+    const replay = await readSse(baseUrl, `/api/v1/runs/${created.run.id}/events?after=0`, alice.cookie)
+    const events = replay.events
+    expect(events.length).toBeGreaterThan(2)
+
+    // Sequences are strictly increasing with no duplicates.
+    const sequences = events.map((event) => event.sequence as number)
+    const strictlyIncreasing = sequences.every(
+      (value, index) => index === 0 || (sequences[index - 1] ?? Number.NaN) < value,
+    )
+    expect(strictlyIncreasing).toBe(true)
+    expect(new Set(sequences).size).toBe(sequences.length)
+
+    const types = events.map((event) => event.type as string)
+    // The usage event is present, after every delta and before terminal.
+    const usageIndex = types.indexOf('usage')
+    expect(usageIndex).toBeGreaterThan(-1)
+    const lastDelta = types.lastIndexOf('delta')
+    expect(lastDelta).toBeGreaterThan(-1)
+    expect(usageIndex).toBeGreaterThan(lastDelta)
+    const terminalIndex = types.indexOf('terminal')
+    expect(terminalIndex).toBe(types.length - 1)
+
+    // No buffered delta was lost: the replayed deltas reconstruct the
+    // exact output the run reported.
+    const deltaText = events
+      .filter((event) => event.type === 'delta')
+      .map((event) => (event.payload as { text?: string }).text ?? '')
+      .join('')
+    expect(deltaText).toBe(finalRun.outputText)
+
+    // The usage payload carries the fake provider's token counts.
+    const usageEvent = events[usageIndex]
+    const usagePayload = (usageEvent?.payload as { usage?: Record<string, number> } | undefined)?.usage
+    expect(usagePayload?.inputTokens).toBe(12)
+    expect(usagePayload?.outputTokens).toBe(7)
+  })
+
   it('is idempotent: the same key returns the same run without re-executing', async () => {
     fake.setMode('normal')
     const providerId = await createProviderAndCredential(alice.cookie)

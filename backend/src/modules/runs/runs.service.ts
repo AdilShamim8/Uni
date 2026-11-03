@@ -617,6 +617,19 @@ async function executeRun(
           outputTokens: resolvedUsage.outputTokens,
         }
         usage = runUsage
+        // Serialize against the delta flush chain: the usage event's
+        // sequence must only be computed after every pending delta
+        // append has committed. appendEvent assigns sequences with a
+        // read-then-insert (SELECT max + 1), so a usage append running
+        // concurrently with an in-flight delta flush could read the same
+        // max and collide on the (runId, sequence) primary key — the
+        // loser either turned a completed provider stream into a
+        // provider_error run or was silently swallowed by the flush
+        // chain's catch, losing buffered deltas. The stream loop has
+        // ended here, so this final flush drains the buffer for good;
+        // later timer ticks find it empty and append nothing.
+        flushBuffer()
+        await flushChain
         await appendEvent(db, runId, 'usage', { usage: runUsage })
       }
 
