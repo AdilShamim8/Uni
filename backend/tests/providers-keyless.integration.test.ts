@@ -23,6 +23,8 @@ interface RecordedRequest {
   url: string
   authorization: string | undefined
   xApiKey: string | undefined
+  /** True when the client (the backend probe) destroyed the socket. */
+  aborted: boolean
 }
 
 function keylessFakeProvider(): {
@@ -37,10 +39,17 @@ function keylessFakeProvider(): {
     delayMs = ms
   }
   const server = createServer((request, response) => {
-    requests.push({
+    const recorded: RecordedRequest = {
       url: request.url ?? '/',
       authorization: request.headers.authorization,
       xApiKey: request.headers['x-api-key'] as string | undefined,
+      aborted: false,
+    }
+    requests.push(recorded)
+    // The reliable abort signal: the response connection closed before
+    // the response finished — the client destroyed the socket.
+    response.on('close', () => {
+      if (!response.writableFinished) recorded.aborted = true
     })
 
     // A keyless local runtime: model discovery and generation answer for
@@ -115,6 +124,7 @@ function bearerAnthropicGateway(): { server: Server; url: string; requests: Reco
       url: request.url ?? '/',
       authorization: request.headers.authorization,
       xApiKey: request.headers['x-api-key'] as string | undefined,
+      aborted: false,
     })
     if ((request.url ?? '').includes('/models')) {
       // Bearer accepted, x-api-key explicitly NOT accepted.
@@ -147,6 +157,7 @@ function listen(server: Server): Promise<string> {
 describe('providers — explicit auth modes and keyless operation (N001–N003)', () => {
   let testApp: TestApp
   let alice: { cookie: string }
+  let baseUrl = ''
   let keyless: ReturnType<typeof keylessFakeProvider>
   let gateway: ReturnType<typeof bearerAnthropicGateway>
   let otherEndpoint: ReturnType<typeof keylessFakeProvider>
@@ -160,6 +171,11 @@ describe('providers — explicit auth modes and keyless operation (N001–N003)'
     gateway.url = await listen(gateway.server)
     otherEndpoint = keylessFakeProvider()
     otherEndpoint.url = await listen(otherEndpoint.server)
+    await testApp.app.listen({ port: 0, host: '127.0.0.1' })
+    const address = testApp.app.server.address()
+    if (address && typeof address === 'object') {
+      baseUrl = `http://127.0.0.1:${address.port}`
+    }
   }, 180_000)
 
   afterAll(async () => {
@@ -504,6 +520,51 @@ describe('providers — explicit auth modes and keyless operation (N001–N003)'
     const after = providerDtoSchema.parse(body.provider)
     expect(after.credential.status).toBe('untested')
     expect(after.models).toEqual([])
+  })
+
+  it('a client disconnect aborts the outbound probe and writes nothing (N008)', async () => {
+    // Slow endpoint: the probe is still in flight when the client goes away.
+    keyless.setDelayMs(500)
+    const created = await createProvider({
+      label: 'Cancel me',
+      kind: 'openai-compatible',
+      endpointUrl: keyless.url,
+    })
+    const provider = providerDtoSchema.parse(created.json())
+
+    // Real socket: start the check, then disconnect the client.
+    const controller = new AbortController()
+    const checkPromise = fetch(`${baseUrl}/api/v1/providers/${provider.id}/test`, {
+      method: 'POST',
+      headers: { cookie: alice.cookie },
+      signal: controller.signal,
+    })
+    await new Promise((resolve) => setTimeout(resolve, 120))
+    controller.abort()
+    await checkPromise.catch(() => undefined) // the aborted client request rejects
+    keyless.setDelayMs(0)
+
+    // Give the (aborted) outbound probe a moment to settle, then verify:
+    // the real outbound request was cancelled on the wire...
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    // The fake server is shared across tests — the aborted probe is the
+    // LATEST /models request, not the first.
+    const probe = [...keyless.requests].reverse().find((request) => request.url.includes('/models'))
+    expect(probe).toBeDefined()
+    expect(probe!.aborted).toBe(true)
+
+    // ...and the row was never marked by the abandoned check.
+    const listed = await testApp.app.inject({
+      method: 'GET',
+      url: '/api/v1/providers',
+      headers: { cookie: alice.cookie },
+    })
+    const items = (listed.json() as { items: unknown[] }).items
+    const row = items
+      .map((item) => providerDtoSchema.parse(item))
+      .find((item) => item.id === provider.id)
+    expect(row?.credential.status).toBe('untested')
+    expect(row?.models).toEqual([])
   })
 
   it('still refuses a keyed run when the provider has no credential', async () => {

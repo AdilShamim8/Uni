@@ -360,6 +360,8 @@ interface ConnectionResult {
   ok: boolean
   message: string
   models: string[] | null
+  /** True when the caller cancelled the check — proves nothing, writes nothing. */
+  cancelled?: boolean
 }
 
 /**
@@ -376,16 +378,19 @@ async function runConnectionCheck(
   env: Env,
   provider: ProviderRow,
   apiKey: string | null,
+  signal?: AbortSignal,
 ): Promise<ConnectionResult> {
   const url = modelsUrl(provider.kind, provider.endpointUrl)
   try {
     // Keyless probes send NO credential header (N002): a local runtime
     // must not receive a dummy Authorization header, and authMode 'none'
-    // means exactly that on the wire.
+    // means exactly that on the wire. The caller's signal aborts the
+    // real outbound request (N008).
     const keyless = apiKey === null
     const response = await guardedProviderFetch(env, url, {
       method: 'GET',
       headers: authHeaders(provider, apiKey ?? ''),
+      ...(signal ? { signal } : {}),
     })
 
     if (response.status === 401 || response.status === 403) {
@@ -429,6 +434,7 @@ async function runConnectionCheck(
         const keyResponse = await guardedProviderFetch(env, openRouterKeyUrl(provider.endpointUrl), {
           method: 'GET',
           headers: authHeaders(provider, apiKey ?? ''),
+          ...(signal ? { signal } : {}),
         })
         if (keyResponse.status === 401 || keyResponse.status === 403) {
           verification = { state: 'rejected' }
@@ -444,6 +450,13 @@ async function runConnectionCheck(
       } catch (error) {
         if (error instanceof UrlGuardError) {
           return { ok: false, message: error.message, models: null }
+        }
+        const aborted =
+          signal?.aborted ||
+          (error instanceof Error && error.name === 'AbortError') ||
+          (error instanceof DOMException && error.name === 'AbortError')
+        if (aborted) {
+          return { ok: false, message: 'Connection check cancelled.', models: null, cancelled: true }
         }
         verification = { state: 'unknown', reason: 'network error' }
       }
@@ -481,6 +494,17 @@ async function runConnectionCheck(
   } catch (error) {
     if (error instanceof UrlGuardError) {
       return { ok: false, message: error.message, models: null }
+    }
+    // A cancelled check proves nothing (N008): the outbound request was
+    // aborted — either the caller replaced it or the client went away.
+    // It must not write a status and must not surface as a provider
+    // failure; it is an honest 'cancelled' outcome.
+    const aborted =
+      signal?.aborted ||
+      (error instanceof Error && error.name === 'AbortError') ||
+      (error instanceof DOMException && error.name === 'AbortError')
+    if (aborted) {
+      return { ok: false, message: 'Connection check cancelled.', models: null, cancelled: true }
     }
     const message = error instanceof Error ? error.message : 'connection failed'
     return {
@@ -546,6 +570,7 @@ export async function testProviderConnection(
   env: Env,
   workspaceId: string,
   providerId: string,
+  signal?: AbortSignal,
 ): Promise<ProviderActionResult> {
   const provider = await findProvider(db, workspaceId, providerId)
   if (!provider) throw notFound('Provider not found.')
@@ -568,8 +593,19 @@ export async function testProviderConnection(
   // change during the check discards it (N006).
   const expectedRevision = provider.configRevision
   const startedAt = Date.now()
-  const result = await runConnectionCheck(env, provider, apiKey)
+  const result = await runConnectionCheck(env, provider, apiKey, signal)
   const latencyMs = Date.now() - startedAt
+  // A cancelled check writes nothing (N008) — the row keeps its current
+  // truthful state instead of a late failure or success.
+  if (result.cancelled) {
+    return {
+      ok: false,
+      message: result.message,
+      latencyMs,
+      discoveredModels: null,
+      provider: serializeProvider(provider),
+    }
+  }
   const outcome = await applyTestResult(db, workspaceId, providerId, expectedRevision, result, false)
   if (outcome.kind === 'superseded') {
     return {
@@ -588,6 +624,7 @@ export async function discoverProviderModels(
   env: Env,
   workspaceId: string,
   providerId: string,
+  signal?: AbortSignal,
 ): Promise<ProviderActionResult> {
   const provider = await findProvider(db, workspaceId, providerId)
   if (!provider) throw notFound('Provider not found.')
@@ -604,8 +641,17 @@ export async function discoverProviderModels(
   const apiKey = isKeyless(provider) ? null : await readCredential(db, env, workspaceId, providerId)
   const expectedRevision = provider.configRevision
   const startedAt = Date.now()
-  const result = await runConnectionCheck(env, provider, apiKey)
+  const result = await runConnectionCheck(env, provider, apiKey, signal)
   const latencyMs = Date.now() - startedAt
+  if (result.cancelled) {
+    return {
+      ok: false,
+      message: result.message,
+      latencyMs,
+      discoveredModels: null,
+      provider: serializeProvider(provider),
+    }
+  }
   const outcome = await applyTestResult(db, workspaceId, providerId, expectedRevision, result, true)
   if (outcome.kind === 'superseded') {
     return {

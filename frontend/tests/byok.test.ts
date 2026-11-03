@@ -155,6 +155,30 @@ describe('provider connection testing', () => {
     )
   })
 
+  it('aborting the signal cancels the outbound check with no credential change (N008)', async () => {
+    // The mock honors the signal exactly like the real fetch: abort
+    // rejects the in-flight request with an AbortError.
+    const fetchMock = vi.fn().mockImplementation(
+      (_url: string, init?: RequestInit) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('Aborted', 'AbortError'))
+          })
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const controller = new AbortController()
+
+    const pending = testProviderConnection(profile, 'sk-key', controller.signal)
+    controller.abort()
+    const result = await pending
+
+    // Honest cancelled outcome — never 'connected', never a provider failure.
+    expect(result.ok).toBe(false)
+    expect(result.message).toBe('Connection test cancelled.')
+    vi.unstubAllGlobals()
+  })
+
   it('treats an empty key on a keyless-capable protocol as a keyless probe', async () => {
     // Since N003 an empty key is not an early rejection for
     // OpenAI-compatible endpoints — it is a genuine keyless attempt
