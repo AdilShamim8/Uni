@@ -19,6 +19,7 @@ import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerConversationDetail } from '@/state/serverSessionStore'
 import type { ServerProvider } from '@/services/api/serverProviders'
+import { ReadinessStrip } from './ReadinessStrip'
 import { readFileText } from '@/services/readFileText'
 import type { ImportCommitResponse, ImportPreviewResponse } from '@/services/api/serverContracts'
 
@@ -447,28 +448,39 @@ function ServerProvidersView() {
                   </span>
                 )}
                 {testResult && (
-                  <p
-                    role="status"
-                    className={`ml-[21px] rounded-control px-2.5 py-1.5 text-[12px] ${
-                      testResult.ok ? 'bg-accent-soft/60 text-ink-soft' : 'bg-danger/10 text-danger'
-                    }`}
-                  >
-                    {testResult.message}
-                    {testResult.ok && testResult.latencyMs !== null && <> · {testResult.latencyMs} ms</>}
-                    {testResult.ok && testResult.discoveredModels && (
-                      <>
-                        {' '}
-                        · {testResult.discoveredModels.length} model
-                        {testResult.discoveredModels.length === 1 ? '' : 's'} discovered
-                        {testResult.discoveredModels.length > 0 &&
-                          ` (${testResult.discoveredModels.slice(0, 3).join(', ')}${
-                            testResult.discoveredModels.length > 3
-                              ? `, +${testResult.discoveredModels.length - 3} more`
-                              : ''
-                          })`}
-                      </>
-                    )}
-                  </p>
+                  <div className="ml-[21px]">
+                    <p
+                      role="status"
+                      className={`rounded-control px-2.5 py-1.5 text-[12px] ${
+                        testResult.ok ? 'bg-accent-soft/60 text-ink-soft' : 'bg-danger/10 text-danger'
+                      }`}
+                    >
+                      {testResult.message}
+                      {testResult.ok && testResult.latencyMs !== null && <> · {testResult.latencyMs} ms</>}
+                      {testResult.ok && testResult.discoveredModels && (
+                        <>
+                          {' '}
+                          · {testResult.discoveredModels.length} model
+                          {testResult.discoveredModels.length === 1 ? '' : 's'} discovered
+                          {testResult.discoveredModels.length > 0 &&
+                            ` (${testResult.discoveredModels.slice(0, 3).join(', ')}${
+                              testResult.discoveredModels.length > 3
+                                ? `, +${testResult.discoveredModels.length - 3} more`
+                                : ''
+                            })`}
+                        </>
+                      )}
+                    </p>
+                    {/* The per-axis breakdown behind the aggregate outcome (N007). */}
+                    <ReadinessStrip
+                      readiness={testResult.readiness}
+                      modelCount={
+                        testResult.readiness.catalog === 'ok'
+                          ? testResult.discoveredModels?.length
+                          : undefined
+                      }
+                    />
+                  </div>
                 )}
               </li>
             )

@@ -15,12 +15,13 @@ import {
 import type { Capability, ModelInfo, ProviderKind, ProviderProfile } from '@/domain/types'
 import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
-import { testProviderConnection, profileAllowsKeyless } from '@/services/connection/providerConnection'
+import { testProviderConnection, profileAllowsKeyless, type ProviderReadiness } from '@/services/connection/providerConnection'
 import { suggestedModelsFor } from './suggestedModels'
 import type { FreeRoute } from './freeModels'
 import { freeRouteFor } from './freeModels'
 import { FreeModelsHub } from './FreeModelsHub'
 import { FreeSetupGuide } from './FreeSetupGuide'
+import { ReadinessStrip } from './ReadinessStrip'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Spinner } from '@/components/ui/Spinner'
@@ -517,6 +518,10 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
   const [reveal, setReveal] = useState(false)
   const [testing, setTesting] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  // Per-axis readiness of the last completed check (N007) — reachability,
+  // catalog, credential and generation are shown SEPARATELY so a
+  // reachable-but-rejected-key endpoint never reads as one blended error.
+  const [readiness, setReadiness] = useState<ProviderReadiness | null>(null)
   // Keyless connect (N003): local runtimes (Ollama, LM Studio, vLLM) work
   // with no key at all — Connect stays enabled with an empty field.
   const keylessAllowed = profileAllowsKeyless(provider)
@@ -542,6 +547,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
       return
     }
     setTesting(false)
+    setReadiness(result.readiness ?? null)
 
     if (result.ok) {
       setCredential(provider.id, {
@@ -651,6 +657,12 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
             <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
           )}
         </p>
+        {readiness && (
+          <ReadinessStrip
+            readiness={readiness}
+            modelCount={readiness.catalog === 'ok' ? credential?.discoveredModels.length : undefined}
+          />
+        )}
       </div>
     )
   }
@@ -736,6 +748,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
           <span className={message.ok ? 'text-success' : 'text-danger'}>{message.text}</span>
         )}
       </p>
+      {readiness && <ReadinessStrip readiness={readiness} />}
     </div>
   )
 }

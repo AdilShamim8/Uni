@@ -15,11 +15,13 @@ import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { UrlGuardError } from '../../lib/urlGuard.js'
 import { providerDiscoveryUrl, providerAuthHeaders, allowsKeyless, defaultAuthModeFor, type ProviderAuthMode, type ProviderProtocol } from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
-import type {
-  CreateProviderRequest,
-  PatchProviderRequest,
-  ProviderDto,
-  ProviderTestResponse,
+import {
+  unknownReadiness,
+  type CreateProviderRequest,
+  type PatchProviderRequest,
+  type ProviderDto,
+  type ProviderReadiness,
+  type ProviderTestResponse,
 } from '@uni/contracts'
 
 export type ProvidersDatabase = NodePgDatabase<typeof schema>
@@ -362,6 +364,13 @@ interface ConnectionResult {
   models: string[] | null
   /** True when the caller cancelled the check — proves nothing, writes nothing. */
   cancelled?: boolean
+  /**
+   * The per-axis breakdown behind the aggregate outcome (N007):
+   * reachability / catalog / credential / generation are reported
+   * INDEPENDENTLY — a reachable endpoint with a rejected key reports
+   * reachability ok + credential fail, never one blended state.
+   */
+  readiness: ProviderReadiness
 }
 
 /**
@@ -381,6 +390,9 @@ async function runConnectionCheck(
   signal?: AbortSignal,
 ): Promise<ConnectionResult> {
   const url = modelsUrl(provider.kind, provider.endpointUrl)
+  // The readiness breakdown starts all-unknown and each axis is only
+  // set by what this check actually proved (N007).
+  const readiness: ProviderReadiness = unknownReadiness()
   try {
     // Keyless probes send NO credential header (N002): a local runtime
     // must not receive a dummy Authorization header, and authMode 'none'
@@ -393,24 +405,38 @@ async function runConnectionCheck(
       ...(signal ? { signal } : {}),
     })
 
+    // Any HTTP answer — including 401/403/404 — proves reachability.
+    readiness.reachability = 'ok'
+
     if (response.status === 401 || response.status === 403) {
+      readiness.catalog = 'fail'
+      readiness.credential = 'fail'
       return {
         ok: false,
         message: keyless
           ? 'The endpoint answered 401/403 — it requires an API key even though this connection is keyless. Add a key or check the endpoint URL.'
           : 'The provider rejected the API key.',
         models: null,
+        readiness,
       }
     }
     if (!response.ok) {
+      // The endpoint answered but the catalog request did not succeed;
+      // nothing was learned about the credential.
+      readiness.catalog = 'fail'
       return {
         ok: false,
         message: `The provider endpoint answered ${response.status}.`,
         models: null,
+        readiness,
       }
     }
 
     const body = (await response.json()) as { data?: Array<{ id?: string }> }
+    // A parseable data array is a usable catalog (even an empty one);
+    // a 200 without it leaves the catalog axis honestly failed while
+    // reachability (and possibly the credential) still hold.
+    readiness.catalog = Array.isArray(body.data) ? 'ok' : 'fail'
     let models = Array.isArray(body.data)
       ? body.data
           .map((entry) => (typeof entry?.id === 'string' ? entry.id : null))
@@ -449,39 +475,55 @@ async function runConnectionCheck(
         }
       } catch (error) {
         if (error instanceof UrlGuardError) {
-          return { ok: false, message: error.message, models: null }
+          readiness.reachability = 'fail'
+          return { ok: false, message: error.message, models: null, readiness }
         }
         const aborted =
           signal?.aborted ||
           (error instanceof Error && error.name === 'AbortError') ||
           (error instanceof DOMException && error.name === 'AbortError')
         if (aborted) {
-          return { ok: false, message: 'Connection check cancelled.', models: null, cancelled: true }
+          return {
+            ok: false,
+            message: 'Connection check cancelled.',
+            models: null,
+            cancelled: true,
+            readiness: unknownReadiness(),
+          }
         }
         verification = { state: 'unknown', reason: 'network error' }
       }
 
       if (verification.state === 'rejected') {
+        readiness.credential = 'fail'
         return {
           ok: false,
           message:
             'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys.',
           models: null,
+          readiness,
         }
       }
       if (verification.state === 'unknown') {
+        readiness.credential = 'unknown'
         return {
           ok: false,
           message: `OpenRouter’s key check is unavailable (${verification.reason}) — the key could not be verified. The model list is public, so reachability alone is not a pass; try again in a moment.`,
           models: null,
+          readiness,
         }
       }
+      readiness.credential = 'ok'
       models = orderOpenRouterModels(models)
     } else {
       // Plain providers: deterministic order, capped only AFTER parsing
       // and sorting — the cap is a persistence bound, never a
       // classification-time truncation.
       models = models.slice().sort((a, b) => a.localeCompare(b)).slice(0, 100)
+      // A 2xx catalog answer speaks for the key on plain providers
+      // (their /models is not public); a keyless connection has no key
+      // to verify at all.
+      readiness.credential = keyless ? 'not-required' : 'ok'
     }
 
     return {
@@ -490,10 +532,12 @@ async function runConnectionCheck(
         ? 'Connected — the endpoint answered without a key.'
         : 'Connected — the key works.',
       models,
+      readiness,
     }
   } catch (error) {
     if (error instanceof UrlGuardError) {
-      return { ok: false, message: error.message, models: null }
+      readiness.reachability = 'fail'
+      return { ok: false, message: error.message, models: null, readiness }
     }
     // A cancelled check proves nothing (N008): the outbound request was
     // aborted — either the caller replaced it or the client went away.
@@ -504,8 +548,17 @@ async function runConnectionCheck(
       (error instanceof Error && error.name === 'AbortError') ||
       (error instanceof DOMException && error.name === 'AbortError')
     if (aborted) {
-      return { ok: false, message: 'Connection check cancelled.', models: null, cancelled: true }
+      return {
+        ok: false,
+        message: 'Connection check cancelled.',
+        models: null,
+        cancelled: true,
+        readiness: unknownReadiness(),
+      }
     }
+    // Network-level failure (DNS, refused, timeout): the endpoint was
+    // never reached; the other axes stay honestly unknown.
+    readiness.reachability = 'fail'
     const message = error instanceof Error ? error.message : 'connection failed'
     return {
       ok: false,
@@ -513,6 +566,7 @@ async function runConnectionCheck(
         ? 'The provider endpoint timed out.'
         : 'The provider endpoint could not be reached.',
       models: null,
+      readiness,
     }
   }
 }
@@ -585,6 +639,7 @@ export async function testProviderConnection(
       message: 'No API key stored for this provider yet.',
       latencyMs: null,
       discoveredModels: null,
+      readiness: unknownReadiness(),
       provider: serializeProvider(provider),
     }
   }
@@ -603,6 +658,7 @@ export async function testProviderConnection(
       message: result.message,
       latencyMs,
       discoveredModels: null,
+      readiness: result.readiness,
       provider: serializeProvider(provider),
     }
   }
@@ -613,10 +669,11 @@ export async function testProviderConnection(
       message: 'The provider was edited while this check ran — the result was discarded. Test again.',
       latencyMs,
       discoveredModels: null,
+      readiness: unknownReadiness(),
       provider: outcome.provider,
     }
   }
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: outcome.provider }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, readiness: result.readiness, provider: outcome.provider }
 }
 
 export async function discoverProviderModels(
@@ -635,6 +692,7 @@ export async function discoverProviderModels(
       message: 'No API key stored for this provider yet.',
       latencyMs: null,
       discoveredModels: null,
+      readiness: unknownReadiness(),
       provider: serializeProvider(provider),
     }
   }
@@ -649,6 +707,7 @@ export async function discoverProviderModels(
       message: result.message,
       latencyMs,
       discoveredModels: null,
+      readiness: result.readiness,
       provider: serializeProvider(provider),
     }
   }
@@ -659,8 +718,9 @@ export async function discoverProviderModels(
       message: 'The provider was edited while discovery ran — the result was discarded. Test again.',
       latencyMs,
       discoveredModels: null,
+      readiness: unknownReadiness(),
       provider: outcome.provider,
     }
   }
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: outcome.provider }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, readiness: result.readiness, provider: outcome.provider }
 }
