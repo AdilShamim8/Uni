@@ -4,6 +4,7 @@ import {
   Eye,
   EyeOff,
   KeyRound,
+  MessageSquare,
   Pencil,
   Plus,
   RefreshCw,
@@ -406,6 +407,7 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
   const [reveal, setReveal] = useState(false)
   const [testing, setTesting] = useState(false)
   const [message, setMessage] = useState<{ ok: boolean; text: string; errorKind?: ProviderErrorKind } | null>(null)
+  const setUi = useAppStore((state) => state.setUi)
   // Per-axis readiness of the last completed check (N007) — reachability,
   // catalog, credential and generation are shown SEPARATELY so a
   // reachable-but-rejected-key endpoint never reads as one blended error.
@@ -537,6 +539,26 @@ function ConnectionBlock({ provider }: { provider: ProviderProfile }) {
             {credential.discoveredModels.length} model
             {credential.discoveredModels.length === 1 ? '' : 's'} discovered on this endpoint
           </p>
+        )}
+
+        {/* The integrated journey's last step (N015): from a connected
+            provider with models, one tap starts the chat — the exact
+            model is activated, the dialog closes, and the composer gets
+            focus. No hunting for the picker after setup. */}
+        {connected && provider.models.length > 0 && (
+          <Button
+            variant="primary"
+            size="sm"
+            className="mt-2"
+            onClick={() => {
+              const firstModel = provider.models[0]
+              if (firstModel) setActiveModel(provider.id, firstModel.id)
+              setUi({ settingsOpen: false, composerFocusAt: Date.now() })
+            }}
+          >
+            <MessageSquare size={13} />
+            Chat with {provider.models[0]?.label ?? provider.models[0]?.id}
+          </Button>
         )}
 
         <p aria-live="polite" className="mt-1.5 text-xs font-medium">

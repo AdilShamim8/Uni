@@ -79,8 +79,9 @@ describe('settings', () => {
     expect(within(readiness).getByText('Model list (1)')).toBeInTheDocument()
     expect(within(readiness).getByText('Key verified')).toBeInTheDocument()
     expect(within(readiness).getByText('Generation untested')).toBeInTheDocument()
-    // The endpoint's model list replaced the demo chips.
-    expect(providerCard.getByRole('button', { name: /gpt-test/ })).toBeInTheDocument()
+    // The endpoint's model list replaced the demo chips (exact match:
+    // the N015 "Chat with gpt-test" button also mentions the model).
+    expect(providerCard.getByRole('button', { name: /^gpt-test$/ })).toBeInTheDocument()
 
     // The key traveled only to the configured endpoint, as a bearer token.
     expect(fetchMock).toHaveBeenCalledTimes(1)
