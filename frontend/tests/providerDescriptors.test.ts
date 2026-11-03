@@ -6,6 +6,7 @@ import {
   normalizeProviderBase,
   providerDiscoveryUrl,
   providerAuthHeaders,
+  protocolForKind,
 } from '@/domain/providerDescriptors'
 import { modelsListUrl } from '@/services/connection/providerConnection'
 import { createLiveAdapter } from '@/services/live/liveChatAdapter'
@@ -73,6 +74,16 @@ describe('provider descriptor registry (U011)', () => {
       'anthropic-dangerous-direct-browser-access': 'true',
     })
   })
+
+  it('maps every user-facing provider kind to a wire protocol', () => {
+    // Product kinds are labels; the registry owns the mapping. Every
+    // non-Anthropic kind speaks the OpenAI-compatible wire protocol.
+    expect(protocolForKind('openai')).toBe('openai-compatible')
+    expect(protocolForKind('google')).toBe('openai-compatible')
+    expect(protocolForKind('openai-compatible')).toBe('openai-compatible')
+    expect(protocolForKind('local')).toBe('openai-compatible')
+    expect(protocolForKind('anthropic')).toBe('anthropic')
+  })
 })
 
 describe('browser adapters consume the registry (U011)', () => {
@@ -82,6 +93,20 @@ describe('browser adapters consume the registry (U011)', () => {
     )
     expect(modelsListUrl(profile('anthropic', 'https://gw.example/anthropic'))).toBe(
       'https://gw.example/anthropic/v1/models',
+    )
+  })
+
+  it('discovery works for every product kind, not just protocol names', () => {
+    // The kinds the preset list actually creates — openai, google, local —
+    // must resolve through the mapping, not be passed as protocols.
+    expect(modelsListUrl(profile('openai', 'https://api.openai.com/v1'))).toBe(
+      'https://api.openai.com/v1/models',
+    )
+    expect(
+      modelsListUrl(profile('google', 'https://generativelanguage.googleapis.com/v1beta/openai')),
+    ).toBe('https://generativelanguage.googleapis.com/v1beta/openai/models')
+    expect(modelsListUrl(profile('local', 'http://localhost:11434/v1'))).toBe(
+      'http://localhost:11434/v1/models',
     )
   })
 

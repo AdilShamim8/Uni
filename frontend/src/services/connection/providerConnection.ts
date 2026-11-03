@@ -7,7 +7,8 @@ import type { ProviderProfile } from '@/domain/types'
  * configured. Nothing is proxied through Uni and no credentials are
  * stored anywhere except this browser's localStorage (separate key).
  *
- * Wire protocols:
+ * Wire protocols (resolved through the shared descriptor registry,
+ * including the kind→protocol mapping):
  * - OpenAI-compatible (OpenAI, Groq, OpenRouter, Together, LM Studio,
  *   Ollama's compat layer, Google's compat endpoint):
  *     GET {base}/models  with  Authorization: Bearer <key>
@@ -24,10 +25,6 @@ export interface ConnectionTestResult {
   latencyMs?: number
   /** Model ids discovered from the endpoint, when the API provides them. */
   models?: string[]
-}
-
-function usesAnthropicProtocol(kind: ProviderProfile['kind']): boolean {
-  return kind === 'anthropic'
 }
 
 /** True when the endpoint is OpenRouter (its /models list is public). */
@@ -49,17 +46,18 @@ import {
   normalizeProviderBase,
   providerDiscoveryUrl,
   providerAuthHeaders,
+  protocolForKind,
   type ProviderProtocol,
 } from '@/domain/providerDescriptors'
 
 export { normalizeProviderBase, providerDiscoveryUrl, type ProviderProtocol }
 
 export function modelsListUrl(profile: ProviderProfile): string {
-  return providerDiscoveryUrl(profile.kind, profile.endpointUrl)
+  return providerDiscoveryUrl(protocolForKind(profile.kind), profile.endpointUrl)
 }
 
 function buildHeaders(profile: ProviderProfile, apiKey: string): HeadersInit {
-  return providerAuthHeaders(profile.kind, apiKey)
+  return providerAuthHeaders(protocolForKind(profile.kind), apiKey)
 }
 
 function describeHttpError(status: number, bodyText: string): string {
