@@ -1,3 +1,43 @@
+## Current state (updated 2026-11-04, session 3 — 300-new effort opened on task/uni-next-release-300)
+
+- **Branch:** `task/uni-next-release-300` from UPDATE_START_SHA
+  `526b8cf0e` (= main at checkout; no concurrent upstream changes).
+  **5 commits (3 implementation + 2 docs), ALL LOCAL — pushes blocked: this fresh sandbox has no git
+  credential** (`fatal: could not read Username for 'https://github.com'`).
+  First action when a credential is available: push the branch, verify
+  each SHA with `git ls-remote`, update the manifest remote columns.
+- **Commits:** `2ae0e5cb2` docs effort opening (manifest + corrected N016
+  ledger mapping → advisory-lock work relabeled F003, original N016
+  reopened, arithmetic fixed to 18 code-backed + N073 process);
+  `06ecca92f` **N016** request fingerprinting (migration 0009; same-key
+  replay now bound to the canonical effective request, different input →
+  typed 409; legacy rows derive from own columns); `5e7de0518` **N017**
+  conflict-safe concurrent run creation (23505 caught through drizzle
+  wrapping; one run, one provider invocation, typed 409 on input
+  mismatch); `4c4c28345` **N018** retry-safe node creation (concurrent
+  same-clientId posts resolve to one node; no raw 500).
+- **Verification this session (fresh, at UPDATE_START_SHA and after each
+  slice):** contracts clean; backend typecheck/build clean, final
+  **247/247** (232 baseline + 9 N016 + 3 N017 + 3 N018); frontend
+  typecheck/lint/build clean + **511/511** (untouched by these slices).
+  Every new suite verified DISCRIMINATING against its pre-fix code —
+  exact per-suite evidence in `docs/verification.md` (session 3).
+- **Count of record:** `docs/update-2026-11-04-commit-manifest.md` —
+  5 new commits (3 implementation + effort-opening docs + this
+  checkpoint), accepted IDs N016/N017/N018; remaining toward the
+  300-new target: 295.
+- **Next executable steps (in order):** (1) push the branch once a
+  credential exists; (2) N019 persistent client send identity (frontend:
+  browser reuses one operation id across network retries and reload —
+  builds on N018's clientId semantics); (3) N020–N022 atomic admission
+  (the active-run count is still checked before insertion; creation-rate
+  accounting is still a process-local map); (4) then the Step A
+  live-destination blocked-state follow-up and the Step C server-chat
+  connection items (N031+).
+- **Blockers:** no git credential (pushes); no paid provider keys (live
+  inference remains fake-server-verified over real sockets; qa:live not
+  rerun — no routing change).
+
 ## Current state (updated 2026-11-03, production-300 session 2 — Phase 1 complete, Phase 2 opened)
 
 - **Branch:** `main` — 9 commits this session (8 implementation + 1 docs

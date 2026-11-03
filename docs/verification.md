@@ -871,3 +871,30 @@ This sandbox has no stored git credential. Commits are being made
 locally on the branch with the required author identity; each push
 attempt and its exact error will be recorded here. Nothing is counted
 as remotely present until `git ls-remote` shows the SHA.
+
+### Session 3 slices (each committed only after its full gate)
+
+| Commit | Scope | Evidence |
+| --- | --- | --- |
+| `2ae0e5cb2` docs: effort opening | docs only | baseline table above (fresh, pristine tree) |
+| `06ecca92f` N016 request fingerprinting | backend + migration 0009 | typecheck/build clean; **241/241** (232 + 9 new); suite DISCRIMINATING: 6/9 fail against the pre-fix service (all four conflict cases, legacy-conflict, stored-fingerprint), 3 pass both sides |
+| `5e7de0518` N017 conflict-safe concurrent creation | backend | typecheck/build clean; **244/244** (+3); pre-fix discrimination across 3 runs: mixed-input same-key race produced a raw 500 in 3/3 runs, identical-input in 2/3 (the pass was replay-path timing luck); post-fix all 3 pass |
+| `4c4c28345` N018 retry-safe node creation | backend | typecheck/build clean; **247/247** (+3); pre-fix discrimination: the concurrent same-clientId test fails with a raw 500; sequential and distinct-id tests pass both sides |
+
+Frontend untouched this session (backend-only changes); its pristine
+baseline above stands. Contracts untouched after their baseline pass.
+
+### Push attempt (exact error)
+
+```
+$ git push --set-upstream origin task/uni-next-release-300
+fatal: could not read Username for 'https://github.com': No such device or address
+```
+
+No credential exists in this sandbox (fresh environment; the token used
+by previous sessions is not available). All four commits are retained on
+local `task/uni-next-release-300` (HEAD `4c4c28345`, parent chain
+verified). None is counted as remotely present. When a credential is
+provided, push the branch and verify each SHA with `git ls-remote origin
+refs/heads/task/uni-next-release-300`, then update the manifest's
+remote-check column and counters.
