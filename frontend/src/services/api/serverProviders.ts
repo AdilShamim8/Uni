@@ -73,6 +73,16 @@ export interface ServerProviderTestResponse {
   message: string
   latencyMs: number | null
   discoveredModels: string[] | null
+  /**
+   * Per-axis readiness breakdown (N007): reachability / catalog /
+   * credential / generation reported independently by the server.
+   */
+  readiness: {
+    reachability: 'unknown' | 'ok' | 'fail'
+    catalog: 'unknown' | 'ok' | 'fail'
+    credential: 'unknown' | 'ok' | 'fail' | 'not-required'
+    generation: 'unknown' | 'ok' | 'fail'
+  }
 }
 
 /**

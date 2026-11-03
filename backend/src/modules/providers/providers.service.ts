@@ -15,11 +15,13 @@ import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { UrlGuardError } from '../../lib/urlGuard.js'
 import { providerDiscoveryUrl, providerAuthHeaders, allowsKeyless, defaultAuthModeFor, type ProviderAuthMode, type ProviderProtocol } from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
-import type {
-  CreateProviderRequest,
-  PatchProviderRequest,
-  ProviderDto,
-  ProviderTestResponse,
+import {
+  unknownReadiness,
+  type CreateProviderRequest,
+  type PatchProviderRequest,
+  type ProviderDto,
+  type ProviderReadiness,
+  type ProviderTestResponse,
 } from '@uni/contracts'
 
 export type ProvidersDatabase = NodePgDatabase<typeof schema>
@@ -334,6 +336,63 @@ function openRouterKeyUrl(endpointUrl: string): string {
  */
 const MAX_PARSED_MODELS = 2000
 
+/**
+ * Hard bounds on provider response BODIES (N009): content-length is
+ * checked before a single byte is read, and the stream is cancelled
+ * the moment it passes the cap — a hostile or looping endpoint can
+ * never exhaust server memory through an oversized catalog or key
+ * check. A body over its cap fails honestly with nothing adopted.
+ */
+const MAX_CATALOG_BODY_BYTES = 2 * 1024 * 1024
+const MAX_KEY_BODY_BYTES = 64 * 1024
+
+interface BoundedBody {
+  /** False when the body was refused (oversized) — nothing was read. */
+  ok: boolean
+  text: string
+}
+
+async function readBodyBounded(response: Response, capBytes: number): Promise<BoundedBody> {
+  const declared = Number(response.headers.get('content-length') ?? '')
+  if (Number.isFinite(declared) && declared > capBytes) {
+    // Refused before reading a single byte; cancel the stream so the
+    // connection is released instead of lingering.
+    await response.body?.cancel().catch(() => {})
+    return { ok: false, text: '' }
+  }
+  const body = response.body
+  if (body) {
+    const reader = body.getReader()
+    const chunks: Uint8Array[] = []
+    let received = 0
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      if (!value) continue
+      received += value.byteLength
+      if (received > capBytes) {
+        // Cancel the stream: the connection is released, and the bytes
+        // already buffered are discarded rather than adopted.
+        await reader.cancel().catch(() => {})
+        return { ok: false, text: '' }
+      }
+      chunks.push(value)
+    }
+    const total = new Uint8Array(received)
+    let offset = 0
+    for (const chunk of chunks) {
+      total.set(chunk, offset)
+      offset += chunk.byteLength
+    }
+    return { ok: true, text: new TextDecoder().decode(total) }
+  }
+  // No stream (unusual): fall back to text() but still refuse the
+  // result when it exceeds the cap.
+  const text = await response.text()
+  if (text.length > capBytes) return { ok: false, text: '' }
+  return { ok: true, text }
+}
+
 /** OpenRouter orders its catalog with the free tier first (zero-cost path). */
 function orderOpenRouterModels(models: string[]): string[] {
   const free = models.filter((id) => id.endsWith(':free')).sort((a, b) => a.localeCompare(b))
@@ -362,6 +421,13 @@ interface ConnectionResult {
   models: string[] | null
   /** True when the caller cancelled the check — proves nothing, writes nothing. */
   cancelled?: boolean
+  /**
+   * The per-axis breakdown behind the aggregate outcome (N007):
+   * reachability / catalog / credential / generation are reported
+   * INDEPENDENTLY — a reachable endpoint with a rejected key reports
+   * reachability ok + credential fail, never one blended state.
+   */
+  readiness: ProviderReadiness
 }
 
 /**
@@ -381,6 +447,9 @@ async function runConnectionCheck(
   signal?: AbortSignal,
 ): Promise<ConnectionResult> {
   const url = modelsUrl(provider.kind, provider.endpointUrl)
+  // The readiness breakdown starts all-unknown and each axis is only
+  // set by what this check actually proved (N007).
+  const readiness: ProviderReadiness = unknownReadiness()
   try {
     // Keyless probes send NO credential header (N002): a local runtime
     // must not receive a dummy Authorization header, and authMode 'none'
@@ -393,24 +462,65 @@ async function runConnectionCheck(
       ...(signal ? { signal } : {}),
     })
 
+    // Any HTTP answer — including 401/403/404 — proves reachability.
+    readiness.reachability = 'ok'
+
     if (response.status === 401 || response.status === 403) {
+      readiness.catalog = 'fail'
+      readiness.credential = 'fail'
       return {
         ok: false,
         message: keyless
           ? 'The endpoint answered 401/403 — it requires an API key even though this connection is keyless. Add a key or check the endpoint URL.'
           : 'The provider rejected the API key.',
         models: null,
+        readiness,
       }
     }
     if (!response.ok) {
+      // The endpoint answered but the catalog request did not succeed;
+      // nothing was learned about the credential.
+      readiness.catalog = 'fail'
       return {
         ok: false,
         message: `The provider endpoint answered ${response.status}.`,
         models: null,
+        readiness,
       }
     }
 
-    const body = (await response.json()) as { data?: Array<{ id?: string }> }
+    // N009: the catalog body is hard-bounded — a declared-oversize or
+    // streaming-past-cap response is refused before adoption, with an
+    // honest failure instead of a half-adopted catalog.
+    const catalogBody = await readBodyBounded(response, MAX_CATALOG_BODY_BYTES)
+    if (!catalogBody.ok) {
+      readiness.catalog = 'fail'
+      return {
+        ok: false,
+        message:
+          'The provider’s model list response was too large (over 2 MB) — nothing was adopted from it. This can mean a misconfigured endpoint; nothing was saved.',
+        models: null,
+        readiness,
+      }
+    }
+    let body: { data?: Array<{ id?: string }> }
+    try {
+      body = JSON.parse(catalogBody.text) as { data?: Array<{ id?: string }> }
+    } catch {
+      // A 200 whose body is not JSON is reachable but catalog-less —
+      // honest failure, never "could not be reached".
+      readiness.catalog = 'fail'
+      return {
+        ok: false,
+        message: 'The endpoint answered, but the response was not a readable model list.',
+        models: null,
+        readiness,
+      }
+    }
+    // A parseable data array is a usable catalog (even an empty one);
+    // a 200 without it leaves the catalog axis honestly failed while
+    // reachability (and possibly the credential) still hold.
+    readiness.catalog = Array.isArray(body.data) ? 'ok' : 'fail'
     let models = Array.isArray(body.data)
       ? body.data
           .map((entry) => (typeof entry?.id === 'string' ? entry.id : null))
@@ -441,47 +551,74 @@ async function runConnectionCheck(
         } else if (!keyResponse.ok) {
           verification = { state: 'unknown', reason: `HTTP ${keyResponse.status}` }
         } else {
-          const body = await keyResponse.json().catch(() => null)
-          verification =
-            body !== null && typeof body === 'object'
-              ? { state: 'verified' }
-              : { state: 'unknown', reason: 'unexpected response body' }
+          // N009: the /key body is bounded at 64 KB — an oversized key
+          // info response is inconclusive, never evidence of anything.
+          const keyBody = await readBodyBounded(keyResponse, MAX_KEY_BODY_BYTES)
+          if (!keyBody.ok) {
+            verification = { state: 'unknown', reason: 'response too large' }
+          } else {
+            try {
+              const parsed = JSON.parse(keyBody.text) as unknown
+              verification =
+                parsed !== null && typeof parsed === 'object'
+                  ? { state: 'verified' }
+                  : { state: 'unknown', reason: 'unexpected response body' }
+            } catch {
+              verification = { state: 'unknown', reason: 'unexpected response body' }
+            }
+          }
         }
       } catch (error) {
         if (error instanceof UrlGuardError) {
-          return { ok: false, message: error.message, models: null }
+          readiness.reachability = 'fail'
+          return { ok: false, message: error.message, models: null, readiness }
         }
         const aborted =
           signal?.aborted ||
           (error instanceof Error && error.name === 'AbortError') ||
           (error instanceof DOMException && error.name === 'AbortError')
         if (aborted) {
-          return { ok: false, message: 'Connection check cancelled.', models: null, cancelled: true }
+          return {
+            ok: false,
+            message: 'Connection check cancelled.',
+            models: null,
+            cancelled: true,
+            readiness: unknownReadiness(),
+          }
         }
         verification = { state: 'unknown', reason: 'network error' }
       }
 
       if (verification.state === 'rejected') {
+        readiness.credential = 'fail'
         return {
           ok: false,
           message:
             'OpenRouter answered, but the API key was rejected — check it at openrouter.ai/keys.',
           models: null,
+          readiness,
         }
       }
       if (verification.state === 'unknown') {
+        readiness.credential = 'unknown'
         return {
           ok: false,
           message: `OpenRouter’s key check is unavailable (${verification.reason}) — the key could not be verified. The model list is public, so reachability alone is not a pass; try again in a moment.`,
           models: null,
+          readiness,
         }
       }
+      readiness.credential = 'ok'
       models = orderOpenRouterModels(models)
     } else {
       // Plain providers: deterministic order, capped only AFTER parsing
       // and sorting — the cap is a persistence bound, never a
       // classification-time truncation.
       models = models.slice().sort((a, b) => a.localeCompare(b)).slice(0, 100)
+      // A 2xx catalog answer speaks for the key on plain providers
+      // (their /models is not public); a keyless connection has no key
+      // to verify at all.
+      readiness.credential = keyless ? 'not-required' : 'ok'
     }
 
     return {
@@ -490,10 +627,12 @@ async function runConnectionCheck(
         ? 'Connected — the endpoint answered without a key.'
         : 'Connected — the key works.',
       models,
+      readiness,
     }
   } catch (error) {
     if (error instanceof UrlGuardError) {
-      return { ok: false, message: error.message, models: null }
+      readiness.reachability = 'fail'
+      return { ok: false, message: error.message, models: null, readiness }
     }
     // A cancelled check proves nothing (N008): the outbound request was
     // aborted — either the caller replaced it or the client went away.
@@ -504,8 +643,17 @@ async function runConnectionCheck(
       (error instanceof Error && error.name === 'AbortError') ||
       (error instanceof DOMException && error.name === 'AbortError')
     if (aborted) {
-      return { ok: false, message: 'Connection check cancelled.', models: null, cancelled: true }
+      return {
+        ok: false,
+        message: 'Connection check cancelled.',
+        models: null,
+        cancelled: true,
+        readiness: unknownReadiness(),
+      }
     }
+    // Network-level failure (DNS, refused, timeout): the endpoint was
+    // never reached; the other axes stay honestly unknown.
+    readiness.reachability = 'fail'
     const message = error instanceof Error ? error.message : 'connection failed'
     return {
       ok: false,
@@ -513,6 +661,7 @@ async function runConnectionCheck(
         ? 'The provider endpoint timed out.'
         : 'The provider endpoint could not be reached.',
       models: null,
+      readiness,
     }
   }
 }
@@ -585,6 +734,7 @@ export async function testProviderConnection(
       message: 'No API key stored for this provider yet.',
       latencyMs: null,
       discoveredModels: null,
+      readiness: unknownReadiness(),
       provider: serializeProvider(provider),
     }
   }
@@ -603,6 +753,7 @@ export async function testProviderConnection(
       message: result.message,
       latencyMs,
       discoveredModels: null,
+      readiness: result.readiness,
       provider: serializeProvider(provider),
     }
   }
@@ -613,10 +764,11 @@ export async function testProviderConnection(
       message: 'The provider was edited while this check ran — the result was discarded. Test again.',
       latencyMs,
       discoveredModels: null,
+      readiness: unknownReadiness(),
       provider: outcome.provider,
     }
   }
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: outcome.provider }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, readiness: result.readiness, provider: outcome.provider }
 }
 
 export async function discoverProviderModels(
@@ -635,6 +787,7 @@ export async function discoverProviderModels(
       message: 'No API key stored for this provider yet.',
       latencyMs: null,
       discoveredModels: null,
+      readiness: unknownReadiness(),
       provider: serializeProvider(provider),
     }
   }
@@ -649,6 +802,7 @@ export async function discoverProviderModels(
       message: result.message,
       latencyMs,
       discoveredModels: null,
+      readiness: result.readiness,
       provider: serializeProvider(provider),
     }
   }
@@ -659,8 +813,9 @@ export async function discoverProviderModels(
       message: 'The provider was edited while discovery ran — the result was discarded. Test again.',
       latencyMs,
       discoveredModels: null,
+      readiness: unknownReadiness(),
       provider: outcome.provider,
     }
   }
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: outcome.provider }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, readiness: result.readiness, provider: outcome.provider }
 }

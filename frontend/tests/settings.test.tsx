@@ -72,6 +72,13 @@ describe('settings', () => {
     expect(await providerCard.findByText(/Connected in \d+ms — 1 model available\./)).toBeInTheDocument()
     expect(providerCard.getByText('Connected')).toBeInTheDocument()
     expect(providerCard.getByText(/•••• 1234/)).toBeInTheDocument()
+    // The separate readiness axes (N007): four independent facts, not
+    // one blended state.
+    const readiness = providerCard.getByRole('list', { name: 'Connection readiness' })
+    expect(within(readiness).getByText('Endpoint reachable')).toBeInTheDocument()
+    expect(within(readiness).getByText('Model list (1)')).toBeInTheDocument()
+    expect(within(readiness).getByText('Key verified')).toBeInTheDocument()
+    expect(within(readiness).getByText('Generation untested')).toBeInTheDocument()
     // The endpoint's model list replaced the demo chips.
     expect(providerCard.getByRole('button', { name: /gpt-test/ })).toBeInTheDocument()
 
@@ -109,6 +116,13 @@ describe('settings', () => {
     await user.click(providerCard.getByRole('button', { name: 'Connect' }))
 
     expect(await providerCard.findByText(/401 Unauthorized — check the API key/)).toBeInTheDocument()
+    // A rejected key is NOT an unreachable endpoint (N007): reachability
+    // stayed ok while the credential axis failed.
+    const readiness = providerCard.getByRole('list', { name: 'Connection readiness' })
+    expect(within(readiness).getByText('Endpoint reachable')).toBeInTheDocument()
+    expect(within(readiness).getByText('No model list')).toBeInTheDocument()
+    expect(within(readiness).getByText('Key rejected')).toBeInTheDocument()
+    expect(within(readiness).getByText('Generation untested')).toBeInTheDocument()
     // A key that did not authenticate is never saved.
     expect(localStorage.getItem('universe:credentials:v1')).toBeNull()
     vi.unstubAllGlobals()
