@@ -13,6 +13,8 @@
  * describes the wire protocol, not a vendor allowlist.
  */
 
+import type { ProviderKind } from './types'
+
 export type ProviderProtocol = 'openai-compatible' | 'anthropic'
 
 export type ProviderBasePolicy = 'as-configured' | 'versioned-v1'
@@ -52,6 +54,19 @@ export function getProviderDescriptor(protocol: ProviderProtocol): ProviderDescr
   const descriptor = PROVIDER_DESCRIPTORS[protocol]
   if (!descriptor) throw new Error(`Unknown provider protocol: ${protocol}`)
   return descriptor
+}
+
+/**
+ * Map a user-facing provider kind to the wire protocol its endpoint
+ * speaks. Kinds are product-level labels (presets, free-tier guides);
+ * protocols are the two wire shapes the descriptors describe. Every
+ * non-Anthropic kind — openai, google, openai-compatible, local —
+ * speaks the OpenAI-compatible wire protocol (Authorization: Bearer,
+ * {base}/models, {base}/chat/completions). The mapping lives with the
+ * registry so no adapter ever guesses it again.
+ */
+export function protocolForKind(kind: ProviderKind): ProviderProtocol {
+  return kind === 'anthropic' ? 'anthropic' : 'openai-compatible'
 }
 
 /** Apply a protocol's base normalization policy to a configured endpoint. */
