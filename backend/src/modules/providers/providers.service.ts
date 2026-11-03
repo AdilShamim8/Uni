@@ -122,12 +122,21 @@ export async function patchProvider(
   // Keyless is only valid where the protocol allows it; the contract
   // validated the request, this is the fail-closed server check.
   if (request.authMode === 'none') {
-    const current = await findProvider(db, workspaceId, providerId)
-    if (!current) throw notFound('Provider not found.')
-    if (!allowsKeyless(providerProtocol(current.kind))) {
+    const row = await findProvider(db, workspaceId, providerId)
+    if (!row) throw notFound('Provider not found.')
+    if (!allowsKeyless(providerProtocol(row.kind))) {
       throw badRequest('This protocol requires an API key — keyless connections are not supported for it.')
     }
   }
+  // N006: endpoint/auth changes invalidate previous verification and
+  // catalog results — the row resets to untested and the discovered
+  // model list (which describes the OLD endpoint) is withdrawn. The
+  // config revision bump also discards any in-flight check result.
+  const current = await findProvider(db, workspaceId, providerId)
+  if (!current) throw notFound('Provider not found.')
+  const configChanged =
+    (request.endpointUrl !== undefined && request.endpointUrl !== current.endpointUrl) ||
+    (request.authMode !== undefined && request.authMode !== current.authMode)
   const updated = await db
     .update(providerConnections)
     .set({
@@ -136,6 +145,15 @@ export async function patchProvider(
       ...(request.endpointUrl !== undefined ? { endpointUrl: request.endpointUrl } : {}),
       ...(request.modelId !== undefined ? { modelId: request.modelId } : {}),
       ...(request.models !== undefined ? { models: request.models } : {}),
+      ...(configChanged
+        ? {
+            configRevision: current.configRevision + 1,
+            credentialStatus: 'untested',
+            credentialLastCheckedAt: null,
+            credentialLastError: null,
+            models: [],
+          }
+        : {}),
       updatedAt: new Date(),
     })
     .where(
@@ -199,6 +217,8 @@ export async function setCredential(
     .set({
       credentialEnvelope: JSON.stringify(envelope),
       authMode,
+      // A new key invalidates in-flight checks of the old one (N006).
+      configRevision: provider.configRevision + 1,
       credentialStatus: 'untested',
       credentialLastCheckedAt: null,
       credentialLastError: null,
@@ -231,6 +251,7 @@ export async function deleteCredential(
     .set({
       credentialEnvelope: null,
       authMode,
+      configRevision: provider.configRevision + 1,
       credentialStatus: 'untested',
       credentialLastCheckedAt: null,
       credentialLastError: null,
@@ -472,13 +493,21 @@ async function runConnectionCheck(
   }
 }
 
+/**
+ * Outcome of applying a check result to the provider row.
+ * `superseded` means the config changed while the check was in flight
+ * (N006): the result described the OLD configuration and was discarded.
+ */
+type ApplyOutcome = { kind: 'applied'; provider: ProviderDto } | { kind: 'superseded'; provider: ProviderDto }
+
 async function applyTestResult(
   db: ProvidersDatabase,
   workspaceId: string,
   providerId: string,
+  expectedRevision: number,
   result: ConnectionResult,
   persistModels: boolean,
-): Promise<ProviderDto> {
+): Promise<ApplyOutcome> {
   const updated = await db
     .update(providerConnections)
     .set({
@@ -492,12 +521,20 @@ async function applyTestResult(
       and(
         eq(providerConnections.id, providerId),
         eq(providerConnections.workspaceId, workspaceId),
+        eq(providerConnections.configRevision, expectedRevision),
       ),
     )
     .returning()
   const row = updated[0]
-  if (!row) throw notFound('Provider not found.')
-  return serializeProvider(row)
+  // No row at this revision: the endpoint/auth/credential changed while
+  // the check ran. The late result must NOT verify the edited profile —
+  // return the CURRENT row untouched instead.
+  if (!row) {
+    const current = await findProvider(db, workspaceId, providerId)
+    if (!current) throw notFound('Provider not found.')
+    return { kind: 'superseded', provider: serializeProvider(current) }
+  }
+  return { kind: 'applied', provider: serializeProvider(row) }
 }
 
 export interface ProviderActionResult extends ProviderTestResponse {
@@ -527,11 +564,23 @@ export async function testProviderConnection(
     }
   }
   const apiKey = isKeyless(provider) ? null : await readCredential(db, env, workspaceId, providerId)
+  // The revision captured now guards the result: a config/credential
+  // change during the check discards it (N006).
+  const expectedRevision = provider.configRevision
   const startedAt = Date.now()
   const result = await runConnectionCheck(env, provider, apiKey)
   const latencyMs = Date.now() - startedAt
-  const providerDto = await applyTestResult(db, workspaceId, providerId, result, false)
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: providerDto }
+  const outcome = await applyTestResult(db, workspaceId, providerId, expectedRevision, result, false)
+  if (outcome.kind === 'superseded') {
+    return {
+      ok: false,
+      message: 'The provider was edited while this check ran — the result was discarded. Test again.',
+      latencyMs,
+      discoveredModels: null,
+      provider: outcome.provider,
+    }
+  }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: outcome.provider }
 }
 
 export async function discoverProviderModels(
@@ -553,9 +602,19 @@ export async function discoverProviderModels(
     }
   }
   const apiKey = isKeyless(provider) ? null : await readCredential(db, env, workspaceId, providerId)
+  const expectedRevision = provider.configRevision
   const startedAt = Date.now()
   const result = await runConnectionCheck(env, provider, apiKey)
   const latencyMs = Date.now() - startedAt
-  const providerDto = await applyTestResult(db, workspaceId, providerId, result, true)
-  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: providerDto }
+  const outcome = await applyTestResult(db, workspaceId, providerId, expectedRevision, result, true)
+  if (outcome.kind === 'superseded') {
+    return {
+      ok: false,
+      message: 'The provider was edited while discovery ran — the result was discarded. Test again.',
+      latencyMs,
+      discoveredModels: null,
+      provider: outcome.provider,
+    }
+  }
+  return { ok: result.ok, message: result.message, latencyMs, discoveredModels: result.models, provider: outcome.provider }
 }
