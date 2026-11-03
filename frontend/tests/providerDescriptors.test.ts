@@ -66,13 +66,19 @@ describe('provider descriptor registry (U011)', () => {
     expect(normalizeProviderBase('anthropic', 'https://gw.example/anthropic/v1')).toBe('https://gw.example/anthropic/v1')
   })
 
-  it('builds protocol-appropriate credential headers', () => {
-    expect(providerAuthHeaders('openai-compatible', 'sk-1')).toEqual({ Authorization: 'Bearer sk-1' })
-    expect(providerAuthHeaders('anthropic', 'sk-2')).toEqual({
+  it('builds protocol-appropriate credential headers per auth mode', () => {
+    expect(providerAuthHeaders('openai-compatible', 'native', 'sk-1')).toEqual({ Authorization: 'Bearer sk-1' })
+    expect(providerAuthHeaders('openai-compatible', 'bearer', 'sk-1b')).toEqual({ Authorization: 'Bearer sk-1b' })
+    expect(providerAuthHeaders('anthropic', 'native', 'sk-2')).toEqual({
       'x-api-key': 'sk-2',
       'anthropic-version': '2023-06-01',
       'anthropic-dangerous-direct-browser-access': 'true',
     })
+    // Bearer mode on an Anthropic-protocol gateway: Authorization instead
+    // of x-api-key (some gateways authenticate this way).
+    expect(providerAuthHeaders('anthropic', 'bearer', 'sk-3')).toEqual({ Authorization: 'Bearer sk-3' })
+    // Keyless sends NO credential header at all — never a dummy key.
+    expect(providerAuthHeaders('openai-compatible', 'none', '')).toEqual({})
   })
 
   it('maps every user-facing provider kind to a wire protocol', () => {

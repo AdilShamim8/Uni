@@ -665,14 +665,17 @@ describe('runs — streamed execution, events, cancel, guard', () => {
     }
   })
 
-  it('rejects runs against a provider without a stored credential', async () => {
+  it('rejects runs against a keyed provider without a stored credential', async () => {
+    // Since N001 an OpenAI-compatible provider with no key is genuinely
+    // keyless and runs; the keyed-only Anthropic protocol is the honest
+    // rejection path when no credential is stored.
     const created = await testApp.app.inject({
       method: 'POST',
       url: '/api/v1/providers',
       headers: { cookie: alice.cookie },
       payload: {
         label: 'No credential',
-        kind: 'openai-compatible',
+        kind: 'anthropic',
         endpointUrl: fake.url,
         modelId: 'model-alpha',
       },

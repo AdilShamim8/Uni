@@ -116,7 +116,8 @@ interface ServerSessionState {
     kind: 'openai-compatible' | 'anthropic'
     endpointUrl: string
     modelId?: string
-    apiKey: string
+    /** Empty/omitted for keyless connections (N003, keyless-capable protocols only). */
+    apiKey?: string
   }) => Promise<boolean>
   testServerProviderById: (providerId: string) => Promise<void>
 
@@ -356,13 +357,25 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       set({ serverProviderError: null })
       const generation = get().sessionGeneration
       try {
+        const apiKey = (input.apiKey ?? '').trim()
+        const keyless = apiKey.length === 0
+        if (keyless && input.kind !== 'openai-compatible') {
+          set({ serverProviderError: 'Anthropic connections need an API key.' })
+          return false
+        }
         const provider = await createServerProvider({
           label: input.label,
           kind: input.kind,
+          // Keyless connections are explicit on the server (N001/N002):
+          // authMode 'none' persists the choice; a key switches the row
+          // to its protocol's keyed transport server-side.
+          authMode: keyless ? 'none' : undefined,
           endpointUrl: input.endpointUrl,
           modelId: input.modelId,
         })
-        await setServerProviderCredential(provider.id, input.apiKey)
+        if (!keyless) {
+          await setServerProviderCredential(provider.id, apiKey)
+        }
         await get().loadServerProviders()
         return true
       } catch (error) {
@@ -420,9 +433,13 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     if (!trimmed || !conversationId || !conversation) return false
     if (get().activeRun) return false
 
-    const provider = get().serverProviders.find((entry) => entry.credential.present)
+    // A provider is usable when it holds a key OR is genuinely keyless
+    // (authMode 'none', N002/N003). Explicit selection lands with N004.
+    const provider = get().serverProviders.find(
+      (entry) => entry.credential.present || entry.authMode === 'none',
+    )
     if (!provider) {
-      set({ runError: 'Add a server provider with an API key first (panel above).' })
+      set({ runError: 'Add a server provider — with a key, or keyless for a local runtime (panel above).' })
       return false
     }
     const modelId = provider.modelId ?? provider.models[0] ?? null

@@ -155,13 +155,20 @@ describe('provider connection testing', () => {
     )
   })
 
-  it('rejects an empty key before touching the network', async () => {
-    const fetchMock = vi.fn()
+  it('treats an empty key on a keyless-capable protocol as a keyless probe', async () => {
+    // Since N003 an empty key is not an early rejection for
+    // OpenAI-compatible endpoints — it is a genuine keyless attempt
+    // against the endpoint (local runtimes answer without any key).
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValue(new TypeError('network unreachable'))
     vi.stubGlobal('fetch', fetchMock)
     const result = await testProviderConnection(profile, '   ')
     expect(result.ok).toBe(false)
-    expect(result.message).toBe('Enter an API key first.')
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    // The probe carried no credential header.
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined()
     vi.unstubAllGlobals()
   })
 
@@ -173,6 +180,39 @@ describe('provider connection testing', () => {
     )
     expect(result.ok).toBe(false)
     expect(result.message).toContain('endpoint URL is not valid')
+    vi.unstubAllGlobals()
+  })
+
+  it('connects keyless to a local runtime with NO credential header (N003)', async () => {
+    const localProfile: ProviderProfile = {
+      ...profile,
+      kind: 'local',
+      endpointUrl: 'http://localhost:11434/v1',
+    }
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(JSON.stringify({ data: [{ id: 'llama3.2' }] }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await testProviderConnection(localProfile, '')
+
+    expect(result.ok).toBe(true)
+    expect(result.models).toEqual(['llama3.2'])
+    expect(result.message).toMatch(/Connected in \d+ms without a key/)
+    // Wire truth: the probe carried no credential header at all.
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('http://localhost:11434/v1/models')
+    expect((init.headers as Record<string, string>).Authorization).toBeUndefined()
+    vi.unstubAllGlobals()
+  })
+
+  it('still requires a key for protocols that cannot run keyless', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const result = await testProviderConnection(anthropicProfile, '   ')
+    expect(result.ok).toBe(false)
+    expect(result.message).toBe('Enter an API key first.')
+    expect(fetchMock).not.toHaveBeenCalled()
     vi.unstubAllGlobals()
   })
 
@@ -434,6 +474,40 @@ describe('live chat adapter', () => {
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer sk-key')
     const body = JSON.parse(init.body as string) as { model: string; messages: unknown[] }
     expect(body.model).toBe('test-model')
+    vi.unstubAllGlobals()
+  })
+
+  it('generates keyless with no Authorization header on a local runtime (N003)', async () => {
+    const localProfile: ProviderProfile = {
+      ...profile,
+      kind: 'local',
+      endpointUrl: 'http://localhost:11434/v1',
+    }
+    const fetchMock = vi.fn().mockResolvedValue(
+      sseResponse([
+        'data: {"choices":[{"delta":{"content":"Local "}}]}\n\n',
+        'data: {"choices":[{"delta":{"content":"hello!"}}]}\n\n',
+        'data: [DONE]\n\n',
+      ]),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const adapter = createLiveAdapter(localProfile, '', 'llama3.2')
+    const handlers = makeHandlers()
+    await adapter.stream(
+      { prompt: 'hi', history: [], tools: [], attachments: [], nickname: '', traits: '' },
+      handlers,
+      new AbortController().signal,
+    )
+
+    expect(handlers.deltas.join('')).toBe('Local hello!')
+    expect(handlers.done).toEqual(['complete'])
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
+    expect(url).toBe('http://localhost:11434/v1/chat/completions')
+    // Wire truth: no dummy Authorization header on a keyless generation.
+    const headers = init.headers as Record<string, string>
+    expect(headers.Authorization).toBeUndefined()
+    expect(headers.authorization).toBeUndefined()
     vi.unstubAllGlobals()
   })
 

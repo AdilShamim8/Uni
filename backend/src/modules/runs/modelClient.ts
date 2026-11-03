@@ -4,12 +4,12 @@ import type { LanguageModel } from 'ai'
 import type { ProviderDto } from '@uni/contracts'
 import { resolveProviderEndpoint } from '../../lib/urlGuard.js'
 import { createGuardedFetch, urlGuardOptions } from '../../lib/guardedTransport.js'
-import { anthropicApiBase } from '../../lib/providerUrls.js'
+import { anthropicApiBase, type ProviderAuthMode } from '../../lib/providerUrls.js'
 import type { Env } from '../../config/env.js'
 
 /**
  * Provider transport for run execution: builds an AI SDK model from a
- * workspace provider row plus its decrypted credential.
+ * workspace provider row plus its credential (when it has one).
  *
  * Generation traffic flows through the SAME guarded transport as
  * connection tests and discovery (audit F09): SSRF validation, pinned
@@ -17,6 +17,11 @@ import type { Env } from '../../config/env.js'
  * not just to probes. Credentials live only in the Authorization /
  * x-api-key header of the outbound request — never in logs, events, or
  * the database.
+ *
+ * Keyless generation (N002): a connection with authMode 'none' passes
+ * NO credential to the SDK, so the outbound request carries no
+ * Authorization header at all — a local runtime is never sent a dummy
+ * key. Both SDKs omit their credential headers when none is provided.
  */
 
 export interface ProviderForRun {
@@ -24,7 +29,10 @@ export interface ProviderForRun {
   kind: ProviderDto['kind']
   endpointUrl: string
   modelId: string
-  apiKey: string
+  /** Explicit credential transport (N001). */
+  authMode: ProviderAuthMode
+  /** Null for genuinely keyless connections (authMode 'none'). */
+  apiKey: string | null
 }
 
 export async function buildModelForRun(
@@ -41,11 +49,24 @@ export async function buildModelForRun(
     // same versioned base that discovery probes `<base>/models` on
     // (F08). Root, `/v1`, and custom gateway prefixes all normalize
     // through anthropicApiBase — never a bare `/messages` route.
-    const anthropic = createAnthropic({
-      baseURL: anthropicApiBase(provider.endpointUrl),
-      apiKey: provider.apiKey,
-      fetch: guardedFetch,
-    })
+    //
+    // Auth mode chooses the SDK's credential transport (N001):
+    // 'native' → x-api-key, 'bearer' → Authorization: Bearer (some
+    // Anthropic-protocol gateways authenticate this way), 'none' → no
+    // credential at all (defensive; the API layer rejects keyless
+    // Anthropic connections before a run is accepted).
+    const anthropic =
+      provider.authMode === 'bearer' && provider.apiKey
+        ? createAnthropic({
+            baseURL: anthropicApiBase(provider.endpointUrl),
+            authToken: provider.apiKey,
+            fetch: guardedFetch,
+          })
+        : createAnthropic({
+            baseURL: anthropicApiBase(provider.endpointUrl),
+            ...(provider.apiKey ? { apiKey: provider.apiKey } : {}),
+            fetch: guardedFetch,
+          })
     return {
       model: anthropic.languageModel(provider.modelId),
       resolvedEndpoint: endpointUrl,
@@ -55,7 +76,7 @@ export async function buildModelForRun(
   const openaiCompatible = createOpenAICompatible({
     baseURL: endpointUrl,
     name: 'uni-provider',
-    apiKey: provider.apiKey,
+    ...(provider.apiKey && provider.authMode !== 'none' ? { apiKey: provider.apiKey } : {}),
     fetch: guardedFetch,
   })
   return {
