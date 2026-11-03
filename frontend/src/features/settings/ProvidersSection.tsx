@@ -13,6 +13,7 @@ import {
   Zap,
 } from 'lucide-react'
 import type { Capability, ModelInfo, ProviderKind, ProviderProfile } from '@/domain/types'
+import { CAPABILITY_ORDER } from '@/domain/types'
 import { makeId } from '@/domain/ids'
 import { useAppStore } from '@/state/store'
 import { testProviderConnection, profileAllowsKeyless, type ProviderErrorKind, type ProviderReadiness } from '@/services/connection/providerConnection'
@@ -29,16 +30,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { TextField } from '@/components/ui/TextField'
 import { Badge } from '@/components/ui/Tooltip'
 
-const CAPABILITIES: Capability[] = [
-  'chat',
-  'search',
-  'research',
-  'images',
-  'voice',
-  'canvas',
-  'data-analysis',
-  'code',
-]
+const CAPABILITIES: Capability[] = [...CAPABILITY_ORDER]
 
 const KIND_LABELS: Record<ProviderKind, string> = {
   openai: 'OpenAI',
