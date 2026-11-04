@@ -71,6 +71,13 @@
       "when": 1793771218164,
       "tag": "0009_run_request_fingerprint",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793857618164,
+      "tag": "0010_run_workspace_created_idx",
+      "breakpoints": true
     }
   ]
 }

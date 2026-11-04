@@ -281,20 +281,32 @@ async function listRunEventsAfter(
 }
 
 /* ------------------------------------------------------------------ */
-/* In-memory creation rate limit (single process)                      */
+/* Creation-rate accounting (N021 — durable, DB-clock window)          */
 /* ------------------------------------------------------------------ */
 
-const creationTimes = new Map<string, number[]>()
-
-function checkCreationRate(workspaceId: string, limitPerMinute: number): void {
-  const now = Date.now()
-  const window = creationTimes.get(workspaceId) ?? []
-  const recent = window.filter((time) => now - time < 60_000)
-  if (recent.length >= limitPerMinute) {
-    throw rateLimited('Too many runs started. Wait a moment and try again.')
-  }
-  recent.push(now)
-  creationTimes.set(workspaceId, recent)
+/**
+ * N021 — creation-rate accounting reads the runs table itself: every
+ * row IS a run creation (created_at, DB clock). Counting creations in
+ * the trailing 60s window inside the admission transaction replaced
+ * the old process-local Map, which was invisible to other processes
+ * and to restarts (a second process admitted a full extra budget; a
+ * restart reset the window entirely). Semantics: only runs actually
+ * STARTED consume rate budget — a rejected create never inserted a
+ * row, and an idempotent replay returns before this check. The count
+ * runs under the admission advisory lock, so concurrent creators see
+ * committed predecessors exactly.
+ */
+async function countRecentRunCreations(
+  db: RunsDatabase | RunsTx,
+  workspaceId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(runs)
+    .where(
+      and(eq(runs.workspaceId, workspaceId), sql`${runs.createdAt} > now() - interval '60 seconds'`),
+    )
+  return Number(rows[0]?.count ?? 0)
 }
 
 /* ------------------------------------------------------------------ */
@@ -309,11 +321,8 @@ export async function createRun(
   conversationId: string,
   request: CreateRunRequest,
 ): Promise<CreateRunResponse | null> {
-  // Idempotent replay (original N016): the same key replays the same
-  // run ONLY when the canonical effective request matches — conversation,
-  // answered node, provider, and effective model. A different request
-  // reusing the key is a 409 conflict, never a silent replay of an
-  // unrelated stored run.
+  // N016 idempotent replay first: the retry of an existing run is
+  // neither a new rate consumer nor a new admission (see above).
   if (request.idempotencyKey) {
     const existing = await findRunByIdempotencyKey(db, workspaceId, request.idempotencyKey)
     if (existing) {
@@ -330,8 +339,6 @@ export async function createRun(
       }
     }
   }
-
-  checkCreationRate(workspaceId, env.RUN_CREATE_RATE_PER_MINUTE)
 
   const inputs = await resolveRunInputs(db, workspaceId, conversationId, request)
   if (!inputs) return null
@@ -364,6 +371,12 @@ export async function createRun(
       // lock. hashtextextended collisions with other lock uses (F003's
       // per-run event locks) only over-serialize, never corrupt.
       await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${workspaceId}, 0))`)
+      // N021 — creation-rate accounting from the durable record: the
+      // trailing-minute count of this workspace's run rows (DB clock),
+      // serialized by the admission lock like the active count below.
+      if ((await countRecentRunCreations(tx, workspaceId)) >= env.RUN_CREATE_RATE_PER_MINUTE) {
+        throw rateLimited('Too many runs started. Wait a moment and try again.')
+      }
       if ((await countActiveRuns(tx, workspaceId)) >= env.RUN_MAX_CONCURRENT_PER_WORKSPACE) {
         throw rateLimited('Too many concurrent runs in this workspace.')
       }
