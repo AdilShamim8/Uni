@@ -254,7 +254,10 @@ async function incomingRequestFingerprint(
   })
 }
 
-async function countActiveRuns(db: RunsDatabase, workspaceId: string): Promise<number> {
+/** An open transaction executor (usable wherever the db handle is). */
+type RunsTx = Parameters<Parameters<RunsDatabase['transaction']>[0]>[0]
+
+async function countActiveRuns(db: RunsDatabase | RunsTx, workspaceId: string): Promise<number> {
   const rows = await db
     .select({ count: sql<number>`count(*)` })
     .from(runs)
@@ -333,10 +336,6 @@ export async function createRun(
   const inputs = await resolveRunInputs(db, workspaceId, conversationId, request)
   if (!inputs) return null
 
-  if ((await countActiveRuns(db, workspaceId)) >= env.RUN_MAX_CONCURRENT_PER_WORKSPACE) {
-    throw rateLimited('Too many concurrent runs in this workspace.')
-  }
-
   const id = randomUUID()
   // Snapshot of what the idempotency key is bound to (original N016):
   // computed from the RESOLVED inputs so the stored fingerprint always
@@ -351,24 +350,42 @@ export async function createRun(
     : null
   let row: RunRow | undefined
   try {
-    const inserted = await db
-      .insert(runs)
-      .values({
-        id,
-        workspaceId,
-        conversationId,
-        parentNodeId: inputs.parentNodeId,
-        providerId: inputs.provider.id,
-        providerKind: inputs.provider.kind,
-        providerEndpoint: inputs.provider.endpointUrl,
-        modelId: inputs.provider.modelId,
-        status: 'running',
-        outputText: '',
-        idempotencyKey: request.idempotencyKey ?? null,
-        requestFingerprint,
-      })
-      .returning()
-    row = inserted[0]
+    row = await db.transaction(async (tx) => {
+      // N020 — atomic admission. The active-run count and the insert
+      // share ONE transaction serialized by a per-workspace advisory
+      // lock: a concurrent creator waits here until every predecessor
+      // COMMITS, so its count includes their rows and the workspace
+      // cap can never be oversubscribed. (Before the fix the count ran
+      // as a separate statement before the insert — simultaneous
+      // creates all passed the cap and all inserted.) Different
+      // workspaces hash to different locks and never block each other;
+      // the critical section is just a count + insert — the provider
+      // invocation happens after commit, so nothing slow holds the
+      // lock. hashtextextended collisions with other lock uses (F003's
+      // per-run event locks) only over-serialize, never corrupt.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${workspaceId}, 0))`)
+      if ((await countActiveRuns(tx, workspaceId)) >= env.RUN_MAX_CONCURRENT_PER_WORKSPACE) {
+        throw rateLimited('Too many concurrent runs in this workspace.')
+      }
+      const inserted = await tx
+        .insert(runs)
+        .values({
+          id,
+          workspaceId,
+          conversationId,
+          parentNodeId: inputs.parentNodeId,
+          providerId: inputs.provider.id,
+          providerKind: inputs.provider.kind,
+          providerEndpoint: inputs.provider.endpointUrl,
+          modelId: inputs.provider.modelId,
+          status: 'running',
+          outputText: '',
+          idempotencyKey: request.idempotencyKey ?? null,
+          requestFingerprint,
+        })
+        .returning()
+      return inserted[0]
+    })
   } catch (error) {
     // N017 — concurrent same-key creation. Two requests that both pass
     // the replay lookup (no row yet) race at the unique index
