@@ -8,14 +8,15 @@ import { appendEvent } from '../src/modules/runs/runs.service.js'
 import { signUpUser, startTestApp, TEST_CREDENTIAL_MASTER_KEY, type TestApp } from './harness.js'
 
 /**
- * N016 — atomic per-run event sequence assignment. appendEvent assigns
+ * F003 (shipped as "[N016]", relabeled 2026-11-04) — atomic per-run event sequence assignment. appendEvent assigns
  * each event's sequence with max + 1; before the fix, the read and the
  * insert were separate statements, so two concurrent appenders for the
  * same run could read the same max and collide on the (runId, sequence)
  * primary key — the loser threw a unique violation (surfacing as a
  * provider_error after the provider succeeded) or was silently
  * swallowed by the flush chain. The fix wraps read + insert in one
- * transaction holding a per-run advisory lock.
+ * transaction holding a per-run advisory lock. Original N016 (request
+ * fingerprinting) is separate and lives in runs-fingerprint.test.ts.
  *
  * This suite attacks the guarantee DIRECTLY at the service boundary:
  * many genuinely concurrent appendEvent calls for the same run, no
@@ -26,7 +27,7 @@ import { signUpUser, startTestApp, TEST_CREDENTIAL_MASTER_KEY, type TestApp } fr
 
 const API_KEY = 'sk-atomic-test-key-abcdef123456'
 
-describe('run event sequence atomicity (N016)', () => {
+describe('run event sequence atomicity (F003)', () => {
   let testApp: TestApp
   let alice: { cookie: string }
   let fake: { server: Server; url: string }

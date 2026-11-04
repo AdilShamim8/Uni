@@ -27,6 +27,12 @@ import {
   streamServerRunEvents,
   type ServerRunEvent,
 } from '@/services/api/serverRuns'
+import {
+  beginServerSend,
+  clearServerSends,
+  completeServerSend,
+  retryOnNetworkFailure,
+} from '@/services/api/sendIdentity'
 import type {
   ImportCommitResponse,
   ImportPreviewResponse,
@@ -303,6 +309,7 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         // New session: invalidate anything still in flight from the
         // signed-out (or previous account) era and clear its data.
         bumpSession()
+        clearServerSends()
         set({
           ...clearedServerData,
           status: 'signed-in',
@@ -325,6 +332,7 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       try {
         const account = await signUpOnServer({ name, email, password })
         bumpSession()
+        clearServerSends()
         set({
           ...clearedServerData,
           status: 'signed-in',
@@ -345,6 +353,7 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       // Fence BEFORE the first await: every async write still in flight
       // from this session must be discarded whenever it lands.
       bumpSession()
+      clearServerSends()
       const generation = get().sessionGeneration
       set({ status: 'signed-out', ...clearedServerData })
       try {
@@ -663,6 +672,13 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
 
     set({ runError: null })
     const generation = get().sessionGeneration
+    // N019 — ONE operation id for this logical send, reused across
+    // network retries (automatic below, manual on re-press) and page
+    // reload (persisted). It is the node clientId AND (as `run-<opId>`)
+    // the run idempotency key, so the server's N016–N018 idempotency
+    // semantics apply to the real browser send path.
+    const workspaceId = get().account?.workspace.id ?? 'unknown-workspace'
+    const opId = beginServerSend(workspaceId, conversationId, trimmed)
     let created: {
       run: {
         id: string
@@ -671,31 +687,48 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       events: ServerRunEvent[]
     } | null = null
     try {
-      // 1. The user node (clientId makes a retry a no-op).
-      const nodeResult = await apiFetch<{
-        node: ServerMessageNode
-        conversation: ServerConversationDetail
-        reused: boolean
-      }>(`${API_ROOT}/conversations/${encodeURIComponent(conversationId)}/nodes`, {
-        method: 'POST',
-        body: JSON.stringify({
-          role: 'user',
-          content: trimmed,
-          status: 'complete',
-          clientId: `send-${Date.now()}-${trimmed.length}`,
-        }),
-      })
+      // 1. The user node. Same op id on every attempt: a network retry
+      // or a re-press replays the one node (N018), never a duplicate.
+      const nodeResult = await retryOnNetworkFailure(
+        () =>
+          apiFetch<{
+            node: ServerMessageNode
+            conversation: ServerConversationDetail
+            reused: boolean
+          }>(`${API_ROOT}/conversations/${encodeURIComponent(conversationId)}/nodes`, {
+            method: 'POST',
+            body: JSON.stringify({
+              role: 'user',
+              content: trimmed,
+              status: 'complete',
+              clientId: opId,
+            }),
+          }),
+        { signal: sessionScope.signal },
+      )
       if (!stillCurrent(generation)) return false
       set({ openConversation: nodeResult.conversation })
 
-      // 2. The run (idempotent by key).
-      const idempotencyKey = `run-${nodeResult.node.id}`
-      const runResponse = await createServerRun(conversationId, {
-        parentNodeId: nodeResult.node.id,
-        providerId: provider.id,
-        modelId,
-        idempotencyKey,
-      })
+      // 2. The run — idempotent by the SAME operation (`run-<opId>`).
+      // The server binds the key to the effective request (N016) and
+      // resolves concurrent same-key creation to one run (N017), so a
+      // network retry here replays the run rather than starting a
+      // second provider invocation.
+      const idempotencyKey = `run-${opId}`
+      const runResponse = await retryOnNetworkFailure(
+        () =>
+          createServerRun(conversationId, {
+            parentNodeId: nodeResult.node.id,
+            providerId: provider.id,
+            modelId,
+            idempotencyKey,
+          }),
+        { signal: sessionScope.signal },
+      )
+      // The client has now SEEN node + run exist server-side; the
+      // logical send is complete. A later resend of the same text is a
+      // NEW logical send (fresh ids, no replay of the finished run).
+      completeServerSend(workspaceId, conversationId, opId)
       created = runResponse
       if (!stillCurrent(generation)) return false
 

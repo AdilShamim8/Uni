@@ -847,3 +847,96 @@ base is inference.liquid.ai/v1; Lambda and Requesty unreachable).
   initially hit 510/511 (an existing `gpt-test` regex newly matched the
   "Chat with" button), fixed by tightening that one assertion —
   recorded here rather than hidden.
+
+## Update 2026-11-04 — session 3, 300-new effort opening (branch task/uni-next-release-300)
+
+Fresh clone at `UPDATE_START_SHA = 526b8cf0e` (identical to main; no
+concurrent upstream changes). New effort branch
+`task/uni-next-release-300` created from that SHA. New-work count of
+record: `docs/update-2026-11-04-commit-manifest.md`.
+
+### Fresh baseline (pristine tree at UPDATE_START_SHA, before any change)
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm ci && npm run build && npm run typecheck` | Pass (clean) |
+| `cd backend && npm ci && npm run typecheck && npm run build` | Pass (clean) |
+| `cd backend && npm test` | **232/232 pass** (22 files, 52s) — reproduced fresh, not copied from history |
+| `cd frontend && npm ci && npm run typecheck && npm run lint && npm run build` | Pass (pre-existing chunk-size warning only) |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **511/511 pass** (69 files, 138s) |
+
+### Push authentication
+
+This sandbox has no stored git credential. Commits are being made
+locally on the branch with the required author identity; each push
+attempt and its exact error will be recorded here. Nothing is counted
+as remotely present until `git ls-remote` shows the SHA.
+
+### Session 3 slices (each committed only after its full gate)
+
+| Commit | Scope | Evidence |
+| --- | --- | --- |
+| `2ae0e5cb2` docs: effort opening | docs only | baseline table above (fresh, pristine tree) |
+| `06ecca92f` N016 request fingerprinting | backend + migration 0009 | typecheck/build clean; **241/241** (232 + 9 new); suite DISCRIMINATING: 6/9 fail against the pre-fix service (all four conflict cases, legacy-conflict, stored-fingerprint), 3 pass both sides |
+| `5e7de0518` N017 conflict-safe concurrent creation | backend | typecheck/build clean; **244/244** (+3); pre-fix discrimination across 3 runs: mixed-input same-key race produced a raw 500 in 3/3 runs, identical-input in 2/3 (the pass was replay-path timing luck); post-fix all 3 pass |
+| `4c4c28345` N018 retry-safe node creation | backend | typecheck/build clean; **247/247** (+3); pre-fix discrimination: the concurrent same-clientId test fails with a raw 500; sequential and distinct-id tests pass both sides |
+
+Frontend untouched this session (backend-only changes); its pristine
+baseline above stands. Contracts untouched after their baseline pass.
+
+### Push attempt (exact error)
+
+```
+$ git push --set-upstream origin task/uni-next-release-300
+fatal: could not read Username for 'https://github.com': No such device or address
+```
+
+No credential exists in this sandbox (fresh environment; the token used
+by previous sessions is not available). All four commits are retained on
+local `task/uni-next-release-300` (HEAD `4c4c28345`, parent chain
+verified). None is counted as remotely present. When a credential is
+provided, push the branch and verify each SHA with `git ls-remote origin
+refs/heads/task/uni-next-release-300`, then update the manifest's
+remote-check column and counters.
+
+## Update 2026-11-04 — session 4, push unblocked (branch task/uni-next-release-300)
+
+A credential was provided in-session (2026-11-04). The five retained
+session-3 commits were pushed ONE AT A TIME — never a bulk push — each
+push immediately verified by `git ls-remote` SHA comparison against the
+exact full SHA before the next push was issued.
+
+### Push + verification transcript (5/5 SHA matches)
+
+| Order | Commit | Push command (form) | Remote check after push |
+| --- | --- | --- | --- |
+| 1 | `2ae0e5cb2` (U2-001 docs opening) | `git push origin 2ae0e5cb24da043bb2ec23d467769dda98ae903b:refs/heads/task/uni-next-release-300` → `* [new branch]` | ls-remote shows `2ae0e5cb24da043bb2ec23d467769dda98ae903b` |
+| 2 | `06ecca92f` (N016) | same form → `2ae0e5cb2..06ecca92f` | ls-remote shows `06ecca92f892a69a4c7fa30921ff9ad93f9e461a` |
+| 3 | `5e7de0518` (N017) | same form → `06ecca92f..5e7de0518` | ls-remote shows `5e7de0518b6eb22a489396b6173865945685132c` |
+| 4 | `4c4c28345` (N018) | same form → `5e7de0518..4c4c28345` | ls-remote shows `4c4c28345914e24039d5cfe2e669eebba7e54d5b` |
+| 5 | `99ea4affe` (U2-005 checkpoint) | same form → `4c4c28345..99ea4affe` | ls-remote shows `99ea4affe089c8c04482c95584ae623f3b6df618` (= local HEAD) |
+
+Branch upstream set to `origin/task/uni-next-release-300`.
+
+### Draft PR exposing CI
+
+Draft PR **#48** opened against `main` (head
+`task/uni-next-release-300`, base at UPDATE_START_SHA `526b8cf0e`):
+https://github.com/AdilShamim8/Uni/pull/48 — same CI-exposure pattern as
+the session-1 draft PR #46 (N073).
+
+Check-runs for the pushed tip `99ea4affe`, observed via the check-runs
+API at U2-006 commit time:
+
+- Contracts (shared schemas): **success**
+- Backend (typecheck + integration tests): **success**
+- Frontend (typecheck + tests): **in progress** at the time of this
+  docs commit — final status recorded in the session-4 checkpoint
+  section below (never claimed without observation)
+- Vercel Preview Comments: success
+
+### U2-006 (this docs commit)
+
+Docs only — no code change; the session-3 baseline table and slice
+evidence stand unchanged. Gate for this commit: none beyond doc review
+(no source touched).

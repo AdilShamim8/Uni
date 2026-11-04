@@ -22,7 +22,8 @@ import {
   runs,
   type RunRow,
 } from '../../db/schema.js'
-import { badRequest, notFound, rateLimited } from '../../lib/errors.js'
+import { badRequest, conflict, notFound, rateLimited } from '../../lib/errors.js'
+import { isUniqueViolation } from '../../lib/pgErrors.js'
 import { decryptSecret, parseMasterKey } from '../../lib/secretBox.js'
 import { allowsKeyless } from '../../lib/providerUrls.js'
 import { RepetitionWatch } from '../../vendor/openclaw/repetition-guard.js'
@@ -31,6 +32,7 @@ import { buildModelForRun } from './modelClient.js'
 import { finishRun, getRunHandle, publishRunEvent, registerRun } from './runRegistry.js'
 import { findEmployeeRow } from '../employees/employees.service.js'
 import { buildMemoryBlock, buildRecall } from '../memory/memory.service.js'
+import { computeRunRequestFingerprint, runRequestFingerprintOf } from './requestFingerprint.js'
 
 export type RunsDatabase = NodePgDatabase<typeof schema>
 
@@ -214,7 +216,48 @@ async function findRunByIdempotencyKey(
   return rows[0] ?? null
 }
 
-async function countActiveRuns(db: RunsDatabase, workspaceId: string): Promise<number> {
+/**
+ * The effective model of an incoming request (original N016): the
+ * explicit override, or the provider's current default. Empty string
+ * when unresolvable (provider missing, no default) — the fingerprint
+ * then never matches a real run's binding, which is the honest outcome:
+ * the request can no longer express what the stored run executed.
+ */
+async function resolveEffectiveModelId(
+  db: RunsDatabase,
+  workspaceId: string,
+  request: CreateRunRequest,
+): Promise<string> {
+  if (request.modelId) return request.modelId
+  const rows = await db
+    .select({ modelId: providerConnections.modelId })
+    .from(providerConnections)
+    .where(
+      and(eq(providerConnections.id, request.providerId), eq(providerConnections.workspaceId, workspaceId)),
+    )
+    .limit(1)
+  return rows[0]?.modelId ?? ''
+}
+
+/** The request-side fingerprint of an incoming idempotent create. */
+async function incomingRequestFingerprint(
+  db: RunsDatabase,
+  workspaceId: string,
+  conversationId: string,
+  request: CreateRunRequest,
+): Promise<string> {
+  return computeRunRequestFingerprint({
+    conversationId,
+    parentNodeId: request.parentNodeId,
+    providerId: request.providerId,
+    modelId: await resolveEffectiveModelId(db, workspaceId, request),
+  })
+}
+
+/** An open transaction executor (usable wherever the db handle is). */
+type RunsTx = Parameters<Parameters<RunsDatabase['transaction']>[0]>[0]
+
+async function countActiveRuns(db: RunsDatabase | RunsTx, workspaceId: string): Promise<number> {
   const rows = await db
     .select({ count: sql<number>`count(*)` })
     .from(runs)
@@ -238,20 +281,32 @@ async function listRunEventsAfter(
 }
 
 /* ------------------------------------------------------------------ */
-/* In-memory creation rate limit (single process)                      */
+/* Creation-rate accounting (N021 — durable, DB-clock window)          */
 /* ------------------------------------------------------------------ */
 
-const creationTimes = new Map<string, number[]>()
-
-function checkCreationRate(workspaceId: string, limitPerMinute: number): void {
-  const now = Date.now()
-  const window = creationTimes.get(workspaceId) ?? []
-  const recent = window.filter((time) => now - time < 60_000)
-  if (recent.length >= limitPerMinute) {
-    throw rateLimited('Too many runs started. Wait a moment and try again.')
-  }
-  recent.push(now)
-  creationTimes.set(workspaceId, recent)
+/**
+ * N021 — creation-rate accounting reads the runs table itself: every
+ * row IS a run creation (created_at, DB clock). Counting creations in
+ * the trailing 60s window inside the admission transaction replaced
+ * the old process-local Map, which was invisible to other processes
+ * and to restarts (a second process admitted a full extra budget; a
+ * restart reset the window entirely). Semantics: only runs actually
+ * STARTED consume rate budget — a rejected create never inserted a
+ * row, and an idempotent replay returns before this check. The count
+ * runs under the admission advisory lock, so concurrent creators see
+ * committed predecessors exactly.
+ */
+async function countRecentRunCreations(
+  db: RunsDatabase | RunsTx,
+  workspaceId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(runs)
+    .where(
+      and(eq(runs.workspaceId, workspaceId), sql`${runs.createdAt} > now() - interval '60 seconds'`),
+    )
+  return Number(rows[0]?.count ?? 0)
 }
 
 /* ------------------------------------------------------------------ */
@@ -266,10 +321,17 @@ export async function createRun(
   conversationId: string,
   request: CreateRunRequest,
 ): Promise<CreateRunResponse | null> {
-  // Idempotent replay: the same client key returns the same run.
+  // N016 idempotent replay first: the retry of an existing run is
+  // neither a new rate consumer nor a new admission (see above).
   if (request.idempotencyKey) {
     const existing = await findRunByIdempotencyKey(db, workspaceId, request.idempotencyKey)
     if (existing) {
+      const incoming = await incomingRequestFingerprint(db, workspaceId, conversationId, request)
+      if (incoming !== runRequestFingerprintOf(existing)) {
+        throw conflict(
+          'This idempotency key was already used with a different request (conversation, message, provider, or model). Send a new key.',
+        )
+      }
       return {
         run: serializeRun(existing),
         events: await listRunEventsAfter(db, existing.id, 0),
@@ -278,48 +340,109 @@ export async function createRun(
     }
   }
 
-  checkCreationRate(workspaceId, env.RUN_CREATE_RATE_PER_MINUTE)
-
   const inputs = await resolveRunInputs(db, workspaceId, conversationId, request)
   if (!inputs) return null
 
-  if ((await countActiveRuns(db, workspaceId)) >= env.RUN_MAX_CONCURRENT_PER_WORKSPACE) {
-    throw rateLimited('Too many concurrent runs in this workspace.')
-  }
-
   const id = randomUUID()
-  const inserted = await db
-    .insert(runs)
-    .values({
-      id,
-      workspaceId,
-      conversationId,
-      parentNodeId: inputs.parentNodeId,
-      providerId: inputs.provider.id,
-      providerKind: inputs.provider.kind,
-      providerEndpoint: inputs.provider.endpointUrl,
-      modelId: inputs.provider.modelId,
-      status: 'running',
-      outputText: '',
-      idempotencyKey: request.idempotencyKey ?? null,
+  // Snapshot of what the idempotency key is bound to (original N016):
+  // computed from the RESOLVED inputs so the stored fingerprint always
+  // describes the row actually written.
+  const requestFingerprint = request.idempotencyKey
+    ? computeRunRequestFingerprint({
+        conversationId,
+        parentNodeId: inputs.parentNodeId,
+        providerId: inputs.provider.id,
+        modelId: inputs.provider.modelId,
+      })
+    : null
+  let row: RunRow | undefined
+  try {
+    row = await db.transaction(async (tx) => {
+      // N020 — atomic admission. The active-run count and the insert
+      // share ONE transaction serialized by a per-workspace advisory
+      // lock: a concurrent creator waits here until every predecessor
+      // COMMITS, so its count includes their rows and the workspace
+      // cap can never be oversubscribed. (Before the fix the count ran
+      // as a separate statement before the insert — simultaneous
+      // creates all passed the cap and all inserted.) Different
+      // workspaces hash to different locks and never block each other;
+      // the critical section is just a count + insert — the provider
+      // invocation happens after commit, so nothing slow holds the
+      // lock. hashtextextended collisions with other lock uses (F003's
+      // per-run event locks) only over-serialize, never corrupt.
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${workspaceId}, 0))`)
+      // N021 — creation-rate accounting from the durable record: the
+      // trailing-minute count of this workspace's run rows (DB clock),
+      // serialized by the admission lock like the active count below.
+      if ((await countRecentRunCreations(tx, workspaceId)) >= env.RUN_CREATE_RATE_PER_MINUTE) {
+        throw rateLimited('Too many runs started. Wait a moment and try again.')
+      }
+      if ((await countActiveRuns(tx, workspaceId)) >= env.RUN_MAX_CONCURRENT_PER_WORKSPACE) {
+        throw rateLimited('Too many concurrent runs in this workspace.')
+      }
+      const inserted = await tx
+        .insert(runs)
+        .values({
+          id,
+          workspaceId,
+          conversationId,
+          parentNodeId: inputs.parentNodeId,
+          providerId: inputs.provider.id,
+          providerKind: inputs.provider.kind,
+          providerEndpoint: inputs.provider.endpointUrl,
+          modelId: inputs.provider.modelId,
+          status: 'running',
+          outputText: '',
+          idempotencyKey: request.idempotencyKey ?? null,
+          requestFingerprint,
+        })
+        .returning()
+      // N022 — the started event commits ATOMICALLY with the run row.
+      // Before, it was a separate post-commit transaction: a transient
+      // failure there left a committed 'running' row with ZERO events,
+      // no provider invocation, and no live handle — the client saw a
+      // 500, and the same-key retry replayed an orphan that reconciliation
+      // then read as interrupted (the send was lost). Sequence 1 needs no
+      // advisory lock: the run id was minted inside this transaction, so
+      // no other transaction can append to it yet. The bus publish that
+      // appendEvent would do is deliberately skipped — no subscriber can
+      // exist before the create response returns; SSE clients get the
+      // event from the durable replay (after=0).
+      await tx
+        .insert(runEvents)
+        .values({ runId: id, sequence: 1, type: 'started', payload: { text: '' } })
+      return inserted[0]
     })
-    .returning()
-  let row = inserted[0]
-  if (!row) {
-    // Lost an idempotency race — the winner's row is the answer.
-    if (!request.idempotencyKey) throw new Error('Run insert returned no row')
-    const winner = await findRunByIdempotencyKey(db, workspaceId, request.idempotencyKey)
-    if (!winner) throw new Error('Run insert returned no row')
-    return {
-      run: serializeRun(winner),
-      events: await listRunEventsAfter(db, winner.id, 0),
-      reused: true,
+  } catch (error) {
+    // N017 — concurrent same-key creation. Two requests that both pass
+    // the replay lookup (no row yet) race at the unique index
+    // (workspace_id, idempotency_key): Postgres blocks the second
+    // insert until the first COMMITS, then raises 23505 — a thrown
+    // error, never an empty `.returning()`. The winner's committed row
+    // IS the answer: reuse it when the effective request matches (one
+    // run, one provider invocation), and conflict when it does not.
+    if (isUniqueViolation(error) && request.idempotencyKey) {
+      const winner = await findRunByIdempotencyKey(db, workspaceId, request.idempotencyKey)
+      if (winner) {
+        if (requestFingerprint !== null && requestFingerprint !== runRequestFingerprintOf(winner)) {
+          throw conflict(
+            'This idempotency key was already used with a different request (conversation, message, provider, or model). Send a new key.',
+          )
+        }
+        return {
+          run: serializeRun(winner),
+          events: await listRunEventsAfter(db, winner.id, 0),
+          reused: true,
+        }
+      }
     }
+    throw error
   }
+  if (!row) throw new Error('Run insert returned no row')
 
-  // Started event before the run can produce output.
-  await appendEvent(db, id, 'started', { text: '' })
-
+  // The run row AND its started event are durable (one transaction).
+  // Scheduling needs no further DB writes: registerRun is in-process,
+  // and executeRun owns its own error handling and finalization.
   const handle = registerRun(id)
   handle.done = executeRun(db, env, logger, row, inputs.provider)
 

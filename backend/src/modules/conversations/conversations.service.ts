@@ -14,6 +14,7 @@ import type {
   Page,
 } from '@uni/contracts'
 import { AppError, badRequest, conflict, notFound } from '../../lib/errors.js'
+import { isUniqueViolation } from '../../lib/pgErrors.js'
 
 export type ConversationsDatabase = NodePgDatabase<typeof schema>
 
@@ -258,7 +259,36 @@ export interface CreateNodeResult {
   reused: boolean
 }
 
+/**
+ * N018 — retry-safe user-node creation. A lost node-create response
+ * followed by a retry (same clientId) yields ONE user node. Sequential
+ * retries replay through the in-transaction clientId lookup; concurrent
+ * retries race at the (conversation_id, client_id) unique index, where
+ * Postgres blocks the loser until the winner commits and then raises
+ * 23505. That violation aborts the loser's transaction — so it is
+ * caught OUTSIDE the transaction and resolved with exactly one lookup
+ * retry: the winner's committed row is now visible and replays as
+ * reused. The retry cannot loop: the row exists, so the lookup path
+ * returns before any insert.
+ */
 export async function createNode(
+  db: ConversationsDatabase,
+  workspaceId: string,
+  conversationId: string,
+  request: CreateNodeRequest,
+): Promise<CreateNodeResult | null> {
+  try {
+    return await createNodeOnce(db, workspaceId, conversationId, request)
+  } catch (error) {
+    if (isUniqueViolation(error) && request.clientId) {
+      const resolved = await createNodeOnce(db, workspaceId, conversationId, request)
+      if (resolved) return resolved
+    }
+    throw error
+  }
+}
+
+async function createNodeOnce(
   db: ConversationsDatabase,
   workspaceId: string,
   conversationId: string,
