@@ -312,6 +312,9 @@ export const runs = pgTable(
     index('run_conversation_idx').on(table.conversationId, table.createdAt),
     // Stuck-run reconciliation scans non-terminal runs.
     index('run_status_idx').on(table.status),
+    // N021: creation-rate accounting counts this workspace's rows in the
+    // trailing minute (admission transaction) — needs this access path.
+    index('run_workspace_created_idx').on(table.workspaceId, table.createdAt),
     // The answered node must belong to the same conversation.
     foreignKey({
       columns: [table.parentNodeId, table.conversationId],
