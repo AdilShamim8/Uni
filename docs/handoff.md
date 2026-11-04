@@ -1,3 +1,25 @@
+## Current state (updated 2026-11-04, session 4 — pushes unblocked, PR #48 open)
+
+- **Push blocker cleared:** credential provided in-session. All five
+  session-3 commits (`2ae0e5cb2`, `06ecca92f`, `5e7de0518`, `4c4c28345`,
+  `99ea4affe`) pushed ONE AT A TIME to `task/uni-next-release-300`, each
+  verified by `git ls-remote` SHA comparison (transcript in
+  verification.md session 4). Draft **PR #48** opened against main to
+  expose CI; at U2-006 commit time Contracts and Backend check-runs were
+  **success** on the tip, Frontend in progress (final status goes in the
+  session-4 checkpoint).
+- **This session's recorded next steps (from session 3, unchanged):**
+  (1) N019 persistent client send identity — frontend browser send path
+  reuses ONE operation id (node clientId + run idempotency key) across
+  network retries and reload, so N016–N018 server semantics actually
+  protect real browser retries; (2) N020–N022 atomic admission — the
+  active-run count is still a check-then-insert race and creation-rate
+  accounting is still a process-local Map; (3) then Step A live-destination
+  blocked-state follow-up and Step C server-chat connection items (N031+).
+- **Count of record:** `docs/update-2026-11-04-commit-manifest.md` — after
+  U2-006: 6 new commits (3 implementation), accepted N016/N017/N018,
+  remaining toward the 300-new target: 294.
+
 ## Current state (updated 2026-11-04, session 3 — 300-new effort opened on task/uni-next-release-300)
 
 - **Branch:** `task/uni-next-release-300` from UPDATE_START_SHA
