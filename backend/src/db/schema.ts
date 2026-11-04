@@ -293,6 +293,13 @@ export const runs = pgTable(
     outputText: text('output_text').notNull().default(''),
     usage: jsonb('usage'),
     idempotencyKey: text('idempotency_key'),
+    /**
+     * sha256 of the canonical effective request the idempotency key is
+     * bound to (original N016): conversation + parent node + provider +
+     * effective model. NULL only on rows created before migration 0009;
+     * replay derives it from the row's own columns in that case.
+     */
+    requestFingerprint: text('request_fingerprint'),
     errorCode: text('error_code'),
     errorMessage: text('error_message'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
@@ -305,6 +312,9 @@ export const runs = pgTable(
     index('run_conversation_idx').on(table.conversationId, table.createdAt),
     // Stuck-run reconciliation scans non-terminal runs.
     index('run_status_idx').on(table.status),
+    // N021: creation-rate accounting counts this workspace's rows in the
+    // trailing minute (admission transaction) — needs this access path.
+    index('run_workspace_created_idx').on(table.workspaceId, table.createdAt),
     // The answered node must belong to the same conversation.
     foreignKey({
       columns: [table.parentNodeId, table.conversationId],

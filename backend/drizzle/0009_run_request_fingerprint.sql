@@ -1,0 +1,1 @@
+ALTER TABLE "run" ADD COLUMN "request_fingerprint" text;
