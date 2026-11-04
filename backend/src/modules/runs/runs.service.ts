@@ -397,6 +397,20 @@ export async function createRun(
           requestFingerprint,
         })
         .returning()
+      // N022 — the started event commits ATOMICALLY with the run row.
+      // Before, it was a separate post-commit transaction: a transient
+      // failure there left a committed 'running' row with ZERO events,
+      // no provider invocation, and no live handle — the client saw a
+      // 500, and the same-key retry replayed an orphan that reconciliation
+      // then read as interrupted (the send was lost). Sequence 1 needs no
+      // advisory lock: the run id was minted inside this transaction, so
+      // no other transaction can append to it yet. The bus publish that
+      // appendEvent would do is deliberately skipped — no subscriber can
+      // exist before the create response returns; SSE clients get the
+      // event from the durable replay (after=0).
+      await tx
+        .insert(runEvents)
+        .values({ runId: id, sequence: 1, type: 'started', payload: { text: '' } })
       return inserted[0]
     })
   } catch (error) {
@@ -426,9 +440,9 @@ export async function createRun(
   }
   if (!row) throw new Error('Run insert returned no row')
 
-  // Started event before the run can produce output.
-  await appendEvent(db, id, 'started', { text: '' })
-
+  // The run row AND its started event are durable (one transaction).
+  // Scheduling needs no further DB writes: registerRun is in-process,
+  // and executeRun owns its own error handling and finalization.
   const handle = registerRun(id)
   handle.done = executeRun(db, env, logger, row, inputs.provider)
 
