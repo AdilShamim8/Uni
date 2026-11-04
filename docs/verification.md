@@ -940,3 +940,31 @@ API at U2-006 commit time:
 Docs only — no code change; the session-3 baseline table and slice
 evidence stand unchanged. Gate for this commit: none beyond doc review
 (no source touched).
+
+### Session 4 implementation slices (each committed only after its full gate)
+
+| Commit | Scope | Fresh gate at the slice | Discriminating evidence (pre-fix code, same suite) |
+| --- | --- | --- | --- |
+| `a3a614a14` N019 persistent client send identity | frontend: new sendIdentity.ts, serverSessionStore send path + auth transitions, 11-test suite | typecheck/lint/build clean; **522/522** (511 baseline + 11 new; `npm run test -- --maxWorkers=1 --minWorkers=1`) | 5/11 fail against the pre-fix store: re-press gets a fresh clientId (`expected 2 to be 1`), no auto-retry (`expected 1 to be 3`), reload resend duplicates (`expected 2 to be 1`), old `run-<nodeId>` key format (`expected 'run-n-user-1' to be 'run-send-…'`), HTTP-error re-press not reused (`expected 2 to be 1`); 6 lifecycle/module guards pass both sides |
+| `a14d65403` N020 atomic active-run admission | backend: admission transaction + advisory lock, 3-test suite with a held-open fake provider | typecheck/build clean; **250/250** (247 + 3 new) | 5 fresh pre-fix runs: 4 failed in THREE distinct race shapes (oversubscription 3+ admitted; 2 admitted but 1 provider invocation and 0 durable running rows; 0 admitted) — 1 passed on timing luck; post-fix 3 consecutive runs all deterministic |
+| `34115b817` N021 durable creation-rate accounting | backend: runs-table trailing-minute count inside the admission tx, migration 0010 (run_workspace_created_idx), 4-test suite | typecheck/build clean; **254/254** (250 + 4 new) | 3/4 fail pre-fix: DB-seeded (other-process) creations invisible to the process-local Map (create returned 201, expected 429), the 61st create passes, a new send at a full window passes; the 61s age-out guard passes both sides |
+| `9a7b312a7` N022 atomic run creation + started event | backend: started event inserted in the admission transaction, 2-test suite with a real trigger-injected run_event failure | typecheck/build clean; **256/256** (254 + 2 new) | the atomic-rollback test fails pre-fix exactly as predicted: after the 500, the orphaned running row survived (`expected 1 to be +0`); the started@sequence-1 guard passes both sides |
+
+Frontend untouched by the backend slices (its 522/522 gate stands);
+contracts untouched this session. Backend suite total at the tip:
+**256/256** (232 UPDATE_START_SHA baseline + 9 N016 + 3 N017 + 3 N018 +
+3 N020 + 4 N021 + 2 N022) across 28 files, embedded PostgreSQL.
+
+### PR #48 check-runs per pushed SHA (observed via the check-runs API)
+
+| SHA | Contracts | Backend | Frontend | Vercel |
+| --- | --- | --- | --- | --- |
+| `810a776a6` (U2-006) | success | success | success (the job still running at U2-006 commit time completed green) | success |
+| `a3a614a14` (N019) | success | success | success | success + 2× verify success |
+| `a14d65403` (N020) | success | success | success | success + verify success |
+| `34115b817` (N021) | success | success | success | success + verify success |
+| `9a7b312a7` (N022, tip) | success | success | success | success + verify success |
+
+Recorded as observed — re-checked via the check-runs API just before
+this checkpoint landed: every session-4 SHA on PR #48 is all-green,
+including the final tip.

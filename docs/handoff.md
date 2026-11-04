@@ -1,3 +1,32 @@
+## Current state (updated 2026-11-04, session 4 close — N019–N022 delivered, PR #48 all-green through the second-to-last SHA)
+
+- **Session 4 shipped (each commit pushed individually, ls-remote SHA
+  verified, PR #48 check-runs observed):** U2-006 push-unblock docs;
+  **N019** persistent client send identity (frontend 522/522 — one op id
+  across auto-retries, re-press, reload; `run-<opId>` key); **N020**
+  atomic active-run admission (advisory-lock count+insert transaction);
+  **N021** durable creation-rate accounting (runs-table trailing-minute
+  count inside the admission tx; migration 0010); **N022** the run row
+  and its started event commit atomically (trigger-injected rollback
+  test). Backend final **256/256** (28 files); frontend **522/522**;
+  contracts untouched. Per-suite DISCRIMINATING evidence (pre-fix runs
+  and exact failures) in `docs/verification.md` session-4 table.
+- **Count of record:** `docs/update-2026-11-04-commit-manifest.md` —
+  11 new commits (7 implementation + 4 docs), accepted IDs
+  N016–N022; remaining toward the 300-new target: **289**.
+- **CI:** PR #48 check-runs green on EVERY session-4 SHA including the
+  final tip (`9a7b312a7`) — Contracts, Backend, Frontend, and Vercel
+  verify all success, confirmed via the check-runs API before this
+  checkpoint landed.
+- **Next executable steps (in order):** (1) the Step A live-destination
+  blocked-state follow-up (the picker's unavailable/blocked states when
+  the destination cannot run); (2) Step C server-chat connection items
+  (N023+/N031+ — contracts/modes and the normal server Chat surface);
+  (3) N075 Gate A evidence checkpoint when a gate is next exercised.
+- **Blockers:** no paid provider keys (live inference stays
+  fake-server-verified over real sockets; `qa:live` not rerun — no
+  routing change this session).
+
 ## Current state (updated 2026-11-04, session 4 — pushes unblocked, PR #48 open)
 
 - **Push blocker cleared:** credential provided in-session. All five
