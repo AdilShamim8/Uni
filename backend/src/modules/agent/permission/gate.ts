@@ -127,6 +127,13 @@ export interface GateOptions {
   now?: () => number
 }
 
+/** Mutable allowance arrays the live run widens as the user approves 'always'. */
+export type MutableGateOptions = {
+  [K in keyof GateOptions]: GateOptions[K] extends readonly string[] | undefined
+    ? string[]
+    : GateOptions[K]
+}
+
 export function isMutatingTool(toolName: string): boolean {
   return MUTATING_TOOLS.has(toolName)
 }
