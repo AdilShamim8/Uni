@@ -119,3 +119,121 @@ export const patchAgentSessionRequestSchema = z
   })
   .refine((value) => Object.keys(value).length > 0, { message: 'No fields to update.' })
 export type PatchAgentSessionRequest = z.infer<typeof patchAgentSessionRequestSchema>
+
+/* ------------------------------------------------------------------ */
+/* Permission requests (adapted from abacusai-bot permissions.ts)      */
+/* ------------------------------------------------------------------ */
+
+/** A tool call the model wants to make, as the permission gate sees it. */
+export const toolRequestSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(100),
+  input: z.record(z.string(), z.unknown()),
+})
+export type ToolRequest = z.infer<typeof toolRequestSchema>
+
+/** The ask kinds the gate can produce; one per decision the user faces. */
+export const permissionRequestTypeSchema = z.enum([
+  'run_terminal',
+  'edit_file',
+  'write_file',
+  'read_outside_directory',
+  'write_outside_directory',
+  'edit_outside_directory',
+  'fetch_url',
+  'generic',
+  'exit_plan_mode',
+])
+export type PermissionRequestType = z.infer<typeof permissionRequestTypeSchema>
+
+const permissionRequestBase = {
+  /** Unique per request; the response addresses it. */
+  requestId: z.string().min(1),
+  tool: toolRequestSchema,
+  displayName: z.string().min(1),
+  createdAt: z.number().int().nonnegative(),
+}
+
+export const permissionRequestSchema = z.discriminatedUnion('type', [
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('run_terminal'),
+    command: z.string(),
+    cwd: z.string(),
+    background: z.boolean().optional(),
+    credentialPaths: z.array(z.string()).optional(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('edit_file'),
+    filePath: z.string(),
+    originalContent: z.string(),
+    newContent: z.string(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('write_file'),
+    filePath: z.string(),
+    originalContent: z.string(),
+    content: z.string(),
+    isNewFile: z.boolean(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('read_outside_directory'),
+    filePath: z.string(),
+    resolvedPath: z.string(),
+    deducedDirectory: z.string(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('write_outside_directory'),
+    filePath: z.string(),
+    resolvedPath: z.string(),
+    deducedDirectory: z.string(),
+    isNewFile: z.boolean().optional(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('edit_outside_directory'),
+    filePath: z.string(),
+    resolvedPath: z.string(),
+    deducedDirectory: z.string(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('fetch_url'),
+    /** The full URL, never a summary: the query string can carry data. */
+    url: z.string(),
+    origin: z.string(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('generic'),
+    toolName: z.string(),
+    inputSummary: z.string(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('exit_plan_mode'),
+    planContent: z.string(),
+    planFilePath: z.string(),
+  }),
+])
+export type PermissionRequest = z.infer<typeof permissionRequestSchema>
+
+/** The user's answer. `always` scopes by kind: command prefix, tool, origin, or directory. */
+export const permissionDecisionSchema = z.object({
+  requestId: z.string().min(1),
+  decision: z.enum(['approve', 'deny']),
+  /** once = this call; always = widen the session allowance for the kind. */
+  scope: z.enum(['once', 'always']).default('once'),
+})
+export type PermissionDecision = z.infer<typeof permissionDecisionSchema>
+
+/** What a denied permission tells the model (it must adapt, not retry). */
+export const permissionDenialSchema = z.object({
+  requestId: z.string().min(1),
+  reason: z.string(),
+})
+export type PermissionDenial = z.infer<typeof permissionDenialSchema>
