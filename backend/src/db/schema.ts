@@ -596,7 +596,7 @@ export const agentRuns = pgTable(
 export const agentEvents = pgTable(
   'agent_event',
   {
-    id: text('id').primaryKey(),
+    id: text('id').notNull(),
     workspaceId: text('workspace_id')
       .notNull()
       .references(() => workspaces.id, { onDelete: 'cascade' }),
