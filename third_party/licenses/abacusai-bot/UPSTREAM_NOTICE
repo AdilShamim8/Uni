@@ -1,0 +1,33 @@
+Files under backend/src/modules/agent/ and backend/src/modules/routines/ and
+the connector catalog in packages/contracts are adapted from
+abacusai/abacusai-bot (https://github.com/abacusai/abacusai-bot), which is
+licensed under the MIT License (see LICENSE in this directory,
+Copyright (c) 2026 Abacus.AI, Inc.).
+
+Upstream commit at port time: 925008cf ("Slash commands: / runs commands in
+the chat (#720)").
+
+What was adapted (per-file details in docs/opensource-reuse.md and
+third_party/sources.lock.json):
+- packages/agent/src/permissions.ts   -> the tool permission gate
+  (backend/src/modules/agent/permission/), reworked for Uni's server-side
+  session workspaces, Better Auth identity and zod contracts; the Windows
+  path-repair logic is preserved.
+- packages/agent/src/tool-policy.ts   -> the UNATTENDED allowlist vocabulary
+  (backend/src/modules/agent/permission/tool-policy.ts), trimmed to the
+  tools a Uni server session can register.
+- packages/agent/src/roster.ts        -> the single-table tool registry
+  pattern (backend/src/modules/agent/roster/), with Uni tool builders.
+- packages/agent/src/agui/*            -> the run/event stream vocabulary
+  (packages/contracts/src/agent.ts), as SSE events on the existing runs
+  event model rather than a stdio wire.
+- packages/connectors/src/registry.ts -> the connector catalog entries
+  (packages/contracts/src/connectors.ts) with honest not-connected labeling.
+- apps/desktop/src/main/services/agent-tools/cron-scheduler.ts -> the
+  minute-tick, slot-claiming scheduler design
+  (backend/src/modules/routines/scheduler.ts) on PostgreSQL advisory locks.
+
+The upstream process model (Electron desktop, stdio child processes, the
+Abacus.AI platform connectors, OAuth flows, hosted MCP gateway) is NOT
+ported; Uni runs the agent loop in-process behind its Fastify API with
+provider credentials from its own encrypted store.
