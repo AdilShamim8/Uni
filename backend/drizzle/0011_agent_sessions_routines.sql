@@ -8,7 +8,7 @@ CREATE TABLE "agent_allowance" (
 );
 --> statement-breakpoint
 CREATE TABLE "agent_event" (
-	"id" text PRIMARY KEY NOT NULL,
+	"id" text NOT NULL,
 	"workspace_id" text NOT NULL,
 	"session_id" text NOT NULL,
 	"run_id" text,
