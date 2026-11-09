@@ -514,3 +514,239 @@ export type LibraryArtifactRow = typeof libraryArtifacts.$inferSelect
 export type NewLibraryArtifactRow = typeof libraryArtifacts.$inferInsert
 export type LibraryArtifactVersionRow = typeof libraryArtifactVersions.$inferSelect
 export type NewLibraryArtifactVersionRow = typeof libraryArtifactVersions.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* Agent sessions (abacusai-bot port) — server-side agent workspaces   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A standing agent session: a mode governing tool approval, an optional
+ * soft provider/model pin, a root directory confining file tools, and the
+ * roster of enabled tools. `providerId` is deliberately NOT a foreign key
+ * (same rule as employees): a pinned preference must survive provider
+ * deletion and fall back to workspace defaults at send time.
+ */
+export const agentSessions = pgTable(
+  'agent_session',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description').notNull().default(''),
+    mode: text('mode').notNull().default('default'),
+    status: text('status').notNull().default('idle'),
+    providerId: text('provider_id'),
+    modelId: text('model_id'),
+    rootDir: text('root_dir').notNull(),
+    tools: jsonb('tools').$type<string[]>(),
+    archived: boolean('archived').notNull().default(false),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('agent_session_workspace_updated_idx').on(table.workspaceId, table.updatedAt),
+    index('agent_session_status_idx').on(table.status),
+  ],
+)
+
+/**
+ * One agent run inside a session. Terminal statuses are exactly one of
+ * complete/stopped/error; `waiting_for_permission` and `cancelling` are
+ * durable transitional states (a crash between ask and answer reconciles
+ * honestly). Input/output text is snapshotted for replay.
+ */
+export const agentRuns = pgTable(
+  'agent_run',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => agentSessions.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('running'),
+    inputText: text('input_text').notNull(),
+    outputText: text('output_text').notNull().default(''),
+    providerId: text('provider_id'),
+    modelId: text('model_id'),
+    idempotencyKey: text('idempotency_key'),
+    requestFingerprint: text('request_fingerprint'),
+    errorCode: text('error_code'),
+    errorMessage: text('error_message'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    terminalAt: timestamp('terminal_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('agent_run_workspace_idempotency_uq').on(table.workspaceId, table.idempotencyKey),
+    index('agent_run_session_created_idx').on(table.sessionId, table.createdAt),
+    index('agent_run_status_idx').on(table.status),
+  ],
+)
+
+/**
+ * Ordered, persisted agent events — the durable stream clients replay on
+ * reconnect, sequenced per session (the SSE resume cursor), exactly like
+ * run_event. `pendingPermissionId` marks the row a permission ask lives
+ * in so the responder can find it transactionally.
+ */
+export const agentEvents = pgTable(
+  'agent_event',
+  {
+    id: text('id').notNull(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => agentSessions.id, { onDelete: 'cascade' }),
+    runId: text('run_id').references(() => agentRuns.id, { onDelete: 'cascade' }),
+    sequence: integer('sequence').notNull(),
+    type: text('type').notNull(),
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.sessionId, table.sequence] }),
+    index('agent_event_session_sequence_idx').on(table.sessionId, table.sequence),
+    index('agent_event_run_idx').on(table.runId),
+  ],
+)
+
+/** Session allowances widened by the user's 'always' decisions. */
+export const agentAllowances = pgTable(
+  'agent_allowance',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => agentSessions.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    value: text('value').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('agent_allowance_session_kind_value_uq').on(table.sessionId, table.kind, table.value),
+    index('agent_allowance_session_idx').on(table.sessionId),
+  ],
+)
+
+/** The pending permission ask a run is waiting on (or null when none). */
+export const agentPendingPermissions = pgTable(
+  'agent_pending_permission',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => agentSessions.id, { onDelete: 'cascade' }),
+    runId: text('run_id')
+      .notNull()
+      .references(() => agentRuns.id, { onDelete: 'cascade' }),
+    /** The gate's PermissionRequest, verbatim. */
+    request: jsonb('request').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true }),
+    resolution: text('resolution'),
+  },
+  (table) => [
+    index('agent_pending_permission_session_idx').on(table.sessionId, table.createdAt),
+    index('agent_pending_permission_run_idx').on(table.runId),
+  ],
+)
+
+/* ------------------------------------------------------------------ */
+/* Routines (abacusai-bot cron-scheduler port) — scheduled agent runs   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A routine: a prompt run on a schedule inside an agent session, in the
+ * unattended mode (never asks, allowlisted tools only). `schedule` is a
+ * 5-field cron expression evaluated by the minute-tick scheduler;
+ * `slots` is the concurrency limiter (upstream: one per session).
+ */
+export const routines = pgTable(
+  'routine',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => agentSessions.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    prompt: text('prompt').notNull(),
+    /** 5-field cron expression, UTC. */
+    schedule: text('schedule').notNull(),
+    /** Minutes a missed fire may be caught up after downtime (0 = skip). */
+    catchUpMinutes: integer('catch_up_minutes').notNull().default(0),
+    paused: boolean('paused').notNull().default(false),
+    archived: boolean('archived').notNull().default(false),
+    lastFireAt: timestamp('last_fire_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('routine_workspace_idx').on(table.workspaceId, table.createdAt),
+    index('routine_session_idx').on(table.sessionId),
+    index('routine_paused_idx').on(table.paused, table.archived),
+  ],
+)
+
+/**
+ * One fire of a routine. `slotClaimedAt` is the advisory-lock-guarded
+ * claim (only one process may run a given routine at a time); terminal
+ * statuses match agent runs.
+ */
+export const routineRuns = pgTable(
+  'routine_run',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    routineId: text('routine_id')
+      .notNull()
+      .references(() => routines.id, { onDelete: 'cascade' }),
+    /** Which scheduled minute this fire belongs to (UTC, truncated). */
+    scheduledFor: timestamp('scheduled_for', { withTimezone: true }).notNull(),
+    status: text('status').notNull().default('pending'),
+    agentRunId: text('agent_run_id').references(() => agentRuns.id, { onDelete: 'set null' }),
+    outputText: text('output_text').notNull().default(''),
+    errorCode: text('error_code'),
+    errorMessage: text('error_message'),
+    slotClaimedAt: timestamp('slot_claimed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+    terminalAt: timestamp('terminal_at', { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex('routine_run_routine_scheduled_uq').on(table.routineId, table.scheduledFor),
+    index('routine_run_status_idx').on(table.status),
+    index('routine_run_created_idx').on(table.routineId, table.createdAt),
+  ],
+)
+
+export type AgentSessionRow = typeof agentSessions.$inferSelect
+export type NewAgentSessionRow = typeof agentSessions.$inferInsert
+export type AgentRunRow = typeof agentRuns.$inferSelect
+export type NewAgentRunRow = typeof agentRuns.$inferInsert
+export type AgentEventRow = typeof agentEvents.$inferSelect
+export type NewAgentEventRow = typeof agentEvents.$inferInsert
+export type AgentAllowanceRow = typeof agentAllowances.$inferSelect
+export type NewAgentAllowanceRow = typeof agentAllowances.$inferInsert
+export type AgentPendingPermissionRow = typeof agentPendingPermissions.$inferSelect
+export type NewAgentPendingPermissionRow = typeof agentPendingPermissions.$inferInsert
+export type RoutineRow = typeof routines.$inferSelect
+export type NewRoutineRow = typeof routines.$inferInsert
+export type RoutineRunRow = typeof routineRuns.$inferSelect
+export type NewRoutineRunRow = typeof routineRuns.$inferInsert
