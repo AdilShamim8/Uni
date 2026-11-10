@@ -92,7 +92,10 @@ export interface LibraryStore {
     provenance?: Artifact['provenance']
     source?: ArtifactSource | null
     generatedBy?: AiDraftModel | null
+    serverArtifactId?: string | null
   }) => string
+  /** T017 — link a local artifact to its server Library twin. */
+  linkServerArtifact: (id: string, serverArtifactId: string) => void
   renameArtifact: (id: string, title: string) => void
   /** Commit content directly (no draft cycle) — used by migration-safe flows. */
   updateArtifact: (id: string, markdown: string) => void
@@ -156,9 +159,21 @@ export const useLibraryStore = create<LibraryStore>()((set, get) => ({
       updatedAt: now,
       provenance: input.provenance ?? 'user-authored',
       generatedBy: input.generatedBy ?? null,
+      serverArtifactId: input.serverArtifactId ?? null,
     }
     set((state) => ({ artifacts: { ...state.artifacts, [artifact.id]: artifact } }))
     return artifact.id
+  },
+
+  linkServerArtifact: (id, serverArtifactId) => {
+    const artifact = get().artifacts[id]
+    if (!artifact || artifact.serverArtifactId === serverArtifactId) return
+    set((state) => ({
+      artifacts: {
+        ...state.artifacts,
+        [id]: { ...artifact, serverArtifactId, updatedAt: Date.now() },
+      },
+    }))
   },
 
   renameArtifact: (id, title) => {
