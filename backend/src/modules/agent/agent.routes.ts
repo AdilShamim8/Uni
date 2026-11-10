@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import {
   agentEventSchema,
+  agentEventsQuerySchema,
   agentSessionDtoSchema,
   createAgentSessionRequestSchema,
   patchAgentSessionRequestSchema,
@@ -18,7 +19,7 @@ import {
   findSessionRow,
   serializeSession,
 } from './agentSession.service.js'
-import { listEventsAfter, latestSequence } from './agentEvents.service.js'
+import { listEventsAfter } from './agentEvents.service.js'
 import {
   createAgentRun,
   respondToPermission,
@@ -150,74 +151,114 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
     return reply.code(202).send({ accepted: true })
   })
 
+  /**
+   * Server-sent events for a session (F05 semantics):
+   * - `after` is the last sequence seen; -1 delivers sequence 0 (the
+   *   first event) to new subscribers. The default 0 keeps old clients'
+   *   skip-the-first behavior only when they omit the cursor entirely.
+   * - With `runId`, the stream ends at THAT run's terminal only; a
+   *   terminal belonging to a different (older) run in the same session
+   *   no longer closes the stream mid-work.
+   * - Without `runId` the stream is session-scoped and stays open until
+   *   the client disconnects — the durable history is the authority for
+   *   later reconnects.
+   * - Drains are serialized (one poll at a time), writes honor
+   *   backpressure via writable-length checks, and everything stops on
+   *   response close.
+   */
   app.get('/agent/sessions/:sessionId/events', async (request, reply) => {
     const { sessionId } = request.params as { sessionId: string }
-    const query = request.query as { after?: string }
-    const after = Number.parseInt(query.after ?? '0', 10) || 0
+    const query = agentEventsQuerySchema.parse(request.query)
     const row = await findSessionRow(db, request.workspace!.id, sessionId)
     if (!row) throw notFound('Agent session not found.')
 
     const workspaceId = request.workspace!.id
-    reply.raw.writeHead(200, {
-      'content-type': 'text/event-stream',
-      'cache-control': 'no-cache, no-transform',
-      connection: 'keep-alive',
-      'x-accel-buffering': 'no',
-    })
-    reply.raw.write('\n')
+    reply.header('content-type', 'text/event-stream; charset=utf-8')
+    reply.header('cache-control', 'no-cache, no-transform')
+    reply.header('x-accel-buffering', 'no')
+    reply.hijack()
+    const raw = reply.raw
+    raw.writeHead(200, reply.getHeaders() as Record<string, string | number>)
+    raw.write('\n')
 
-    let cursor = after
-    let lastPollText = ''
-    const poll = async (): Promise<boolean> => {
-      const events = await listEventsAfter(db, workspaceId, sessionId, cursor, 100)
-      for (const event of events) {
-        cursor = event.sequence
-        void agentEventSchema.parse(event)
-        reply.raw.write(`data: ${JSON.stringify(event)}\n\n`)
-        if (event.type === 'run_finished' || event.type === 'error') {
-          reply.raw.write('event: end\ndata: {}\n\n')
-          return true
-        }
-      }
-      return false
+    let closed = false
+    request.raw.on('close', () => {
+      closed = true
+    })
+
+    let cursor = query.after
+    /** One serialized drain at a time (F05: no interleaved async polls). */
+    let draining = false
+    /** The run whose terminal ends this stream (undefined = session-scoped). */
+    const endRunId = query.runId ?? null
+    let ended = false
+
+    const endStream = (): void => {
+      if (ended || raw.writableEnded) return
+      ended = true
+      raw.write('event: end\ndata: {}\n\n')
+      cleanup()
+      raw.end()
     }
 
-    if (await poll()) {
-      reply.raw.end()
-      return reply
+    const cleanup = (): void => {
+      clearInterval(pollTimer)
+      clearInterval(keepalive)
+    }
+
+    /** Write one event; honor backpressure and close. */
+    const writeEvent = (payload: string): void => {
+      if (closed || raw.writableEnded || raw.writableLength > 1_000_000) return
+      raw.write(`data: ${payload}\n\n`)
+    }
+
+    const drain = async (): Promise<void> => {
+      if (draining || ended || closed || raw.writableEnded) return
+      draining = true
+      try {
+        // Bounded page: a slow client catches up in chunks, and the
+        // drain loop re-enters only after this page completes.
+        const events = await listEventsAfter(db, workspaceId, sessionId, cursor, 100)
+        for (const event of events) {
+          cursor = event.sequence
+          writeEvent(JSON.stringify(agentEventSchema.parse(event)))
+          // A terminal closes the stream only for ITS run (or a
+          // session-scoped stream without runId stays open).
+          if (
+            endRunId !== null &&
+            event.runId === endRunId &&
+            (event.type === 'run_finished' || event.type === 'error')
+          ) {
+            endStream()
+            return
+          }
+        }
+      } catch {
+        /* transient db error: the next tick retries */
+      } finally {
+        draining = false
+      }
     }
 
     const keepalive = setInterval(() => {
-      try {
-        reply.raw.write(': keepalive\n\n')
-      } catch {
-        /* closed */
-      }
+      if (closed || raw.writableEnded) return
+      raw.write(': keepalive\n\n')
     }, 15_000)
 
-    const timer = setInterval(() => {
-      void (async () => {
-        try {
-          const latest = await latestSequence(db, sessionId)
-          if (latest > cursor) {
-            if (await poll()) {
-              clearInterval(timer)
-              clearInterval(keepalive)
-              reply.raw.end()
-            }
-          } else if (lastPollText !== '') {
-            lastPollText = ''
-          }
-        } catch {
-          /* transient */
-        }
-      })()
+    const pollTimer = setInterval(() => {
+      if (closed || ended || raw.writableEnded) {
+        cleanup()
+        return
+      }
+      void drain()
     }, 200)
 
-    request.raw.on('close', () => {
-      clearInterval(timer)
-      clearInterval(keepalive)
-    })
+    // First drain immediately: a reconnecting client sees history without
+    // waiting a tick.
+    await drain()
+    if (!ended && !closed && !raw.writableEnded && raw.writableLength === 0) {
+      // fall through to the interval-driven tail
+    }
     return reply
   })
 }
