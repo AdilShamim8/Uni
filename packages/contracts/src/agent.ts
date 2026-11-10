@@ -376,6 +376,9 @@ export const agentRunDtoSchema = z.object({
   modelId: z.string().nullable(),
   errorCode: z.string().nullable(),
   errorMessage: z.string().nullable(),
+  /** Usage summed across the run's model steps (null when unreported). */
+  inputTokens: z.number().int().nonnegative().nullable().optional(),
+  outputTokens: z.number().int().nonnegative().nullable().optional(),
   createdAt: z.number().int().nonnegative(),
   finishedAt: z.number().int().nonnegative().nullable(),
 })
