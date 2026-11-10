@@ -302,8 +302,17 @@ async function executeAgentRun(
         terminalAt: new Date(),
         ...(payload.errorCode ? { errorCode: payload.errorCode } : {}),
         ...(payload.errorMessage ? { errorMessage: payload.errorMessage } : {}),
+        ...(payload.usage?.inputTokens !== undefined ? { inputTokens: payload.usage.inputTokens } : {}),
+        ...(payload.usage?.outputTokens !== undefined ? { outputTokens: payload.usage.outputTokens } : {}),
       })
       .where(eq(agentRuns.id, live.runId))
+    // The session leaves waiting/running behind: error keeps the session
+    // discoverable as broken, anything else returns it to idle (T009 —
+    // a finished run must not leave the session stuck 'running').
+    await db
+      .update(agentSessions)
+      .set({ status: status === 'error' ? 'error' : 'idle', updatedAt: new Date() })
+      .where(eq(agentSessions.id, live.sessionId))
     await appendAgentEvent(db, {
       workspaceId: session.workspaceId,
       sessionId: live.sessionId,
@@ -524,6 +533,20 @@ async function executeAgentRun(
     const steps = await result.steps
     const lastStep = steps[steps.length - 1]
 
+    // Usage accounting (T009): sum token usage across ALL model steps of
+    // the run, not just the last one, and publish it as a usage event
+    // before the terminal — clients can show real cost per run.
+    const usage = sumStepUsage(steps)
+    if (usage) {
+      await appendAgentEvent(db, {
+        workspaceId: session.workspaceId,
+        sessionId: live.sessionId,
+        runId: live.runId,
+        type: 'usage',
+        payload: { usage },
+      })
+    }
+
     if (lastStep && stepCountIsReached(steps, MAX_TOOL_ROUNDS) && lastStep.finishReason === 'tool-calls') {
       // The step budget was exhausted mid-conversation: report it
       // honestly, never as a clean completion (F06 truthfulness).
@@ -532,12 +555,13 @@ async function executeAgentRun(
         errorCode: 'tool_round_budget_exhausted',
         errorMessage: `The run reached its tool-round cap (${MAX_TOOL_ROUNDS}) before finishing.`,
         ...(finalText.length > 0 ? { text: finalText } : {}),
+        ...(usage ? { usage } : {}),
       })
       return
     }
 
     await persistRunTurns(db, session, live, steps)
-    await resolveTerminal('complete', { text: finalText })
+    await resolveTerminal('complete', { text: finalText, ...(usage ? { usage } : {}) })
   } catch (error) {
     const aborted = live.controller.signal.aborted
     if (aborted) {
@@ -559,6 +583,23 @@ function stepCountIsReached(steps: unknown[], cap: number): boolean {
 /** Text streamed so far, for a truthful partial-output cancel (F06). */
 function partialTextOf(live: LiveRun): string {
   return live.partialText
+}
+
+/** Sum token usage across the run's model steps (T009). */
+function sumStepUsage(
+  steps: ReadonlyArray<{ usage?: { inputTokens?: number; outputTokens?: number } }>,
+): { inputTokens: number; outputTokens: number } | null {
+  let inputTokens = 0
+  let outputTokens = 0
+  let seen = false
+  for (const step of steps) {
+    if (step.usage?.inputTokens !== undefined || step.usage?.outputTokens !== undefined) {
+      seen = true
+      inputTokens += step.usage?.inputTokens ?? 0
+      outputTokens += step.usage?.outputTokens ?? 0
+    }
+  }
+  return seen ? { inputTokens, outputTokens } : null
 }
 
 /** A user-safe, bounded rendering of a tool error (never a stack dump). */
