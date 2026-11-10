@@ -15,8 +15,7 @@
 import { randomUUID } from 'node:crypto'
 import { createHash } from 'node:crypto'
 import { and, eq, isNull } from 'drizzle-orm'
-import { streamText, tool as aiTool, type ToolSet } from 'ai'
-import { z as zod } from 'zod'
+import { streamText, stepCountIs, tool as aiTool, type ToolSet, type ModelMessage } from 'ai'
 import * as schema from '../../db/schema.js'
 import {
   agentAllowances,
@@ -26,7 +25,7 @@ import {
 } from '../../db/schema.js'
 import { appendAgentEvent } from './agentEvents.service.js'
 import { findSessionRow, type AgentDatabase } from './agentSession.service.js'
-import { sessionRootPath, defaultAgentRoot, ensureSessionRoot, UnsafeRootDirError } from './sessionStore.js'
+import { sessionRootPath, defaultAgentRoot, ensureSessionRoot, UnsafeRootDirError, UnsafeAgentRootError } from './sessionStore.js'
 import { gateToolCall, type MutableGateOptions } from './permission/gate.js'
 import { executeTool, toolContextFor, isRosterTool } from './roster.js'
 import { buildModelForRun, type ProviderForRun } from '../runs/modelClient.js'
@@ -34,6 +33,7 @@ import { decryptSecret, parseMasterKey } from '../../lib/secretBox.js'
 import { allowsKeyless, type ProviderAuthMode } from '../../lib/providerUrls.js'
 import { providerConnections } from '../../db/schema.js'
 import { AppError } from '../../lib/errors.js'
+import { toolInputSchemas } from '@uni/contracts'
 import type {
   AgentEventPayload,
   AgentRunStatus,
@@ -57,6 +57,8 @@ interface LiveRun {
   done: Promise<void>
   /** Resolves when the user answers the pending permission ask. */
   permissionWaiters: Map<string, (decision: PermissionDecision) => void>
+  /** Text streamed so far, for truthful partial-output cancel (F06). */
+  partialText: string
 }
 
 const liveRuns = new Map<string, LiveRun>()
@@ -265,6 +267,7 @@ export async function createAgentRun(deps: RunEngineDeps, input: CreateAgentRunI
     controller,
     done: Promise.resolve(),
     permissionWaiters: new Map(),
+    partialText: '',
   }
   liveRuns.set(runId, live)
   live.done = executeAgentRun(deps, live, session).finally(() => {
@@ -323,7 +326,19 @@ async function executeAgentRun(
     }
     throw error
   }
-  await ensureSessionRoot(root)
+  try {
+    await ensureSessionRoot(root)
+  } catch (error) {
+    if (error instanceof UnsafeAgentRootError) {
+      await resolveTerminal('error', {
+        errorCode: 'agent_root_unavailable',
+        errorMessage:
+          'The server has no usable agent storage root. Operators must configure UNI_AGENT_ROOT to a writable directory.',
+      })
+      return
+    }
+    throw error
+  }
 
   try {
     // Provider resolution: the session pin, else honest failure.
@@ -427,65 +442,95 @@ async function executeAgentRun(
       if (!isRosterTool(name) || name === 'exit_plan_mode') continue
       rosterTools[name] = aiTool({
         description: rosterDescription(name),
-        inputSchema: zod.any() as never,
-        execute: async (input: unknown) => {
-          return runToolCall(deps, live, session, toolCtx, name, input, gateOptions())
+        // The REAL input schema (F03): the model sees the true parameter
+        // shapes and the SDK validates arguments before execute() runs —
+        // malformed calls become tool errors, never side effects.
+        inputSchema: toolInputSchemas[name],
+        execute: async (input: unknown, options: { toolCallId: string }) => {
+          return runToolCall(
+            deps,
+            live,
+            session,
+            toolCtx,
+            name,
+            input,
+            gateOptions(),
+            options.toolCallId,
+          )
         },
       }) as never
     }
 
-    let round = 0
-    const history: Array<{ role: 'user' | 'assistant'; content: string }> = [
+    // Structured ModelMessage history (F03): prior turns are reloaded
+    // from the persisted transcript (assistant tool-call parts and tool
+    // results included), so the model answers from what its tools found.
+    const history: ModelMessage[] = [
       { role: 'user', content: sessionRunPrompt(session) + '\n\n' + (await currentRunInput(db, live.runId)) },
     ]
+
+    const result = streamText({
+      model,
+      messages: history,
+      ...(Object.keys(rosterTools).length > 0 ? { tools: rosterTools } : {}),
+      maxRetries: 0,
+      abortSignal: live.controller.signal,
+      maxOutputTokens: env.RUN_MAX_OUTPUT_TOKENS,
+      // The SDK runs the multi-step tool conversation itself: each tool
+      // result is appended as a structured tool message and sent back to
+      // the model automatically (F03's core fix).
+      stopWhen: stepCountIs(MAX_TOOL_ROUNDS),
+    })
+
     let finalText = ''
-
-    while (round < MAX_TOOL_ROUNDS) {
-      round += 1
-      const result = streamText({
-        model,
-        messages: history,
-        ...(Object.keys(rosterTools).length > 0 ? { tools: rosterTools } : {}),
-        maxRetries: 0,
-        abortSignal: live.controller.signal,
-        maxOutputTokens: env.RUN_MAX_OUTPUT_TOKENS,
-      })
-
-      let roundText = ''
-      for await (const delta of result.textStream) {
-        roundText += delta
+    for await (const part of result.fullStream) {
+      if (part.type === 'text-delta') {
+        finalText += part.text
+        live.partialText = finalText
         await appendAgentEvent(db, {
           workspaceId: session.workspaceId,
           sessionId: live.sessionId,
           runId: live.runId,
           type: 'text_delta',
-          payload: { text: delta },
+          payload: { text: part.text },
+        })
+      } else if (part.type === 'tool-error') {
+        // Invalid input (or a failed execute) surfaces here with the
+        // provider's own call id: emit it as an error tool result so the
+        // UI shows the failure instead of silence (F03).
+        await appendAgentEvent(db, {
+          workspaceId: session.workspaceId,
+          sessionId: live.sessionId,
+          runId: live.runId,
+          type: 'tool_call_result',
+          payload: {
+            toolCallId: part.toolCallId,
+            toolName: part.toolName,
+            toolResultStatus: 'error',
+            toolOutput: boundedToolError(part.error),
+          },
         })
       }
-      finalText = roundText.length > 0 ? roundText : finalText
+    }
+    await result.response
+    const steps = await result.steps
+    const lastStep = steps[steps.length - 1]
 
-      // Tool executions (and any permission asks they raised) happen
-      // inside the stream's tool steps; wait for them to settle before
-      // deciding whether the run is finished.
-      await result.response
-      const toolCalls = await result.toolCalls
-      if (!toolCalls || toolCalls.length === 0) {
-        await resolveTerminal('complete', { text: finalText })
-        return
-      }
-
-      history.push({ role: 'assistant', content: roundText })
-      // Tool outcomes (and permission denials) are already events; the
-      // loop lets the model continue from them.
+    if (lastStep && stepCountIsReached(steps, MAX_TOOL_ROUNDS) && lastStep.finishReason === 'tool-calls') {
+      // The step budget was exhausted mid-conversation: report it
+      // honestly, never as a clean completion (F06 truthfulness).
+      await resolveTerminal('error', {
+        errorCode: 'tool_round_budget_exhausted',
+        errorMessage: `The run reached its tool-round cap (${MAX_TOOL_ROUNDS}) before finishing.`,
+        ...(finalText.length > 0 ? { text: finalText } : {}),
+      })
+      return
     }
 
-    await resolveTerminal('complete', {
-      text: finalText + '\n\n[stopped after the tool-round cap]',
-    })
+    await resolveTerminal('complete', { text: finalText })
   } catch (error) {
     const aborted = live.controller.signal.aborted
     if (aborted) {
-      await resolveTerminal('stopped', { text: '' })
+      await resolveTerminal('stopped', { text: partialTextOf(live) })
       return
     }
     await resolveTerminal('error', {
@@ -493,6 +538,22 @@ async function executeAgentRun(
       errorMessage: error instanceof Error ? error.message : 'Agent run failed.',
     })
   }
+}
+
+/** Whether the step budget was reached (the last allowed step ran). */
+function stepCountIsReached(steps: unknown[], cap: number): boolean {
+  return steps.length >= cap
+}
+
+/** Text streamed so far, for a truthful partial-output cancel (F06). */
+function partialTextOf(live: LiveRun): string {
+  return live.partialText
+}
+
+/** A user-safe, bounded rendering of a tool error (never a stack dump). */
+function boundedToolError(error: unknown): string {
+  const text = error instanceof Error ? error.message : String(error)
+  return text.length > 2_000 ? `${text.slice(0, 2_000)}…` : text
 }
 
 function sessionTools(session: typeof agentSessions.$inferSelect): string[] {
@@ -524,11 +585,6 @@ function sessionRunPrompt(session: typeof agentSessions.$inferSelect): string {
   return parts.join('\n')
 }
 
-async function currentRunInput(db: AgentDatabase, runId: string): Promise<string> {
-  const rows = await db.select().from(agentRuns).where(eq(agentRuns.id, runId)).limit(1)
-  return rows[0]?.inputText ?? ''
-}
-
 /* ------------------------------------------------------------------ */
 /* Tool call with the permission pause                                 */
 /* ------------------------------------------------------------------ */
@@ -541,9 +597,9 @@ async function runToolCall(
   name: string,
   input: unknown,
   gateOptions: MutableGateOptions,
+  toolCallId: string,
 ): Promise<string> {
   const { db } = deps
-  const toolCallId = randomUUID()
   const request: ToolRequest = { id: toolCallId, name, input: asRecord(input) }
 
   await appendAgentEvent(db, {
@@ -809,6 +865,11 @@ export async function reconcileStuckAgentRun(
     type: 'error',
     payload: { status: 'error', errorCode: 'interrupted', errorMessage: 'The run was interrupted before completion.' },
   })
+}
+
+async function currentRunInput(db: AgentDatabase, runId: string): Promise<string> {
+  const rows = await db.select().from(agentRuns).where(eq(agentRuns.id, runId)).limit(1)
+  return rows[0]?.inputText ?? ''
 }
 
 export type { NodePgDatabase, schema }
