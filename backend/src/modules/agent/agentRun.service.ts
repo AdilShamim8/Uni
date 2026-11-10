@@ -26,6 +26,7 @@ import {
   employees,
 } from '../../db/schema.js'
 import { appendAgentTurn, loadAgentTurns } from './agentTurns.service.js'
+import { syncWorkRunOutcome } from '../work/workSync.service.js'
 import { appendAgentEvent } from './agentEvents.service.js'
 import { findSessionRow, type AgentDatabase } from './agentSession.service.js'
 import { sessionRootPath, defaultAgentRoot, ensureSessionRoot, UnsafeRootDirError, UnsafeAgentRootError } from './sessionStore.js'
@@ -376,6 +377,21 @@ async function executeAgentRun(
       type: status === 'error' ? 'error' : 'run_finished',
       payload: { ...payload, status },
     })
+    // T020 — a Work-delegated run syncs its outcome into the Work rows
+    // (idempotent; a non-work run is a no-op). Failures here never
+    // disturb the agent run's own truth.
+    try {
+      await syncWorkRunOutcome(
+        db,
+        session.workspaceId,
+        live.runId,
+        status,
+        payload.text ?? '',
+        session.providerId !== null,
+      )
+    } catch {
+      /* work sync is best-effort; the agent terminal stands */
+    }
   }
 
   let root: string
