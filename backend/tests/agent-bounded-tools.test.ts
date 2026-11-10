@@ -3,8 +3,8 @@ import * as fsp from 'node:fs/promises'
 import * as os from 'node:os'
 import * as path from 'node:path'
 import { createServer, type Server } from 'node:http'
-import { executeTool, toolContextFor, TOOL_OUTPUT_CAP } from '../src/modules/agent/roster.ts'
-import type { Env } from '../src/config/env.ts'
+import { executeTool, toolContextFor, TOOL_OUTPUT_CAP } from '../src/modules/agent/roster.js'
+import type { Env } from '../src/config/env.js'
 
 /**
  * F04 regression suite: the edit tool terminates on self-containing
