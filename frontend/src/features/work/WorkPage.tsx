@@ -10,6 +10,7 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useWorkStore } from '@/state/workStore'
+import { useServerSessionStore } from '@/state/serverSessionStore'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
@@ -80,6 +81,136 @@ function WorkHome() {
   const [filter, setFilter] = useState<TaskFilter>('all')
   const tasks = useWorkStore((state) => state.tasks)
   const agents = useAgentsStore((state) => state.agents)
+
+  // T019 — server mode: Work runs on the durable server tasks (the
+  // agent engine + T020 outcome sync). The local demo/live options are
+  // preserved for local mode; the boundary is the signed-in account.
+  const serverStatus = useServerSessionStore((state) => state.status)
+  const serverWorkTasks = useServerSessionStore((state) => state.serverWorkTasks)
+  const serverWorkTasksLoading = useServerSessionStore((state) => state.serverWorkTasksLoading)
+  const loadServerWorkTasks = useServerSessionStore((state) => state.loadServerWorkTasks)
+  const createServerWorkTaskFor = useServerSessionStore((state) => state.createServerWorkTaskFor)
+  const startServerWorkTaskFor = useServerSessionStore((state) => state.startServerWorkTaskFor)
+  const inServerMode = serverStatus === 'signed-in'
+
+  useEffect(() => {
+    if (inServerMode) void loadServerWorkTasks()
+  }, [inServerMode, loadServerWorkTasks])
+
+  async function startServerTask(goal: string) {
+    const trimmed = goal.trim()
+    if (!trimmed) return
+    const title = trimmed.length > 60 ? `${trimmed.slice(0, 57)}…` : trimmed
+    // The server vocabulary maps the local one (data-review → data-report).
+    const local = inferDeliverable(trimmed)
+    const deliverable = local === 'data-review' ? 'data-report' : local
+    const task = await createServerWorkTaskFor({
+      title,
+      goal: trimmed,
+      deliverable,
+    })
+    if (!task) return
+    await startServerWorkTaskFor(task.id)
+    void loadServerWorkTasks()
+  }
+
+  if (inServerMode) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <PageToolbar>
+          <div className="lg:hidden">
+            <MobileMenuButton />
+          </div>
+          <h1 className="flex items-center gap-2 text-[15px] font-semibold tracking-tight text-ink">
+            <Briefcase size={16} className="text-ink-faint" />
+            Work
+          </h1>
+          <StatusPill label="Server execution" tone="accent" />
+          <div className="flex-1" />
+          <HeaderExtras />
+        </PageToolbar>
+
+        <div className="flex-1 overflow-y-auto welcome-wash">
+          <div className="mx-auto w-full max-w-column px-3 py-8 sm:px-4">
+            <h2 className="text-center text-[28px] font-semibold tracking-tight text-ink sm:text-[32px]">
+              What needs doing?
+            </h2>
+            <p className="mx-auto mt-1.5 max-w-md text-center text-sm leading-relaxed text-ink-soft">
+              Describe an outcome. The task runs on your Uni server as the assigned employee —
+              durable runs, honest statuses, and a saved report.
+            </p>
+            <div className="mt-5">
+              <GoalComposer onSend={(goal) => void startServerTask(goal)} />
+            </div>
+
+            <div className="mt-10 flex flex-wrap items-center justify-between gap-3">
+              <h3 className="text-[15px] font-semibold tracking-tight text-ink">
+                {serverWorkTasks.length === 0 ? 'Your tasks will appear here' : 'Server work'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => void loadServerWorkTasks()}
+                className="min-touch rounded-control px-2 py-1 text-[13px] text-ink-soft transition-colors hover:bg-subtle hover:text-ink"
+              >
+                Refresh
+              </button>
+            </div>
+
+            {serverWorkTasksLoading && serverWorkTasks.length === 0 && (
+              <p className="mt-3 text-[13px] text-ink-faint">Loading tasks…</p>
+            )}
+
+            <ul className="mt-3 flex flex-col gap-2" aria-label="Server work tasks">
+              {serverWorkTasks.map((task) => (
+                <li key={task.id}>
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/work/${task.id}`)}
+                    className="w-full rounded-group border border-line bg-raised px-3.5 py-3 text-left transition-colors hover:bg-subtle"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-ink">
+                        {task.title}
+                      </span>
+                      <StatusPill
+                        label={task.statusLabel}
+                        tone={
+                          task.status === 'complete'
+                            ? 'accent'
+                            : task.status === 'error'
+                              ? 'danger'
+                              : task.status === 'running'
+                                ? 'neutral'
+                                : 'neutral'
+                        }
+                      />
+                    </div>
+                    {task.goal && (
+                      <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">
+                        {task.goal}
+                      </p>
+                    )}
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {!serverWorkTasksLoading && serverWorkTasks.length === 0 && (
+              <p className="mt-3 text-[13px] text-ink-faint">
+                No server tasks yet — describe an outcome above to start one.
+              </p>
+            )}
+
+            <p className="mt-6 text-center text-xs leading-relaxed text-ink-faint">
+              Server tasks execute with a read-only tool roster (research, fetch, notes) and ask
+              before anything wider. Reports save to the server Library through one canonical
+              operation.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const ordered = useMemo(
     () => Object.values(tasks).sort((a, b) => b.updatedAt - a.updatedAt),
