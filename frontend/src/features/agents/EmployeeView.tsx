@@ -635,12 +635,31 @@ function EffectiveConfig({ agent }: { agent: AgentProfile }) {
   )
 }
 
-function MemoryPanel({ agentId }: { agentId: string }) {
+export function MemoryPanel({ agentId }: { agentId: string }) {
   const agent = useAgentsStore((state) => state.agents[agentId])
   const notes = useAgentsStore((state) => state.memoryNotes)
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+
+  // T016 — server mode: notes live on the linked server employee (the
+  // same identity Chat and Assign task use); the panel loads them from
+  // the memory service and writes through it. Local mode is unchanged.
+  const serverStatus = useServerSessionStore((state) => state.status)
+  const serverMemoryNotes = useServerSessionStore((state) => state.serverMemoryNotes)
+  const serverMemoryLoading = useServerSessionStore((state) => state.serverMemoryLoading)
+  const serverMemoryError = useServerSessionStore((state) => state.serverMemoryError)
+  const loadServerMemoryNotes = useServerSessionStore((state) => state.loadServerMemoryNotes)
+  const addServerMemoryNoteFor = useServerSessionStore((state) => state.addServerMemoryNoteFor)
+  const removeServerMemoryNote = useServerSessionStore((state) => state.removeServerMemoryNote)
+  const inServerMode = serverStatus === 'signed-in'
+  const linkedEmployeeId = agent?.serverEmployeeId ?? null
+
+  useEffect(() => {
+    if (inServerMode && linkedEmployeeId) {
+      void loadServerMemoryNotes(linkedEmployeeId)
+    }
+  }, [inServerMode, linkedEmployeeId, loadServerMemoryNotes])
 
   const mine = useMemo(
     () =>
@@ -650,9 +669,24 @@ function MemoryPanel({ agentId }: { agentId: string }) {
     [notes, agentId],
   )
 
-  function handleAdd() {
+  const serverNotes = linkedEmployeeId ? serverMemoryNotes[linkedEmployeeId] ?? [] : []
+
+  async function handleAdd() {
     const trimmed = draft.trim()
     if (!trimmed) return
+    if (inServerMode && linkedEmployeeId) {
+      const ok = await addServerMemoryNoteFor(linkedEmployeeId, trimmed)
+      if (ok) {
+        useAgentsStore.getState().addThreadEvent({
+          agentId,
+          kind: 'memory_note',
+          label: `Remembered: ${trimmed}`,
+          detail: 'Saved to this employee’s server memory — included in future requests.',
+        })
+        setDraft('')
+      }
+      return
+    }
     const noteId = useAgentsStore.getState().addMemoryNote(agentId, trimmed)
     if (noteId) {
       useAgentsStore.getState().addThreadEvent({
@@ -699,7 +733,47 @@ function MemoryPanel({ agentId }: { agentId: string }) {
           </Button>
         </div>
       </div>
-      {mine.length === 0 ? (
+      {inServerMode && linkedEmployeeId ? (
+        <div aria-label="Server memory notes">
+          {serverMemoryLoading && <p className="px-1 text-xs text-ink-faint">Loading notes…</p>}
+          {serverMemoryError && (
+            <p role="alert" className="px-1 text-xs text-danger">{serverMemoryError}</p>
+          )}
+          {!serverMemoryLoading && serverNotes.length === 0 && (
+            <p className="px-1 text-xs text-ink-faint">
+              No notes yet — add facts or preferences you want remembered on the server.
+            </p>
+          )}
+          {serverNotes.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {serverNotes.map((note) => (
+                <li key={note.id} className="rounded-[12px] border border-line bg-raised px-3.5 py-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-ink">{note.text}</p>
+                    <div className="flex shrink-0 gap-0.5">
+                      <button
+                        type="button"
+                        aria-label="Delete server note"
+                        onClick={() => {
+                          void removeServerMemoryNote(linkedEmployeeId, note.id)
+                        }}
+                        className="min-touch rounded-control p-1 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-1.5 px-1 text-[11px] text-ink-faint">
+            Notes are stored on your Uni server for this employee — redacted for
+            credential shapes before persistence — and are included in future
+            requests to this employee from every surface.
+          </p>
+        </div>
+      ) : mine.length === 0 ? (
         <p className="px-1 text-xs text-ink-faint">
           No notes yet — add facts or preferences you want remembered.
         </p>
