@@ -502,6 +502,14 @@ async function executeAgentRun(
 
     const allowances = await loadAllowances(db, live.sessionId)
     const toolCtx = toolContextFor(root, env)
+    // T024 — the session's MCP hook: namespaced tool → configured
+    // server → time-bounded callTool with the run's abort signal and a
+    // bounded result. Server rows are read per call so tool-list changes
+    // and reconfiguration apply immediately, never from a stale cache.
+    toolCtx.callMcpTool = async (tool, args, signal) => {
+      const { callMcpToolForSession } = await import('../mcp/mcpCall.service.js')
+      return callMcpToolForSession(db, env, session.workspaceId, tool, args, signal)
+    }
 
     const gateOptions = (): MutableGateOptions => ({
       mode: session.mode as MutableGateOptions['mode'],
