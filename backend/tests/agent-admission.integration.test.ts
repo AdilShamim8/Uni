@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createServer, type Server } from 'node:http'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import { agentRuns } from '../src/db/schema.js'
 import { signUpUser, startTestApp, TEST_CREDENTIAL_MASTER_KEY, type TestApp } from './harness.js'
 import type { AgentDatabase } from '../src/modules/agent/agentSession.service.js'
@@ -133,6 +133,30 @@ describe('agent run admission + terminals (F06)', () => {
     })
   }
 
+  /** Wait until every non-terminal run row in the workspace settles. */
+  async function waitForRunsToSettle(timeoutMs = 20_000): Promise<void> {
+    const deadline = Date.now() + timeoutMs
+    for (;;) {
+      const me = await testApp.app.inject({
+        method: 'GET', url: '/api/v1/me',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      })
+      const workspaceId = (me.json() as { workspace: { id: string } }).workspace.id
+      const active = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(agentRuns)
+        .where(
+          and(
+            eq(agentRuns.workspaceId, workspaceId),
+            inArray(agentRuns.status, ['running', 'waiting-for-permission', 'cancelling']),
+          ),
+        )
+      if (Number(active[0]?.count ?? 0) === 0) return
+      if (Date.now() > deadline) throw new Error('runs did not settle in time')
+      await new Promise((resolve) => setTimeout(resolve, 100))
+    }
+  }
+
   it('concurrent same-key creates resolve to ONE run (unique index + recovery)', async () => {
     const sessionId = await createSessionWithProvider()
     // 6 genuinely concurrent creates with the SAME key + request.
@@ -151,6 +175,7 @@ describe('agent run admission + terminals (F06)', () => {
       .where(and(eq(agentRuns.sessionId, sessionId)))
     expect(rows.length).toBe(1)
     fake.releaseAll()
+    await waitForRunsToSettle()
   }, 60_000)
 
   it('the concurrency cap cannot be oversubscribed by simultaneous creates', async () => {
@@ -166,6 +191,7 @@ describe('agent run admission + terminals (F06)', () => {
     expect(rejected.length).toBe(4)
     expect(rejected.every((response) => response.statusCode === 429)).toBe(true)
     fake.releaseAll()
+    await waitForRunsToSettle()
   }, 60_000)
 
   it('a terminal transition happens exactly once (cancel vs completion race)', async () => {
@@ -207,5 +233,6 @@ describe('agent run admission + terminals (F06)', () => {
       headers: { cookie: alice.cookie },
     })
     expect(again.statusCode).toBe(409)
+    await waitForRunsToSettle()
   }, 60_000)
 })
