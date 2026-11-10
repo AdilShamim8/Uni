@@ -1,6 +1,19 @@
-# Handoff — backend upgrade session 2 (2026-11-10)
+# Handoff — backend upgrade sessions (latest: 2026-11-10, session 3)
 
-Branch `task/backend-upgrade-p00-p14`. This session: **30 commits
+Session 3 added commits 72-87: the CI failures from session 2 were
+fixed (3 commits — conditional hooks and a setState-in-effect), and
+**P07 (MCP integrations, T023-T025) is complete**: configured workspace
+MCP servers with encrypted bearer auth, the guarded time-bounded HTTP
+transport, namespaced tool execution that ALWAYS asks permission (the
+remote's readOnly hint is never trusted), and the Plugins-page
+management UI. Verified: backend 346/346 across 41 files, frontend
+544/544 across 73 files, GitHub Actions green on the head commit.
+
+---
+
+# Session 2 record (2026-11-10)
+
+Branch `task/backend-upgrade-p00-p14`. Session 2: **30 commits
 (70-99 range on top of the previous 40)**, each pushed and verified
 individually. Total task commits on the branch: **70**.
 
@@ -68,11 +81,14 @@ before releasing held provider streams — commit 68).
 
 ## Next in dependency order
 
-1. T023 (MCP config/auth/transport on the installed SDK) → T024
-   (namespaced tools through the grants gate) → T025 (settings UI).
-2. P09 routines (tables exist from migration 0011; scheduler + routes,
+1. P09 routines (tables exist from migration 0011; scheduler + routes,
    wire to the worker from T013).
-3. Then P08, P10-P12, P13-P14 per the ledger.
+2. Then P08 connectors, P10-P12, P13-P14 per the ledger.
+
+Session 3 note: the CI discipline is now enforced locally before every
+push (lint → typecheck → full tests → build for frontend; typecheck →
+affected tests for backend), because session 2 shipped hook-order lint
+errors CI caught and local slices missed.
 
 Commands: `cd backend && npm run typecheck && npm test`; frontend
 `npm run typecheck && npm run lint && npm test`; worker
