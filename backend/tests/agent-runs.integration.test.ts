@@ -451,6 +451,41 @@ describe('agent runs — tool loop + permissions (F02/F03)', () => {
     expect(run.status).toBe('complete')
   }, 60_000)
 
+  it('a second message in the same session sees the first turn (T008 transcript)', async () => {
+    // Round 1: the model calls current_time; round 2: it states the
+    // result. Turn 2 (new run, same session): the model must be able to
+    // reference the tool result from turn 1 — the provider ASSERTS the
+    // prior assistant/tool messages arrived in its request.
+    fake.setScript([
+      { kind: 'tool', name: 'current_time', arguments: {} },
+      { kind: 'text', text: 'The time is recorded.' },
+    ])
+    const sessionId = await createSessionWithProvider(alice.cookie, {
+      tools: ['current_time'],
+    })
+    const first = await sendRun(sessionId, 'What time is it?', 'turn-1')
+    expect(first.response.statusCode).toBe(201)
+    await waitForRunStatus(first.body.runId!, ['complete'])
+    expect(fake.requests().length).toBe(2)
+
+    // Script turn 2: a plain answer; the test's request-capture asserts
+    // the second run's request contains the first run's tool messages.
+    fake.setScript([{ kind: 'text', text: 'As established earlier.' }])
+    const second = await sendRun(sessionId, 'What did you find out?', 'turn-2')
+    expect(second.response.statusCode).toBe(201)
+    await waitForRunStatus(second.body.runId!, ['complete'])
+
+    const lastRequest = fake.requests().at(-1)!
+    const roles = (lastRequest.messages as Array<{ role: string }>).map((m) => m.role)
+    expect(roles).toContain('assistant')
+    expect(roles).toContain('tool')
+    // The FIRST run's user message is still present (context survives).
+    const userTexts = (lastRequest.messages as Array<{ role: string; content: unknown }>)
+      .filter((m) => m.role === 'user')
+      .map((m) => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
+    expect(userTexts.some((t) => t.includes('What time is it?'))).toBe(true)
+  }, 60_000)
+
   it('runs without a pinned provider fail honestly', async () => {
     const session = await testApp.app.inject({
       method: 'POST',
