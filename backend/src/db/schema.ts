@@ -950,3 +950,39 @@ export type RoutineRow = typeof routines.$inferSelect
 export type NewRoutineRow = typeof routines.$inferInsert
 export type RoutineRunRow = typeof routineRuns.$inferSelect
 export type NewRoutineRunRow = typeof routineRuns.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* MCP servers (T023) — workspace-scoped remote tool providers         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A configured external MCP server. The bearer token (when present) is
+ * stored in the encrypted secret envelope — never in plain columns,
+ * never in API responses. Status reflects the last connect/test
+ * honestly. Tools are listed live from the remote (T024); nothing is
+ * cached beyond the last serverInfo.
+ */
+export const mcpServers = pgTable(
+  'mcp_server',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    url: text('url').notNull(),
+    /** 'none' | 'bearer'. */
+    authType: text('auth_type').notNull().default('none'),
+    /** secretBox envelope JSON for the bearer token; null when none. */
+    authSecret: text('auth_secret'),
+    status: text('status').notNull().default('disconnected'),
+    lastError: text('last_error'),
+    /** { name, version } from the last successful connect; null otherwise. */
+    serverInfo: jsonb('server_info'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('mcp_server_workspace_idx').on(table.workspaceId, table.name)],
+)
+export type McpServerRow = typeof mcpServers.$inferSelect
+export type NewMcpServerRow = typeof mcpServers.$inferInsert
