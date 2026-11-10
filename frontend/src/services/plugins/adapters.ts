@@ -73,7 +73,7 @@ async function documentsSaveAdapter(
   const taskId = input?.taskId ?? (context.thread?.kind === 'work' ? context.thread.taskId : null)
   try {
     if (taskId) {
-      const result = saveTaskReportToLibrary(taskId)
+      const result = await saveTaskReportToLibrary(taskId)
       const summary = result.recreated
         ? `The previously saved document was deleted — recreated “${result.title}” and re-linked it to this task.`
         : result.created
@@ -88,7 +88,7 @@ async function documentsSaveAdapter(
       }
     }
     if (context.thread?.kind === 'agent') {
-      const result = saveActiveReplyToLibrary(context.thread.conversationId)
+      const result = await saveActiveReplyToLibrary(context.thread.conversationId)
       return {
         summary: result.created
           ? `Saved the latest reply as “${result.title}”.`

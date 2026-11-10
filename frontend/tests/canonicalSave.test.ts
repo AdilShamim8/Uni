@@ -54,12 +54,12 @@ beforeEach(() => {
 })
 
 describe('canonical Work report save', () => {
-  it('creates exactly ONE artifact across repeated saves and links it back', () => {
+  it('creates exactly ONE artifact across repeated saves and links it back', async () => {
     const taskId = seedTaskWithReport()
 
-    const first = saveTaskReportToLibrary(taskId)
-    const second = saveTaskReportToLibrary(taskId)
-    const third = saveTaskReportToLibrary(taskId)
+    const first = await saveTaskReportToLibrary(taskId)
+    const second = await saveTaskReportToLibrary(taskId)
+    const third = await saveTaskReportToLibrary(taskId)
 
     expect(first.created).toBe(true)
     expect(second.created).toBe(false)
@@ -73,10 +73,10 @@ describe('canonical Work report save', () => {
     expect(task.report?.artifactId).toBe(first.artifactId)
   })
 
-  it('preserves demo/provider provenance instead of hard-coding user-authored', () => {
+  it('preserves demo/provider provenance instead of hard-coding user-authored', async () => {
     const taskId = seedTaskWithReport()
 
-    const result = saveTaskReportToLibrary(taskId)
+    const result = await saveTaskReportToLibrary(taskId)
     const artifact = useLibraryStore.getState().artifacts[result.artifactId]
     expect(artifact.provenance).toBe('demo-simulation')
     expect(artifact.taskId).toBe(taskId)
@@ -101,19 +101,19 @@ describe('canonical Work report save', () => {
       },
     }))
     useLibraryStore.getState().deleteArtifact(result.artifactId)
-    const recreated = saveTaskReportToLibrary(taskId)
+    const recreated = await saveTaskReportToLibrary(taskId)
     const fresh = useLibraryStore.getState().artifacts[recreated.artifactId]
     expect(recreated.recreated).toBe(true)
     expect(fresh.provenance).toBe('provider-generated')
     expect(fresh.generatedBy?.modelLabel).toBe('gpt-test')
   })
 
-  it('updates in place when the report changes, without duplicates', () => {
+  it('updates in place when the report changes, without duplicates', async () => {
     const taskId = seedTaskWithReport()
-    const first = saveTaskReportToLibrary(taskId)
+    const first = await saveTaskReportToLibrary(taskId)
 
     useWorkStore.getState().updateReport(taskId, '# Brief\n\nRevised content.')
-    const second = saveTaskReportToLibrary(taskId)
+    const second = await saveTaskReportToLibrary(taskId)
 
     expect(second.artifactId).toBe(first.artifactId)
     expect(libraryArtifacts()).toHaveLength(1)
@@ -122,18 +122,18 @@ describe('canonical Work report save', () => {
     )
   })
 
-  it('throws an honest error when there is nothing to save', () => {
+  it('throws an honest error when there is nothing to save', async () => {
     const taskId = useWorkStore.getState().createTask({
       title: 'Empty task',
       goal: 'Nothing yet',
       deliverable: 'research-report',
     })
-    expect(() => saveTaskReportToLibrary(taskId)).toThrow(CanonicalSaveError)
+    await expect(saveTaskReportToLibrary(taskId)).rejects.toBeInstanceOf(CanonicalSaveError)
   })
 })
 
 describe('canonical employee reply save', () => {
-  it('saves the ACTIVE branch reply, not the most recently created sibling', () => {
+  it('saves the ACTIVE branch reply, not the most recently created sibling', async () => {
     const { initialize } = useAppStore.getState()
     initialize()
     const state = useAppStore.getState()
@@ -179,14 +179,14 @@ describe('canonical employee reply save', () => {
       },
     }))
 
-    const result = saveActiveReplyToLibrary(conversationId)
+    const result = await saveActiveReplyToLibrary(conversationId)
     const artifact = useLibraryStore.getState().artifacts[result.artifactId]
     expect(artifact.markdown).toContain('Local-first means')
     expect(artifact.markdown).not.toContain('WRONG BRANCH')
     expect(artifact.source?.messageId).toBe('a1')
   })
 
-  it('keeps live origin: a Live reply saves as provider-generated', () => {
+  it('keeps live origin: a Live reply saves as provider-generated', async () => {
     useAppStore.getState().initialize()
     const state = useAppStore.getState()
     const conversationId = state.newConversation()
@@ -220,13 +220,13 @@ describe('canonical employee reply save', () => {
       },
     }))
 
-    const result = saveActiveReplyToLibrary(conversationId)
+    const result = await saveActiveReplyToLibrary(conversationId)
     const artifact = useLibraryStore.getState().artifacts[result.artifactId]
     expect(artifact.provenance).toBe('provider-generated')
     expect(artifact.generatedBy?.providerLabel).toBe('OpenAI · GPT')
   })
 
-  it('re-saving the same reply updates the same artifact (no twin)', () => {
+  it('re-saving the same reply updates the same artifact (no twin)', async () => {
     useAppStore.getState().initialize()
     const state = useAppStore.getState()
     const conversationId = state.newConversation()
@@ -259,8 +259,8 @@ describe('canonical employee reply save', () => {
       },
     }))
 
-    const first = saveActiveReplyToLibrary(conversationId)
-    const second = saveActiveReplyToLibrary(conversationId)
+    const first = await saveActiveReplyToLibrary(conversationId)
+    const second = await saveActiveReplyToLibrary(conversationId)
     expect(second.created).toBe(false)
     expect(second.artifactId).toBe(first.artifactId)
     expect(
