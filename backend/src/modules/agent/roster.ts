@@ -177,7 +177,28 @@ async function execEdit(ctx: ToolContext, raw: unknown): Promise<ToolOutcome> {
   }
 }
 
+/**
+ * Whether the host shell tool may execute at all (F07). A cwd and an
+ * approval gate do not isolate hosted execution: execBash spawns
+ * /bin/sh as the server OS user, so filesystem access, child processes
+ * and network are all the host's. Until the isolated execution worker
+ * (P11) mounts only the owning workspace under an unprivileged
+ * identity with resource limits, the tool answers 'unavailable' —
+ * explicitly, never by silently falling back to the host.
+ */
+export function shellExecutionAvailable(): boolean {
+  return process.env.UNI_AGENT_ISOLATED_EXECUTION === 'true'
+}
+
 function execBash(ctx: ToolContext, raw: unknown, signal?: AbortSignal): Promise<ToolOutcome> {
+  if (!shellExecutionAvailable()) {
+    return Promise.resolve({
+      ok: false,
+      output:
+        'Shell execution is unavailable: this deployment has no isolated execution worker. ' +
+        'File tools (read/list/write/edit) work inside the session root.',
+    })
+  }
   const input = toolInputSchemas.bash.parse(raw)
   return new Promise<ToolOutcome>((resolve) => {
     const child = spawn('/bin/sh', ['-c', input.command], {

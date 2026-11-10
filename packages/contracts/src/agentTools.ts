@@ -45,6 +45,8 @@ export interface AgentToolDescriptor {
   mutating: boolean
   /** Which modes ask before this tool runs (all but yolo/unattended paths). */
   gated: boolean
+  /** Whether the tool can execute in this deployment (bash: isolation-gated). */
+  available?: boolean
 }
 
 /**
@@ -86,9 +88,10 @@ export const AGENT_TOOL_DESCRIPTORS: readonly AgentToolDescriptor[] = [
   {
     name: 'bash',
     description:
-      'Run a shell command with the session root as cwd. Output is capped; the command runs with the server process user.',
+      'Run a shell command. Unavailable unless the deployment runs an isolated execution worker (P11): a server cwd and an approval are not OS isolation, so the tool refuses rather than running on the host.',
     mutating: true,
     gated: true,
+    available: false,
   },
   {
     name: 'web_fetch',
@@ -122,6 +125,7 @@ export const agentToolDescriptorDtoSchema = z.object({
   description: z.string(),
   mutating: z.boolean(),
   gated: z.boolean(),
+  available: z.boolean().default(true),
 })
 export type AgentToolDescriptorDto = z.infer<typeof agentToolDescriptorDtoSchema>
 
