@@ -65,6 +65,8 @@ export const workspaces = pgTable('workspace', {
   ownerId: text('owner_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
+  /** T021 — plugin ids enabled for this workspace (the admin gate). */
+  enabledPlugins: jsonb('enabled_plugins').$type<string[]>().notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
@@ -81,8 +83,6 @@ export const workspaceMembers = pgTable(
     role: text('role').notNull().default('member'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-    /** T021 — plugin ids enabled for this workspace (the admin gate). */
-    enabledPlugins: jsonb('enabled_plugins').$type<string[]>().notNull().default([]),
   },
   (table) => [primaryKey({ columns: [table.workspaceId, table.userId] })],
 )
