@@ -13,7 +13,7 @@ import {
   type McpToolDto,
 } from '@uni/contracts'
 import { AppError } from '../../lib/errors.js'
-import { encryptSecret, decryptSecret } from '../../lib/secretBox.js'
+import { encryptSecret, decryptSecret, parseMasterKey } from '../../lib/secretBox.js'
 import { createGuardedFetch } from '../../lib/guardedTransport.js'
 import { withTimeout } from '../../lib/timeout.js'
 
@@ -39,10 +39,21 @@ export type McpDatabase = NodePgDatabase<typeof schema>
 const MCP_CALL_TIMEOUT_MS = 10_000
 
 export interface McpEnv {
-  CREDENTIAL_MASTER_KEY?: Buffer
+  /** Raw base64 master key string — parsed at use time, like providers. */
+  CREDENTIAL_MASTER_KEY?: string
   CREDENTIAL_KEY_ID: string
   NODE_ENV: string
   [key: string]: unknown
+}
+
+/** Parsed-once master key for the current call (null when unset). */
+function masterKeyOf(env: McpEnv): Buffer | null {
+  if (!env.CREDENTIAL_MASTER_KEY) return null
+  try {
+    return parseMasterKey(env.CREDENTIAL_MASTER_KEY)
+  } catch {
+    return null
+  }
 }
 
 function serialize(row: typeof mcpServers.$inferSelect): McpServerDto {
@@ -69,10 +80,11 @@ function sealAuth(env: McpEnv, auth: McpAuthConfig, workspaceId: string, serverI
   authSecret: string | null
 } {
   if (auth.type === 'none') return { authType: 'none', authSecret: null }
-  if (!env.CREDENTIAL_MASTER_KEY) {
+  const masterKey = masterKeyOf(env)
+  if (!masterKey) {
     throw new AppError('UNAVAILABLE', 'Credential storage is not configured on this server.', 503)
   }
-  const envelope = encryptSecret(env.CREDENTIAL_MASTER_KEY, env.CREDENTIAL_KEY_ID, auth.token, {
+  const envelope = encryptSecret(masterKey, env.CREDENTIAL_KEY_ID, auth.token, {
     workspaceId,
     providerId: `mcp:${serverId}`,
   })
@@ -81,10 +93,11 @@ function sealAuth(env: McpEnv, auth: McpAuthConfig, workspaceId: string, serverI
 
 function openAuth(env: McpEnv, row: typeof mcpServers.$inferSelect): string | null {
   if (row.authType !== 'bearer' || !row.authSecret) return null
-  if (!env.CREDENTIAL_MASTER_KEY) {
+  const masterKey = masterKeyOf(env)
+  if (!masterKey) {
     throw new AppError('UNAVAILABLE', 'Credential storage is not configured on this server.', 503)
   }
-  const { plaintext } = decryptSecret(env.CREDENTIAL_MASTER_KEY, row.authSecret, {
+  const { plaintext } = decryptSecret(masterKey, row.authSecret, {
     workspaceId: row.workspaceId,
     providerId: `mcp:${row.id}`,
   })
