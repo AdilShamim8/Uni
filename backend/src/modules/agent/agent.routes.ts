@@ -113,6 +113,8 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       modelId: row.modelId,
       errorCode: row.errorCode,
       errorMessage: row.errorMessage,
+      inputTokens: row.inputTokens ?? null,
+      outputTokens: row.outputTokens ?? null,
       createdAt: row.createdAt.getTime(),
       finishedAt: row.terminalAt ? row.terminalAt.getTime() : null,
     })
