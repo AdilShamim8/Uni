@@ -825,6 +825,76 @@ export const jobOutbox = pgTable(
 )
 export type JobOutboxRow = typeof jobOutbox.$inferSelect
 export type NewJobOutboxRow = typeof jobOutbox.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* Work (T018) — durable tasks + revision runs + receipts              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A durable Work task: a goal delegated to an employee, executed as
+ * agent runs inside a session, producing a canonical Library artifact.
+ * Status mirrors the frontend task machine; employeeId/sessionId are
+ * soft pins (like the agent session's own pins) so a deleted employee
+ * or session leaves the task intact and honestly re-assignable.
+ */
+export const workTasks = pgTable(
+  'work_task',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    goal: text('goal').notNull().default(''),
+    deliverable: text('deliverable').notNull().default('generic'),
+    status: text('status').notNull().default('draft'),
+    employeeId: text('employee_id'),
+    sessionId: text('session_id'),
+    activeRunId: text('active_run_id'),
+    artifactId: text('artifact_id'),
+    statusLabel: text('status_label').notNull().default('Draft'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('work_task_workspace_updated_idx').on(table.workspaceId, table.updatedAt),
+    index('work_task_status_idx').on(table.status),
+  ],
+)
+
+/**
+ * One durable execution attempt: the agent run it delegated to, the
+ * revision number (follow-ups are 2+), and how it ended. Receipts
+ * (T020) persist the sources/tools/provenance that actually happened.
+ */
+export const workRuns = pgTable(
+  'work_run',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => workTasks.id, { onDelete: 'cascade' }),
+    revision: integer('revision').notNull(),
+    agentRunId: text('agent_run_id').notNull(),
+    status: text('status').notNull().default('running'),
+    outcome: text('outcome'),
+    /** WorkRunReceipts as JSON — bounded, secret-free. */
+    receipts: jsonb('receipts'),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('work_run_task_idx').on(table.taskId, table.revision),
+    uniqueIndex('work_run_agent_run_uq').on(table.agentRunId),
+  ],
+)
+export type WorkTaskRow = typeof workTasks.$inferSelect
+export type NewWorkTaskRow = typeof workTasks.$inferInsert
+export type WorkRunRow = typeof workRuns.$inferSelect
+export type NewWorkRunRow = typeof workRuns.$inferInsert
 export type RoutineRow = typeof routines.$inferSelect
 export type NewRoutineRow = typeof routines.$inferInsert
 export type RoutineRunRow = typeof routineRuns.$inferSelect
