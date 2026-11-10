@@ -280,6 +280,15 @@ export interface AgentsStore {
   resetSeeds: () => void
 
   saveAgent: (profile: AgentProfile) => void
+  /**
+   * T016 — resolve (or create) the server employee this agent executes
+   * as in server mode. Idempotent: an existing link is returned as-is;
+   * creation happens through the server-session store (which enforces
+   * the signed-in generation guard). The returned id is persisted on
+   * the agent profile so Chat, Assign task and memory share ONE
+   * employee identity across surfaces and sessions.
+   */
+  ensureServerEmployee: (agentId: string) => Promise<string | null>
   archiveAgent: (id: string, archived: boolean) => void
   /** Clear a deleted project's id from every agent that referenced it. */
   detachProject: (projectId: string) => void
@@ -354,6 +363,34 @@ export const useAgentsStore = create<AgentsStore>()((set, get) => ({
       createdAt: existing?.createdAt ?? Date.now(),
     }
     set((state) => ({ agents: { ...state.agents, [next.id]: next } }))
+  },
+
+  ensureServerEmployee: async (agentId) => {
+    const agent = get().agents[agentId]
+    if (!agent) return null
+    if (agent.serverEmployeeId) return agent.serverEmployeeId
+    // Server-session store owns the signed-in generation guard; a
+    // signed-out call resolves to null (local mode, no link).
+    const { useServerSessionStore } = await import('@/state/serverSessionStore')
+    const server = useServerSessionStore.getState()
+    if (server.status !== 'signed-in') return null
+    // Reuse an existing server employee with the same name (created by
+    // another surface or a previous link wiped locally); otherwise
+    // create one carrying this agent's identity.
+    const existing = server.serverEmployees.find(
+      (employee) => employee.name === agent.name && !employee.archived,
+    )
+    const employee =
+      existing ??
+      (await server.addServerEmployee({
+        name: agent.name,
+        description: agent.description,
+        instructions: agent.instructions,
+        category: agent.category === 'specialist' ? 'specialist' : 'personal',
+      }))
+    if (!employee) return null
+    get().saveAgent({ ...agent, serverEmployeeId: employee.id, updatedAt: Date.now() })
+    return employee.id
   },
 
   detachProject: (projectId) => {

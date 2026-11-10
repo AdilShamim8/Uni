@@ -194,6 +194,13 @@ export interface AgentProfile {
   archived: boolean
   /** Built-in profiles cannot be deleted, only archived or edited. */
   builtin: boolean
+  /**
+   * T016 — the linked server employee id in server mode. Set on first
+   * server use (ensureServerEmployee); Chat, Assign task and memory all
+   * resolve to THIS id, so the employee is one identity everywhere.
+   * Null in local mode or before the first server use.
+   */
+  serverEmployeeId?: string | null
   createdAt: number
   updatedAt: number
 }
