@@ -11,6 +11,11 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useAgentsStore } from '@/state/agentsStore'
+import { useServerSessionStore } from '@/state/serverSessionStore'
+import type {
+  ServerConversationDetail,
+  ServerActiveRun,
+} from '@/features/agents/serverEmployeeThreadTypes'
 import { useAppStore, AGENT_MEMORY_MAX_NOTES, AGENT_MEMORY_MAX_CHARS } from '@/state/store'
 import { InspectorPanel } from '@/components/ui/InspectorPanel'
 import { useWorkStore } from '@/state/workStore'
@@ -71,6 +76,36 @@ export function EmployeeView({
     setConversationId(id)
   }, [agentId])
 
+  // T015 — server mode: the employee's thread is the owned server
+  // conversation tagged with this agent (find-or-create). The boundary
+  // is the signed-in account; local mode keeps the local thread and its
+  // data untouched.
+  const serverStatus = useServerSessionStore((state) => state.status)
+  const serverConversation = useServerSessionStore((state) => state.openConversation)
+  const serverActiveRun = useServerSessionStore((state) => state.activeRun)
+  const serverRunError = useServerSessionStore((state) => state.runError)
+  const openServerAgentConversation = useServerSessionStore(
+    (state) => state.openServerAgentConversation,
+  )
+  const stopActiveServerRun = useServerSessionStore((state) => state.stopActiveServerRun)
+  const inServerMode = serverStatus === 'signed-in'
+  const [serverThreadId, setServerThreadId] = useState<string | null>(null)
+  /** The thread id driving the composer in whichever mode is active. */
+  const threadOpenId = inServerMode ? serverThreadId : conversationId
+  useEffect(() => {
+    if (!inServerMode) {
+      setServerThreadId(null)
+      return
+    }
+    let cancelled = false
+    void openServerAgentConversation(agentId, agent?.name ?? 'Employee thread').then((id) => {
+      if (!cancelled) setServerThreadId(id ?? null)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [inServerMode, agentId, agent?.name, openServerAgentConversation])
+
   const conversation =
     conversationId === null ? null : (conversations[conversationId] ?? null)
 
@@ -114,12 +149,19 @@ export function EmployeeView({
   )
 
   const busy = useMemo(() => {
+    if (inServerMode) {
+      return (
+        serverActiveRun !== null &&
+        serverActiveRun.conversationId === serverThreadId &&
+        (serverActiveRun.status === 'running' || serverActiveRun.status === 'cancelling')
+      )
+    }
     if (!conversation) return false
     const leaf = conversation.activeLeafId
       ? conversation.nodes[conversation.activeLeafId]
       : null
     return leaf?.role === 'assistant' && leaf.status === 'streaming'
-  }, [conversation])
+  }, [inServerMode, serverActiveRun, serverThreadId, conversation])
 
   function handleSend(text: string) {
     const trimmed = text.trim()
@@ -129,6 +171,16 @@ export function EmployeeView({
     if (trimmed.startsWith('/')) {
       const handled = handleCommand(trimmed)
       if (handled) return
+    }
+    // T015 — server mode: the employee's thread runs on the owned
+    // server conversation (sendServerMessage guards the explicit
+    // destination and streams the reply). Local mode keeps the local
+    // store; the boundary is the signed-in account, never a UI flag a
+    // page could set differently.
+    const server = useServerSessionStore.getState()
+    if (server.status === 'signed-in' && server.sendServerMessage) {
+      void server.sendServerMessage(trimmed)
+      return
     }
     void useAppStore.getState().sendMessage({ text: trimmed })
   }
@@ -246,7 +298,16 @@ export function EmployeeView({
 
       {/* The employee's thread */}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        <ThreadView
+        {inServerMode ? (
+          <ServerEmployeeThread
+            detail={serverConversation}
+            conversationId={serverThreadId}
+            activeRun={serverActiveRun}
+            runError={serverRunError}
+            agentName={agent.name}
+          />
+        ) : null}
+        {!inServerMode && <ThreadView
           entries={entries}
           ariaLabel={`Conversation with ${agent.name}`}
           emptyState={
@@ -277,7 +338,7 @@ export function EmployeeView({
               </div>
             </div>
           }
-        />
+        />}
 
         {/* Inline assignment brief */}
         {assignDraft !== null && (
@@ -316,7 +377,7 @@ export function EmployeeView({
           </div>
         )}
 
-        {conversationId === null ? (
+        {threadOpenId === null ? (
           <div
             role="status"
             className="px-4 py-3 text-center text-[13px] text-ink-faint"
@@ -326,7 +387,7 @@ export function EmployeeView({
         ) : (
           <>
             <ThreadPluginBar
-              thread={{ kind: 'agent', agentId, conversationId }}
+              thread={{ kind: 'agent', agentId, conversationId: threadOpenId }}
               agentId={agentId}
             />
 
@@ -335,9 +396,12 @@ export function EmployeeView({
               textareaId={`agent-composer-${agentId}`}
               ariaLabel={`Message ${agent.name}`}
               placeholder={`Message ${agent.name}… or /assign, /remember, /task`}
-              statusLabel={<AgentStatusLine agent={agent} conversationId={conversationId} />}
+              statusLabel={<AgentStatusLine agent={agent} conversationId={threadOpenId} />}
               busy={busy}
-              onStop={() => useAppStore.getState().stopGeneration()}
+              onStop={() => {
+                if (inServerMode) void stopActiveServerRun()
+                else useAppStore.getState().stopGeneration()
+              }}
               onSend={handleSend}
               actions={quickActions.map((action) => ({
                 id: action.id,
@@ -571,12 +635,31 @@ function EffectiveConfig({ agent }: { agent: AgentProfile }) {
   )
 }
 
-function MemoryPanel({ agentId }: { agentId: string }) {
+export function MemoryPanel({ agentId }: { agentId: string }) {
   const agent = useAgentsStore((state) => state.agents[agentId])
   const notes = useAgentsStore((state) => state.memoryNotes)
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+
+  // T016 — server mode: notes live on the linked server employee (the
+  // same identity Chat and Assign task use); the panel loads them from
+  // the memory service and writes through it. Local mode is unchanged.
+  const serverStatus = useServerSessionStore((state) => state.status)
+  const serverMemoryNotes = useServerSessionStore((state) => state.serverMemoryNotes)
+  const serverMemoryLoading = useServerSessionStore((state) => state.serverMemoryLoading)
+  const serverMemoryError = useServerSessionStore((state) => state.serverMemoryError)
+  const loadServerMemoryNotes = useServerSessionStore((state) => state.loadServerMemoryNotes)
+  const addServerMemoryNoteFor = useServerSessionStore((state) => state.addServerMemoryNoteFor)
+  const removeServerMemoryNote = useServerSessionStore((state) => state.removeServerMemoryNote)
+  const inServerMode = serverStatus === 'signed-in'
+  const linkedEmployeeId = agent?.serverEmployeeId ?? null
+
+  useEffect(() => {
+    if (inServerMode && linkedEmployeeId) {
+      void loadServerMemoryNotes(linkedEmployeeId)
+    }
+  }, [inServerMode, linkedEmployeeId, loadServerMemoryNotes])
 
   const mine = useMemo(
     () =>
@@ -586,9 +669,24 @@ function MemoryPanel({ agentId }: { agentId: string }) {
     [notes, agentId],
   )
 
-  function handleAdd() {
+  const serverNotes = linkedEmployeeId ? serverMemoryNotes[linkedEmployeeId] ?? [] : []
+
+  async function handleAdd() {
     const trimmed = draft.trim()
     if (!trimmed) return
+    if (inServerMode && linkedEmployeeId) {
+      const ok = await addServerMemoryNoteFor(linkedEmployeeId, trimmed)
+      if (ok) {
+        useAgentsStore.getState().addThreadEvent({
+          agentId,
+          kind: 'memory_note',
+          label: `Remembered: ${trimmed}`,
+          detail: 'Saved to this employee’s server memory — included in future requests.',
+        })
+        setDraft('')
+      }
+      return
+    }
     const noteId = useAgentsStore.getState().addMemoryNote(agentId, trimmed)
     if (noteId) {
       useAgentsStore.getState().addThreadEvent({
@@ -635,7 +733,47 @@ function MemoryPanel({ agentId }: { agentId: string }) {
           </Button>
         </div>
       </div>
-      {mine.length === 0 ? (
+      {inServerMode && linkedEmployeeId ? (
+        <div aria-label="Server memory notes">
+          {serverMemoryLoading && <p className="px-1 text-xs text-ink-faint">Loading notes…</p>}
+          {serverMemoryError && (
+            <p role="alert" className="px-1 text-xs text-danger">{serverMemoryError}</p>
+          )}
+          {!serverMemoryLoading && serverNotes.length === 0 && (
+            <p className="px-1 text-xs text-ink-faint">
+              No notes yet — add facts or preferences you want remembered on the server.
+            </p>
+          )}
+          {serverNotes.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {serverNotes.map((note) => (
+                <li key={note.id} className="rounded-[12px] border border-line bg-raised px-3.5 py-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-ink">{note.text}</p>
+                    <div className="flex shrink-0 gap-0.5">
+                      <button
+                        type="button"
+                        aria-label="Delete server note"
+                        onClick={() => {
+                          void removeServerMemoryNote(linkedEmployeeId, note.id)
+                        }}
+                        className="min-touch rounded-control p-1 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-1.5 px-1 text-[11px] text-ink-faint">
+            Notes are stored on your Uni server for this employee — redacted for
+            credential shapes before persistence — and are included in future
+            requests to this employee from every surface.
+          </p>
+        </div>
+      ) : mine.length === 0 ? (
         <p className="px-1 text-xs text-ink-faint">
           No notes yet — add facts or preferences you want remembered.
         </p>
@@ -941,5 +1079,105 @@ function RoutinesPanel({ agentId }: { agentId: string }) {
         </ul>
       )}
     </section>
+  )
+}
+
+
+/* ------------------------------------------------------------------ */
+/* Server-mode employee thread (T015)                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The employee's server conversation rendered with the same visual
+ * language as the Account section's server thread: active branch
+ * highlighted, other branches dimmed, the live run streaming in place,
+ * honest error display. Message trees (parent ids, siblings, active
+ * paths) come straight from the server conversation detail.
+ */
+function ServerEmployeeThread({
+  detail,
+  conversationId,
+  activeRun,
+  runError,
+  agentName,
+}: {
+  detail: ServerConversationDetail | null
+  conversationId: string | null
+  activeRun: ServerActiveRun | null
+  runError: string | null
+  agentName: string
+}) {
+  if (!detail || detail.id !== conversationId) {
+    return (
+      <div className="mx-auto w-full max-w-column px-4 py-10" aria-live="polite">
+        <div className="rounded-group border border-line bg-raised p-5 text-center">
+          <p className="text-[15px] font-semibold text-ink">Opening {agentName}'s server thread…</p>
+          <p className="mx-auto mt-1 max-w-sm text-sm leading-relaxed text-ink-soft">
+            The conversation lives on your Uni server and reloads from it every visit.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  const activePath = new Set<string>()
+  let cursor = detail.activeLeafId
+  const byId = new Map(detail.nodes.map((node) => [node.id, node]))
+  while (cursor) {
+    activePath.add(cursor)
+    const node = byId.get(cursor)
+    cursor = node?.parentId ?? null
+  }
+
+  const runIsLive =
+    activeRun !== null &&
+    activeRun.conversationId === detail.id &&
+    (activeRun.status === 'running' || activeRun.status === 'cancelling')
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto" aria-label={`Server conversation with ${agentName}`}>
+      <ol className="mx-auto flex w-full max-w-column flex-col gap-2 px-4 py-4">
+        {detail.nodes.map((node) => {
+          const onActiveBranch = activePath.has(node.id)
+          return (
+            <li
+              key={node.id}
+              className={`rounded-control px-2.5 py-1.5 text-[13px] leading-relaxed ${
+                onActiveBranch ? 'bg-subtle text-ink' : 'text-ink-faint opacity-70'
+              }`}
+            >
+              <span className="mr-1.5 font-medium">
+                {node.role === 'user' ? 'You' : agentName}
+                {!onActiveBranch && ' · other branch'}
+                {node.status === 'stopped' && ' · stopped'}
+                {node.status === 'error' && ' · error'}
+              </span>
+              <span className="whitespace-pre-wrap">{node.content}</span>
+            </li>
+          )
+        })}
+        {activeRun && activeRun.conversationId === detail.id && (
+          <li className="rounded-control bg-subtle px-2.5 py-1.5 text-[13px] leading-relaxed text-ink">
+            <span className="mr-1.5 font-medium">
+              {agentName}
+              {activeRun.status === 'running' && ' · streaming…'}
+              {activeRun.status === 'cancelling' && ' · stopping…'}
+              {activeRun.status === 'stopped' && ' · stopped'}
+              {activeRun.status === 'repetition_stopped' && ' · stopped — repetitive output'}
+              {activeRun.status === 'error' && ' · error'}
+            </span>
+            <span className="whitespace-pre-wrap">{activeRun.text}</span>
+            {activeRun.errorMessage && (
+              <span className="mt-1 block text-[12px] text-danger">{activeRun.errorMessage}</span>
+            )}
+          </li>
+        )}
+        {runError && !runIsLive && (
+          <li role="alert" className="rounded-control border border-danger/40 bg-danger-soft/30 px-2.5 py-1.5 text-[12.5px] text-danger">
+            {runError}
+          </li>
+        )}
+      </ol>
+    </div>
   )
 }

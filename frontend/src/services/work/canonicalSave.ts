@@ -35,6 +35,55 @@ export interface CanonicalSaveResult {
 
 export class CanonicalSaveError extends Error {}
 
+/**
+ * T017 — server-mode write-through. When signed in, the canonical save
+ * ALSO persists through the server's canonical-save endpoint (the one
+ * operation per source of truth there too): the local linked artifact's
+ * serverArtifactId rides as linkedArtifactId so the server dedups to
+ * the same artifact and records an immutable version; the first save
+ * links the local artifact to the returned server id. Local mode: no
+ * call, no link, local behavior unchanged. A server failure surfaces
+ * honestly and never blocks the local save — the local Library stays
+ * usable offline; the server copy catches up on the next save.
+ */
+async function mirrorToServerLibrary(input: {
+  title: string
+  kind: Artifact['kind']
+  markdown: string
+  provenance: Artifact['provenance']
+  generatedBy: { providerId: string; modelId: string } | null
+  taskId: string | null
+  sourceConversationId: string | null
+  sourceMessageId: string | null
+  linkedServerArtifactId: string | null
+}): Promise<{ serverArtifactId: string; version: number } | null> {
+  const { useServerSessionStore } = await import('@/state/serverSessionStore')
+  const server = useServerSessionStore.getState()
+  if (server.status !== 'signed-in') return null
+  const { serverCanonicalSave } = await import('@/services/api/serverLibrary')
+  try {
+    const result = await serverCanonicalSave({
+      title: input.title,
+      kind: input.kind === 'email' ? 'email' : input.kind === 'data' ? 'data' : input.kind === 'document' ? 'document' : 'report',
+      markdown: input.markdown,
+      // The server Library records provider vs non-provider origin;
+      // every other local provenance maps to demo-simulation.
+      provenance:
+        input.provenance === 'provider-generated' ? 'provider-generated' : 'demo-simulation',
+      generatedBy: input.generatedBy,
+      taskId: input.taskId,
+      sourceConversationId: input.sourceConversationId,
+      sourceMessageId: input.sourceMessageId,
+      linkedArtifactId: input.linkedServerArtifactId,
+    })
+    return { serverArtifactId: result.artifactId, version: result.version }
+  } catch {
+    // Honest failure: the local save already succeeded; the server copy
+    // is simply not updated this time. No fabricated success, no throw.
+    return null
+  }
+}
+
 function reportKind(template: 'research' | 'data' | 'email' | 'draft'): Artifact['kind'] {
   if (template === 'email') return 'email'
   if (template === 'data') return 'data'
@@ -47,7 +96,7 @@ function reportKind(template: 'research' | 'data' | 'email' | 'draft'): Artifact
  * current report. Throws `CanonicalSaveError` with a user-presentable
  * message when there is nothing to save.
  */
-export function saveTaskReportToLibrary(taskId: string): CanonicalSaveResult {
+export async function saveTaskReportToLibrary(taskId: string): Promise<CanonicalSaveResult> {
   const task = useWorkStore.getState().tasks[taskId]
   if (!task) throw new CanonicalSaveError('That task no longer exists.')
   const report = task.report
@@ -66,6 +115,27 @@ export function saveTaskReportToLibrary(taskId: string): CanonicalSaveResult {
   if (linkedId) {
     const linked = library.artifacts[linkedId]
     if (linked) {
+      // T017 — server mode mirrors through the server's canonical save;
+      // the local link rides as linkedArtifactId for same-source dedup,
+      // and the first mirror records the server twin on the local row.
+      const mirrored = await mirrorToServerLibrary({
+        title,
+        kind,
+        markdown: report.markdown,
+        provenance:
+          provenance === 'provider-generated' ? 'provider-generated' : 'demo-simulation',
+        generatedBy:
+          generatedBy && 'providerId' in generatedBy && 'modelId' in generatedBy
+            ? { providerId: String(generatedBy.providerId ?? ''), modelId: String(generatedBy.modelId ?? '') }
+            : null,
+        taskId,
+        sourceConversationId: null,
+        sourceMessageId: null,
+        linkedServerArtifactId: linked.serverArtifactId ?? null,
+      })
+      if (mirrored) {
+        useLibraryStore.getState().linkServerArtifact(linked.id, mirrored.serverArtifactId)
+      }
       // Update in place — and only when something actually changed, so
       // repeated saves never churn `updatedAt` or create noise.
       if (linked.title !== title) library.renameArtifact(linkedId, title)
@@ -77,6 +147,20 @@ export function saveTaskReportToLibrary(taskId: string): CanonicalSaveResult {
     // task and the Library agree again instead of silently duplicating.
   }
 
+  const mirror = await mirrorToServerLibrary({
+    title,
+    kind,
+    markdown: report.markdown,
+    provenance,
+    generatedBy:
+      generatedBy && 'providerId' in generatedBy && 'modelId' in generatedBy
+        ? { providerId: String(generatedBy.providerId ?? ''), modelId: String(generatedBy.modelId ?? '') }
+        : null,
+    taskId,
+    sourceConversationId: null,
+    sourceMessageId: null,
+    linkedServerArtifactId: null,
+  })
   const artifactId = library.addArtifact({
     title,
     kind,
@@ -84,6 +168,7 @@ export function saveTaskReportToLibrary(taskId: string): CanonicalSaveResult {
     provenance,
     generatedBy,
     taskId,
+    serverArtifactId: mirror?.serverArtifactId ?? null,
   })
   useWorkStore.getState().attachArtifactToReport(taskId, artifactId)
   useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId })
@@ -112,7 +197,9 @@ function originOfReply(node: MessageNode): {
  * conversation. Never selects a sibling from an unseen branch, and keeps
  * the reply's live/demo origin.
  */
-export function saveActiveReplyToLibrary(conversationId: string): CanonicalSaveResult {
+export async function saveActiveReplyToLibrary(
+  conversationId: string,
+): Promise<CanonicalSaveResult> {
   const conversation: Conversation | undefined =
     useAppStore.getState().conversations[conversationId]
   if (!conversation) throw new CanonicalSaveError('This conversation no longer exists.')
@@ -141,6 +228,21 @@ export function saveActiveReplyToLibrary(conversationId: string): CanonicalSaveR
     (artifact) => artifact.source?.messageId === assistant.id,
   )
   if (existing) {
+    // T017 — server mirror with the local link for same-source dedup.
+    const mirrored = await mirrorToServerLibrary({
+      title,
+      kind: 'document',
+      markdown: assistant.content,
+      provenance,
+      generatedBy: null,
+      taskId: null,
+      sourceConversationId: conversationId,
+      sourceMessageId: assistant.id,
+      linkedServerArtifactId: existing.serverArtifactId ?? null,
+    })
+    if (mirrored) {
+      useLibraryStore.getState().linkServerArtifact(existing.id, mirrored.serverArtifactId)
+    }
     if (existing.title !== title) library.renameArtifact(existing.id, title)
     if (existing.markdown !== assistant.content) {
       library.updateArtifact(existing.id, assistant.content)
@@ -149,6 +251,19 @@ export function saveActiveReplyToLibrary(conversationId: string): CanonicalSaveR
     return { artifactId: existing.id, created: false, recreated: false, title }
   }
 
+  // T017 — first server save: the server dedups by sourceMessageId if
+  // this reply was already saved from another surface.
+  const mirror = await mirrorToServerLibrary({
+    title,
+    kind: 'document',
+    markdown: assistant.content,
+    provenance,
+    generatedBy: null,
+    taskId: null,
+    sourceConversationId: conversationId,
+    sourceMessageId: assistant.id,
+    linkedServerArtifactId: null,
+  })
   const artifactId = library.addArtifact({
     title,
     kind: 'document',
@@ -163,6 +278,7 @@ export function saveActiveReplyToLibrary(conversationId: string): CanonicalSaveR
         }
       : null,
     source: { conversationId, messageId: assistant.id, taskId: null },
+    serverArtifactId: mirror?.serverArtifactId ?? null,
   })
   useWorkspaceUiStore.getState().openInspector({ tab: 'canvas', artifactId })
   return { artifactId, created: true, recreated: false, title }

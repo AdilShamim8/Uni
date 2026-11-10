@@ -91,20 +91,60 @@ export const agentSessionDtoSchema = z.object({
 })
 export type AgentSessionDto = z.infer<typeof agentSessionDtoSchema>
 
+/* ------------------------------------------------------------------ */
+/* Session root safety (F01)                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The one gate a rootDir string must pass before it may influence a
+ * filesystem path: a RELATIVE path of forward-slash-joined safe
+ * segments. Absolute paths, `..`/`.` segments (and any segment
+ * CONTAINING `..`), backslashes, NULs and empty segments all fail, so a
+ * stored rootDir can never traverse out of the workspace agent root.
+ * Server-derived roots (`sessions/<sessionId>`) pass trivially.
+ */
+export function isValidRootDir(value: string): boolean {
+  if (value.length === 0 || value.length > 500) return false
+  // Trailing slashes are cosmetic; strip them so 'sessions/x/' is valid.
+  const trimmed = value.replace(/\/+$/, '')
+  if (trimmed.length === 0) return false
+  if (trimmed.startsWith('/') || trimmed.includes('\\') || trimmed.includes('\0')) return false
+  return trimmed.split('/').every((segment) => {
+    if (segment.length === 0 || segment.length > 200) return false
+    if (segment === '.' || segment.includes('..')) return false
+    return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(segment)
+  })
+}
+
 export const createAgentSessionRequestSchema = z.object({
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().max(2_000).optional(),
   mode: agentModeSchema.exclude(['unattended']).optional(),
   providerId: z.string().trim().min(1).max(200).nullable().optional(),
   modelId: z.string().trim().min(1).max(200).nullable().optional(),
+  /**
+   * Optional sub-organization INSIDE the session's server-owned
+   * directory. The server always prefixes the session's own id, so two
+   * sessions can never share (or collide into) a root, and traversal
+   * forms are rejected here before they reach the filesystem (F01).
+   */
   rootDir: z
     .string()
     .trim()
     .min(1)
     .max(500)
-    .regex(/^[a-zA-Z0-9][a-zA-Z0-9._\-/]*$/)
+    .refine(isValidRootDir, {
+      message:
+        'rootDir must be a relative path of safe segments (no absolute paths, "..", "." or backslashes).',
+    })
     .optional(),
   tools: z.array(z.string().trim().min(1).max(100)).max(64).optional(),
+  /**
+   * T008/T018 — execute as this employee: its instructions join the run
+   * prompt. A soft pin (no FK): a deleted employee means no employee
+   * context, never a broken session.
+   */
+  employeeId: z.string().trim().min(1).max(200).nullable().optional(),
 })
 export type CreateAgentSessionRequest = z.infer<typeof createAgentSessionRequestSchema>
 
@@ -117,6 +157,7 @@ export const patchAgentSessionRequestSchema = z
     modelId: z.string().trim().min(1).max(200).nullable().optional(),
     tools: z.array(z.string().trim().min(1).max(100)).max(64).optional(),
     archived: z.boolean().optional(),
+    employeeId: z.string().trim().min(1).max(200).nullable().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: 'No fields to update.' })
 export type PatchAgentSessionRequest = z.infer<typeof patchAgentSessionRequestSchema>
@@ -304,6 +345,19 @@ export const agentEventPayloadSchema = z.object({
 })
 export type AgentEventPayload = z.infer<typeof agentEventPayloadSchema>
 
+/**
+ * The SSE cursor contract (F05): `after` is the LAST sequence the client
+ * saw; events strictly greater follow. `-1` (or omitted → 0 semantics
+ * preserved for old clients) — new subscribers pass -1 to receive
+ * sequence 0. Optionally scope the stream's END to one run: a terminal
+ * for a DIFFERENT run in the same session must not close the stream.
+ */
+export const agentEventsQuerySchema = z.object({
+  after: z.coerce.number().int().min(-1).default(0),
+  runId: z.string().min(1).max(100).optional(),
+})
+export type AgentEventsQuery = z.infer<typeof agentEventsQuerySchema>
+
 export const agentEventSchema = z.object({
   eventId: z.string().min(1),
   sessionId: z.string().min(1),
@@ -342,6 +396,9 @@ export const agentRunDtoSchema = z.object({
   modelId: z.string().nullable(),
   errorCode: z.string().nullable(),
   errorMessage: z.string().nullable(),
+  /** Usage summed across the run's model steps (null when unreported). */
+  inputTokens: z.number().int().nonnegative().nullable().optional(),
+  outputTokens: z.number().int().nonnegative().nullable().optional(),
   createdAt: z.number().int().nonnegative(),
   finishedAt: z.number().int().nonnegative().nullable(),
 })

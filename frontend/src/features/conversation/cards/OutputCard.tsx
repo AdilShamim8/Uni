@@ -39,9 +39,9 @@ export function OutputCard({ entry }: { entry: OutputCardEntry }) {
   // m07: routine actions live next to the output — no detour through
   // Details. Save/Update goes through the SAME canonical operation as
   // the Outputs panel and the Documents plugin.
-  function handleSave() {
+  async function handleSave() {
     try {
-      const result = saveTaskReportToLibrary(entry.taskId)
+      const result = await saveTaskReportToLibrary(entry.taskId)
       showToast(
         result.created ? 'Saved to Library' : 'Library copy updated',
         {

@@ -194,6 +194,13 @@ export interface AgentProfile {
   archived: boolean
   /** Built-in profiles cannot be deleted, only archived or edited. */
   builtin: boolean
+  /**
+   * T016 — the linked server employee id in server mode. Set on first
+   * server use (ensureServerEmployee); Chat, Assign task and memory all
+   * resolve to THIS id, so the employee is one identity everywhere.
+   * Null in local mode or before the first server use.
+   */
+  serverEmployeeId?: string | null
   createdAt: number
   updatedAt: number
 }
@@ -308,6 +315,14 @@ export interface Artifact {
     | 'provider-generated'
   /** For provider-generated artifacts: the effective model snapshot. */
   generatedBy: AiDraftModel | null
+  /**
+   * T017 — the linked server artifact id once this artifact has been
+   * saved to the server Library in server mode. Canonical saves reuse
+   * it as linkedArtifactId so the server's same-source dedup and
+   * immutable versioning apply. Null in local mode or before the first
+   * server save.
+   */
+  serverArtifactId?: string | null
 }
 
 export interface Project {

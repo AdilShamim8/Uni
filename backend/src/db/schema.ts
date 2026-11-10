@@ -542,6 +542,13 @@ export const agentSessions = pgTable(
     rootDir: text('root_dir').notNull(),
     tools: jsonb('tools').$type<string[]>(),
     archived: boolean('archived').notNull().default(false),
+    /**
+     * Optional employee (AI worker profile) this session executes as
+     * (T008): instructions and memory come from the linked employee at
+     * run time. Soft reference (no FK) like providerId — the pin must
+     * survive employee deletion and fail honestly at send time.
+     */
+    employeeId: text('employee_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -576,6 +583,9 @@ export const agentRuns = pgTable(
     requestFingerprint: text('request_fingerprint'),
     errorCode: text('error_code'),
     errorMessage: text('error_message'),
+    /** Usage summed across the run's model steps (null when the provider reported none). */
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     terminalAt: timestamp('terminal_at', { withTimezone: true }),
@@ -664,6 +674,40 @@ export const agentPendingPermissions = pgTable(
 )
 
 /* ------------------------------------------------------------------ */
+/* Session transcript (F03/T008) — structured ModelMessage persistence */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One persisted transcript message of a session, in send order: the
+ * user's message, the assistant's structured turns (tool-call parts
+ * included), and tool results — everything the next run needs to
+ * reconstruct prior context via the AI SDK's ModelMessage shapes. The
+ * sequence is per-session and monotonic under the same advisory-lock
+ * discipline as agent_event.
+ */
+export const agentTurns = pgTable(
+  'agent_turn',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => agentSessions.id, { onDelete: 'cascade' }),
+    runId: text('run_id').references(() => agentRuns.id, { onDelete: 'set null' }),
+    sequence: integer('sequence').notNull(),
+    /** The AI SDK ModelMessage, verbatim (role + content parts). */
+    message: jsonb('message').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('agent_turn_session_sequence_idx').on(table.sessionId, table.sequence),
+    index('agent_turn_run_idx').on(table.runId),
+  ],
+)
+
+/* ------------------------------------------------------------------ */
 /* Routines (abacusai-bot cron-scheduler port) — scheduled agent runs   */
 /* ------------------------------------------------------------------ */
 
@@ -746,6 +790,111 @@ export type AgentAllowanceRow = typeof agentAllowances.$inferSelect
 export type NewAgentAllowanceRow = typeof agentAllowances.$inferInsert
 export type AgentPendingPermissionRow = typeof agentPendingPermissions.$inferSelect
 export type NewAgentPendingPermissionRow = typeof agentPendingPermissions.$inferInsert
+export type AgentTurnRow = typeof agentTurns.$inferSelect
+export type NewAgentTurnRow = typeof agentTurns.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* Durable jobs (T013) — outbox closing the run-row/queue gap          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The transactional outbox: rows committed in the SAME transaction as
+ * their application row (the run), then dispatched to pg-boss and
+ * marked sent. A crash between commit and dispatch leaves the row
+ * unsent — the reconciler re-sends it — and a crash between send and
+ * mark-sent is safe because the queue entry is singleton-keyed by run
+ * id. Payloads carry ONLY identifiers, never credentials.
+ */
+export const jobOutbox = pgTable(
+  'job_outbox',
+  {
+    id: text('id').primaryKey(),
+    kind: text('kind').notNull(),
+    runId: text('run_id'),
+    workspaceId: text('workspace_id').notNull(),
+    sessionId: text('session_id'),
+    /** JobPayload as JSON — identifiers only. */
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('job_outbox_sent_idx').on(table.sentAt, table.createdAt),
+    index('job_outbox_run_idx').on(table.runId),
+  ],
+)
+export type JobOutboxRow = typeof jobOutbox.$inferSelect
+export type NewJobOutboxRow = typeof jobOutbox.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* Work (T018) — durable tasks + revision runs + receipts              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A durable Work task: a goal delegated to an employee, executed as
+ * agent runs inside a session, producing a canonical Library artifact.
+ * Status mirrors the frontend task machine; employeeId/sessionId are
+ * soft pins (like the agent session's own pins) so a deleted employee
+ * or session leaves the task intact and honestly re-assignable.
+ */
+export const workTasks = pgTable(
+  'work_task',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    goal: text('goal').notNull().default(''),
+    deliverable: text('deliverable').notNull().default('generic'),
+    status: text('status').notNull().default('draft'),
+    employeeId: text('employee_id'),
+    sessionId: text('session_id'),
+    activeRunId: text('active_run_id'),
+    artifactId: text('artifact_id'),
+    statusLabel: text('status_label').notNull().default('Draft'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('work_task_workspace_updated_idx').on(table.workspaceId, table.updatedAt),
+    index('work_task_status_idx').on(table.status),
+  ],
+)
+
+/**
+ * One durable execution attempt: the agent run it delegated to, the
+ * revision number (follow-ups are 2+), and how it ended. Receipts
+ * (T020) persist the sources/tools/provenance that actually happened.
+ */
+export const workRuns = pgTable(
+  'work_run',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => workTasks.id, { onDelete: 'cascade' }),
+    revision: integer('revision').notNull(),
+    agentRunId: text('agent_run_id').notNull(),
+    status: text('status').notNull().default('running'),
+    outcome: text('outcome'),
+    /** WorkRunReceipts as JSON — bounded, secret-free. */
+    receipts: jsonb('receipts'),
+    startedAt: timestamp('started_at', { withTimezone: true }).notNull().defaultNow(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('work_run_task_idx').on(table.taskId, table.revision),
+    uniqueIndex('work_run_agent_run_uq').on(table.agentRunId),
+  ],
+)
+export type WorkTaskRow = typeof workTasks.$inferSelect
+export type NewWorkTaskRow = typeof workTasks.$inferInsert
+export type WorkRunRow = typeof workRuns.$inferSelect
+export type NewWorkRunRow = typeof workRuns.$inferInsert
 export type RoutineRow = typeof routines.$inferSelect
 export type NewRoutineRow = typeof routines.$inferInsert
 export type RoutineRunRow = typeof routineRuns.$inferSelect
