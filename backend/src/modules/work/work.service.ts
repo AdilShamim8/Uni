@@ -184,13 +184,41 @@ export async function startWorkTask(
   }
 
   // Provision the durable session on first start (or reuse the task's).
+  // The session inherits the EMPLOYEE's pinned provider/model when one
+  // is linked (the employee row owns that preference); without an
+  // employee the run fails honestly at the provider-resolution step,
+  // exactly like a bare agent session without a pin.
   let sessionId = task.sessionId
   if (!sessionId) {
+    let providerPin: { providerId: string | null; modelId: string | null } = {
+      providerId: null,
+      modelId: null,
+    }
+    if (task.employeeId) {
+      const employeeRows = await db
+        .select({ providerId: schema.employees.providerId, modelId: schema.employees.modelId })
+        .from(schema.employees)
+        .where(
+          and(
+            eq(schema.employees.id, task.employeeId),
+            eq(schema.employees.workspaceId, workspaceId),
+          ),
+        )
+        .limit(1)
+      if (employeeRows[0]) {
+        providerPin = {
+          providerId: employeeRows[0].providerId ?? null,
+          modelId: employeeRows[0].modelId ?? null,
+        }
+      }
+    }
     const session = await createSession(db, workspaceId, {
       name: `Work: ${task.title}`,
       description: `Durable execution session for the Work task "${task.title}".`,
       mode: 'default',
       tools: rosterForDeliverable(task.deliverable as WorkTaskDeliverable),
+      providerId: providerPin.providerId,
+      modelId: providerPin.modelId,
       ...(task.employeeId ? { employeeId: task.employeeId } : {}),
     })
     sessionId = session.id
