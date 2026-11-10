@@ -90,13 +90,15 @@ export function EmployeeView({
   const stopActiveServerRun = useServerSessionStore((state) => state.stopActiveServerRun)
   const inServerMode = serverStatus === 'signed-in'
   const [serverThreadId, setServerThreadId] = useState<string | null>(null)
-  /** The thread id driving the composer in whichever mode is active. */
+  /**
+   * The thread id driving the composer in whichever mode is active.
+   * In local mode the stored server thread id is ignored (treated as
+   * null) instead of being reset by an effect — the store stays warm
+   * for a return to server mode in the same session.
+   */
   const threadOpenId = inServerMode ? serverThreadId : conversationId
   useEffect(() => {
-    if (!inServerMode) {
-      setServerThreadId(null)
-      return
-    }
+    if (!inServerMode) return
     let cancelled = false
     void openServerAgentConversation(agentId, agent?.name ?? 'Employee thread').then((id) => {
       if (!cancelled) setServerThreadId(id ?? null)

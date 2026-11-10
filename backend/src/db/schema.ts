@@ -65,6 +65,8 @@ export const workspaces = pgTable('workspace', {
   ownerId: text('owner_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
+  /** T021 — plugin ids enabled for this workspace (the admin gate). */
+  enabledPlugins: jsonb('enabled_plugins').$type<string[]>().notNull().default([]),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
@@ -895,7 +897,92 @@ export type WorkTaskRow = typeof workTasks.$inferSelect
 export type NewWorkTaskRow = typeof workTasks.$inferInsert
 export type WorkRunRow = typeof workRuns.$inferSelect
 export type NewWorkRunRow = typeof workRuns.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* Plugins (T021) — grants + receipts                                  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A per-thread grant: permission to use ONE plugin in ONE thread.
+ * Workspace enablement lives on the workspace row's enabledPlugins
+ * (the administrator gate); this is the user's per-thread gate.
+ */
+export const pluginGrants = pgTable(
+  'plugin_grant',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    pluginId: text('plugin_id').notNull(),
+    kind: text('kind').notNull(),
+    threadId: text('thread_id').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('plugin_grant_unique_idx').on(table.workspaceId, table.pluginId, table.kind, table.threadId),
+    index('plugin_grant_thread_idx').on(table.workspaceId, table.threadId),
+  ],
+)
+
+/** One execution receipt per plugin invocation (T021). */
+export const pluginReceipts = pgTable(
+  'plugin_receipt',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    pluginId: text('plugin_id').notNull(),
+    capability: text('capability').notNull(),
+    kind: text('kind').notNull(),
+    threadId: text('thread_id').notNull(),
+    runId: text('run_id'),
+    status: text('status').notNull(),
+    detail: text('detail').notNull().default(''),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('plugin_receipt_thread_idx').on(table.workspaceId, table.threadId, table.createdAt),
+  ],
+)
 export type RoutineRow = typeof routines.$inferSelect
 export type NewRoutineRow = typeof routines.$inferInsert
 export type RoutineRunRow = typeof routineRuns.$inferSelect
 export type NewRoutineRunRow = typeof routineRuns.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* MCP servers (T023) — workspace-scoped remote tool providers         */
+/* ------------------------------------------------------------------ */
+
+/**
+ * A configured external MCP server. The bearer token (when present) is
+ * stored in the encrypted secret envelope — never in plain columns,
+ * never in API responses. Status reflects the last connect/test
+ * honestly. Tools are listed live from the remote (T024); nothing is
+ * cached beyond the last serverInfo.
+ */
+export const mcpServers = pgTable(
+  'mcp_server',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    url: text('url').notNull(),
+    /** 'none' | 'bearer'. */
+    authType: text('auth_type').notNull().default('none'),
+    /** secretBox envelope JSON for the bearer token; null when none. */
+    authSecret: text('auth_secret'),
+    status: text('status').notNull().default('disconnected'),
+    lastError: text('last_error'),
+    /** { name, version } from the last successful connect; null otherwise. */
+    serverInfo: jsonb('server_info'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('mcp_server_workspace_idx').on(table.workspaceId, table.name)],
+)
+export type McpServerRow = typeof mcpServers.$inferSelect
+export type NewMcpServerRow = typeof mcpServers.$inferInsert

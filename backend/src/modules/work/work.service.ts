@@ -13,7 +13,12 @@ import {
 } from '@uni/contracts'
 import { AppError } from '../../lib/errors.js'
 import { createSession } from '../agent/agentSession.service.js'
-import { createAgentRun, type RunEngineDeps } from '../agent/agentRun.service.js'
+import {
+  createAgentRun,
+  cancelAgentRun,
+  type RunEngineDeps,
+} from '../agent/agentRun.service.js'
+import { agentRuns } from '../../db/schema.js'
 
 /**
  * The Work service (T018): durable tasks over the agent engine.
@@ -184,13 +189,41 @@ export async function startWorkTask(
   }
 
   // Provision the durable session on first start (or reuse the task's).
+  // The session inherits the EMPLOYEE's pinned provider/model when one
+  // is linked (the employee row owns that preference); without an
+  // employee the run fails honestly at the provider-resolution step,
+  // exactly like a bare agent session without a pin.
   let sessionId = task.sessionId
   if (!sessionId) {
+    let providerPin: { providerId: string | null; modelId: string | null } = {
+      providerId: null,
+      modelId: null,
+    }
+    if (task.employeeId) {
+      const employeeRows = await db
+        .select({ providerId: schema.employees.providerId, modelId: schema.employees.modelId })
+        .from(schema.employees)
+        .where(
+          and(
+            eq(schema.employees.id, task.employeeId),
+            eq(schema.employees.workspaceId, workspaceId),
+          ),
+        )
+        .limit(1)
+      if (employeeRows[0]) {
+        providerPin = {
+          providerId: employeeRows[0].providerId ?? null,
+          modelId: employeeRows[0].modelId ?? null,
+        }
+      }
+    }
     const session = await createSession(db, workspaceId, {
       name: `Work: ${task.title}`,
       description: `Durable execution session for the Work task "${task.title}".`,
       mode: 'default',
       tools: rosterForDeliverable(task.deliverable as WorkTaskDeliverable),
+      providerId: providerPin.providerId,
+      modelId: providerPin.modelId,
       ...(task.employeeId ? { employeeId: task.employeeId } : {}),
     })
     sessionId = session.id
@@ -263,6 +296,91 @@ export async function deleteWorkTask(
     .where(and(eq(workTasks.id, taskId), eq(workTasks.workspaceId, workspaceId)))
     .returning({ id: workTasks.id })
   return deleted.length > 0
+}
+
+/**
+ * Cancel a running task: delegate to the engine's cancel (one-way
+ * terminal; the T020 sync will map stopped → cancelled on the work
+ * rows when the run settles).
+ */
+export async function cancelWorkTask(
+  deps: RunEngineDeps,
+  workspaceId: string,
+  taskId: string,
+): Promise<'cancelled' | 'not_found' | 'not_running' | 'already_terminal'> {
+  const { db } = deps
+  const rows = await db
+    .select()
+    .from(workTasks)
+    .where(and(eq(workTasks.id, taskId), eq(workTasks.workspaceId, workspaceId)))
+    .limit(1)
+  const task = rows[0]
+  if (!task) return 'not_found'
+  if (task.status !== 'running' || !task.activeRunId) return 'not_running'
+
+  const outcome = await cancelAgentRun(deps, workspaceId, task.activeRunId)
+  return outcome === 'not_found' ? 'not_running' : outcome
+}
+
+/**
+ * Answer a blocked task: the answer becomes the next user message in
+ * the task's agent session (a follow-up run admitted through the
+ * normal path, revision+1). A task that is not running/blocked has
+ * nothing to answer — an honest 409.
+ */
+export async function answerWorkTask(
+  deps: RunEngineDeps,
+  workspaceId: string,
+  taskId: string,
+  answer: string,
+): Promise<{ task: WorkTaskDto; run: WorkRunDto } | 'not_found' | 'not_blocked'> {
+  const { db, env } = deps
+  void env
+  const rows = await db
+    .select()
+    .from(workTasks)
+    .where(and(eq(workTasks.id, taskId), eq(workTasks.workspaceId, workspaceId)))
+    .limit(1)
+  const task = rows[0]
+  if (!task) return 'not_found'
+  if (task.status !== 'blocked' && task.status !== 'running') return 'not_blocked'
+  if (!task.sessionId) return 'not_blocked'
+
+  const maxRow = await db
+    .select({ max: sql<number | null>`max(${workRuns.revision})` })
+    .from(workRuns)
+    .where(eq(workRuns.taskId, taskId))
+  const revision = (maxRow[0]?.max ?? 0) + 1
+
+  const { runId: agentRunId } = await createAgentRun(deps, {
+    workspaceId,
+    sessionId: task.sessionId,
+    text: answer,
+    idempotencyKey: `work-${taskId}-r${revision}`,
+  })
+
+  const runInserted = await db
+    .insert(workRuns)
+    .values({
+      id: randomUUID(),
+      workspaceId,
+      taskId,
+      revision,
+      agentRunId,
+      status: 'running',
+      outcome: null,
+      receipts: null,
+    })
+    .returning()
+
+  const updated = await db
+    .update(workTasks)
+    .set({ status: 'running', activeRunId: agentRunId, statusLabel: STATUS_LABELS.running, updatedAt: new Date() })
+    .where(eq(workTasks.id, taskId))
+    .returning()
+
+  if (!updated[0] || !runInserted[0]) throw new Error('Work answer update returned no row')
+  return { task: serializeTask(updated[0]), run: serializeRun(runInserted[0]) }
 }
 
 export { serializeTask, serializeRun, STATUS_LABELS }

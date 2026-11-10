@@ -20,6 +20,15 @@ export const agentToolNameSchema = z.enum([
   'exit_plan_mode',
   'current_time',
   'todo',
+  /**
+   * T024 — call a tool on a workspace-configured MCP server by its
+   * NAMESPACED name (<server-slug>__<tool>). Always treated as
+   * mutating for gating purposes (the remote's readOnly hint is an
+   * untrusted hint, never an access decision), the result is bounded
+   * before the model sees it, and the call is abortable + time-bounded
+   * at the transport.
+   */
+  'mcp_call',
 ])
 export type AgentToolName = z.infer<typeof agentToolNameSchema>
 
@@ -166,6 +175,12 @@ export const toolInputSchemas = {
         }),
       )
       .max(50),
+  }),
+  mcp_call: z.object({
+    /** The namespaced tool: <server-slug>__<tool-name>. */
+    tool: z.string().trim().min(1).max(300),
+    /** Bounded JSON arguments for the remote tool. */
+    args: z.record(z.string(), z.unknown()).optional(),
   }),
 } as const
 

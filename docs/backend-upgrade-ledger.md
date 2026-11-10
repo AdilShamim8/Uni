@@ -53,18 +53,18 @@ this upgrade (not inherited from older docs).
 | T011 | P03 | F05 SSE cursor + run/session lifetimes | done | commits 23-25: after=-1 delivers sequence 0; runId-scoped stream ends only at its own terminal; serialized drains + backpressure + close cleanup |
 | T012 | P03 | F06 atomic admission + terminal guards | done | commits 26-27: advisory-lock admission transaction (caps+insert+started event), unique-index recovery, one-way terminals; 3 tests green |
 | T013 | P03 | Durable worker ownership (jobs module) | done | commits 28-30: pg-boss 10.4.2 + job_outbox (migration 0014) + worker.ts; boot reconciliation prevents zombie resume; payloads carry no credentials; 3 tests green |
-| T014 | P04 | Typed mode-aware service adapters | done | commits 33-37: typed clients (serverEmployees/serverLibrary/serverAgents, 14 tests) + generation-guarded store state/actions loaded on sign-in, cleared on sign-out |
-| T015 | P04 | Chat/employee surfaces use server runs | done | commit 38: EmployeeView opens the owned server conversation (find-or-create by agentId), renders the server thread with live run + honest errors, routes sends through sendServerMessage; local mode untouched (4/4 lifecycle tests) |
-| T016 | P04 | Agents + memory panel wired to services | todo | |
-| T017 | P04 | Library/Canvas canonical saves on server | todo | |
-| T018 | P05 | Work domain/API on durable runs | todo | |
-| T019 | P05 | WorkPage/TaskThread via adapters | todo | |
-| T020 | P05 | Context/receipts in the durable run record | todo | |
-| T021 | P06 | Plugin enablement + grants + receipts | todo | |
-| T022 | P06 | Server document/data/Library tools | todo | |
-| T023 | P07 | MCP server config + guarded transport | todo | |
-| T024 | P07 | Namespaced MCP tools through grants | todo | |
-| T025 | P07 | MCP settings UI in current surfaces | todo | |
+| T014 | P04 | Typed mode-aware service adapters | done | commits 33-37: typed clients (14 tests) + generation-guarded store state/actions |
+| T015 | P04 | Chat/employee surfaces use server runs | done | commit 38: EmployeeView opens owned server conversation (find-or-create by agentId), server thread renders live runs + honest errors |
+| T016 | P04 | Agents + memory panel wired to services | done | commits 42-45: agent→employee identity link (ensureServerEmployee) + dual-mode MemoryPanel on the memory service (4 tests) |
+| T017 | P04 | Library/Canvas canonical saves on server | done | commits 46-48: serverArtifactId link + canonical saves mirror through /library/canonical-save (linkedArtifactId dedup, 4 tests) |
+| T018 | P05 | Work domain/API on durable runs | done | commits 49-54: work contracts + migration 0015 + service + routes + 3 integration tests (session provisioning, employee pin, revision runs) |
+| T019 | P05 | WorkPage/TaskThread via adapters | done | commits 58-62: cancel/answer actions (honest 409s) + serverWork client + store slice + WorkHome/TaskThread server mode (local tests 21/21) |
+| T020 | P05 | Context/receipts in the durable run record | done | commits 55-57: resolveTerminal → syncWorkRunOutcome; task/run rows follow the terminal; receipts from the run's own events (sources/tools/provenance, no secrets); end-to-end test with permission answer |
+| T021 | P06 | Plugin enablement + grants + receipts | done | commits 63-65,67: plugins contracts + migration 0016 + two-gate registry (workspace enablement + per-thread grants) + bounded receipts + dispatch (6 tests) |
+| T022 | P06 | Server document/data/Library tools | done | commits 65-67: server capability execution in one dispatch path — library.search/attach over the Library service, documents.create validation, bounded CSV summary; refusals are denied receipts |
+| T023 | P07 | MCP server config + guarded transport | done | commits 69,75-79: MCP SDK 1.32.2; contracts + migration 0017 + service (secretBox bearer auth, guarded time-bounded StreamableHTTP transport, honest states) + routes; 5 tests against a real SDK-server fixture |
+| T024 | P07 | Namespaced MCP tools through grants | done | commits 80-83: mcp_call roster tool + run_mcp_tool gate variant (always asks — untrusted readOnly hint never relaxes it); callMcpToolForSession (exact slug match, 100k arg cap, abort signal on request options, TOOL_OUTPUT_CAP result); gated-loop integration test |
+| T025 | P07 | MCP settings UI in current surfaces | done | commits 84-86: serverMcp client + session-store slice (generation-guarded) + Plugins-page MCP section (add/test/disconnect/remove, token typed once, stdio honestly unsupported); frontend 544/544 + CI green |
 | T026 | P08 | Connector registry + status API | todo | |
 | T027 | P08 | GitHub connector | todo | |
 | T028 | P08 | Google OAuth connectors | todo | |

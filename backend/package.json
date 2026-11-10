@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Uni backend \u2014 TypeScript modular monolith (Fastify + PostgreSQL + Drizzle).",
+  "description": "Uni backend — TypeScript modular monolith (Fastify + PostgreSQL + Drizzle).",
   "license": "MIT",
   "engines": {
     "node": ">=20"
@@ -26,6 +26,7 @@
     "@ai-sdk/openai-compatible": "3.0.84",
     "@fastify/cors": "^11.4.0",
     "@fastify/static": "^10.1.8",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@uni/contracts": "file:../packages/contracts",
     "ai": "^7.0.159",
     "better-auth": "^1.7.13",
