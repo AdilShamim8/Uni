@@ -58,6 +58,14 @@ import {
   listServerAgentSessions,
   type ServerAgentSession,
 } from '@/services/api/serverAgents'
+import {
+  listServerWorkTasks,
+  createServerWorkTask,
+  startServerWorkTask,
+  cancelServerWorkTask,
+  answerServerWorkTask,
+  type ServerWorkTask,
+} from '@/services/api/serverWork'
 
 /**
  * Server-mode session state — kept strictly separate from the local app
@@ -204,6 +212,10 @@ interface ServerSessionState {
   serverAgentSessions: ServerAgentSession[]
   serverAgentSessionsLoading: boolean
 
+  /** Server Work tasks (T019), shown by the Work surface in server mode. */
+  serverWorkTasks: ServerWorkTask[]
+  serverWorkTasksLoading: boolean
+
   /** The run currently streaming into the open conversation, if any. */
   activeRun: {
     runId: string
@@ -285,6 +297,18 @@ interface ServerSessionState {
   /** Server agent sessions (T014). */
   loadServerAgentSessions: () => Promise<void>
 
+  /** Server Work (T019): list + lifecycle actions through the API. */
+  loadServerWorkTasks: () => Promise<void>
+  createServerWorkTaskFor: (input: {
+    title: string
+    goal?: string
+    deliverable?: 'research-report' | 'data-report' | 'email-draft' | 'document-draft' | 'generic'
+    employeeId?: string | null
+  }) => Promise<ServerWorkTask | null>
+  startServerWorkTaskFor: (taskId: string) => Promise<boolean>
+  cancelServerWorkTaskFor: (taskId: string) => Promise<boolean>
+  answerServerWorkTaskFor: (taskId: string, answer: string) => Promise<boolean>
+
   /** T016 — server memory notes for a linked employee. */
   loadServerMemoryNotes: (employeeId: string) => Promise<void>
   addServerMemoryNoteFor: (employeeId: string, text: string) => Promise<boolean>
@@ -332,6 +356,8 @@ const clearedServerData: Pick<
   | 'serverArtifactsLoading'
   | 'serverAgentSessions'
   | 'serverAgentSessionsLoading'
+  | 'serverWorkTasks'
+  | 'serverWorkTasksLoading'
 > = {
   account: null,
   error: null,
@@ -357,6 +383,8 @@ const clearedServerData: Pick<
   serverArtifactsLoading: false,
   serverAgentSessions: [],
   serverAgentSessionsLoading: false,
+  serverWorkTasks: [],
+  serverWorkTasksLoading: false,
 }
 
 export const useServerSessionStore = create<ServerSessionState>()((set, get) => {
@@ -419,6 +447,7 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         void get().loadServerEmployees()
         void get().loadServerArtifacts()
         void get().loadServerAgentSessions()
+        void get().loadServerWorkTasks()
         return true
       } catch (error) {
         if (!stillCurrent(generation)) return false
@@ -445,6 +474,7 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         void get().loadServerEmployees()
         void get().loadServerArtifacts()
         void get().loadServerAgentSessions()
+        void get().loadServerWorkTasks()
         return true
       } catch (error) {
         if (!stillCurrent(generation)) return false
@@ -1120,6 +1150,87 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     } catch (error) {
       if (!stillCurrent(generation)) return false
       set({ serverMemoryError: errorMessage(error) })
+      return false
+    }
+  },
+
+  loadServerWorkTasks: async () => {
+    const generation = get().sessionGeneration
+    set({ serverWorkTasksLoading: true })
+    try {
+      const items = await listServerWorkTasks()
+      if (!stillCurrent(generation)) return
+      set({ serverWorkTasks: items, serverWorkTasksLoading: false })
+    } catch {
+      if (!stillCurrent(generation)) return
+      set({ serverWorkTasksLoading: false })
+    }
+  },
+
+  createServerWorkTaskFor: async (input) => {
+    const generation = get().sessionGeneration
+    try {
+      const task = await createServerWorkTask(input)
+      if (!stillCurrent(generation)) return null
+      set((state) => ({ serverWorkTasks: [task, ...state.serverWorkTasks] }))
+      return task
+    } catch (error) {
+      if (!stillCurrent(generation)) return null
+      set({ runError: errorMessage(error) })
+      return null
+    }
+  },
+
+  startServerWorkTaskFor: async (taskId) => {
+    const generation = get().sessionGeneration
+    try {
+      const { task } = await startServerWorkTask(taskId)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverWorkTasks: state.serverWorkTasks.map((entry) =>
+          entry.id === taskId ? task : entry,
+        ),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ runError: errorMessage(error) })
+      return false
+    }
+  },
+
+  cancelServerWorkTaskFor: async (taskId) => {
+    const generation = get().sessionGeneration
+    try {
+      await cancelServerWorkTask(taskId)
+      if (!stillCurrent(generation)) return false
+      // The task flips to cancelled when the run settles (T020 sync);
+      // refresh to see it.
+      void get().loadServerWorkTasks()
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ runError: errorMessage(error) })
+      return false
+    }
+  },
+
+  answerServerWorkTaskFor: async (taskId, answer) => {
+    const generation = get().sessionGeneration
+    const trimmed = answer.trim()
+    if (!trimmed) return false
+    try {
+      const { task } = await answerServerWorkTask(taskId, trimmed)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverWorkTasks: state.serverWorkTasks.map((entry) =>
+          entry.id === taskId ? task : entry,
+        ),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ runError: errorMessage(error) })
       return false
     }
   },
