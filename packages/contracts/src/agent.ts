@@ -139,6 +139,12 @@ export const createAgentSessionRequestSchema = z.object({
     })
     .optional(),
   tools: z.array(z.string().trim().min(1).max(100)).max(64).optional(),
+  /**
+   * T008/T018 — execute as this employee: its instructions join the run
+   * prompt. A soft pin (no FK): a deleted employee means no employee
+   * context, never a broken session.
+   */
+  employeeId: z.string().trim().min(1).max(200).nullable().optional(),
 })
 export type CreateAgentSessionRequest = z.infer<typeof createAgentSessionRequestSchema>
 
@@ -151,6 +157,7 @@ export const patchAgentSessionRequestSchema = z
     modelId: z.string().trim().min(1).max(200).nullable().optional(),
     tools: z.array(z.string().trim().min(1).max(100)).max(64).optional(),
     archived: z.boolean().optional(),
+    employeeId: z.string().trim().min(1).max(200).nullable().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: 'No fields to update.' })
 export type PatchAgentSessionRequest = z.infer<typeof patchAgentSessionRequestSchema>
