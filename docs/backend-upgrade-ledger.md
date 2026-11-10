@@ -53,8 +53,8 @@ this upgrade (not inherited from older docs).
 | T011 | P03 | F05 SSE cursor + run/session lifetimes | done | commits 23-25: after=-1 delivers sequence 0; runId-scoped stream ends only at its own terminal; serialized drains + backpressure + close cleanup |
 | T012 | P03 | F06 atomic admission + terminal guards | done | commits 26-27: advisory-lock admission transaction (caps+insert+started event), unique-index recovery, one-way terminals; 3 tests green |
 | T013 | P03 | Durable worker ownership (jobs module) | done | commits 28-30: pg-boss 10.4.2 + job_outbox (migration 0014) + worker.ts; boot reconciliation prevents zombie resume; payloads carry no credentials; 3 tests green |
-| T014 | P04 | Typed mode-aware service adapters | todo | |
-| T015 | P04 | Chat/employee surfaces use server runs | todo | |
+| T014 | P04 | Typed mode-aware service adapters | done | commits 33-37: typed clients (serverEmployees/serverLibrary/serverAgents, 14 tests) + generation-guarded store state/actions loaded on sign-in, cleared on sign-out |
+| T015 | P04 | Chat/employee surfaces use server runs | done | commit 38: EmployeeView opens the owned server conversation (find-or-create by agentId), renders the server thread with live run + honest errors, routes sends through sendServerMessage; local mode untouched (4/4 lifecycle tests) |
 | T016 | P04 | Agents + memory panel wired to services | todo | |
 | T017 | P04 | Library/Canvas canonical saves on server | todo | |
 | T018 | P05 | Work domain/API on durable runs | todo | |
@@ -89,6 +89,35 @@ this upgrade (not inherited from older docs).
 | T047 | P14 | Reproducible deployment config | todo | |
 | T048 | P14 | Docs reconciled with final code | todo | |
 | T049 | P14 | Coherent commits + reviewable handoff | todo | |
+
+## Session end state (2026-11-10, this working session)
+
+Completed phases: **P00, P01, P02, P03 complete** (T001–T013) and
+**P04 partial** (T014 done, T015 done; T016/T017 not started this
+session). All seven audited P0 defects F01–F07 are fixed with
+regression coverage. Backend suite **330/330 across 36 files**;
+frontend typecheck + lint + the server-surface test slice green
+(employee lifecycle 4/4, server clients 14, account/fencing 45 total
+in the server slice).
+
+Honest limits of this session (why work stopped here):
+- T016 (Agents memory panel wiring to server memory) and T017
+  (Library/Canvas canonical saves) have typed clients + store actions
+  landed (T014) but the UI surfaces are not yet switched to them.
+- P05–P14 (durable Work, plugins, MCP, connectors, routines, files,
+  isolation, messaging, final verification, deployment) are not
+  started this session; their design anchors (worker, outbox,
+  admission, SSE semantics) are in place from P03.
+- The bash tool is inert on the host pending the P11 isolation worker
+  (UNI_AGENT_ISOLATED_EXECUTION); this is deliberate (F07).
+- No live provider/OAuth credentials were available; all verification
+  is against fixture providers (embedded PostgreSQL + scripted
+  OpenAI-compatible servers), as the spec directs for this stage.
+
+Next actions, in dependency order: T016 → T017 (both build on the
+landed clients), then P05 (Work on the durable worker — resumeAgentRun
++ the outbox are ready), then P09 routines (tables already exist from
+migration 0011).
 
 ## Rules carried from the spec
 
