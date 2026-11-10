@@ -176,6 +176,7 @@ async function readAgentSse(
   untilType?: string,
   timeoutMs = 30_000,
 ): Promise<SseResult> {
+  void untilType
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
@@ -188,6 +189,9 @@ async function readAgentSse(
     const reader = response.body!.getReader()
     const decoder = new TextDecoder()
     let buffer = ''
+    // The run whose terminal closes the stream (mirrors the server's
+    // runId scoping); a DIFFERENT run's terminal must not stop the read.
+    const endRunId = new URL(`${baseUrl}${path}`).searchParams.get('runId')
     try {
       for (;;) {
         const { done, value } = await reader.read()
@@ -201,12 +205,14 @@ async function readAgentSse(
           if (!dataLine) continue
           try {
             const event = JSON.parse(dataLine.slice(6)) as Record<string, unknown>
-            if (event.type === 'run_finished' || event.type === 'error') {
-              events.push(event)
+            events.push(event)
+            const isTerminal = event.type === 'run_finished' || event.type === 'error'
+            const terminalCloses =
+              isTerminal && (endRunId === null || event.runId === endRunId)
+            if (terminalCloses) {
               await reader.cancel()
               return { events }
             }
-            events.push(event)
             if (untilType && event.type === untilType) {
               await reader.cancel()
               return { events }
@@ -332,7 +338,7 @@ describe('agent runs — tool loop + permissions (F02/F03)', () => {
     expect(response.statusCode).toBe(201)
     const runId = body.runId!
 
-    const sse = await readAgentSse(baseUrl, `/api/v1/agent/sessions/${sessionId}/events?after=-1`, alice.cookie)
+    const sse = await readAgentSse(baseUrl, `/api/v1/agent/sessions/${sessionId}/events?after=-1&runId=${runId}`, alice.cookie)
     const types = sse.events.map((event) => event.type)
     expect(types).toContain('run_started')
     expect(types).toContain('tool_call_started')
@@ -369,7 +375,7 @@ describe('agent runs — tool loop + permissions (F02/F03)', () => {
     // Stream until the permission request arrives; grab the emitted id.
     const sse = await readAgentSse(
       baseUrl,
-      `/api/v1/agent/sessions/${sessionId}/events?after=-1`,
+      `/api/v1/agent/sessions/${sessionId}/events?after=-1&runId=${runId}`,
       alice.cookie,
       'permission_requested',
     )
@@ -417,7 +423,7 @@ describe('agent runs — tool loop + permissions (F02/F03)', () => {
     const runId = body.runId!
     const sse = await readAgentSse(
       baseUrl,
-      `/api/v1/agent/sessions/${sessionId}/events?after=-1`,
+      `/api/v1/agent/sessions/${sessionId}/events?after=-1&runId=${runId}`,
       alice.cookie,
       'permission_requested',
     )
@@ -456,7 +462,7 @@ describe('agent runs — tool loop + permissions (F02/F03)', () => {
 
     const { body } = await sendRun(sessionId, 'Read something')
     const runId = body.runId!
-    const sse = await readAgentSse(baseUrl, `/api/v1/agent/sessions/${sessionId}/events?after=-1`, alice.cookie)
+    const sse = await readAgentSse(baseUrl, `/api/v1/agent/sessions/${sessionId}/events?after=-1&runId=${runId}`, alice.cookie)
     const result = sse.events.find((event) => event.type === 'tool_call_result')
     expect(result).toBeDefined()
     expect((result!.payload as { toolResultStatus?: string }).toolResultStatus).toBe('error')
@@ -510,7 +516,7 @@ describe('agent runs — tool loop + permissions (F02/F03)', () => {
     const { body } = await sendRun(sessionId, 'Check the clock', 'usage-run')
     const runId = body.runId!
 
-    const sse = await readAgentSse(baseUrl, `/api/v1/agent/sessions/${sessionId}/events?after=-1`, alice.cookie)
+    const sse = await readAgentSse(baseUrl, `/api/v1/agent/sessions/${sessionId}/events?after=-1&runId=${runId}`, alice.cookie)
     const usageEvent = sse.events.find((event) => event.type === 'usage')
     expect(usageEvent).toBeDefined()
     const usage = (usageEvent!.payload as { usage: { inputTokens: number; outputTokens: number } }).usage
@@ -527,6 +533,52 @@ describe('agent runs — tool loop + permissions (F02/F03)', () => {
       headers: { cookie: alice.cookie },
     })
     expect((session.json() as { status: string }).status).toBe('idle')
+  }, 60_000)
+
+  it('F05: a new subscriber receives sequence 0, and an old run terminal does not close a run-scoped stream', async () => {
+    // Run 1 completes first (its terminal is in the history).
+    fake.setScript([{ kind: 'text', text: 'first run done' }])
+    const sessionId = await createSessionWithProvider(alice.cookie, {})
+    const first = await sendRun(sessionId, 'First', 'f05-a')
+    expect(first.response.statusCode).toBe(201)
+    await waitForRunStatus(first.body.runId!, ['complete'])
+
+    // Run 2 starts in the SAME session.
+    fake.setScript([{ kind: 'text', text: 'second run done' }])
+    const second = await sendRun(sessionId, 'Second', 'f05-b')
+    expect(second.response.statusCode).toBe(201)
+
+    // New subscriber with after=-1 sees sequence 0 (the FIRST event).
+    const sse = await readAgentSse(
+      baseUrl,
+      `/api/v1/agent/sessions/${sessionId}/events?after=-1&runId=${second.body.runId}`,
+      alice.cookie,
+    )
+    const sequences = sse.events.map((event) => event.sequence as number)
+    expect(sequences[0]).toBe(0)
+    // The stream survived run 1's terminal (it appears in the replayed
+    // history WITHOUT closing the stream) and closed only at run 2's
+    // terminal: the LAST event the client received is run 2's.
+    const lastEvent = sse.events.at(-1)!
+    expect(['run_finished', 'error']).toContain(lastEvent.type)
+    expect(lastEvent.runId).toBe(second.body.runId)
+    await waitForRunStatus(second.body.runId!, ['complete'])
+  }, 60_000)
+
+  it('F05: after=0 (legacy default) still skips nothing new, cursor semantics unchanged', async () => {
+    fake.setScript([{ kind: 'text', text: 'cursor semantics' }])
+    const sessionId = await createSessionWithProvider(alice.cookie, {})
+    const started = await sendRun(sessionId, 'Cursor', 'f05-c')
+    await waitForRunStatus(started.body.runId!, ['complete'])
+    // after=0: the client that saw sequence 0 gets everything after it.
+    const sse = await readAgentSse(
+      baseUrl,
+      `/api/v1/agent/sessions/${sessionId}/events?after=0&runId=${started.body.runId}`,
+      alice.cookie,
+    )
+    const sequences = sse.events.map((event) => event.sequence as number)
+    expect(sequences.length).toBeGreaterThan(0)
+    expect(sequences.every((s) => s > 0)).toBe(true)
   }, 60_000)
 
   it('runs without a pinned provider fail honestly', async () => {
