@@ -51,7 +51,9 @@ describe('agent sessions (abacusai-bot port)', () => {
       expect(created.statusCode).toBe(201)
       const session = agentSessionDtoSchema.parse(created.json())
       expect(session.mode).toBe('default')
-      expect(session.rootDir).toBe('sessions/default')
+      // F01: the root is server-owned and unique — always prefixed with
+      // the session's own id, never the shared 'sessions/default'.
+      expect(session.rootDir).toBe(`sessions/${session.id}`)
       expect(session.status).toBe('idle')
 
       const listed = await test.app.inject({
@@ -84,6 +86,46 @@ describe('agent sessions (abacusai-bot port)', () => {
         headers: { cookie, origin: 'http://localhost:5173' },
       })
       expect(gone.statusCode).toBe(404)
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+
+  it('rejects traversal-shaped rootDir at the contract boundary (F01)', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { email: uniqueEmail('alice') })
+      for (const rootDir of [
+        'sessions/../../workspaceB/session',
+        '/etc/passwd',
+        'a\\b',
+        'a/./b',
+      ]) {
+        const created = await test.app.inject({
+          method: 'POST',
+          url: '/api/v1/agent/sessions',
+          headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+          payload: { name: 'Evil', rootDir },
+        })
+        expect(created.statusCode).toBe(400)
+      }
+      // Two fresh sessions get different server-owned roots.
+      const first = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/agent/sessions',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { name: 'One' },
+      })
+      const second = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/agent/sessions',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { name: 'Two' },
+      })
+      const r1 = first.json() as { rootDir: string }
+      const r2 = second.json() as { rootDir: string }
+      expect(r1.rootDir).toMatch(/^sessions\/[0-9a-f-]{36}$/)
+      expect(r1.rootDir).not.toBe(r2.rootDir)
     } finally {
       await test.stop()
     }
