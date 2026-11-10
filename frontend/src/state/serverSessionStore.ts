@@ -43,7 +43,11 @@ import {
   createServerEmployee,
   patchServerEmployee,
   deleteServerEmployee,
+  listServerMemoryNotes,
+  addServerMemoryNote,
+  deleteServerMemoryNote,
   type ServerEmployee,
+  type ServerMemoryNote,
 } from '@/services/api/serverEmployees'
 import {
   listServerArtifacts,
@@ -187,6 +191,10 @@ interface ServerSessionState {
    */
   serverEmployees: ServerEmployee[]
   serverEmployeesLoading: boolean
+  /** T016 — memory notes per linked employee, loaded with the panel. */
+  serverMemoryNotes: Record<string, ServerMemoryNote[]>
+  serverMemoryLoading: boolean
+  serverMemoryError: string | null
 
   /** Server Library artifacts (T017). */
   serverArtifacts: ServerLibraryArtifact[]
@@ -277,6 +285,11 @@ interface ServerSessionState {
   /** Server agent sessions (T014). */
   loadServerAgentSessions: () => Promise<void>
 
+  /** T016 — server memory notes for a linked employee. */
+  loadServerMemoryNotes: (employeeId: string) => Promise<void>
+  addServerMemoryNoteFor: (employeeId: string, text: string) => Promise<boolean>
+  removeServerMemoryNote: (employeeId: string, noteId: string) => Promise<boolean>
+
   importPreview: (backup: unknown) => Promise<ImportPreviewResponse | null>
   importCommit: (backup: unknown) => Promise<ImportCommitResponse | null>
 
@@ -312,6 +325,9 @@ const clearedServerData: Pick<
   | 'runError'
   | 'serverEmployees'
   | 'serverEmployeesLoading'
+  | 'serverMemoryNotes'
+  | 'serverMemoryLoading'
+  | 'serverMemoryError'
   | 'serverArtifacts'
   | 'serverArtifactsLoading'
   | 'serverAgentSessions'
@@ -334,6 +350,9 @@ const clearedServerData: Pick<
   runError: null,
   serverEmployees: [],
   serverEmployeesLoading: false,
+  serverMemoryNotes: {},
+  serverMemoryLoading: false,
+  serverMemoryError: null,
   serverArtifacts: [],
   serverArtifactsLoading: false,
   serverAgentSessions: [],
@@ -1044,6 +1063,64 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     } catch {
       if (!stillCurrent(generation)) return
       set({ serverAgentSessionsLoading: false })
+    }
+  },
+
+  loadServerMemoryNotes: async (employeeId) => {
+    const generation = get().sessionGeneration
+    set({ serverMemoryLoading: true })
+    try {
+      const items = await listServerMemoryNotes(employeeId)
+      if (!stillCurrent(generation)) return
+      set((state) => ({
+        serverMemoryNotes: { ...state.serverMemoryNotes, [employeeId]: items },
+        serverMemoryLoading: false,
+      }))
+    } catch (error) {
+      if (!stillCurrent(generation)) return
+      set({ serverMemoryLoading: false, serverMemoryError: errorMessage(error) })
+    }
+  },
+
+  addServerMemoryNoteFor: async (employeeId, text) => {
+    const generation = get().sessionGeneration
+    const trimmed = text.trim()
+    if (!trimmed) return false
+    try {
+      const note = await addServerMemoryNote(employeeId, trimmed)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverMemoryNotes: {
+          ...state.serverMemoryNotes,
+          [employeeId]: [...(state.serverMemoryNotes[employeeId] ?? []), note],
+        },
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverMemoryError: errorMessage(error) })
+      return false
+    }
+  },
+
+  removeServerMemoryNote: async (employeeId, noteId) => {
+    const generation = get().sessionGeneration
+    try {
+      await deleteServerMemoryNote(employeeId, noteId)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverMemoryNotes: {
+          ...state.serverMemoryNotes,
+          [employeeId]: (state.serverMemoryNotes[employeeId] ?? []).filter(
+            (note) => note.id !== noteId,
+          ),
+        },
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverMemoryError: errorMessage(error) })
+      return false
     }
   },
 
