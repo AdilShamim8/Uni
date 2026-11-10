@@ -338,6 +338,19 @@ export const agentEventPayloadSchema = z.object({
 })
 export type AgentEventPayload = z.infer<typeof agentEventPayloadSchema>
 
+/**
+ * The SSE cursor contract (F05): `after` is the LAST sequence the client
+ * saw; events strictly greater follow. `-1` (or omitted → 0 semantics
+ * preserved for old clients) — new subscribers pass -1 to receive
+ * sequence 0. Optionally scope the stream's END to one run: a terminal
+ * for a DIFFERENT run in the same session must not close the stream.
+ */
+export const agentEventsQuerySchema = z.object({
+  after: z.coerce.number().int().min(-1).default(0),
+  runId: z.string().min(1).max(100).optional(),
+})
+export type AgentEventsQuery = z.infer<typeof agentEventsQuerySchema>
+
 export const agentEventSchema = z.object({
   eventId: z.string().min(1),
   sessionId: z.string().min(1),
