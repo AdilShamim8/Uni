@@ -1,11 +1,12 @@
 import EmbeddedPostgres from 'embedded-postgres'
-import { mkdtemp, rm } from 'node:fs/promises'
+import { mkdtemp, rm, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { FastifyInstance } from 'fastify'
 import { buildApp } from '../src/app.js'
 import { runMigrations } from '../src/db/migrate.js'
 import type { Env } from '../src/config/env.js'
 import { ensureScratchRoot, getFreePort } from './helpers.js'
+import { AGENT_ROOT_ENV as defaultAgentRootEnvName } from '../src/modules/agent/sessionStore.js'
 
 /**
  * Shared integration harness: a real embedded PostgreSQL per test file,
@@ -26,6 +27,13 @@ export async function startTestApp(): Promise<TestApp> {
   const scratch = await ensureScratchRoot()
   const dataDir = await mkdtemp(join(scratch, 'uni-pg-'))
   const port = await getFreePort()
+  // Agent session roots default to /var/lib/uni/agent, which tests (and
+  // most dev machines) cannot write. Point the per-test agent root at a
+  // scratch directory before any code reads the env override.
+  const priorAgentRoot = process.env[defaultAgentRootEnvName]
+  const agentRoot = join(scratch, 'agent-root')
+  await mkdir(agentRoot, { recursive: true })
+  process.env.UNI_AGENT_ROOT = agentRoot
 
   const postgres = new EmbeddedPostgres({
     databaseDir: dataDir,
@@ -78,6 +86,9 @@ export async function startTestApp(): Promise<TestApp> {
     await new Promise((resolve) => setTimeout(resolve, 250))
     await postgres.stop()
     await rm(dataDir, { recursive: true, force: true })
+    // Restore the pre-test agent-root override (or clear it).
+    if (priorAgentRoot === undefined) delete process.env.UNI_AGENT_ROOT
+    else process.env.UNI_AGENT_ROOT = priorAgentRoot
   }
 
   return { app, databaseUrl, stop }
