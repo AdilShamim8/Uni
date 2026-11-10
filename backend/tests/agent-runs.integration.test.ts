@@ -112,6 +112,13 @@ function sseText(response: import('node:http').ServerResponse, text: string) {
     object: 'chat.completion.chunk',
     choices: [{ index: 0, delta: {}, finish_reason: 'stop' }],
   })
+  // OpenAI-compatible streams carry usage at the chunk top level.
+  send({
+    id: 'chatcmpl-1',
+    object: 'chat.completion.chunk',
+    choices: [],
+    usage: { prompt_tokens: 10, completion_tokens: 4 },
+  })
   response.write('data: [DONE]\n\n')
   response.end()
 }
@@ -146,6 +153,12 @@ function sseToolCall(
     id: 'chatcmpl-1',
     object: 'chat.completion.chunk',
     choices: [{ index: 0, delta: {}, finish_reason: 'tool_calls' }],
+  })
+  send({
+    id: 'chatcmpl-1',
+    object: 'chat.completion.chunk',
+    choices: [],
+    usage: { prompt_tokens: 8, completion_tokens: 2 },
   })
   response.write('data: [DONE]\n\n')
   response.end()
@@ -484,6 +497,36 @@ describe('agent runs — tool loop + permissions (F02/F03)', () => {
       .filter((m) => m.role === 'user')
       .map((m) => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
     expect(userTexts.some((t) => t.includes('What time is it?'))).toBe(true)
+  }, 60_000)
+
+  it('usage is summed across steps, recorded on the run, and the session returns to idle (T009)', async () => {
+    fake.setScript([
+      { kind: 'tool', name: 'current_time', arguments: {} },
+      { kind: 'text', text: 'Done with usage.' },
+    ])
+    const sessionId = await createSessionWithProvider(alice.cookie, {
+      tools: ['current_time'],
+    })
+    const { body } = await sendRun(sessionId, 'Check the clock', 'usage-run')
+    const runId = body.runId!
+
+    const sse = await readAgentSse(baseUrl, `/api/v1/agent/sessions/${sessionId}/events?after=-1`, alice.cookie)
+    const usageEvent = sse.events.find((event) => event.type === 'usage')
+    expect(usageEvent).toBeDefined()
+    const usage = (usageEvent!.payload as { usage: { inputTokens: number; outputTokens: number } }).usage
+    expect(usage.inputTokens).toBeGreaterThan(0)
+
+    const run = await waitForRunStatus(runId, ['complete'])
+    expect(run.inputTokens).toBe(usage.inputTokens)
+    expect(run.outputTokens).toBe(usage.outputTokens)
+
+    // The session is idle again, not stuck 'running'.
+    const session = await testApp.app.inject({
+      method: 'GET',
+      url: `/api/v1/agent/sessions/${sessionId}`,
+      headers: { cookie: alice.cookie },
+    })
+    expect((session.json() as { status: string }).status).toBe('idle')
   }, 60_000)
 
   it('runs without a pinned provider fail honestly', async () => {
