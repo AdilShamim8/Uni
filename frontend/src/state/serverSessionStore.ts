@@ -38,6 +38,22 @@ import type {
   ImportPreviewResponse,
   Page,
 } from '@/services/api/serverContracts'
+import {
+  listServerEmployees,
+  createServerEmployee,
+  patchServerEmployee,
+  deleteServerEmployee,
+  type ServerEmployee,
+} from '@/services/api/serverEmployees'
+import {
+  listServerArtifacts,
+  serverCanonicalSave,
+  type ServerLibraryArtifact,
+} from '@/services/api/serverLibrary'
+import {
+  listServerAgentSessions,
+  type ServerAgentSession,
+} from '@/services/api/serverAgents'
 
 /**
  * Server-mode session state — kept strictly separate from the local app
@@ -164,6 +180,22 @@ interface ServerSessionState {
   /** Explicit notice when the chosen destination was removed (N005). */
   serverSelectionNotice: string | null
 
+  /**
+   * Server employees (T016): the Agents surface's server-mode records.
+   * Loaded on sign-in; cleared on sign-out; generation-guarded like
+   * every other server-derived field.
+   */
+  serverEmployees: ServerEmployee[]
+  serverEmployeesLoading: boolean
+
+  /** Server Library artifacts (T017). */
+  serverArtifacts: ServerLibraryArtifact[]
+  serverArtifactsLoading: boolean
+
+  /** Server agent sessions (T014). */
+  serverAgentSessions: ServerAgentSession[]
+  serverAgentSessionsLoading: boolean
+
   /** The run currently streaming into the open conversation, if any. */
   activeRun: {
     runId: string
@@ -210,6 +242,34 @@ interface ServerSessionState {
   loadConversations: () => Promise<void>
   openServerConversation: (id: string | null) => Promise<void>
 
+  /** Server employees (T016): CRUD against the employee service. */
+  loadServerEmployees: () => Promise<void>
+  addServerEmployee: (input: {
+    name: string
+    description?: string
+    instructions?: string
+    category?: 'personal' | 'specialist'
+  }) => Promise<ServerEmployee | null>
+  updateServerEmployee: (
+    employeeId: string,
+    input: Partial<Pick<ServerEmployee, 'name' | 'description' | 'instructions' | 'category' | 'archived'>>,
+  ) => Promise<boolean>
+  removeServerEmployee: (employeeId: string) => Promise<boolean>
+
+  /** Server Library (T017): list + canonical save. */
+  loadServerArtifacts: () => Promise<void>
+  serverSaveArtifact: (input: {
+    title: string
+    kind: 'report' | 'document' | 'email' | 'data'
+    markdown: string
+    provenance?: 'provider-generated' | 'demo-simulation' | 'imported'
+    linkedArtifactId: string | null
+    sourceConversationId?: string | null
+  }) => Promise<{ artifactId: string; version: number } | null>
+
+  /** Server agent sessions (T014). */
+  loadServerAgentSessions: () => Promise<void>
+
   importPreview: (backup: unknown) => Promise<ImportPreviewResponse | null>
   importCommit: (backup: unknown) => Promise<ImportCommitResponse | null>
 
@@ -243,6 +303,12 @@ const clearedServerData: Pick<
   | 'serverSelectionNotice'
   | 'activeRun'
   | 'runError'
+  | 'serverEmployees'
+  | 'serverEmployeesLoading'
+  | 'serverArtifacts'
+  | 'serverArtifactsLoading'
+  | 'serverAgentSessions'
+  | 'serverAgentSessionsLoading'
 > = {
   account: null,
   error: null,
@@ -259,6 +325,12 @@ const clearedServerData: Pick<
   serverSelectionNotice: null,
   activeRun: null,
   runError: null,
+  serverEmployees: [],
+  serverEmployeesLoading: false,
+  serverArtifacts: [],
+  serverArtifactsLoading: false,
+  serverAgentSessions: [],
+  serverAgentSessionsLoading: false,
 }
 
 export const useServerSessionStore = create<ServerSessionState>()((set, get) => {
@@ -318,6 +390,9 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         })
         await get().loadConversations()
         void get().loadServerProviders()
+        void get().loadServerEmployees()
+        void get().loadServerArtifacts()
+        void get().loadServerAgentSessions()
         return true
       } catch (error) {
         if (!stillCurrent(generation)) return false
@@ -341,6 +416,9 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         })
         await get().loadConversations()
         void get().loadServerProviders()
+        void get().loadServerEmployees()
+        void get().loadServerArtifacts()
+        void get().loadServerAgentSessions()
         return true
       } catch (error) {
         if (!stillCurrent(generation)) return false
@@ -814,6 +892,122 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     } catch {
       // The durable cancel may still land; the refreshed conversation
       // shows the honest stopped state either way.
+    }
+  },
+
+  /* ---------------------------------------------------------------- */
+  /* Server employees / Library / agent sessions (T014/T016/T017)      */
+  /* ---------------------------------------------------------------- */
+
+  loadServerEmployees: async () => {
+    const generation = get().sessionGeneration
+    set({ serverEmployeesLoading: true })
+    try {
+      const items = await listServerEmployees()
+      if (!stillCurrent(generation)) return
+      set({ serverEmployees: items, serverEmployeesLoading: false })
+    } catch {
+      if (!stillCurrent(generation)) return
+      set({ serverEmployeesLoading: false })
+    }
+  },
+
+  addServerEmployee: async (input) => {
+    const generation = get().sessionGeneration
+    try {
+      const employee = await createServerEmployee(input)
+      if (!stillCurrent(generation)) return null
+      set((state) => ({ serverEmployees: [...state.serverEmployees, employee] }))
+      return employee
+    } catch (error) {
+      if (!stillCurrent(generation)) return null
+      set({ runError: errorMessage(error) })
+      return null
+    }
+  },
+
+  updateServerEmployee: async (employeeId, input) => {
+    const generation = get().sessionGeneration
+    try {
+      const updated = await patchServerEmployee(employeeId, input)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverEmployees: state.serverEmployees.map((entry) =>
+          entry.id === employeeId ? updated : entry,
+        ),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ runError: errorMessage(error) })
+      return false
+    }
+  },
+
+  removeServerEmployee: async (employeeId) => {
+    const generation = get().sessionGeneration
+    try {
+      await deleteServerEmployee(employeeId)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverEmployees: state.serverEmployees.filter((entry) => entry.id !== employeeId),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ runError: errorMessage(error) })
+      return false
+    }
+  },
+
+  loadServerArtifacts: async () => {
+    const generation = get().sessionGeneration
+    set({ serverArtifactsLoading: true })
+    try {
+      const items = await listServerArtifacts()
+      if (!stillCurrent(generation)) return
+      set({ serverArtifacts: items, serverArtifactsLoading: false })
+    } catch {
+      if (!stillCurrent(generation)) return
+      set({ serverArtifactsLoading: false })
+    }
+  },
+
+  serverSaveArtifact: async (input) => {
+    const generation = get().sessionGeneration
+    try {
+      const result = await serverCanonicalSave({
+        title: input.title,
+        kind: input.kind,
+        markdown: input.markdown,
+        provenance: input.provenance,
+        linkedArtifactId: input.linkedArtifactId,
+        sourceConversationId: input.sourceConversationId ?? null,
+        sourceMessageId: null,
+        taskId: null,
+        generatedBy: null,
+      })
+      if (!stillCurrent(generation)) return null
+      // Refresh the list so version counts stay truthful.
+      void get().loadServerArtifacts()
+      return { artifactId: result.artifactId, version: result.version }
+    } catch (error) {
+      if (!stillCurrent(generation)) return null
+      set({ runError: errorMessage(error) })
+      return null
+    }
+  },
+
+  loadServerAgentSessions: async () => {
+    const generation = get().sessionGeneration
+    set({ serverAgentSessionsLoading: true })
+    try {
+      const items = await listServerAgentSessions()
+      if (!stillCurrent(generation)) return
+      set({ serverAgentSessions: items, serverAgentSessionsLoading: false })
+    } catch {
+      if (!stillCurrent(generation)) return
+      set({ serverAgentSessionsLoading: false })
     }
   },
 
