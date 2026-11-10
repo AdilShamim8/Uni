@@ -183,6 +183,7 @@ export const permissionRequestTypeSchema = z.enum([
   'write_outside_directory',
   'edit_outside_directory',
   'fetch_url',
+  'run_mcp_tool',
   'generic',
   'exit_plan_mode',
 ])
@@ -248,6 +249,16 @@ export const permissionRequestSchema = z.discriminatedUnion('type', [
     /** The full URL, never a summary: the query string can carry data. */
     url: z.string(),
     origin: z.string(),
+  }),
+  z.object({
+    ...permissionRequestBase,
+    type: z.literal('run_mcp_tool'),
+    /** The namespaced tool: <server-slug>__<tool>. */
+    mcpTool: z.string(),
+    /** The server slug alone, for display. */
+    serverSlug: z.string(),
+    /** Bounded JSON rendering of the arguments the model proposed. */
+    inputSummary: z.string(),
   }),
   z.object({
     ...permissionRequestBase,

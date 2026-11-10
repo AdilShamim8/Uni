@@ -1,86 +1,95 @@
-# Handoff — backend upgrade P00–P04 (2026-11-10 session)
+# Handoff — backend upgrade sessions (latest: 2026-11-10, session 3)
 
-Branch `task/backend-upgrade-p00-p14` (39 commits, each pushed and
-ls-remote-verified individually). Base: `e50ac6a5` (= researched SHA).
+Session 3 added commits 72-87: the CI failures from session 2 were
+fixed (3 commits — conditional hooks and a setState-in-effect), and
+**P07 (MCP integrations, T023-T025) is complete**: configured workspace
+MCP servers with encrypted bearer auth, the guarded time-bounded HTTP
+transport, namespaced tool execution that ALWAYS asks permission (the
+remote's readOnly hint is never trusted), and the Plugins-page
+management UI. Verified: backend 346/346 across 41 files, frontend
+544/544 across 73 files, GitHub Actions green on the head commit.
+
+---
+
+# Session 2 record (2026-11-10)
+
+Branch `task/backend-upgrade-p00-p14`. Session 2: **30 commits
+(70-99 range on top of the previous 40)**, each pushed and verified
+individually. Total task commits on the branch: **70**.
 
 ## Done and verified this session
 
-**P00 baseline (T001–T003)**: fresh clone/install/typecheck/tests of
-all three packages at the base SHA — contracts build+typecheck,
-backend 297/297, frontend typecheck/lint/522 tests — recorded in
-`docs/verification.md`. Task ledger `docs/backend-upgrade-ledger.md`
-created; every finding F01–F10 reproduced in source before fixing.
+**Environment**: sandbox was recycled — re-cloned from GitHub,
+reinstalled all three packages, fixed a fresh-clone typecheck break
+(`.ts` import specifiers in the F04 suite, commit 41).
 
-**P01 — tenant/permission correctness (T004–T006)**:
-- F01 session roots: contract `isValidRootDir`, fail-closed runtime
-  join (`UnsafeRootDirError`), server-owned `sessions/<sessionId>`
-  roots (no shared `sessions/default`), lazy provisioning,
-  cross-workspace symlink containment tested.
-- F02 permission ids: the persisted ask's id IS the emitted
-  requestId; ask persisted + waiter registered before publish;
-  decisions claimed atomically bound to workspace+session+run+request.
-- F07 host shell: `execBash` refuses without an isolated execution
-  worker (`UNI_AGENT_ISOLATED_EXECUTION`), in every mode; descriptor
-  says so honestly (`available: false`).
+**P04 complete (T016, T017)**:
+- T016: `AgentProfile.serverEmployeeId` + `ensureServerEmployee`
+  (idempotent, name-reuse, creation through the session store);
+  MemoryPanel dual-mode — server notes load/add/remove through the
+  memory service when linked, local otherwise (4 tests).
+- T017: `Artifact.serverArtifactId`; both canonical save operations
+  mirror through `/library/canonical-save` in server mode with
+  `linkedArtifactId` dedup and immutable versions; server failure
+  never blocks the local save (4 tests).
 
-**P02 — engine correctness (T007–T010)**:
-- F03 tool loop: SDK-native multi-step `streamText` (`stopWhen`),
-  real zod input schemas (was `zod.any()`), tool results reach the
-  next model request as structured messages, tool errors visible.
-- F04 bounded tools: literal replace-all terminates (split/join, no
-  re-search loop); 2 MB input caps on read/web_fetch with streamed
-  truncation.
-- T008 transcript: `agent_turn` table (migration 0012), second
-  message sees the first turn (provider-request asserted);
-  `employee_id` soft pin resolving instructions into the run prompt.
-- T009 outcomes: usage summed across steps → usage event + run-row
-  tokens (migration 0013); session returns to idle; budget exhaustion
-  reports `tool_round_budget_exhausted`; cancel keeps partial text.
+**P05 complete (T018, T019, T020)** — durable Work:
+- T018: `work.ts` contracts, migration 0015 (`work_task`, `work_run`),
+  the Work service (provisions the task's durable agent session as the
+  assigned employee, read-only roster, revision runs through the normal
+  admission path), routes, 3 integration tests.
+- T020: `resolveTerminal` → `syncWorkRunOutcome` — task/run rows follow
+  the agent run's terminal; receipts assembled from the run's OWN
+  events (url/file source ids, truthful tool outcomes,
+  provider-generated provenance, no credentials). End-to-end test
+  includes answering a real per-origin web_fetch permission.
+- T019: cancel/answer task actions (engine cancel, answer admits
+  revision+1, honest 409s); `serverWork` client + store slice;
+  WorkHome server mode (composer creates+starts, honest status list);
+  ServerTaskThread (live runs, stop, answer box).
 
-**P03 — durability (T011–T013)**:
-- F05 SSE: `after=-1` delivers sequence 0; `runId`-scoped streams end
-  only at their own run's terminal; serialized drains; backpressure;
-  cleanup on close; schema-validated cursor.
-- F06 admission: one advisory-lock transaction (concurrency + rate +
-  insert + started event); unique-index recovery for concurrent
-  same-key creates; one-way terminal transitions.
-- T013 durable worker: pg-boss 10.4.2 installed; `job_outbox`
-  (migration 0014) closes the run-row/queue gap transactionally;
-  `src/worker.ts` (`npm run worker`) with boot reconciliation that
-  prevents zombie resume; payloads carry identifiers only.
+**P06 complete (T021, T022)** — plugins:
+- Contracts + migration 0016 (`plugin_grant`, `plugin_receipt`,
+  workspace `enabled_plugins`); the one registry with the two-gate
+  check (workspace enablement AND per-thread grant AND not
+  integration-required — precise reasons otherwise); dispatch executes
+  library.search/attach over the Library service, documents.create
+  validation, bounded CSV summary; every outcome is a bounded receipt
+  (6 tests).
 
-**P04 partial — UI wiring (T014–T015)**:
-- T014: typed clients `serverEmployees.ts`, `serverLibrary.ts`,
-  `serverAgents.ts` (14 tests) + generation-guarded store state and
-  actions, loaded on sign-in, cleared on sign-out.
-- T015: EmployeeView opens the employee's owned server conversation
-  (find-or-create by agentId), renders the server thread (live run,
-  honest errors), routes sends through `sendServerMessage`; local
-  mode untouched (lifecycle tests 4/4).
+**T023 started**: MCP SDK `@modelcontextprotocol/sdk@1.32.2` installed
+and verified (Client + StreamableHTTPClientTransport). The rest of
+T023 (server config, encrypted auth, time-bounded transport) is NOT
+started.
 
-**Suites**: backend **330/330 across 36 files** (was 297 — 33 new);
-frontend typecheck + lint clean; server-surface slice green.
+**Suites**: backend **340/340 across 39 files** (10 new this session);
+frontend typecheck + the affected slices green (memory panel 4,
+canonical 11, work 21, clients 14). One test-race fixed (waitForHeld
+before releasing held provider streams — commit 68).
 
 ## Not finished (honest limits)
 
-- T016 (memory panel → server memory) and T017 (Library/Canvas →
-  server canonical saves): clients and store actions landed in T014,
-  UI surfaces not yet switched.
-- P05–P14 not started this session. Design anchors are in place
-  (worker, outbox, resumeAgentRun, admission, SSE semantics).
-- Bash tool deliberately inert pending P11 isolation.
-- All verification against fixture providers (embedded PostgreSQL +
-  scripted OpenAI-compatible servers); no live credentials exist here
-  — the spec's required posture for this stage.
+- **The 300-commit target is not reached (70 total).** The spec forbids
+  padding commits to hit a number; each commit is a real, tested
+  increment. Reaching 300 requires completing the remaining phases.
+- T023 rest, T024, T025 (MCP); P08 connectors; P09 routines scheduler;
+  P10 files/knowledge; P11 isolated execution (bash stays inert until
+  then); P12 messaging; P13 full verification + visual QA; P14
+  deployment. None started this session beyond the T023 SDK install.
+- Same verification posture as session 1: fixture providers only, no
+  live credentials.
 
 ## Next in dependency order
 
-1. T016, T017 (build on landed clients).
-2. P05 Work on the durable worker (resumeAgentRun + outbox ready).
-3. P09 routines (tables exist from migration 0011; scheduler + routes
-   + tests needed, then wire to P05's worker).
-4. Then P06–P08, P10–P12, P13–P14 per the ledger.
+1. P09 routines (tables exist from migration 0011; scheduler + routes,
+   wire to the worker from T013).
+2. Then P08 connectors, P10-P12, P13-P14 per the ledger.
 
-Commands: `cd backend && npm run typecheck && npm test`; `cd frontend
-&& npm run typecheck && npm run lint && npm test`; worker:
-`cd backend && npm run worker` (needs DATABASE_URL).
+Session 3 note: the CI discipline is now enforced locally before every
+push (lint → typecheck → full tests → build for frontend; typecheck →
+affected tests for backend), because session 2 shipped hook-order lint
+errors CI caught and local slices missed.
+
+Commands: `cd backend && npm run typecheck && npm test`; frontend
+`npm run typecheck && npm run lint && npm test`; worker
+`npm run worker` (needs DATABASE_URL).

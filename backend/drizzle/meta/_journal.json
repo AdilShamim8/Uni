@@ -113,6 +113,20 @@
       "when": 1794508800000,
       "tag": "0015_work_tasks",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794595200000,
+      "tag": "0016_plugins",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794681600000,
+      "tag": "0017_mcp_servers",
+      "breakpoints": true
     }
   ]
 }

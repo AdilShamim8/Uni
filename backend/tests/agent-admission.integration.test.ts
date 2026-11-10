@@ -21,7 +21,7 @@ const API_KEY = 'sk-f06-test-key-abcdef123456'
 describe('agent run admission + terminals (F06)', () => {
   let testApp: TestApp
   let alice: { cookie: string }
-  let fake: { server: Server; url: string; releaseAll: () => void }
+  let fake: { server: Server; url: string; releaseAll: () => void; heldCount: () => number }
   let baseUrl: string
   let db: AgentDatabase
 
@@ -55,6 +55,7 @@ describe('agent run admission + terminals (F06)', () => {
     fake = {
       server,
       url: '',
+      heldCount: () => held.filter((entry) => !entry.released).length,
       releaseAll: () => {
         for (const entry of held) {
           if (entry.released) continue
@@ -133,6 +134,22 @@ describe('agent run admission + terminals (F06)', () => {
     })
   }
 
+  /**
+   * Wait until the fake provider has captured at least `count` held
+   * streams. The winner's provider call can land a tick after the
+   * create responses return (admission serialization + transcript
+   * load); releasing before the stream exists would leave the run
+   * waiting forever.
+   */
+  async function waitForHeld(count: number, timeoutMs = 10_000): Promise<void> {
+    const heldCount = () => fake.heldCount()
+    const deadline = Date.now() + timeoutMs
+    while (heldCount() < count) {
+      if (Date.now() > deadline) throw new Error(`only ${heldCount()} of ${count} provider streams opened`)
+      await new Promise((resolve) => setTimeout(resolve, 50))
+    }
+  }
+
   /** Wait until every non-terminal run row in the workspace settles. */
   async function waitForRunsToSettle(timeoutMs = 20_000): Promise<void> {
     const deadline = Date.now() + timeoutMs
@@ -152,7 +169,20 @@ describe('agent run admission + terminals (F06)', () => {
           ),
         )
       if (Number(active[0]?.count ?? 0) === 0) return
-      if (Date.now() > deadline) throw new Error('runs did not settle in time')
+      if (Date.now() > deadline) {
+        const stuck = await db
+          .select({ id: agentRuns.id, status: agentRuns.status, errorCode: agentRuns.errorCode })
+          .from(agentRuns)
+          .where(
+            and(
+              eq(agentRuns.workspaceId, workspaceId),
+              inArray(agentRuns.status, ['running', 'waiting-for-permission', 'cancelling']),
+            ),
+          )
+        throw new Error(
+          'runs did not settle in time; stuck: ' + JSON.stringify(stuck),
+        )
+      }
       await new Promise((resolve) => setTimeout(resolve, 100))
     }
   }
@@ -174,6 +204,7 @@ describe('agent run admission + terminals (F06)', () => {
       .from(agentRuns)
       .where(and(eq(agentRuns.sessionId, sessionId)))
     expect(rows.length).toBe(1)
+    await waitForHeld(1)
     fake.releaseAll()
     await waitForRunsToSettle()
   }, 60_000)
@@ -190,6 +221,7 @@ describe('agent run admission + terminals (F06)', () => {
     expect(admitted.length).toBe(2)
     expect(rejected.length).toBe(4)
     expect(rejected.every((response) => response.statusCode === 429)).toBe(true)
+    await waitForHeld(2)
     fake.releaseAll()
     await waitForRunsToSettle()
   }, 60_000)
@@ -203,6 +235,7 @@ describe('agent run admission + terminals (F06)', () => {
     // Release the provider AND cancel at (nearly) the same moment; then
     // wait for the run to settle and verify exactly one terminal state,
     // with terminalAt set once and a single terminal event.
+    await waitForHeld(1)
     fake.releaseAll()
     const cancel = await testApp.app.inject({
       method: 'POST',

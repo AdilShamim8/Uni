@@ -15,6 +15,7 @@ import {
   Undo2,
 } from 'lucide-react'
 import { useWorkStore } from '@/state/workStore'
+import { useServerSessionStore } from '@/state/serverSessionStore'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useAppStore } from '@/state/store'
 import { Button } from '@/components/ui/Button'
@@ -41,7 +42,23 @@ import type { WorkTask } from '@/domain/workspaceTypes'
  * right column, mobile bottom sheet), and the composer sends follow-ups
  * that drive real runs.
  */
+/**
+ * T019 — the routing decision between the server thread and the local
+ * one lives here, in a component whose hooks all run unconditionally
+ * (rules-of-hooks); the branch only picks what to RENDER.
+ */
 export function TaskThread({ taskId }: { taskId: string }) {
+  const serverStatus = useServerSessionStore((state) => state.status)
+  const serverTask = useServerSessionStore((state) =>
+    state.serverWorkTasks.find((entry) => entry.id === taskId),
+  )
+  const localTaskPresent = useWorkStore((state) => Boolean(state.tasks[taskId]))
+  const inServerMode = serverStatus === 'signed-in' && serverTask !== undefined && !localTaskPresent
+  if (inServerMode) return <ServerTaskThread taskId={taskId} />
+  return <LocalTaskThread taskId={taskId} />
+}
+
+function LocalTaskThread({ taskId }: { taskId: string }) {
   const navigate = useNavigate()
   const task = useWorkStore((state) => state.tasks[taskId])
   const hydrated = useWorkStore((state) => state.hydrated)
@@ -740,3 +757,192 @@ function OutputsPanel({ taskId }: { taskId: string }) {
   )
 }
 
+
+
+/* ------------------------------------------------------------------ */
+/* Server task thread (T019)                                           */
+/* ------------------------------------------------------------------ */
+
+function ServerTaskThread({ taskId }: { taskId: string }) {
+  const navigate = useNavigate()
+  const [answerDraft, setAnswerDraft] = useState('')
+  const [detail, setDetail] = useState<{
+    task: import('@/services/api/serverWork').ServerWorkTask
+    runs: Array<import('@/services/api/serverWork').ServerWorkRun>
+  } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const cancelServerWorkTaskFor = useServerSessionStore((state) => state.cancelServerWorkTaskFor)
+  const answerServerWorkTaskFor = useServerSessionStore((state) => state.answerServerWorkTaskFor)
+  const runError = useServerSessionStore((state) => state.runError)
+
+  // Load the task + its runs; refresh while running (the T020 sync
+  // flips the status when the agent run settles).
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        const { getServerWorkTask } = await import('@/services/api/serverWork')
+        const result = await getServerWorkTask(taskId)
+        if (!cancelled) {
+          setDetail(result)
+          setError(null)
+        }
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load the task.')
+      }
+    }
+    void load()
+    const timer = setInterval(() => void load(), 2_000)
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [taskId])
+
+  if (!detail && !error) {
+    return (
+      <div className="flex h-full items-center justify-center" role="status">
+        <p className="text-[13px] text-ink-faint">Opening the server task…</p>
+      </div>
+    )
+  }
+  if (error || !detail) {
+    return (
+      <div className="flex h-full items-center justify-center" role="alert">
+        <div className="mx-auto max-w-sm rounded-group border border-line bg-raised p-5 text-center">
+          <p className="text-[14px] font-medium text-ink">This task could not be opened.</p>
+          <p className="mt-1 text-[13px] text-ink-soft">{error ?? 'Unknown error.'}</p>
+          <button
+            type="button"
+            onClick={() => navigate('/work')}
+            className="mt-3 min-touch rounded-control border border-line px-3 py-1.5 text-[13px] text-ink"
+          >
+            Back to Work
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const { task, runs } = detail
+  const busy = task.status === 'running'
+
+  return (
+    <div className="flex h-full min-h-0 flex-col">
+      <PageToolbar>
+        <button
+          type="button"
+          onClick={() => navigate('/work')}
+          className="min-touch rounded-control px-2 py-1 text-[13px] text-ink-soft transition-colors hover:bg-subtle hover:text-ink"
+        >
+          ← Work
+        </button>
+        <h1 className="min-w-0 flex-1 truncate text-[15px] font-semibold tracking-tight text-ink">
+          {task.title}
+        </h1>
+        <span className="shrink-0 rounded-full border border-line px-2.5 py-0.5 text-[11.5px] text-ink-soft">
+          {task.statusLabel}
+        </span>
+      </PageToolbar>
+
+      <div className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-column px-3 py-5 sm:px-4">
+          <p className="text-[13px] leading-relaxed text-ink-soft">{task.goal || 'No goal set.'}</p>
+
+          <h2 className="mt-5 text-[12px] font-medium uppercase tracking-wide text-ink-faint">
+            Runs
+          </h2>
+          <ol className="mt-2 flex flex-col gap-2" aria-label="Task runs">
+            {runs.map((run) => (
+              <li
+                key={run.id}
+                className="rounded-control border border-line bg-raised px-3 py-2.5 text-[13px]"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-ink">Revision {run.revision}</span>
+                  <span
+                    className={
+                      run.status === 'complete'
+                        ? 'text-accent'
+                        : run.status === 'error'
+                          ? 'text-danger'
+                          : 'text-ink-faint'
+                    }
+                  >
+                    {run.status}
+                  </span>
+                </div>
+                {run.outcome && (
+                  <p className="mt-1 whitespace-pre-wrap leading-relaxed text-ink-soft">
+                    {run.outcome}
+                  </p>
+                )}
+              </li>
+            ))}
+            {runs.length === 0 && (
+              <li className="text-[13px] text-ink-faint">No runs recorded yet.</li>
+            )}
+          </ol>
+
+          {busy && (
+            <p className="mt-4 text-[13px] text-ink-faint" role="status">
+              Running on the server — tool calls that need wider access ask here or in the
+              employee thread; statuses update live.
+            </p>
+          )}
+          {runError && (
+            <p role="alert" className="mt-3 rounded-control border border-danger/40 bg-danger-soft/30 px-3 py-2 text-[12.5px] text-danger">
+              {runError}
+            </p>
+          )}
+
+          <div className="mt-5 flex items-center gap-2">
+            {busy ? (
+              <button
+                type="button"
+                onClick={() => void cancelServerWorkTaskFor(taskId)}
+                className="min-touch rounded-control border border-line px-3 py-1.5 text-[13px] text-ink transition-colors hover:bg-subtle"
+              >
+                Stop
+              </button>
+            ) : (
+              <p className="text-[12.5px] text-ink-faint">
+                {task.status === 'blocked'
+                  ? 'Answer below to continue this task.'
+                  : 'This task is not running.'}
+              </p>
+            )}
+          </div>
+
+          {(task.status === 'blocked' || task.status === 'running') && (
+            <form
+              className="mt-3 flex items-center gap-2"
+              onSubmit={(event) => {
+                event.preventDefault()
+                const value = answerDraft.trim()
+                if (!value) return
+                setAnswerDraft('')
+                void answerServerWorkTaskFor(taskId, value)
+              }}
+            >
+              <input
+                value={answerDraft}
+                onChange={(event) => setAnswerDraft(event.target.value)}
+                placeholder="Answer the task's question…"
+                aria-label="Answer the task"
+                className="min-touch min-w-0 flex-1 rounded-control border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+              />
+              <button
+                type="submit"
+                disabled={!answerDraft.trim()}
+                className="min-touch rounded-control bg-accent px-3.5 py-2 text-[13px] font-medium text-white disabled:opacity-50"
+              >
+                Send
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}

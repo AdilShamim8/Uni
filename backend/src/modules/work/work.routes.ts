@@ -6,8 +6,10 @@ import {
   workTaskDtoSchema,
   workRunDtoSchema,
 } from '@uni/contracts'
-import { notFound } from '../../lib/errors.js'
+import { notFound, conflict } from '../../lib/errors.js'
 import {
+  answerWorkTask,
+  cancelWorkTask,
   createWorkTask,
   deleteWorkTask,
   getWorkTask,
@@ -87,7 +89,25 @@ export async function workRoutes(app: FastifyInstance): Promise<void> {
       void workRunDtoSchema.parse(result.run)
       return reply.status(202).send(result)
     }
-    // cancel/answer land with T019's engine wiring (run outcome sync).
-    throw notFound('This task action is not available yet.')
+    if (body.action === 'cancel') {
+      const outcome = await cancelWorkTask({ db, env }, request.workspace!.id, request.params.taskId)
+      if (outcome === 'not_found') throw notFound('Work task not found.')
+      if (outcome === 'not_running' || outcome === 'already_terminal') {
+        throw conflict('This task is not running.')
+      }
+      return reply.status(202).send({ cancelled: true })
+    }
+    // answer: the text becomes the next run in the task's session.
+    const result = await answerWorkTask(
+      { db, env },
+      request.workspace!.id,
+      request.params.taskId,
+      body.answer,
+    )
+    if (result === 'not_found') throw notFound('Work task not found.')
+    if (result === 'not_blocked') throw conflict('This task is not waiting for an answer.')
+    void workTaskDtoSchema.parse(result.task)
+    void workRunDtoSchema.parse(result.run)
+    return reply.status(202).send(result)
   })
 }

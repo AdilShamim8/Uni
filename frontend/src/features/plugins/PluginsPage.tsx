@@ -1,7 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  BarChart3,
+import {  BarChart3,
   Check,
   Code2,
   FolderOpen,
@@ -11,10 +10,12 @@ import {
   Search,
   Settings2,
   X,
+  Plus,
 } from 'lucide-react'
 import { PLUGIN_CATEGORY_LABELS, type PluginCategory, type PluginManifest } from '@/domain/pluginTypes'
 import { PLUGIN_CATALOG } from './registry'
 import { usePluginsStore } from '@/state/pluginsStore'
+import { useServerSessionStore } from '@/state/serverSessionStore'
 import { Button } from '@/components/ui/Button'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
@@ -40,7 +41,174 @@ export function PluginsPage() {
       />
     )
   }
-  return <PluginCatalogue onOpen={setSelectedId} />
+  return (
+    <>
+      <PluginCatalogue onOpen={setSelectedId} />
+      <McpServersSection />
+    </>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* MCP servers (T025) — workspace-scoped remote tool providers         */
+/* ------------------------------------------------------------------ */
+
+function McpServersSection() {
+  const serverStatus = useServerSessionStore((state) => state.status)
+  const servers = useServerSessionStore((state) => state.serverMcpServers)
+  const loading = useServerSessionStore((state) => state.serverMcpServersLoading)
+  const loadServerMcpServers = useServerSessionStore((state) => state.loadServerMcpServers)
+  const createServerMcpServerFor = useServerSessionStore((state) => state.createServerMcpServerFor)
+  const deleteServerMcpServerFor = useServerSessionStore((state) => state.deleteServerMcpServerFor)
+  const testServerMcpServerFor = useServerSessionStore((state) => state.testServerMcpServerFor)
+  const disconnectServerMcpServerFor = useServerSessionStore(
+    (state) => state.disconnectServerMcpServerFor,
+  )
+  const [name, setName] = useState('')
+  const [url, setUrl] = useState('')
+  const [token, setToken] = useState('')
+  const [useAuth, setUseAuth] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  const inServerMode = serverStatus === 'signed-in'
+
+  useEffect(() => {
+    if (inServerMode) void loadServerMcpServers()
+  }, [inServerMode, loadServerMcpServers])
+
+  if (!inServerMode) {
+    return (
+      <section className="mt-8 rounded-group border border-line bg-raised p-4" aria-label="MCP servers">
+        <h2 className="flex items-center gap-1.5 text-[13px] font-medium text-ink">MCP servers</h2>
+        <p className="mt-1.5 text-[12px] leading-relaxed text-ink-soft">
+          Remote MCP servers run on your Uni server — sign in to configure them. Connections use a
+          guarded, time-bounded HTTP transport; bearer tokens are stored encrypted and never
+          returned to this app. stdio servers are not supported (isolated workers only, when they
+          land).
+        </p>
+      </section>
+    )
+  }
+
+  async function handleAdd() {
+    const trimmedName = name.trim()
+    const trimmedUrl = url.trim()
+    if (!trimmedName || !trimmedUrl) return
+    setBusy(true)
+    const created = await createServerMcpServerFor({
+      name: trimmedName,
+      url: trimmedUrl,
+      ...(useAuth && token.trim() ? { auth: { type: 'bearer', token: token.trim() } } : {}),
+    })
+    setBusy(false)
+    if (created) {
+      setName('')
+      setUrl('')
+      setToken('')
+      setUseAuth(false)
+    }
+  }
+
+  return (
+    <section className="mt-8 rounded-group border border-line bg-raised p-4" aria-label="MCP servers">
+      <h2 className="flex items-center gap-1.5 text-[13px] font-medium text-ink">MCP servers</h2>
+      <p className="mt-1.5 text-[12px] leading-relaxed text-ink-soft">
+        Remote MCP servers your workspace can call during agent runs. Every tool call asks
+        permission first — a server&apos;s read-only claim is a hint we never trust. Bearer tokens
+        are stored encrypted on your Uni server.
+      </p>
+
+      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="Name (e.g. Notes)"
+          aria-label="MCP server name"
+          className="min-touch min-w-0 flex-1 rounded-control border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+        />
+        <input
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          placeholder="https://example.com/mcp"
+          aria-label="MCP server URL"
+          className="min-touch min-w-0 flex-[2] rounded-control border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+        />
+        <Button variant="primary" size="sm" disabled={busy || !name.trim() || !url.trim()} onClick={() => void handleAdd()}>
+          <Plus size={14} />
+          Add
+        </Button>
+      </div>
+      <label className="mt-2 flex items-center gap-2 text-[12px] text-ink-soft">
+        <input
+          type="checkbox"
+          checked={useAuth}
+          onChange={(event) => setUseAuth(event.target.checked)}
+          className="h-4 w-4 accent-[var(--c-accent)]"
+        />
+        Use a bearer token
+      </label>
+      {useAuth && (
+        <input
+          type="password"
+          value={token}
+          onChange={(event) => setToken(event.target.value)}
+          placeholder="Bearer token (stored encrypted, never shown again)"
+          aria-label="MCP bearer token"
+          className="mt-2 min-touch w-full rounded-control border border-line bg-panel px-3 py-2 text-sm text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none focus:ring-[3px] focus:ring-[var(--c-focus-ring)]"
+        />
+      )}
+
+      {loading && servers.length === 0 && (
+        <p className="mt-3 text-[12.5px] text-ink-faint">Loading servers…</p>
+      )}
+
+      <ul className="mt-3 flex flex-col gap-2" aria-label="Configured MCP servers">
+        {servers.map((server) => (
+          <li key={server.id} className="rounded-control border border-line bg-panel px-3 py-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="truncate text-[13.5px] font-medium text-ink">{server.name}</p>
+                <p className="truncate text-[11.5px] text-ink-faint">{server.url}</p>
+              </div>
+              <span
+                className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] ${
+                  server.status === 'connected'
+                    ? 'border-accent/40 text-accent'
+                    : server.status === 'error'
+                      ? 'border-danger/40 text-danger'
+                      : 'border-line text-ink-soft'
+                }`}
+              >
+                {server.status}
+                {server.serverInfo?.version ? ` · v${server.serverInfo.version}` : ''}
+              </span>
+            </div>
+            {server.lastError && (
+              <p role="alert" className="mt-1 text-[11.5px] text-danger">{server.lastError}</p>
+            )}
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Button variant="ghost" size="sm" onClick={() => void testServerMcpServerFor(server.id)}>
+                Test connection
+              </Button>
+              {server.status === 'connected' && (
+                <Button variant="ghost" size="sm" onClick={() => void disconnectServerMcpServerFor(server.id)}>
+                  Disconnect
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={() => void deleteServerMcpServerFor(server.id)}>
+                Remove
+              </Button>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {!loading && servers.length === 0 && (
+        <p className="mt-3 text-[12.5px] text-ink-faint">
+          No MCP servers configured yet — add one above.
+        </p>
+      )}
+    </section>
+  )
 }
 
 /* ------------------------------------------------------------------ */
