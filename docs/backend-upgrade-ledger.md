@@ -47,12 +47,12 @@ this upgrade (not inherited from older docs).
 | T005 | P01 | F02 canonical permission IDs, atomic decisions | done | commits 7-9: row id IS requestId, ask persisted + waiter before publish, atomic claim bound to workspace+session+run+request; 5 integration tests green |
 | T006 | P01 | F07 modes cannot cross tenants; shell disabled until isolation | done | commits 11-12: execBash refuses without UNI_AGENT_ISOLATED_EXECUTION, descriptor truthful, executor containment in all modes; 6 tests green |
 | T007 | P02 | F03 real tool schemas + structured tool history | done | commit 8: SDK-native multi-step loop (stopWhen), real inputSchema per tool, tool errors visible from fullStream; provider request assertions green |
-| T008 | P02 | Persisted transcripts + employee/memory linkage | todo | |
-| T009 | P02 | Truthful completion/budget/cancel outcomes | todo | |
-| T010 | P02 | F04 bounded edits/reads/fetch/search | todo | |
-| T011 | P03 | F05 SSE cursor + run/session lifetimes | todo | |
-| T012 | P03 | F06 atomic admission + terminal guards | todo | |
-| T013 | P03 | Durable worker ownership (jobs module) | todo | |
+| T008 | P02 | Persisted transcripts + employee/memory linkage | done | commits 17-19: agent_turn transcript (migration 0012) + employee_id pin; second message sees first turn (provider-request asserted) |
+| T009 | P02 | Truthful completion/budget/cancel outcomes | done | commits 20-22: usage summed across steps + usage event + run-row tokens (migration 0013); session returns to idle; budget/cancel truthful in F03 commit |
+| T010 | P02 | F04 bounded edits/reads/fetch/search | done | commits 14-16: literal replace-all terminates; 2MB input caps on read/web_fetch; 6 tests green |
+| T011 | P03 | F05 SSE cursor + run/session lifetimes | done | commits 23-25: after=-1 delivers sequence 0; runId-scoped stream ends only at its own terminal; serialized drains + backpressure + close cleanup |
+| T012 | P03 | F06 atomic admission + terminal guards | done | commits 26-27: advisory-lock admission transaction (caps+insert+started event), unique-index recovery, one-way terminals; 3 tests green |
+| T013 | P03 | Durable worker ownership (jobs module) | done | commits 28-30: pg-boss 10.4.2 + job_outbox (migration 0014) + worker.ts; boot reconciliation prevents zombie resume; payloads carry no credentials; 3 tests green |
 | T014 | P04 | Typed mode-aware service adapters | todo | |
 | T015 | P04 | Chat/employee surfaces use server runs | todo | |
 | T016 | P04 | Agents + memory panel wired to services | todo | |
