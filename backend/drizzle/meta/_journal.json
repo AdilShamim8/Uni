@@ -120,6 +120,13 @@
       "when": 1794595200000,
       "tag": "0016_plugins",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794681600000,
+      "tag": "0017_mcp_servers",
+      "breakpoints": true
     }
   ]
 }
