@@ -4,6 +4,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import * as schema from '../../db/schema.js'
 import { agentSessions } from '../../db/schema.js'
 import { notFound } from '../../lib/errors.js'
+import { deriveSessionRootDir } from './sessionStore.js'
 import type {
   AgentSessionDto,
   CreateAgentSessionRequest,
@@ -67,7 +68,10 @@ export async function createSession(
   request: CreateAgentSessionRequest,
 ): Promise<AgentSessionDto> {
   const id = randomUUID()
-  const rootDir = request.rootDir ?? 'sessions/default'
+  // Server-owned unique root (F01): every session gets a directory of its
+  // own under the workspace agent root — no shared 'sessions/default',
+  // no cross-session collisions. Legacy rows keep their stored rootDir.
+  const rootDir = deriveSessionRootDir(id, request.rootDir)
   const inserted = await db
     .insert(agentSessions)
     .values({
@@ -81,6 +85,7 @@ export async function createSession(
       modelId: request.modelId ?? null,
       rootDir,
       tools: request.tools ?? [],
+      employeeId: request.employeeId ?? null,
     })
     .returning()
   const row = inserted[0]
@@ -104,6 +109,7 @@ export async function patchSession(
       ...(request.modelId !== undefined ? { modelId: request.modelId } : {}),
       ...(request.tools !== undefined ? { tools: request.tools } : {}),
       ...(request.archived !== undefined ? { archived: request.archived } : {}),
+      ...(request.employeeId !== undefined ? { employeeId: request.employeeId } : {}),
       updatedAt: new Date(),
     })
     .where(and(eq(agentSessions.id, sessionId), eq(agentSessions.workspaceId, workspaceId)))

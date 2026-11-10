@@ -578,12 +578,12 @@ function OutputsPanel({ taskId }: { taskId: string }) {
   const [draft, setDraft] = useState('')
   if (!task) return null
 
-  function handleSaveToLibrary() {
+  async function handleSaveToLibrary() {
     // The canonical save operation — the exact same code path the
     // Documents plugin uses, so the panel and the plugin can never
     // disagree about what "saved" means.
     try {
-      const result = saveTaskReportToLibrary(taskId)
+      const result = await saveTaskReportToLibrary(taskId)
       showToast(
         result.recreated
           ? 'The saved document was deleted — recreated and re-linked'

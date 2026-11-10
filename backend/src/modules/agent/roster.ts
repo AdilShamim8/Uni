@@ -19,6 +19,9 @@ import { createGuardedFetch, urlGuardOptions, type GuardedFetch } from '../../li
 import type { Env } from '../../config/env.js'
 
 export const TOOL_OUTPUT_CAP = 20_000
+/** The most bytes read/web_fetch will BUFFER before truncating (F04):
+ *  the cap applies to input, not only to returned text. */
+export const TOOL_INPUT_BYTE_CAP = 2_000_000
 export const BASH_TIMEOUT_DEFAULT_MS = 20_000
 
 export interface ToolContext {
@@ -57,8 +60,22 @@ async function execRead(ctx: ToolContext, raw: unknown): Promise<ToolOutcome> {
   try {
     const stat = await fsp.stat(target)
     if (!stat.isFile()) return { ok: false, output: 'Not a file.' }
-    const content = await fsp.readFile(target, 'utf8')
-    return { ok: true, output: cut(content) }
+    // Bounded read (F04): open a stream and stop at the byte cap — an
+    // oversized file is never fully materialized in memory just to be
+    // truncated afterwards.
+    const handle = await fsp.open(target, 'r')
+    try {
+      const buffer = Buffer.alloc(Math.min(stat.size, TOOL_INPUT_BYTE_CAP))
+      await handle.read(buffer, 0, buffer.length, 0)
+      const text = buffer.toString('utf8')
+      const truncated = stat.size > TOOL_INPUT_BYTE_CAP
+      return {
+        ok: true,
+        output: cut(truncated ? `${text}\n…[file truncated at ${TOOL_INPUT_BYTE_CAP} bytes]` : text),
+      }
+    } finally {
+      await handle.close()
+    }
   } catch (error) {
     return { ok: false, output: `read failed: ${errorMessage(error)}` }
   }
@@ -160,16 +177,22 @@ async function execEdit(ctx: ToolContext, raw: unknown): Promise<ToolOutcome> {
     if (!original.includes(input.oldText)) {
       return { ok: false, output: 'oldText not found in the file.' }
     }
-    // Index splicing, never String.replace: $& and friends in a
-    // replacement are pattern syntax to replace() and would corrupt it.
-    const applyOne = (text: string): string => {
-      const first = text.indexOf(input.oldText)
-      return text.slice(0, first) + input.newText + text.slice(first + input.oldText.length)
-    }
-    let updated = applyOne(original)
+    // Literal non-overlapping replacement over the ORIGINAL text, once
+    // (F04): re-searching the already-modified string loops forever when
+    // newText contains oldText (identical strings worst of all). Split on
+    // the literal needle — never String.replace, whose $& pattern syntax
+    // would corrupt the output — then re-join with the replacement.
     if (input.replaceAll) {
-      while (updated.includes(input.oldText)) updated = applyOne(updated)
+      const parts = original.split(input.oldText)
+      await fsp.writeFile(target, parts.join(input.newText), 'utf8')
+      return {
+        ok: true,
+        output: `Edited ${path.relative(ctx.root, target)} (${parts.length - 1} replacements).`,
+      }
     }
+    const first = original.indexOf(input.oldText)
+    const updated =
+      original.slice(0, first) + input.newText + original.slice(first + input.oldText.length)
     await fsp.writeFile(target, updated, 'utf8')
     return { ok: true, output: `Edited ${path.relative(ctx.root, target)}.` }
   } catch (error) {
@@ -177,7 +200,28 @@ async function execEdit(ctx: ToolContext, raw: unknown): Promise<ToolOutcome> {
   }
 }
 
+/**
+ * Whether the host shell tool may execute at all (F07). A cwd and an
+ * approval gate do not isolate hosted execution: execBash spawns
+ * /bin/sh as the server OS user, so filesystem access, child processes
+ * and network are all the host's. Until the isolated execution worker
+ * (P11) mounts only the owning workspace under an unprivileged
+ * identity with resource limits, the tool answers 'unavailable' —
+ * explicitly, never by silently falling back to the host.
+ */
+export function shellExecutionAvailable(): boolean {
+  return process.env.UNI_AGENT_ISOLATED_EXECUTION === 'true'
+}
+
 function execBash(ctx: ToolContext, raw: unknown, signal?: AbortSignal): Promise<ToolOutcome> {
+  if (!shellExecutionAvailable()) {
+    return Promise.resolve({
+      ok: false,
+      output:
+        'Shell execution is unavailable: this deployment has no isolated execution worker. ' +
+        'File tools (read/list/write/edit) work inside the session root.',
+    })
+  }
   const input = toolInputSchemas.bash.parse(raw)
   return new Promise<ToolOutcome>((resolve) => {
     const child = spawn('/bin/sh', ['-c', input.command], {
@@ -246,10 +290,35 @@ async function execWebFetch(ctx: ToolContext, raw: unknown): Promise<ToolOutcome
     if (!/text\/|application\/(json|xml|javascript)/i.test(contentType)) {
       return { ok: false, output: `Refused non-text content-type: ${contentType || 'unknown'}` }
     }
+    // Bounded body (F04): read the stream incrementally and stop at the
+    // byte cap — an endless HTTP body is never fully buffered before the
+    // output is truncated.
+    const reader = response.body?.getReader()
+    if (reader) {
+      const chunks: Buffer[] = []
+      let total = 0
+      let truncated = false
+      const decoder = new TextDecoder()
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        total += value.byteLength
+        if (total > TOOL_INPUT_BYTE_CAP) {
+          chunks.push(Buffer.from(value.subarray(0, Math.max(0, TOOL_INPUT_BYTE_CAP - (total - value.byteLength)))))
+          truncated = true
+          await reader.cancel()
+          break
+        }
+        chunks.push(Buffer.from(value))
+      }
+      const body = chunks.map((chunk) => decoder.decode(chunk, { stream: true })).join('')
+      const text = truncated ? `${body}\n…[body truncated at ${TOOL_INPUT_BYTE_CAP} bytes]` : body
+      // Fenced, because fetched text is untrusted: the model must never
+      // follow instructions that arrive inside tool output (upstream
+      // prompt-injection fencing, applied to the returned block).
+      return { ok: true, output: cut(fence(text, input.url)) }
+    }
     const body = await response.text()
-    // Fenced, because fetched text is untrusted: the model must never
-    // follow instructions that arrive inside tool output (upstream
-    // prompt-injection fencing, applied to the returned block).
     return { ok: true, output: cut(fence(body, input.url)) }
   } catch (error) {
     return { ok: false, output: `fetch failed: ${errorMessage(error)}` }

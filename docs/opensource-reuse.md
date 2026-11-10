@@ -31,7 +31,7 @@ resolved versions in `backend/package-lock.json` as of B01 (2026-10-23).
 | ai | 7.0.153 | Apache-2.0 | B03 | streamText execution, abort/usage/finish handling for runs |
 | @ai-sdk/openai-compatible | 3.0.78 | Apache-2.0 | B03 | OpenAI-compatible provider transport (Grok/GPT/DeepSeek/local) |
 | @ai-sdk/anthropic | 4.0.88 | Apache-2.0 | B03 | Anthropic provider transport |
-| pg-boss | (planned) | MIT | B06 | PostgreSQL-backed durable jobs |
+| pg-boss | 10.4.2 | MIT | T013 | PostgreSQL-backed durable jobs (installed; worker + outbox) |
 
 License texts for the B01 set are preserved under `third_party/licenses/`
 and summarized in `THIRD_PARTY_NOTICES.md`. Frontend dependencies

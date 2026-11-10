@@ -940,3 +940,25 @@ API at U2-006 commit time:
 Docs only — no code change; the session-3 baseline table and slice
 evidence stand unchanged. Gate for this commit: none beyond doc review
 (no source touched).
+
+## Backend upgrade P00 — baseline (2026-11-10)
+
+Branch `task/backend-upgrade-p00-p14` created from `main` at
+`e50ac6a5ab10129650d671e61fbb9165cd296581` (= the researched SHA; no
+reset, PR #59 merge preserved). Environment: Node v24.22.2, npm 11.19.1.
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm ci && npm run build && npm run typecheck` | **Pass** — dist emitted, 0 type errors |
+| `cd backend && npm ci && npm run typecheck` | **Pass** — 0 errors (src + tests) |
+| `cd backend && npm run build` | **Pass** — dist emitted |
+| `cd backend && npm test` | **Pass — 297/297 across 30 files** (embedded PostgreSQL per file; 105s) |
+| `cd frontend && npm ci && npm run typecheck` | **Pass** — 0 errors |
+| `cd frontend && npm run lint` | **Pass** — no findings |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **Pass — 522/522 across 70 files** (158s) |
+
+Findings F01–F10 from the upgrade prompt were each reproduced in the
+source at this SHA before any fix (see
+`docs/backend-upgrade-ledger.md` baseline section). No changes to
+product code were made in the P00 commits — documentation and ledger
+only.
