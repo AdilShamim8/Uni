@@ -19,6 +19,9 @@ import { createGuardedFetch, urlGuardOptions, type GuardedFetch } from '../../li
 import type { Env } from '../../config/env.js'
 
 export const TOOL_OUTPUT_CAP = 20_000
+/** The most bytes read/web_fetch will BUFFER before truncating (F04):
+ *  the cap applies to input, not only to returned text. */
+export const TOOL_INPUT_BYTE_CAP = 2_000_000
 export const BASH_TIMEOUT_DEFAULT_MS = 20_000
 
 export interface ToolContext {
@@ -57,8 +60,22 @@ async function execRead(ctx: ToolContext, raw: unknown): Promise<ToolOutcome> {
   try {
     const stat = await fsp.stat(target)
     if (!stat.isFile()) return { ok: false, output: 'Not a file.' }
-    const content = await fsp.readFile(target, 'utf8')
-    return { ok: true, output: cut(content) }
+    // Bounded read (F04): open a stream and stop at the byte cap — an
+    // oversized file is never fully materialized in memory just to be
+    // truncated afterwards.
+    const handle = await fsp.open(target, 'r')
+    try {
+      const buffer = Buffer.alloc(Math.min(stat.size, TOOL_INPUT_BYTE_CAP))
+      await handle.read(buffer, 0, buffer.length, 0)
+      const text = buffer.toString('utf8')
+      const truncated = stat.size > TOOL_INPUT_BYTE_CAP
+      return {
+        ok: true,
+        output: cut(truncated ? `${text}\n…[file truncated at ${TOOL_INPUT_BYTE_CAP} bytes]` : text),
+      }
+    } finally {
+      await handle.close()
+    }
   } catch (error) {
     return { ok: false, output: `read failed: ${errorMessage(error)}` }
   }
@@ -273,10 +290,35 @@ async function execWebFetch(ctx: ToolContext, raw: unknown): Promise<ToolOutcome
     if (!/text\/|application\/(json|xml|javascript)/i.test(contentType)) {
       return { ok: false, output: `Refused non-text content-type: ${contentType || 'unknown'}` }
     }
+    // Bounded body (F04): read the stream incrementally and stop at the
+    // byte cap — an endless HTTP body is never fully buffered before the
+    // output is truncated.
+    const reader = response.body?.getReader()
+    if (reader) {
+      const chunks: Buffer[] = []
+      let total = 0
+      let truncated = false
+      const decoder = new TextDecoder()
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        total += value.byteLength
+        if (total > TOOL_INPUT_BYTE_CAP) {
+          chunks.push(Buffer.from(value.subarray(0, Math.max(0, TOOL_INPUT_BYTE_CAP - (total - value.byteLength)))))
+          truncated = true
+          await reader.cancel()
+          break
+        }
+        chunks.push(Buffer.from(value))
+      }
+      const body = chunks.map((chunk) => decoder.decode(chunk, { stream: true })).join('')
+      const text = truncated ? `${body}\n…[body truncated at ${TOOL_INPUT_BYTE_CAP} bytes]` : body
+      // Fenced, because fetched text is untrusted: the model must never
+      // follow instructions that arrive inside tool output (upstream
+      // prompt-injection fencing, applied to the returned block).
+      return { ok: true, output: cut(fence(text, input.url)) }
+    }
     const body = await response.text()
-    // Fenced, because fetched text is untrusted: the model must never
-    // follow instructions that arrive inside tool output (upstream
-    // prompt-injection fencing, applied to the returned block).
     return { ok: true, output: cut(fence(body, input.url)) }
   } catch (error) {
     return { ok: false, output: `fetch failed: ${errorMessage(error)}` }
