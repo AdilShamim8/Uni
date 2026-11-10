@@ -31,6 +31,13 @@ export interface ToolContext {
   guardedFetch: GuardedFetch
   /** Clock + timeouts, injectable for tests. */
   now: () => number
+  /**
+   * T024 — executes a namespaced MCP tool on the workspace's configured
+   * server (time-bounded, abort-honoring, result-bounded by the
+   * implementation). Absent in bare/test contexts: mcp_call then fails
+   * honestly with 'not configured'.
+   */
+  callMcpTool?: (tool: string, args: Record<string, unknown>, signal: AbortSignal) => Promise<ToolOutcome>
 }
 
 export interface ToolOutcome {
@@ -335,6 +342,29 @@ async function execCurrentTime(ctx: ToolContext): Promise<ToolOutcome> {
   return { ok: true, output: new Date(ctx.now()).toISOString() }
 }
 
+/**
+ * T024 — call a namespaced MCP tool. The remote's readOnly hint is
+ * irrelevant here: the permission gate treats mcp_call as mutating
+ * ALWAYS (an untrusted hint is never an access decision). The executor
+ * only relays bounded arguments and returns the bounded outcome; the
+ * transport layer enforces the time bound and honors the abort signal.
+ */
+async function execMcpCall(
+  ctx: ToolContext,
+  raw: unknown,
+  signal?: AbortSignal,
+): Promise<ToolOutcome> {
+  const input = toolInputSchemas.mcp_call.parse(raw)
+  if (!ctx.callMcpTool) {
+    return { ok: false, output: 'MCP servers are not configured for this session.' }
+  }
+  return ctx.callMcpTool(
+    input.tool,
+    input.args ?? {},
+    signal ?? new AbortController().signal,
+  )
+}
+
 async function execTodo(raw: unknown): Promise<ToolOutcome> {
   const input = toolInputSchemas.todo.parse(raw)
   const lines = input.todos.map(
@@ -360,6 +390,7 @@ export const ROSTER: readonly RosterEntry[] = [
   { name: 'edit', executing: execEdit },
   { name: 'bash', executing: (ctx, input, signal) => execBash(ctx, input, signal) },
   { name: 'web_fetch', executing: execWebFetch },
+  { name: 'mcp_call', executing: execMcpCall },
   {
     name: 'current_time',
     executing: async (ctx) => execCurrentTime(ctx),
