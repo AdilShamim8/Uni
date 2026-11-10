@@ -1050,6 +1050,76 @@ export async function reconcileStuckAgentRun(
   })
 }
 
+/**
+ * Boot-time reconciliation (T013): every run still marked running or
+ * waiting (a dead worker's orphans) resolves to an honest interrupted
+ * error BEFORE the worker drains the queue — a re-delivered attempt
+ * must never resume a zombie.
+ */
+export async function reconcileStuckAgentRuns(deps: RunEngineDeps): Promise<number> {
+  const { db } = deps
+  const rows = await db
+    .select({ id: agentRuns.id, workspaceId: agentRuns.workspaceId })
+    .from(agentRuns)
+    .where(inArray(agentRuns.status, ['running', 'waiting-for-permission', 'cancelling']))
+  for (const row of rows) {
+    await reconcileStuckAgentRun(deps, row.workspaceId, row.id)
+  }
+  return rows.length
+}
+
+/**
+ * Worker entry point for a queued agent-run attempt (T013). The run
+ * row already exists (admitted transactionally with its outbox row).
+ * Execution ownership: the row's status is claimed from 'running' by
+ * the admission transaction; a re-delivered attempt after a crash
+ * finds either a terminal row (nothing to do — the first attempt's
+ * outcome stands) or a non-terminal row that boot reconciliation has
+ * already marked interrupted (nothing to resume — an uncertain
+ * provider side effect is never blindly replayed). Only a run that is
+ * still 'running' AND younger than the job's delivery executes.
+ */
+export async function resumeAgentRun(deps: RunEngineDeps, payload: { runId: string; workspaceId: string; sessionId: string }): Promise<'executed' | 'already_terminal' | 'reconciled'> {
+  const { db, env } = deps
+  const rows = await db
+    .select()
+    .from(agentRuns)
+    .where(and(eq(agentRuns.id, payload.runId), eq(agentRuns.workspaceId, payload.workspaceId)))
+    .limit(1)
+  const run = rows[0]
+  if (!run) {
+    // The outbox row and the run row commit together, so this means the
+    // run was deleted (session delete cascades): nothing to do.
+    return 'already_terminal'
+  }
+  if (run.terminalAt) return 'already_terminal'
+
+  const session = await findSessionRow(db, payload.workspaceId, payload.sessionId)
+  if (!session || session.archived) {
+    await reconcileStuckAgentRun(deps, payload.workspaceId, payload.runId)
+    return 'reconciled'
+  }
+
+  // Fresh attempt: register a live handle and execute exactly like the
+  // in-process path. The permission pause survives worker restarts
+  // through its persisted pending row: the ask is re-published below.
+  const controller = new AbortController()
+  const live: LiveRun = {
+    runId: payload.runId,
+    sessionId: payload.sessionId,
+    controller,
+    done: Promise.resolve(),
+    permissionWaiters: new Map(),
+    partialText: run.outputText ?? '',
+  }
+  liveRuns.set(payload.runId, live)
+  live.done = executeAgentRun(deps, live, session).finally(() => {
+    liveRuns.delete(payload.runId)
+  })
+  void env // reserved for future worker-level execution limits
+  return 'executed'
+}
+
 /** Active agent runs in a workspace (F06 admission). */
 async function countActiveAgentRuns(
   db: AgentDatabase,
