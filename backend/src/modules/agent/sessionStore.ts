@@ -69,7 +69,25 @@ export function sessionRootPath(agentRoot: string, workspaceId: string, rootDir:
  * Provision the session root before tools run (lazy, idempotent): a
  * fresh session's first write/list/bash must not fail with ENOENT, and
  * an unused session still owns no directory until execution needs one.
+ * An unwritable agent root fails the run honestly (the catch belongs to
+ * the caller's terminal handling) rather than crashing the process.
  */
 export async function ensureSessionRoot(root: string): Promise<void> {
-  await fsp.mkdir(root, { recursive: true })
+  try {
+    await fsp.mkdir(root, { recursive: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EACCES') {
+      // Re-raise as a typed error the run engine maps to a terminal.
+      throw new UnsafeAgentRootError(root, (error as Error).message)
+    }
+    throw error
+  }
+}
+
+/** The agent root itself is not usable (permissions/path). Fail honest. */
+export class UnsafeAgentRootError extends Error {
+  constructor(readonly root: string, readonly causeMessage: string) {
+    super(`The agent storage root is not usable: ${causeMessage}`)
+    this.name = 'UnsafeAgentRootError'
+  }
 }
