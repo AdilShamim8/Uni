@@ -792,6 +792,39 @@ export type AgentPendingPermissionRow = typeof agentPendingPermissions.$inferSel
 export type NewAgentPendingPermissionRow = typeof agentPendingPermissions.$inferInsert
 export type AgentTurnRow = typeof agentTurns.$inferSelect
 export type NewAgentTurnRow = typeof agentTurns.$inferInsert
+
+/* ------------------------------------------------------------------ */
+/* Durable jobs (T013) — outbox closing the run-row/queue gap          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The transactional outbox: rows committed in the SAME transaction as
+ * their application row (the run), then dispatched to pg-boss and
+ * marked sent. A crash between commit and dispatch leaves the row
+ * unsent — the reconciler re-sends it — and a crash between send and
+ * mark-sent is safe because the queue entry is singleton-keyed by run
+ * id. Payloads carry ONLY identifiers, never credentials.
+ */
+export const jobOutbox = pgTable(
+  'job_outbox',
+  {
+    id: text('id').primaryKey(),
+    kind: text('kind').notNull(),
+    runId: text('run_id'),
+    workspaceId: text('workspace_id').notNull(),
+    sessionId: text('session_id'),
+    /** JobPayload as JSON — identifiers only. */
+    payload: jsonb('payload').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+  },
+  (table) => [
+    index('job_outbox_sent_idx').on(table.sentAt, table.createdAt),
+    index('job_outbox_run_idx').on(table.runId),
+  ],
+)
+export type JobOutboxRow = typeof jobOutbox.$inferSelect
+export type NewJobOutboxRow = typeof jobOutbox.$inferInsert
 export type RoutineRow = typeof routines.$inferSelect
 export type NewRoutineRow = typeof routines.$inferInsert
 export type RoutineRunRow = typeof routineRuns.$inferSelect
