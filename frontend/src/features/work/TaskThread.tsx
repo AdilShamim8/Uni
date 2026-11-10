@@ -42,21 +42,24 @@ import type { WorkTask } from '@/domain/workspaceTypes'
  * right column, mobile bottom sheet), and the composer sends follow-ups
  * that drive real runs.
  */
+/**
+ * T019 — the routing decision between the server thread and the local
+ * one lives here, in a component whose hooks all run unconditionally
+ * (rules-of-hooks); the branch only picks what to RENDER.
+ */
 export function TaskThread({ taskId }: { taskId: string }) {
-  const navigate = useNavigate()
-
-  // T019 — a server task id (present in the server store, absent from
-  // the local one) renders the server thread; local tasks keep the
-  // local thread in every mode.
   const serverStatus = useServerSessionStore((state) => state.status)
   const serverTask = useServerSessionStore((state) =>
     state.serverWorkTasks.find((entry) => entry.id === taskId),
   )
   const localTaskPresent = useWorkStore((state) => Boolean(state.tasks[taskId]))
-  if (serverStatus === 'signed-in' && serverTask && !localTaskPresent) {
-    return <ServerTaskThread taskId={taskId} />
-  }
+  const inServerMode = serverStatus === 'signed-in' && serverTask !== undefined && !localTaskPresent
+  if (inServerMode) return <ServerTaskThread taskId={taskId} />
+  return <LocalTaskThread taskId={taskId} />
+}
 
+function LocalTaskThread({ taskId }: { taskId: string }) {
+  const navigate = useNavigate()
   const task = useWorkStore((state) => state.tasks[taskId])
   const hydrated = useWorkStore((state) => state.hydrated)
   const [inspectorOpen, setInspectorOpen] = useState(false)
