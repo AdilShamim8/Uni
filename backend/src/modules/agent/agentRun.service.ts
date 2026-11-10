@@ -26,7 +26,7 @@ import {
 } from '../../db/schema.js'
 import { appendAgentEvent } from './agentEvents.service.js'
 import { findSessionRow, type AgentDatabase } from './agentSession.service.js'
-import { sessionRootPath, defaultAgentRoot } from './sessionStore.js'
+import { sessionRootPath, defaultAgentRoot, ensureSessionRoot, UnsafeRootDirError } from './sessionStore.js'
 import { gateToolCall, type MutableGateOptions } from './permission/gate.js'
 import { executeTool, toolContextFor, isRosterTool } from './roster.js'
 import { buildModelForRun, type ProviderForRun } from '../runs/modelClient.js'
@@ -286,7 +286,6 @@ async function executeAgentRun(
   session: typeof agentSessions.$inferSelect,
 ): Promise<void> {
   const { db, env } = deps
-  const root = sessionRootPath(defaultAgentRoot(), session.workspaceId, session.rootDir)
 
   const resolveTerminal = async (status: AgentRunStatus, payload: AgentEventPayload) => {
     await db
@@ -308,6 +307,23 @@ async function executeAgentRun(
       payload: { ...payload, status },
     })
   }
+
+  let root: string
+  try {
+    root = sessionRootPath(defaultAgentRoot(), session.workspaceId, session.rootDir)
+  } catch (error) {
+    // A stored rootDir that cannot be a safe path fails the run honestly
+    // before any tool touches the filesystem (F01).
+    if (error instanceof UnsafeRootDirError) {
+      await resolveTerminal('error', {
+        errorCode: 'unsafe_session_root',
+        errorMessage: 'The session root is not a safe path; contact support or recreate the session.',
+      })
+      return
+    }
+    throw error
+  }
+  await ensureSessionRoot(root)
 
   try {
     // Provider resolution: the session pin, else honest failure.
