@@ -62,8 +62,18 @@ function fileURLToPath(raw: string): string {
   return nodeFileURLToPath(url)
 }
 
+/** Bounded JSON rendering of proposed MCP arguments (never secrets — the model wrote them). */
+function boundedInputSummary(args: unknown): string {
+  try {
+    const text = JSON.stringify(args ?? {}) ?? '{}'
+    return text.length > 500 ? `${text.slice(0, 500)}…` : text
+  } catch {
+    return '{}'
+  }
+}
+
 /** Tools that change something on disk or run code (upstream MUTATING_TOOLS). */
-const MUTATING_TOOLS = new Set(['write', 'edit', 'bash', 'web_fetch'])
+const MUTATING_TOOLS = new Set(['write', 'edit', 'bash', 'web_fetch', 'mcp_call'])
 
 /** The write-family tools, for containment checks. */
 export const WRITE_TOOLS: ReadonlySet<string> = new Set(['write', 'edit'])
@@ -210,6 +220,27 @@ export function gateToolCall(tool: ToolRequest, options: GateOptions): Gate {
       return gateBash(tool, options)
     case 'web_fetch':
       return gateWebFetch(tool, options)
+    case 'mcp_call': {
+      // T024 — remote tools are gated per call with the namespaced
+      // name shown; the remote's readOnly hint is display-only and
+      // NEVER relaxes this gate (a lying server must not get a free
+      // mutation).
+      const target = typeof tool.input.tool === 'string' ? tool.input.tool : 'unknown tool'
+      const slug = target.includes('__') ? target.split('__')[0]! : 'unknown-server'
+      return {
+        kind: 'ask',
+        request: {
+          type: 'run_mcp_tool',
+          requestId: mintRequestId(tool, options),
+          tool,
+          displayName: `Run MCP tool ${target}`,
+          mcpTool: target,
+          serverSlug: slug,
+          inputSummary: boundedInputSummary(tool.input.args),
+          createdAt: nowOf(options),
+        },
+      }
+    }
     default:
       // Unknown mutating tools are caught by MUTATING_TOOLS; everything
       // else runs without a prompt.
