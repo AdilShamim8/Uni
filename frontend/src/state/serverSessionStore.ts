@@ -66,6 +66,14 @@ import {
   answerServerWorkTask,
   type ServerWorkTask,
 } from '@/services/api/serverWork'
+import {
+  listServerMcpServers,
+  createServerMcpServer,
+  deleteServerMcpServer,
+  testServerMcpServer,
+  disconnectServerMcpServer,
+  type ServerMcpServer,
+} from '@/services/api/serverMcp'
 
 /**
  * Server-mode session state — kept strictly separate from the local app
@@ -216,6 +224,10 @@ interface ServerSessionState {
   serverWorkTasks: ServerWorkTask[]
   serverWorkTasksLoading: boolean
 
+  /** Server MCP servers (T025), managed in the Plugins/settings surface. */
+  serverMcpServers: ServerMcpServer[]
+  serverMcpServersLoading: boolean
+
   /** The run currently streaming into the open conversation, if any. */
   activeRun: {
     runId: string
@@ -309,6 +321,17 @@ interface ServerSessionState {
   cancelServerWorkTaskFor: (taskId: string) => Promise<boolean>
   answerServerWorkTaskFor: (taskId: string, answer: string) => Promise<boolean>
 
+  /** Server MCP (T025): list + lifecycle through the API. */
+  loadServerMcpServers: () => Promise<void>
+  createServerMcpServerFor: (input: {
+    name: string
+    url: string
+    auth?: { type: 'none' } | { type: 'bearer'; token: string }
+  }) => Promise<ServerMcpServer | null>
+  deleteServerMcpServerFor: (serverId: string) => Promise<boolean>
+  testServerMcpServerFor: (serverId: string) => Promise<ServerMcpServer | null>
+  disconnectServerMcpServerFor: (serverId: string) => Promise<ServerMcpServer | null>
+
   /** T016 — server memory notes for a linked employee. */
   loadServerMemoryNotes: (employeeId: string) => Promise<void>
   addServerMemoryNoteFor: (employeeId: string, text: string) => Promise<boolean>
@@ -358,6 +381,8 @@ const clearedServerData: Pick<
   | 'serverAgentSessionsLoading'
   | 'serverWorkTasks'
   | 'serverWorkTasksLoading'
+  | 'serverMcpServers'
+  | 'serverMcpServersLoading'
 > = {
   account: null,
   error: null,
@@ -385,6 +410,8 @@ const clearedServerData: Pick<
   serverAgentSessionsLoading: false,
   serverWorkTasks: [],
   serverWorkTasksLoading: false,
+  serverMcpServers: [],
+  serverMcpServersLoading: false,
 }
 
 export const useServerSessionStore = create<ServerSessionState>()((set, get) => {
@@ -448,6 +475,7 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         void get().loadServerArtifacts()
         void get().loadServerAgentSessions()
         void get().loadServerWorkTasks()
+        void get().loadServerMcpServers()
         return true
       } catch (error) {
         if (!stillCurrent(generation)) return false
@@ -475,6 +503,7 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         void get().loadServerArtifacts()
         void get().loadServerAgentSessions()
         void get().loadServerWorkTasks()
+        void get().loadServerMcpServers()
         return true
       } catch (error) {
         if (!stillCurrent(generation)) return false
@@ -1232,6 +1261,85 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       if (!stillCurrent(generation)) return false
       set({ runError: errorMessage(error) })
       return false
+    }
+  },
+
+  loadServerMcpServers: async () => {
+    const generation = get().sessionGeneration
+    set({ serverMcpServersLoading: true })
+    try {
+      const items = await listServerMcpServers()
+      if (!stillCurrent(generation)) return
+      set({ serverMcpServers: items, serverMcpServersLoading: false })
+    } catch {
+      if (!stillCurrent(generation)) return
+      set({ serverMcpServersLoading: false })
+    }
+  },
+
+  createServerMcpServerFor: async (input) => {
+    const generation = get().sessionGeneration
+    try {
+      const server = await createServerMcpServer(input)
+      if (!stillCurrent(generation)) return null
+      set((state) => ({ serverMcpServers: [...state.serverMcpServers, server] }))
+      return server
+    } catch (error) {
+      if (!stillCurrent(generation)) return null
+      set({ runError: errorMessage(error) })
+      return null
+    }
+  },
+
+  deleteServerMcpServerFor: async (serverId) => {
+    const generation = get().sessionGeneration
+    try {
+      await deleteServerMcpServer(serverId)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverMcpServers: state.serverMcpServers.filter((server) => server.id !== serverId),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ runError: errorMessage(error) })
+      return false
+    }
+  },
+
+  testServerMcpServerFor: async (serverId) => {
+    const generation = get().sessionGeneration
+    try {
+      const server = await testServerMcpServer(serverId)
+      if (!stillCurrent(generation)) return null
+      set((state) => ({
+        serverMcpServers: state.serverMcpServers.map((entry) =>
+          entry.id === serverId ? server : entry,
+        ),
+      }))
+      return server
+    } catch (error) {
+      if (!stillCurrent(generation)) return null
+      set({ runError: errorMessage(error) })
+      return null
+    }
+  },
+
+  disconnectServerMcpServerFor: async (serverId) => {
+    const generation = get().sessionGeneration
+    try {
+      const server = await disconnectServerMcpServer(serverId)
+      if (!stillCurrent(generation)) return null
+      set((state) => ({
+        serverMcpServers: state.serverMcpServers.map((entry) =>
+          entry.id === serverId ? server : entry,
+        ),
+      }))
+      return server
+    } catch (error) {
+      if (!stillCurrent(generation)) return null
+      set({ runError: errorMessage(error) })
+      return null
     }
   },
 
