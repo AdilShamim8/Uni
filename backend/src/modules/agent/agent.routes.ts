@@ -140,6 +140,7 @@ export async function agentRoutes(app: FastifyInstance): Promise<void> {
       { db, env: app.env },
       request.workspace!.id,
       rows[0].sessionId,
+      runId,
       requestId,
       body.decision,
     )
