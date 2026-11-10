@@ -1,3 +1,6 @@
+import * as fsp from 'node:fs/promises'
+import * as path from 'node:path'
+import { isValidRootDir } from '@uni/contracts'
 import { agentSessions } from '../../db/schema.js'
 
 /**
@@ -20,11 +23,53 @@ export function defaultAgentRoot(): string {
 }
 
 /**
+ * A rootDir that is not a safe relative path can never reach the
+ * filesystem, whatever stored it (F01): fail closed, loudly.
+ */
+export class UnsafeRootDirError extends Error {
+  constructor(readonly rootDir: string) {
+    super('Session rootDir is not a safe relative path.')
+    this.name = 'UnsafeRootDirError'
+  }
+}
+
+/**
+ * The server-derived unique rootDir for a NEW session (F01): always
+ * prefixed with the session's own id, so two sessions can never share a
+ * root and a client can never aim one at another session's directory. A
+ * client-provided value (already contract-validated) nests INSIDE that
+ * owned directory as sub-organization, never beside it.
+ */
+export function deriveSessionRootDir(sessionId: string, clientRootDir?: string): string {
+  const base = `sessions/${sessionId}`
+  if (clientRootDir == null || clientRootDir.trim().length === 0) return base
+  if (!isValidRootDir(clientRootDir)) throw new UnsafeRootDirError(clientRootDir)
+  return `${base}/${clientRootDir.replace(/\/+$/, '')}`
+}
+
+/**
  * The absolute session root for a row: <agentRoot>/<workspaceId>/<rootDir>.
- * rootDir is contract-validated (relative, safe charset) so the join cannot
- * escape via ../ — and the gate re-verifies containment at every tool call.
+ * rootDir is re-validated here at runtime — the contract check guards the
+ * API, this check guards the filesystem against any row that predates it
+ * or bypassed it — and the joined path is verified to stay inside the
+ * owning workspace's directory. The gate re-verifies containment again
+ * at every tool call (symlinks included).
  */
 export function sessionRootPath(agentRoot: string, workspaceId: string, rootDir: string): string {
-  const clean = rootDir.replace(/\/+$/, '')
-  return `${agentRoot.replace(/\/+$/, '')}/${workspaceId}/${clean}`
+  if (!isValidRootDir(rootDir)) throw new UnsafeRootDirError(rootDir)
+  const base = path.resolve(agentRoot, workspaceId)
+  const root = path.resolve(base, rootDir)
+  if (root !== base && !root.startsWith(`${base}${path.sep}`)) {
+    throw new UnsafeRootDirError(rootDir)
+  }
+  return root
+}
+
+/**
+ * Provision the session root before tools run (lazy, idempotent): a
+ * fresh session's first write/list/bash must not fail with ENOENT, and
+ * an unused session still owns no directory until execution needs one.
+ */
+export async function ensureSessionRoot(root: string): Promise<void> {
+  await fsp.mkdir(root, { recursive: true })
 }
