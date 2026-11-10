@@ -160,16 +160,22 @@ async function execEdit(ctx: ToolContext, raw: unknown): Promise<ToolOutcome> {
     if (!original.includes(input.oldText)) {
       return { ok: false, output: 'oldText not found in the file.' }
     }
-    // Index splicing, never String.replace: $& and friends in a
-    // replacement are pattern syntax to replace() and would corrupt it.
-    const applyOne = (text: string): string => {
-      const first = text.indexOf(input.oldText)
-      return text.slice(0, first) + input.newText + text.slice(first + input.oldText.length)
-    }
-    let updated = applyOne(original)
+    // Literal non-overlapping replacement over the ORIGINAL text, once
+    // (F04): re-searching the already-modified string loops forever when
+    // newText contains oldText (identical strings worst of all). Split on
+    // the literal needle — never String.replace, whose $& pattern syntax
+    // would corrupt the output — then re-join with the replacement.
     if (input.replaceAll) {
-      while (updated.includes(input.oldText)) updated = applyOne(updated)
+      const parts = original.split(input.oldText)
+      await fsp.writeFile(target, parts.join(input.newText), 'utf8')
+      return {
+        ok: true,
+        output: `Edited ${path.relative(ctx.root, target)} (${parts.length - 1} replacements).`,
+      }
     }
+    const first = original.indexOf(input.oldText)
+    const updated =
+      original.slice(0, first) + input.newText + original.slice(first + input.oldText.length)
     await fsp.writeFile(target, updated, 'utf8')
     return { ok: true, output: `Edited ${path.relative(ctx.root, target)}.` }
   } catch (error) {
