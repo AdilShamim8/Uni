@@ -583,6 +583,9 @@ export const agentRuns = pgTable(
     requestFingerprint: text('request_fingerprint'),
     errorCode: text('error_code'),
     errorMessage: text('error_message'),
+    /** Usage summed across the run's model steps (null when the provider reported none). */
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
     terminalAt: timestamp('terminal_at', { withTimezone: true }),
