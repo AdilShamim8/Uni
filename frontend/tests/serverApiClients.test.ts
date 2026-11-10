@@ -38,8 +38,8 @@ import { ApiError } from '@/services/api/client'
  * surface typed results, and turn non-2xx into ApiError.
  */
 
-function jsonResponse(status: number, body: unknown): Response {
-  return new Response(JSON.stringify(body), {
+function jsonResponse(status: number, body?: unknown): Response {
+  return new Response(body === undefined ? null : JSON.stringify(body), {
     status,
     headers: { 'content-type': 'application/json' },
   })
@@ -192,10 +192,20 @@ describe('server library client', () => {
     expect(init.method).toBe('DELETE')
   })
 
-  it('get artifact by id', async () => {
+  it('get artifact by id; create and patch post their bodies', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(200, ARTIFACT))
     const artifact = await getServerArtifact('a-1')
     expect(artifact.id).toBe('a-1')
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(201, ARTIFACT))
+    await createServerArtifact({ title: 'New', kind: 'document', markdown: '# x' })
+    let init = fetchMock.mock.calls.at(-1)![1]!
+    expect(JSON.parse(init.body as string)).toEqual({ title: 'New', kind: 'document', markdown: '# x' })
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, ARTIFACT))
+    await patchServerArtifact('a-1', { title: 'Renamed' })
+    init = fetchMock.mock.calls.at(-1)![1]!
+    expect(init.method).toBe('PATCH')
   })
 })
 
@@ -247,6 +257,37 @@ describe('server agents client', () => {
     expect(serverAgentEventsUrl('s-1', 4, 'r-2')).toBe(
       '/api/v1/agent/sessions/s-1/events?after=4&runId=r-2',
     )
+  })
+
+  it('agent sessions CRUD hits session routes', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [] }))
+    await listServerAgentSessions()
+    expect(String(fetchMock.mock.calls[0]![0])).toContain('/agent/sessions')
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(201, {
+        id: 's-1', name: 'Research', description: '', mode: 'default', status: 'idle',
+        providerId: null, modelId: null, rootDir: 'sessions/s-1', tools: [], archived: false,
+        createdAt: 1, updatedAt: 1,
+      }),
+    )
+    await createServerAgentSession({ name: 'Research' })
+    expect(fetchMock.mock.calls.at(-1)![1]!.method).toBe('POST')
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        id: 's-1', name: 'Research 2', description: '', mode: 'plan', status: 'idle',
+        providerId: null, modelId: null, rootDir: 'sessions/s-1', tools: [], archived: false,
+        createdAt: 1, updatedAt: 2,
+      }),
+    )
+    await patchServerAgentSession('s-1', { mode: 'plan' })
+    expect(String(fetchMock.mock.calls.at(-1)![0])).toContain('/agent/sessions/s-1')
+
+    fetchMock.mockResolvedValueOnce(jsonResponse(204))
+    await deleteServerAgentSession('s-1')
+    const deleteInit = fetchMock.mock.calls.at(-1)![1]!
+    expect(deleteInit.method).toBe('DELETE')
   })
 
   it('cancel and get hit their routes', async () => {
