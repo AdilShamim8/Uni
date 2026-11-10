@@ -568,28 +568,38 @@ async function runToolCall(
   }
 
   if (gate.kind === 'ask') {
-    // Persist the ask and wait for the user's answer.
-    const pendingId = randomUUID()
-    await db.insert(agentPendingPermissions).values({
-      id: pendingId,
-      workspaceId: session.workspaceId,
-      sessionId: live.sessionId,
-      runId: live.runId,
-      request: gate.request,
-    })
+    // One canonical id everywhere (F02): the persisted row's id IS the
+    // request's requestId, so the id the client sees over SSE is the id
+    // the respond endpoint accepts. The row is persisted BEFORE the
+    // event is published, so an immediate response can never miss.
+    const pendingId = gate.request.requestId
+    const inserted = await db
+      .insert(agentPendingPermissions)
+      .values({
+        id: pendingId,
+        workspaceId: session.workspaceId,
+        sessionId: live.sessionId,
+        runId: live.runId,
+        request: { ...gate.request, requestId: pendingId },
+      })
+      .returning({ id: agentPendingPermissions.id })
+    if (!inserted[0]) throw new Error('Pending permission insert returned no row')
     await db
       .update(agentRuns)
       .set({ status: 'waiting-for-permission', updatedAt: new Date() })
       .where(eq(agentRuns.id, live.runId))
+    // The waiter is registered BEFORE the event goes out: a response
+    // arriving in the same tick as the SSE frame finds a live waiter.
+    const decisionPromise = waitForDecision(live, pendingId)
     await appendAgentEvent(db, {
       workspaceId: session.workspaceId,
       sessionId: live.sessionId,
       runId: live.runId,
       type: 'permission_requested',
-      payload: { permissionRequest: gate.request },
+      payload: { permissionRequest: { ...gate.request, requestId: pendingId } },
     })
 
-    const decision = await waitForDecision(live, pendingId)
+    const decision = await decisionPromise
 
     await db
       .update(agentPendingPermissions)
@@ -694,33 +704,48 @@ function waitForDecision(live: LiveRun, pendingId: string): Promise<PermissionDe
 /* Permission response + cancel                                        */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Resolve a pending permission request. The decision is claimed
+ * ATOMICALLY (conditional update on resolvedAt IS NULL), bound to the
+ * exact workspace + session + run + request identity from the URL — a
+ * wrong run in the same session cannot resolve another run's ask, and
+ * two concurrent answers resolve at most once (the loser sees 404).
+ */
 export async function respondToPermission(
   deps: RunEngineDeps,
   workspaceId: string,
   sessionId: string,
+  runId: string,
   requestId: string,
   decision: PermissionDecision,
 ): Promise<boolean> {
   const { db } = deps
-  const pending = await db
-    .select()
-    .from(agentPendingPermissions)
+  const claimed = await db
+    .update(agentPendingPermissions)
+    .set({
+      resolvedAt: new Date(),
+      resolution: decision.decision === 'approve' ? `approve:${decision.scope}` : 'deny',
+    })
     .where(
       and(
         eq(agentPendingPermissions.id, requestId),
         eq(agentPendingPermissions.workspaceId, workspaceId),
+        eq(agentPendingPermissions.sessionId, sessionId),
+        eq(agentPendingPermissions.runId, runId),
         isNull(agentPendingPermissions.resolvedAt),
       ),
     )
-    .limit(1)
-  const row = pending[0]
-  if (!row || row.sessionId !== sessionId) return false
+    .returning()
+  const row = claimed[0]
+  if (!row) return false
 
-  const live = [...liveRuns.values()].find((candidate) => candidate.runId === row.runId)
+  // The live waiter (same process) is resolved by the claimed row's id.
+  const live = [...liveRuns.values()].find((candidate) => candidate.runId === runId)
   const waiter = live?.permissionWaiters.get(requestId)
-  if (!waiter) return false
-  live!.permissionWaiters.delete(requestId)
-  waiter(decision)
+  if (waiter) {
+    live!.permissionWaiters.delete(requestId)
+    waiter(decision)
+  }
   return true
 }
 
