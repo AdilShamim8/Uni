@@ -91,18 +91,52 @@ export const agentSessionDtoSchema = z.object({
 })
 export type AgentSessionDto = z.infer<typeof agentSessionDtoSchema>
 
+/* ------------------------------------------------------------------ */
+/* Session root safety (F01)                                           */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The one gate a rootDir string must pass before it may influence a
+ * filesystem path: a RELATIVE path of forward-slash-joined safe
+ * segments. Absolute paths, `..`/`.` segments (and any segment
+ * CONTAINING `..`), backslashes, NULs and empty segments all fail, so a
+ * stored rootDir can never traverse out of the workspace agent root.
+ * Server-derived roots (`sessions/<sessionId>`) pass trivially.
+ */
+export function isValidRootDir(value: string): boolean {
+  if (value.length === 0 || value.length > 500) return false
+  // Trailing slashes are cosmetic; strip them so 'sessions/x/' is valid.
+  const trimmed = value.replace(/\/+$/, '')
+  if (trimmed.length === 0) return false
+  if (trimmed.startsWith('/') || trimmed.includes('\\') || trimmed.includes('\0')) return false
+  return trimmed.split('/').every((segment) => {
+    if (segment.length === 0 || segment.length > 200) return false
+    if (segment === '.' || segment.includes('..')) return false
+    return /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(segment)
+  })
+}
+
 export const createAgentSessionRequestSchema = z.object({
   name: z.string().trim().min(1).max(120),
   description: z.string().trim().max(2_000).optional(),
   mode: agentModeSchema.exclude(['unattended']).optional(),
   providerId: z.string().trim().min(1).max(200).nullable().optional(),
   modelId: z.string().trim().min(1).max(200).nullable().optional(),
+  /**
+   * Optional sub-organization INSIDE the session's server-owned
+   * directory. The server always prefixes the session's own id, so two
+   * sessions can never share (or collide into) a root, and traversal
+   * forms are rejected here before they reach the filesystem (F01).
+   */
   rootDir: z
     .string()
     .trim()
     .min(1)
     .max(500)
-    .regex(/^[a-zA-Z0-9][a-zA-Z0-9._\-/]*$/)
+    .refine(isValidRootDir, {
+      message:
+        'rootDir must be a relative path of safe segments (no absolute paths, "..", "." or backslashes).',
+    })
     .optional(),
   tools: z.array(z.string().trim().min(1).max(100)).max(64).optional(),
 })
