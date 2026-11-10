@@ -14,11 +14,12 @@
  */
 import { randomUUID } from 'node:crypto'
 import { createHash } from 'node:crypto'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, sql, inArray, gt } from 'drizzle-orm'
 import { streamText, stepCountIs, tool as aiTool, type ToolSet, type ModelMessage } from 'ai'
 import * as schema from '../../db/schema.js'
 import {
   agentAllowances,
+  agentEvents,
   agentPendingPermissions,
   agentRuns,
   agentSessions,
@@ -34,7 +35,8 @@ import { buildModelForRun, type ProviderForRun } from '../runs/modelClient.js'
 import { decryptSecret, parseMasterKey } from '../../lib/secretBox.js'
 import { allowsKeyless, type ProviderAuthMode } from '../../lib/providerUrls.js'
 import { providerConnections } from '../../db/schema.js'
-import { AppError } from '../../lib/errors.js'
+import { AppError, rateLimited } from '../../lib/errors.js'
+import { isUniqueViolation } from '../../lib/pgErrors.js'
 import { toolInputSchemas } from '@uni/contracts'
 import type {
   AgentEventPayload,
@@ -238,29 +240,77 @@ export async function createAgentRun(deps: RunEngineDeps, input: CreateAgentRunI
     modelId: session.modelId,
   })
 
-  const inserted = await db
-    .insert(agentRuns)
-    .values({
-      id: runId,
-      workspaceId: input.workspaceId,
-      sessionId: input.sessionId,
-      status: 'running',
-      inputText: input.text,
-      providerId: session.providerId,
-      modelId: session.modelId,
-      idempotencyKey: input.idempotencyKey ?? null,
-      requestFingerprint: fingerprint,
+  // F06 — atomic admission, mirroring the runs module's N020/N021/N022
+  // discipline. The concurrency count, the rate count, the insert AND
+  // the run_started event share ONE transaction serialized by a
+  // per-workspace advisory lock: concurrent creators serialize at the
+  // lock, so the caps can never be oversubscribed, and a committed run
+  // always has its started event (no orphan 'running' rows with zero
+  // events). The sequence needs no advisory lock of its own: the run id
+  // is minted here, so nobody else can append to this run yet.
+  try {
+    await db.transaction(async (tx) => {
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${input.workspaceId}, 0))`,
+      )
+      if ((await countRecentAgentRunCreations(tx, input.workspaceId)) >= env.RUN_CREATE_RATE_PER_MINUTE) {
+        throw rateLimited('Too many agent runs started. Wait a moment and try again.')
+      }
+      if ((await countActiveAgentRuns(tx, input.workspaceId)) >= env.RUN_MAX_CONCURRENT_PER_WORKSPACE) {
+        throw rateLimited('Too many concurrent runs in this workspace.')
+      }
+      await tx.insert(agentRuns).values({
+        id: runId,
+        workspaceId: input.workspaceId,
+        sessionId: input.sessionId,
+        status: 'running',
+        inputText: input.text,
+        providerId: session.providerId,
+        modelId: session.modelId,
+        idempotencyKey: input.idempotencyKey ?? null,
+        requestFingerprint: fingerprint,
+      })
+      const maxRow = await tx
+        .select({ max: sql<number | null>`max(${agentEvents.sequence})` })
+        .from(agentEvents)
+        .where(eq(agentEvents.sessionId, input.sessionId))
+      const next = (maxRow[0]?.max ?? -1) + 1
+      await tx.insert(agentEvents).values({
+        id: randomUUID(),
+        workspaceId: input.workspaceId,
+        sessionId: input.sessionId,
+        runId,
+        sequence: next,
+        type: 'run_started',
+        payload: { inputText: input.text },
+      })
     })
-    .returning()
-  if (!inserted[0]) throw new Error('Agent run insert returned no row')
-
-  await appendAgentEvent(db, {
-    workspaceId: input.workspaceId,
-    sessionId: input.sessionId,
-    runId,
-    type: 'run_started',
-    payload: { inputText: input.text },
-  })
+  } catch (error) {
+    // F06 — concurrent same-key creation: two requests that both pass
+    // the replay lookup race at the unique index; Postgres blocks the
+    // second insert until the first commits, then raises 23505. The
+    // winner's committed row IS the answer (or a conflict when the
+    // request differs).
+    if (isUniqueViolation(error) && input.idempotencyKey) {
+      const winner = await db
+        .select()
+        .from(agentRuns)
+        .where(
+          and(
+            eq(agentRuns.workspaceId, input.workspaceId),
+            eq(agentRuns.idempotencyKey, input.idempotencyKey),
+          ),
+        )
+        .limit(1)
+      if (winner[0]) {
+        if (winner[0].requestFingerprint && winner[0].requestFingerprint !== fingerprint) {
+          throw new AppError('CONFLICT', 'Idempotency key is bound to a different request.', 409)
+        }
+        return { runId: winner[0].id, reused: true }
+      }
+    }
+    throw error
+  }
 
   const controller = new AbortController()
   const live: LiveRun = {
@@ -293,7 +343,11 @@ async function executeAgentRun(
   const { db, env } = deps
 
   const resolveTerminal = async (status: AgentRunStatus, payload: AgentEventPayload) => {
-    await db
+    // F06 — terminal transitions are one-way: the update matches only a
+    // row that is not terminal yet, so a racing cancel + completion
+    // resolves once (whichever wins) and a repeated call is a no-op
+    // instead of overwriting the first outcome.
+    const updated = await db
       .update(agentRuns)
       .set({
         status,
@@ -305,7 +359,9 @@ async function executeAgentRun(
         ...(payload.usage?.inputTokens !== undefined ? { inputTokens: payload.usage.inputTokens } : {}),
         ...(payload.usage?.outputTokens !== undefined ? { outputTokens: payload.usage.outputTokens } : {}),
       })
-      .where(eq(agentRuns.id, live.runId))
+      .where(and(eq(agentRuns.id, live.runId), isNull(agentRuns.terminalAt)))
+      .returning({ id: agentRuns.id })
+    if (!updated[0]) return // already terminal: first outcome stands
     // The session leaves waiting/running behind: error keeps the session
     // discoverable as broken, anything else returns it to idle (T009 —
     // a finished run must not leave the session stuck 'running').
@@ -945,10 +1001,12 @@ export async function cancelAgentRun(
   if (!run) return 'not_found'
   if (run.terminalAt) return 'already_terminal'
 
-  await db
+  const claimed = await db
     .update(agentRuns)
     .set({ status: 'cancelling', updatedAt: new Date() })
-    .where(eq(agentRuns.id, runId))
+    .where(and(eq(agentRuns.id, runId), isNull(agentRuns.terminalAt)))
+    .returning({ id: agentRuns.id })
+  if (!claimed[0]) return 'already_terminal'
 
   const live = liveRuns.get(runId)
   if (live) live.controller.abort()
@@ -990,6 +1048,37 @@ export async function reconcileStuckAgentRun(
     type: 'error',
     payload: { status: 'error', errorCode: 'interrupted', errorMessage: 'The run was interrupted before completion.' },
   })
+}
+
+/** Active agent runs in a workspace (F06 admission). */
+async function countActiveAgentRuns(
+  db: AgentDatabase,
+  workspaceId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(agentRuns)
+    .where(
+      and(eq(agentRuns.workspaceId, workspaceId), inArray(agentRuns.status, ['running', 'waiting-for-permission'])),
+    )
+  return Number(rows[0]?.count ?? 0)
+}
+
+/** Agent-run creations in the trailing minute (F06 rate accounting). */
+async function countRecentAgentRunCreations(
+  db: AgentDatabase,
+  workspaceId: string,
+): Promise<number> {
+  const rows = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(agentRuns)
+    .where(
+      and(
+        eq(agentRuns.workspaceId, workspaceId),
+        gt(agentRuns.createdAt, new Date(Date.now() - 60_000)),
+      ),
+    )
+  return Number(rows[0]?.count ?? 0)
 }
 
 async function currentRunInput(db: AgentDatabase, runId: string): Promise<string> {
