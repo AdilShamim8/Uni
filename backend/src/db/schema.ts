@@ -542,6 +542,13 @@ export const agentSessions = pgTable(
     rootDir: text('root_dir').notNull(),
     tools: jsonb('tools').$type<string[]>(),
     archived: boolean('archived').notNull().default(false),
+    /**
+     * Optional employee (AI worker profile) this session executes as
+     * (T008): instructions and memory come from the linked employee at
+     * run time. Soft reference (no FK) like providerId — the pin must
+     * survive employee deletion and fail honestly at send time.
+     */
+    employeeId: text('employee_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
@@ -664,6 +671,40 @@ export const agentPendingPermissions = pgTable(
 )
 
 /* ------------------------------------------------------------------ */
+/* Session transcript (F03/T008) — structured ModelMessage persistence */
+/* ------------------------------------------------------------------ */
+
+/**
+ * One persisted transcript message of a session, in send order: the
+ * user's message, the assistant's structured turns (tool-call parts
+ * included), and tool results — everything the next run needs to
+ * reconstruct prior context via the AI SDK's ModelMessage shapes. The
+ * sequence is per-session and monotonic under the same advisory-lock
+ * discipline as agent_event.
+ */
+export const agentTurns = pgTable(
+  'agent_turn',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    sessionId: text('session_id')
+      .notNull()
+      .references(() => agentSessions.id, { onDelete: 'cascade' }),
+    runId: text('run_id').references(() => agentRuns.id, { onDelete: 'set null' }),
+    sequence: integer('sequence').notNull(),
+    /** The AI SDK ModelMessage, verbatim (role + content parts). */
+    message: jsonb('message').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    index('agent_turn_session_sequence_idx').on(table.sessionId, table.sequence),
+    index('agent_turn_run_idx').on(table.runId),
+  ],
+)
+
+/* ------------------------------------------------------------------ */
 /* Routines (abacusai-bot cron-scheduler port) — scheduled agent runs   */
 /* ------------------------------------------------------------------ */
 
@@ -746,6 +787,8 @@ export type AgentAllowanceRow = typeof agentAllowances.$inferSelect
 export type NewAgentAllowanceRow = typeof agentAllowances.$inferInsert
 export type AgentPendingPermissionRow = typeof agentPendingPermissions.$inferSelect
 export type NewAgentPendingPermissionRow = typeof agentPendingPermissions.$inferInsert
+export type AgentTurnRow = typeof agentTurns.$inferSelect
+export type NewAgentTurnRow = typeof agentTurns.$inferInsert
 export type RoutineRow = typeof routines.$inferSelect
 export type NewRoutineRow = typeof routines.$inferInsert
 export type RoutineRunRow = typeof routineRuns.$inferSelect
