@@ -62,9 +62,9 @@ this upgrade (not inherited from older docs).
 | T020 | P05 | Context/receipts in the durable run record | done | commits 55-57: resolveTerminal → syncWorkRunOutcome; task/run rows follow the terminal; receipts from the run's own events (sources/tools/provenance, no secrets); end-to-end test with permission answer |
 | T021 | P06 | Plugin enablement + grants + receipts | done | commits 63-65,67: plugins contracts + migration 0016 + two-gate registry (workspace enablement + per-thread grants) + bounded receipts + dispatch (6 tests) |
 | T022 | P06 | Server document/data/Library tools | done | commits 65-67: server capability execution in one dispatch path — library.search/attach over the Library service, documents.create validation, bounded CSV summary; refusals are denied receipts |
-| T023 | P07 | MCP server config + guarded transport | in_progress | commit 69: MCP SDK 1.32.2 installed and verified (Client + StreamableHTTPClientTransport); server config/encrypted auth/time-bounded transport NOT started |
-| T024 | P07 | Namespaced MCP tools through grants | todo | |
-| T025 | P07 | MCP settings UI in current surfaces | todo | |
+| T023 | P07 | MCP server config + guarded transport | done | commits 69,75-79: MCP SDK 1.32.2; contracts + migration 0017 + service (secretBox bearer auth, guarded time-bounded StreamableHTTP transport, honest states) + routes; 5 tests against a real SDK-server fixture |
+| T024 | P07 | Namespaced MCP tools through grants | done | commits 80-83: mcp_call roster tool + run_mcp_tool gate variant (always asks — untrusted readOnly hint never relaxes it); callMcpToolForSession (exact slug match, 100k arg cap, abort signal on request options, TOOL_OUTPUT_CAP result); gated-loop integration test |
+| T025 | P07 | MCP settings UI in current surfaces | done | commits 84-86: serverMcp client + session-store slice (generation-guarded) + Plugins-page MCP section (add/test/disconnect/remove, token typed once, stdio honestly unsupported); frontend 544/544 + CI green |
 | T026 | P08 | Connector registry + status API | todo | |
 | T027 | P08 | GitHub connector | todo | |
 | T028 | P08 | Google OAuth connectors | todo | |
