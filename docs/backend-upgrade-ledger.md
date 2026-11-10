@@ -43,10 +43,10 @@ this upgrade (not inherited from older docs).
 | T001 | P00 | Establish the real starting point | done | Baseline section above; branch created; no reset, PR #59 preserved |
 | T002 | P00 | Install from lockfiles + baseline checks | done | Commands and results in docs/verification.md session record |
 | T003 | P00 | Task ledger + capability map | done | This file; capability map rows appended to docs/frontend-backend-map.md at each phase |
-| T004 | P01 | F01 server-owned session roots + containment | todo | |
-| T005 | P01 | F02 canonical permission IDs, atomic decisions | todo | |
-| T006 | P01 | F07 modes cannot cross tenants; shell disabled until isolation | todo | |
-| T007 | P02 | F03 real tool schemas + structured tool history | todo | |
+| T004 | P01 | F01 server-owned session roots + containment | done | commits 3-6: isValidRootDir + fail-closed join + sessions/<id> roots + lazy provisioning; 5 path tests + 6 integration cases green |
+| T005 | P01 | F02 canonical permission IDs, atomic decisions | done | commits 7-9: row id IS requestId, ask persisted + waiter before publish, atomic claim bound to workspace+session+run+request; 5 integration tests green |
+| T006 | P01 | F07 modes cannot cross tenants; shell disabled until isolation | done | commits 11-12: execBash refuses without UNI_AGENT_ISOLATED_EXECUTION, descriptor truthful, executor containment in all modes; 6 tests green |
+| T007 | P02 | F03 real tool schemas + structured tool history | done | commit 8: SDK-native multi-step loop (stopWhen), real inputSchema per tool, tool errors visible from fullStream; provider request assertions green |
 | T008 | P02 | Persisted transcripts + employee/memory linkage | todo | |
 | T009 | P02 | Truthful completion/budget/cancel outcomes | todo | |
 | T010 | P02 | F04 bounded edits/reads/fetch/search | todo | |
