@@ -241,6 +241,13 @@ interface ServerSessionState {
 
   loadConversations: () => Promise<void>
   openServerConversation: (id: string | null) => Promise<void>
+  /**
+   * T015 — open the server conversation for an employee (AI worker):
+   * find the newest non-archived conversation tagged with this agentId,
+   * or create one. The employee's thread is the same conversation the
+   * Chat surface would show: one thread, no copies.
+   */
+  openServerAgentConversation: (agentId: string, title: string) => Promise<string | null>
 
   /** Server employees (T016): CRUD against the employee service. */
   loadServerEmployees: () => Promise<void>
@@ -681,6 +688,35 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
         set({ serverProviderError: errorMessage(error) })
       }
       await get().loadServerProviders()
+    },
+
+    openServerAgentConversation: async (agentId, title) => {
+      const generation = get().sessionGeneration
+      try {
+        // Fresh list: the find must see conversations created elsewhere
+        // (another tab, the Chat surface), not a stale cache.
+        await get().loadConversations()
+        if (!stillCurrent(generation)) return null
+        const existing = [...get().conversations]
+          .filter((entry) => entry.agentId === agentId && !entry.archived)
+          .sort((a, b) => b.updatedAt - a.updatedAt)[0]
+        if (existing) {
+          await get().openServerConversation(existing.id)
+          return existing.id
+        }
+        const summary = await apiFetch<{ id: string }>(`${API_ROOT}/conversations`, {
+          method: 'POST',
+          body: JSON.stringify({ title, agentId }),
+        })
+        if (!stillCurrent(generation)) return null
+        await get().loadConversations()
+        await get().openServerConversation(summary.id)
+        return summary.id
+      } catch (error) {
+        if (!stillCurrent(generation)) return null
+        set({ error: errorMessage(error) })
+        return null
+      }
     },
 
     newServerConversation: async (title) => {
