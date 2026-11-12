@@ -91,7 +91,22 @@ bulk push. This file is the count of record for the effort.
 | 20 | RF-020 | C3 | Routine execution design: provisioned UNATTENDED read-only sessions (never interactive perms), employee pins, terminal sync, migration 0018; CRUD/scheduler tests updated (7+12) | impl | `6372bd7c9` | push blocked |
 | 21 | RF-021 | C3 | Execution end-to-end test: tick → unattended run against a scripted provider → honest terminal sync (2 integration tests) | test | `a8c3ea698` | push blocked |
 | 22 | RF-022 | C3 | Routine scheduler loop on the durable worker (minute tick, boot catch-up) | impl | `a8e8ec5b4` | push blocked |
-| 23 | RF-023 | effort | Session checkpoint: manifest rows, verification milestone, handoff state | docs | (this commit) | push blocked |
+| 23 | RF-023 | effort | Session checkpoint: manifest rows, verification milestone, handoff state | docs | `b85d6ffdb` | pushed ✓ |
+| 24 | RF-026 | effort | Test import fix (AgentDatabase) completing the session-1 stack | impl | `2ecb8ba40` | pushed one-by-one ✓ |
+| 25 | RF-027 | T033 | serverRoutines API client (typed routes, exact payloads, ApiError honesty) + 5 client tests | impl | `711651f2f` | pushed ✓ |
+| 26 | RF-028 | T033 | Routines slice in the server session store (generation-guarded, honest errors) + 6 tests | impl | `2cb67f2fc` | pushed ✓ |
+| 27 | RF-029 | T033 | RoutinesSection on the server Work surface (create dialog, pause/resume, delete confirm) + 7 tests | impl | `038789796` | pushed ✓ |
+| 28 | RF-030 | T033 | nextFireAt preview computed by the backend's own evaluator (paused = null); contracts + tests | impl | `2ec43598d` | pushed ✓ |
+| 29 | RF-031 | T033 | describeSchedule human labels + server-computed next-fire wiring + 5 tests | impl | `1b8a65008` | pushed ✓ |
+| 30 | RF-032 | T033 | Routine detail dialog with honest run history (outputs, errors, empty state) + 4 tests | impl | `a7db2e557` | pushed ✓ |
+| 31 | RF-033 | P08 | Connector catalog module + routes (honest unavailable statuses, session-scoped reads) + 4 integration tests | impl | `43f837550` | pushed ✓ |
+| 32 | RF-034 | P08 | Connector catalog section on Plugins (not-connected cards, setup disclosure, docs links) + 5 tests | impl | `e2c9e5365` | pushed ✓ |
+| 33 | RF-035 | CI | Lint fix: fetch mocks follow the repo's untyped vi.fn pattern | fix | `2e3de96ed` | pushed ✓ |
+| 34 | RF-036 | P10 | Files & knowledge: documents with honest extraction + bounded lexical retrieval + migration 0019 + 7 integration tests | impl | `a83734101` | pushed ✓ |
+| 35 | RF-037 | P10 | Server knowledge section on Library (text ingestion, honest binary refusal, search with excerpts) + 7 tests | impl | `9112b35f9` | pushed ✓ |
+| 36 | RF-038 | T037 | knowledge_search agent tool over the files index (ungated read-only, unattended-allowed) + end-to-end engine test; routine roster gains the tool | impl | `4f08276c1` | pushed ✓ |
+| 37 | RF-039 | CI | Lint fix: unused userEvent variable in the knowledge section test | fix | `7f201e415` | pushed ✓ |
+| 38 | RF-040 | effort | Session-2 checkpoint: these rows, verification milestone, handoff | docs | (this commit) | pushed ✓ |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -115,16 +130,15 @@ valid credential is provided, the retained commits are pushed one by
 one in order (the procedure is scripted in
 `scripts/commit-push-one.sh` at the workspace root, outside the repo).
 
-## Counters (session 1 checkpoint, 2026-11-12)
+## Counters (session 2 checkpoint, 2026-11-12)
 
-- `new_commits`: 23 (21 implementation/test + 2 effort/docs, counting this checkpoint)
-- `new_implementation_commits`: 21
-- `remote_present_commits`: 0 — every push failed: the supplied
-  credential is rejected (`Bad credentials` 401 / `Invalid username or
-  token`). All commits are retained on local `task/reuse-first-500`;
-  `scripts/catch-up-push-one-by-one.sh` (workspace scripts dir) pushes
-  them one at a time once a valid credential exists.
-- Target: 500 new commits · remaining: 477
+- `new_commits`: 40 (RF-001…RF-040; 36 implementation/test/fix + 4 docs)
+- `new_implementation_commits`: 36
+- `remote_present_commits`: 40 — every commit pushed ONE AT A TIME and
+  verified by SHA (session 1: 26 via catch-up after the token fix;
+  session 2: each pushed immediately). PR #62 exposes CI.
+- Target: 500 new commits · remaining: 460 — honest work continues
+  slice-by-slice; commits are never manufactured.
 
 ## Honest status at session close
 
