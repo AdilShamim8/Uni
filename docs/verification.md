@@ -1021,3 +1021,34 @@ Full-suite milestone at session close (after RF-022, 2026-11-12):
 | `cd backend && npm test` | **Pass — 380/380 across 46 files** (125.6s; baseline 346/41 + 34 new tests in 5 new routine suites) |
 | `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **Pass — 587/587 across 81 files** (155.2s; baseline 544/73 + 43 new tests across 9 new suites) |
 | Intermediate milestone | frontend **576/576 across 78 files** at RF-013 |
+
+
+## Reuse-first 500 — session 2 slices + milestone (2026-11-12)
+
+Credential fixed in-session (fresh token; API-verified as the owner).
+The 26 retained session-1 commits were pushed ONE AT A TIME by
+`catch-up-push-one-by-one.sh`, each verified by ls-remote SHA; session
+2's RF-027+ commits were pushed individually at commit time. PR #62
+(opened by the owner) exposes CI.
+
+Session-2 per-commit targeted suites (all green at their commits):
+serverApiClients 19/19 (routines client block), serverRoutinesStore
+6/6, routinesSection 7/7, schedulePreview 5/5, routineDetailDialog
+4/4, connectors.integration 4/4, connectorsSection 5/5,
+files.integration 7/7, serverKnowledgeSection 7/7,
+knowledge-search.integration 1/1 (full engine: scripted provider calls
+knowledge_search, real excerpt returned), agent bounded/gate/boundary
+suites re-run 48/48, routines-crud 7/7 (roster update).
+
+Full-suite milestone on the committed tree (2026-11-12):
+
+| Command | Result |
+| --- | --- |
+| `cd backend && npm test` | **Pass — 392/392 across 49 files** (130.9s; one earlier single-test flake of the timing-sensitive runs-atomic-start suite did not reproduce on the clean rerun) |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **Pass — 626/626 across 87 files** (189.6s) |
+
+CI on PR #62: two lint regressions were introduced and fixed the same
+session (RF-035 typed-mock unused args; RF-039 unused variable) — the
+per-push Frontend CI run is green from RF-035 onward except the
+RF-037/RF-038 trees whose single lint error RF-039 removes; backend and
+contracts jobs green throughout on the pull_request matrix.
