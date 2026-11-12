@@ -525,6 +525,12 @@ async function executeAgentRun(
       const { callMcpToolForSession } = await import('../mcp/mcpCall.service.js')
       return callMcpToolForSession(db, env, session.workspaceId, tool, args, signal)
     }
+    // P10 — the workspace's knowledge index (files module): bounded
+    // lexical hits with real excerpts, workspace-scoped by construction.
+    toolCtx.searchKnowledge = async (query, limit) => {
+      const { retrieveKnowledge } = await import('../files/files.service.js')
+      return retrieveKnowledge(db, session.workspaceId, query, limit)
+    }
 
     const gateOptions = (): MutableGateOptions => ({
       mode: session.mode as MutableGateOptions['mode'],

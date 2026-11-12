@@ -90,7 +90,16 @@ export function assertValidSchedule(schedule: string): void {
  * this is the same list, declared up front so the session row and the
  * gate cannot drift).
  */
-export const ROUTINE_ROSTER = ['read', 'list', 'grep', 'current_time', 'todo'] as const
+export const ROUTINE_ROSTER = [
+  'read',
+  'list',
+  'grep',
+  'current_time',
+  'todo',
+  // P10 — the workspace's indexed documents (read-only, bounded
+  // excerpts; the unattended policy allows it explicitly).
+  'knowledge_search',
+] as const
 
 /**
  * Provision the routine's own unattended session. Mode 'unattended' is
