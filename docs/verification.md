@@ -962,3 +962,28 @@ source at this SHA before any fix (see
 `docs/backend-upgrade-ledger.md` baseline section). No changes to
 product code were made in the P00 commits — documentation and ledger
 only.
+
+## Reuse-first 500 — baseline (2026-11-12)
+
+Branch `task/reuse-first-500` created from `main` at
+`a84aac2b06d91a00699315ed28409bdd6f9e1b84` (= clone HEAD = origin/main
+at checkout = the researched remote HEAD; no concurrent upstream
+changes). Environment: Node v24.22.2, npm 11.19.1, Linux sandbox (no
+Docker daemon, no system PostgreSQL — embedded-postgres strategy as
+before). Fresh clone; `npm ci` in all three packages from lockfiles.
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm ci && npm run build && npm run typecheck` | **Pass** — dist emitted, 0 type errors |
+| `cd backend && npm ci && npm run typecheck && npm run build` | **Pass** — 0 errors, dist emitted |
+| `cd backend && npm test` | **Pass — 346/346 across 41 files** (embedded PostgreSQL per file; 114.7s) |
+| `cd frontend && npm ci && npm run typecheck && npm run lint` | **Pass** — 0 errors, no lint findings |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **Pass — 544/544 across 73 files** (138.2s) |
+| `cd frontend && npm run build` | **Pass** — production build clean (pre-existing chunk-size warning only) |
+
+Push status at effort open: the supplied credential is rejected by
+GitHub (`Bad credentials` 401 from the API; `Invalid username or token`
+from git push). All effort commits are retained locally on the branch
+and pushed one at a time by `scripts/commit-push-one.sh` /
+`scripts/catch-up-push-one-by-one.sh` once a valid credential exists
+(exact transcript in the manifest's push-blocker section).
