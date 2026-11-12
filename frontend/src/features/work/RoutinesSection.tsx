@@ -7,6 +7,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { TextField } from '@/components/ui/TextField'
+import { describeSchedule } from './schedulePreview'
 
 /**
  * T033 — the routines section on the server Work surface: scheduled
@@ -92,9 +93,15 @@ export function RoutinesSection() {
               {routine.prompt}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-faint">
+              <span>{describeSchedule(routine.schedule)}</span>
               <code className="rounded-[6px] bg-subtle px-1.5 py-0.5">{routine.schedule}</code>
               {routine.catchUpMinutes > 0 && (
                 <span>catch-up {routine.catchUpMinutes}m</span>
+              )}
+              {routine.nextFireAt !== null ? (
+                <span>next {new Date(routine.nextFireAt).toLocaleString()}</span>
+              ) : routine.paused ? null : (
+                <span>no upcoming fire in the next 7 days</span>
               )}
               {routine.lastFireAt !== null && (
                 <span>last fired {new Date(routine.lastFireAt).toLocaleString()}</span>

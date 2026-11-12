@@ -23,16 +23,9 @@ const ROUTINE: ServerRoutine = {
   paused: false,
   archived: false,
   lastFireAt: 1_700_000_000_000,
+  nextFireAt: 1_700_040_000_000,
   createdAt: 1,
   updatedAt: 2,
-}
-
-function jsonResponse(status: number, body: unknown): Response {
-  if (status === 204) return new Response(null, { status })
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json' },
-  })
 }
 
 describe('RoutinesSection', () => {
