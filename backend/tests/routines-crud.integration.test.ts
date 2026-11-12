@@ -104,7 +104,7 @@ describe('routine CRUD (T030)', () => {
     expect(session.statusCode).toBe(200)
     const body = session.json() as { mode: string; tools: string[] }
     expect(body.mode).toBe('unattended')
-    expect(body.tools).toEqual(['read', 'list', 'grep', 'current_time', 'todo'])
+    expect(body.tools).toEqual(['read', 'list', 'grep', 'current_time', 'todo', 'knowledge_search'])
   })
 
   it('rejects invalid schedules with the parser\'s reason', async () => {
