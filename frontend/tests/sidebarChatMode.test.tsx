@@ -154,3 +154,45 @@ describe('Sidebar — chat surface mode', () => {
     })
   })
 })
+
+describe('Sidebar — sign-out resets the chat mode', () => {
+  beforeEach(() => {
+    cleanup()
+    setupAppTest()
+    resetWorkspaceUiForTests()
+    useWorkspaceUiStore.getState().initialize()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('explicit sign-out returns the surface to local mode', async () => {
+    // Signed-in session in server mode.
+    stubServerSession(true)
+    persistChatMode('server')
+    renderApp('/sc')
+    await signInSettled()
+    expect(useWorkspaceUiStore.getState().chatMode).toBe('server')
+
+    // Sign out through the real store path (mocked network).
+    useServerSessionStore.getState().signOut()
+    await waitFor(() => {
+      expect(useServerSessionStore.getState().status).toBe('signed-out')
+    })
+    await waitFor(() => {
+      expect(useWorkspaceUiStore.getState().chatMode).toBe('local')
+    })
+  })
+
+  it('an unreachable backend at startup keeps the persisted preference', async () => {
+    // No fetch mock: every request fails like an offline backend.
+    vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('Failed to fetch') }))
+    persistChatMode('server')
+    renderApp('/sc')
+    await waitFor(() => {
+      expect(useServerSessionStore.getState().status).toBe('signed-out')
+    })
+    expect(useWorkspaceUiStore.getState().chatMode).toBe('server')
+  })
+})

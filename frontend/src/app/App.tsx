@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { AppShell } from '@/components/layout/AppShell'
@@ -91,6 +91,22 @@ export function App() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [setUi])
+
+  // Explicit sign-out (signed-in → signed-out) returns the chat
+  // surface to local mode; an unreachable backend at startup
+  // (loading → signed-out) never clears the persisted preference.
+  const sessionStatus = useServerSessionStore((state) => state.status)
+  const prevSessionStatus = useRef(sessionStatus)
+  useEffect(() => {
+    if (
+      prevSessionStatus.current === 'signed-in' &&
+      sessionStatus === 'signed-out' &&
+      useWorkspaceUiStore.getState().chatMode === 'server'
+    ) {
+      useWorkspaceUiStore.getState().setChatMode('local')
+    }
+    prevSessionStatus.current = sessionStatus
+  }, [sessionStatus])
 
   // The marketing home is a standalone page: no AppShell at all (the
   // shell would otherwise render an empty full-height div behind it).
