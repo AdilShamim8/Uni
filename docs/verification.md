@@ -962,3 +962,62 @@ source at this SHA before any fix (see
 `docs/backend-upgrade-ledger.md` baseline section). No changes to
 product code were made in the P00 commits — documentation and ledger
 only.
+
+## Reuse-first 500 — baseline (2026-11-12)
+
+Branch `task/reuse-first-500` created from `main` at
+`a84aac2b06d91a00699315ed28409bdd6f9e1b84` (= clone HEAD = origin/main
+at checkout = the researched remote HEAD; no concurrent upstream
+changes). Environment: Node v24.22.2, npm 11.19.1, Linux sandbox (no
+Docker daemon, no system PostgreSQL — embedded-postgres strategy as
+before). Fresh clone; `npm ci` in all three packages from lockfiles.
+
+| Command | Result |
+| --- | --- |
+| `cd packages/contracts && npm ci && npm run build && npm run typecheck` | **Pass** — dist emitted, 0 type errors |
+| `cd backend && npm ci && npm run typecheck && npm run build` | **Pass** — 0 errors, dist emitted |
+| `cd backend && npm test` | **Pass — 346/346 across 41 files** (embedded PostgreSQL per file; 114.7s) |
+| `cd frontend && npm ci && npm run typecheck && npm run lint` | **Pass** — 0 errors, no lint findings |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **Pass — 544/544 across 73 files** (138.2s) |
+| `cd frontend && npm run build` | **Pass** — production build clean (pre-existing chunk-size warning only) |
+
+Push status at effort open: the supplied credential is rejected by
+GitHub (`Bad credentials` 401 from the API; `Invalid username or token`
+from git push). All effort commits are retained locally on the branch
+and pushed one at a time by `scripts/commit-push-one.sh` /
+`scripts/catch-up-push-one-by-one.sh` once a valid credential exists
+(exact transcript in the manifest's push-blocker section).
+
+## Reuse-first 500 — session 1 slices (2026-11-12)
+
+Per-commit targeted verification on `task/reuse-first-500` (every suite
+named below ran green at its own commit; full-suite milestone run at
+session close — see the note at the end):
+
+| Commit | Slice | Targeted checks |
+| --- | --- | --- |
+| fc6468aa6 | RF-005 chatMode store | workspaceChatMode 5/5; typecheck+lint |
+| ac4b1920e | RF-006 destination picker extraction | accountServer 18/18 (N004/N005/N010/N011 through the extracted component) |
+| 3f74d780b | RF-007 ServerTranscript | serverTranscript 7/7 |
+| 0eab9d2b4 | RF-008 ServerChatComposer | serverChatComposer 7/7 |
+| 9c7da8a1b | RF-009 ServerChatPage + /sc routes | serverChatPage 6/6 (incl. full-app route registration); smoke + mobileDrawer |
+| ae8f98bfc | RF-011 sidebar server mode | sidebarChatMode 5/5 (fetch-mocked session, real sign-in path) |
+| 304a12991 | RF-012 sign-out reset | sidebarChatMode 7/7 total |
+| 07bdb3095 | RF-013 e2e journey | serverChatJourney 2/2 (SSE frames over mocked fetch, idempotency keys asserted) |
+| ec44c27b0 | RF-014 agents server roster | serverEmployeesSection 5/5; agentsFlow + agentMemory |
+| d78fa707f | RF-015 library server section | serverArtifactsSection 4/4; libraryFlow |
+| 25dd68c25 | RF-016 routine contracts | contracts build + typecheck |
+| 67dcccf6e | RF-017 cron evaluator | routines-cron 13/13 |
+| be05f7ad0 | RF-018 routine CRUD | routines-crud 7/7 (embedded PostgreSQL) |
+| 5aa7b9ef8 | RF-019 scheduler tick | routines-scheduler-policy 7/7 + integration 5/5 |
+| 6372bd7c9 | RF-020 unattended execution design | routines-crud 7/7 + scheduler 12/12 re-run; typecheck+build |
+| a8c3ea698 | RF-021 execution e2e | routines-execution 2/2 (scripted provider over real sockets) |
+| a8e8ec5b4 | RF-022 worker loop | typecheck + build clean |
+
+Full-suite milestone at session close (after RF-022, 2026-11-12):
+
+| Command | Result |
+| --- | --- |
+| `cd backend && npm test` | **Pass — 380/380 across 46 files** (125.6s; baseline 346/41 + 34 new tests in 5 new routine suites) |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **Pass — 587/587 across 81 files** (155.2s; baseline 544/73 + 43 new tests across 9 new suites) |
+| Intermediate milestone | frontend **576/576 across 78 files** at RF-013 |

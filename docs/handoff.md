@@ -1,3 +1,49 @@
+## Current state (updated 2026-11-12, reuse-first-500 session 1 — push blocked, 23 local commits)
+
+- **Branch:** `task/reuse-first-500` from `a84aac2b0` (= origin/main at
+  clone). **23 commits, ALL LOCAL** — the supplied credential is dead
+  (`Bad credentials` 401 from the API; `Invalid username or token` from
+  git). First action with a valid credential: run
+  `scripts/catch-up-push-one-by-one.sh` from the workspace scripts
+  directory — it pushes every retained commit ONE AT A TIME with
+  ls-remote verification between each. Count of record:
+  `docs/reuse-first-500-manifest.md` (23/500).
+- **Shipped this session:** (1) Phase A decision — retain Uni's
+  foundation, documented with evidence in
+  `docs/reuse-foundation-decision.md`; capability matrix opened at
+  `docs/reuse-capability-matrix.md`. (2) Phase B core — the unified
+  server chat surface: `features/chat/server/` (ServerChatPage on `/sc`
+  routes, ServerTranscript, ServerChatComposer, extracted
+  ServerDestinationPicker), sidebar Local/Server toggle with server
+  conversation list, explicit sign-out reset, and an end-to-end journey
+  test over the real store path with SSE frames and idempotency-key
+  assertions. (3) Phase C1/C2 — server employee roster on Agents and
+  server artifacts section on Library (read-only, honest states). (4)
+  Phase C3 backend — routines complete end-to-end: contracts
+  (`@uni/contracts` routines.ts), pure cron evaluator, CRUD
+  (workspace-scoped, cron-validated), scheduler tick with slot claiming
+  + bounded catch-up + unique-index idempotence, UNATTENDED read-only
+  session provisioning (a scheduled task never holds interactive
+  permissions), employee pins, terminal sync hook in the agent engine,
+  and the worker minute-tick loop (migration 0018 hand-written,
+  additive; drizzle journal updated accordingly).
+- **Verification:** per-commit targeted suites all green (table in
+  verification.md); frontend full suite 576/576 at the RF-013
+  milestone; backend suite green at baseline and per touched suite.
+- **Next executable slices (in order):** (1) T033 — routine UI:
+  `services/api/serverRoutines.ts` client, serverSessionStore slice,
+  and a Routines section on the server Work surface (create/pause/
+  delete + run history); (2) full-suite milestone (backend + frontend)
+  to certify RF-014–RF-022; (3) P08 connectors (T026–T029: registry,
+  status API, fixture-verified GitHub, honest not-connected others);
+  (4) P10 files/knowledge (T034–T037); (5) Phase B screenshot pass
+  (desktop/mobile × light/dark) via `backend/scripts/browser-qa-stack.mjs`;
+  (6) the manifest's remaining queue toward 500 — not reachable in one
+  session; continue slice-by-slice.
+- **Blockers:** no valid GitHub credential (pushes); no paid provider
+  keys (live inference remains fixture-verified); no Docker daemon
+  (P11 isolated execution stays honestly inert).
+
 ## Current state (updated 2026-11-04, session 4 — pushes unblocked, PR #48 open)
 
 - **Push blocker cleared:** credential provided in-session. All five
