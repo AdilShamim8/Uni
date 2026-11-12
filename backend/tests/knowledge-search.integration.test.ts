@@ -196,13 +196,21 @@ describe('knowledge_search agent tool (T037)', () => {
     expect(toolResult!.toolOutput).toContain('Retro notes')
     expect(toolResult!.toolOutput).toContain('routines launcher shipped smoothly')
 
-    // 6. The run completed with the final answer.
-    let runStatus = ''
-    for (let i = 0; i < 150 && runStatus !== 'complete'; i++) {
-      const rows = await db.select().from(agentRuns).where(eq(agentRuns.id, runId)).limit(1)
-      runStatus = rows[0]?.status ?? ''
-      if (runStatus !== 'complete') await new Promise((resolve) => setTimeout(resolve, 100))
+    // 6. The run completed with the final answer — wait for the
+    // TERMINAL EVENT (the last write of resolveTerminal), not just the
+    // status row, so the run loop is fully quiescent before this file's
+    // afterAll closes the pool (a mid-write teardown surfaces as an
+    // unhandled pool error and fails CI even though every test passed).
+    let sawTerminalEvent = false
+    for (let i = 0; i < 150 && !sawTerminalEvent; i++) {
+      const events = await db
+        .select()
+        .from(agentEvents)
+        .where(eq(agentEvents.sessionId, sessionId))
+      sawTerminalEvent = events.some((event) => event.type === 'run_finished')
+      if (!sawTerminalEvent) await new Promise((resolve) => setTimeout(resolve, 100))
     }
-    expect(runStatus).toBe('complete')
+    expect(sawTerminalEvent).toBe(true)
+    await new Promise((resolve) => setTimeout(resolve, 250))
   }, 30_000)
 })
