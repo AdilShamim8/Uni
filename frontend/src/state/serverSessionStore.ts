@@ -67,6 +67,13 @@ import {
   type ServerWorkTask,
 } from '@/services/api/serverWork'
 import {
+  listServerRoutines,
+  createServerRoutine,
+  patchServerRoutine,
+  deleteServerRoutine,
+  type ServerRoutine,
+} from '@/services/api/serverRoutines'
+import {
   listServerMcpServers,
   createServerMcpServer,
   deleteServerMcpServer,
@@ -224,6 +231,11 @@ interface ServerSessionState {
   serverWorkTasks: ServerWorkTask[]
   serverWorkTasksLoading: boolean
 
+  /** Server routines (T033), managed on the server Work surface. */
+  serverRoutines: ServerRoutine[]
+  serverRoutinesLoading: boolean
+  serverRoutinesError: string | null
+
   /** Server MCP servers (T025), managed in the Plugins/settings surface. */
   serverMcpServers: ServerMcpServer[]
   serverMcpServersLoading: boolean
@@ -311,6 +323,16 @@ interface ServerSessionState {
 
   /** Server Work (T019): list + lifecycle actions through the API. */
   loadServerWorkTasks: () => Promise<void>
+  loadServerRoutines: () => Promise<void>
+  createServerRoutineFor: (input: {
+    name: string
+    prompt: string
+    schedule: string
+    catchUpMinutes?: number
+    employeeId?: string | null
+  }) => Promise<boolean>
+  setServerRoutinePausedFor: (routineId: string, paused: boolean) => Promise<boolean>
+  removeServerRoutineFor: (routineId: string) => Promise<boolean>
   createServerWorkTaskFor: (input: {
     title: string
     goal?: string
@@ -381,6 +403,9 @@ const clearedServerData: Pick<
   | 'serverAgentSessionsLoading'
   | 'serverWorkTasks'
   | 'serverWorkTasksLoading'
+  | 'serverRoutines'
+  | 'serverRoutinesLoading'
+  | 'serverRoutinesError'
   | 'serverMcpServers'
   | 'serverMcpServersLoading'
 > = {
@@ -410,6 +435,9 @@ const clearedServerData: Pick<
   serverAgentSessionsLoading: false,
   serverWorkTasks: [],
   serverWorkTasksLoading: false,
+  serverRoutines: [],
+  serverRoutinesLoading: false,
+  serverRoutinesError: null,
   serverMcpServers: [],
   serverMcpServersLoading: false,
 }
@@ -1193,6 +1221,67 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     } catch {
       if (!stillCurrent(generation)) return
       set({ serverWorkTasksLoading: false })
+    }
+  },
+
+  loadServerRoutines: async () => {
+    const generation = get().sessionGeneration
+    set({ serverRoutinesLoading: true, serverRoutinesError: null })
+    try {
+      const items = await listServerRoutines()
+      if (!stillCurrent(generation)) return
+      set({ serverRoutines: items, serverRoutinesLoading: false })
+    } catch (error) {
+      if (!stillCurrent(generation)) return
+      set({ serverRoutinesLoading: false, serverRoutinesError: errorMessage(error) })
+    }
+  },
+
+  createServerRoutineFor: async (input) => {
+    const generation = get().sessionGeneration
+    try {
+      const routine = await createServerRoutine(input)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({ serverRoutines: [routine, ...state.serverRoutines] }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverRoutinesError: errorMessage(error) })
+      return false
+    }
+  },
+
+  setServerRoutinePausedFor: async (routineId, paused) => {
+    const generation = get().sessionGeneration
+    try {
+      const routine = await patchServerRoutine(routineId, { paused })
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverRoutines: state.serverRoutines.map((entry) =>
+          entry.id === routineId ? routine : entry,
+        ),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverRoutinesError: errorMessage(error) })
+      return false
+    }
+  },
+
+  removeServerRoutineFor: async (routineId) => {
+    const generation = get().sessionGeneration
+    try {
+      await deleteServerRoutine(routineId)
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverRoutines: state.serverRoutines.filter((entry) => entry.id !== routineId),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverRoutinesError: errorMessage(error) })
+      return false
     }
   },
 
