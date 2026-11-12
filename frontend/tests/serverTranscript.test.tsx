@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { cleanup, render, screen } from '@testing-library/react'
-import { ServerTranscript, activePathIds } from '@/features/chat/server/ServerTranscript'
+import { ServerTranscript } from '@/features/chat/server/ServerTranscript'
+import { activePathIds } from '@/features/chat/server/serverThreadModel'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerConversationDetail } from '@/state/serverSessionStore'
 

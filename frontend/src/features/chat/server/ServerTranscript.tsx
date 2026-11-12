@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { AlertCircle, Check, Loader2, Square } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerConversationDetail } from '@/state/serverSessionStore'
+import { activePathIds } from './serverThreadModel'
 
 /**
  * The server conversation transcript for the unified Chat surface
@@ -10,29 +11,6 @@ import type { ServerConversationDetail } from '@/state/serverSessionStore'
  * same model contract the Account server thread established, at the
  * reading quality of the main chat surface.
  */
-
-interface TranscriptNode {
-  id: string
-  parentId: string | null
-  role: string
-  status: string
-  content: string
-}
-
-/** Walks the active path from the leaf up; returns a membership set. */
-export function activePathIds(detail: {
-  activeLeafId: string | null
-  nodes: TranscriptNode[]
-}): Set<string> {
-  const active = new Set<string>()
-  const byId = new Map(detail.nodes.map((node) => [node.id, node]))
-  let cursor: string | null = detail.activeLeafId
-  while (cursor && byId.has(cursor)) {
-    active.add(cursor)
-    cursor = byId.get(cursor)?.parentId ?? null
-  }
-  return active
-}
 
 function nodeStatusSuffix(status: string): string {
   if (status === 'stopped') return ' · stopped'
