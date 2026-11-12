@@ -64,9 +64,7 @@ describe('serverSessionStore — routines slice', () => {
   it('records the honest error when the load fails', async () => {
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (_url: string, _init?: RequestInit) =>
-        jsonResponse(500, { code: 'INTERNAL', message: 'boom' }),
-      ),
+      vi.fn(async () => jsonResponse(500, { code: 'INTERNAL', message: 'boom' })),
     )
     await useServerSessionStore.getState().loadServerRoutines()
     expect(useServerSessionStore.getState().serverRoutines).toEqual([])
@@ -99,7 +97,7 @@ describe('serverSessionStore — routines slice', () => {
 
   it('removes a routine from the slice after the server deletes it', async () => {
     useServerSessionStore.setState({ serverRoutines: [ROUTINE] })
-    vi.stubGlobal('fetch', vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse(204, null)))
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(204, null)))
     const ok = await useServerSessionStore.getState().removeServerRoutineFor('r-1')
     expect(ok).toBe(true)
     expect(useServerSessionStore.getState().serverRoutines).toEqual([])
@@ -112,7 +110,7 @@ describe('serverSessionStore — routines slice', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(
-        (_url: string, _init?: RequestInit) =>
+        () =>
           new Promise<Response>((resolve) => {
             gate.release = () => resolve(jsonResponse(200, { items: [ROUTINE] }))
           }),

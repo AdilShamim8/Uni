@@ -326,15 +326,17 @@ describe('server routines client', () => {
   })
 
   it('fetches a routine with its run history', async () => {
-    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+    const fetchMock = vi.fn(async () =>
       jsonResponse(200, { routine: { id: 'r-1' }, runs: [{ id: 'rr-1' }] }),
     )
     vi.stubGlobal('fetch', fetchMock)
     const detail = await getServerRoutine('r-1')
     expect(detail.routine.id).toBe('r-1')
     expect(detail.runs[0]!.id).toBe('rr-1')
-    const url = fetchMock.mock.calls[0]?.[0]
-    expect(String(url)).toBe('/api/v1/routines/r-1')
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/routines/r-1',
+      expect.objectContaining({ credentials: 'include' }),
+    )
   })
 
   it('creates with the exact payload shape', async () => {
