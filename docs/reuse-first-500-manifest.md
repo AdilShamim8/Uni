@@ -136,12 +136,11 @@ one in order (the procedure is scripted in
   contracts, cron evaluator, CRUD, scheduler tick with slot semantics,
   unattended execution through the agent engine, terminal sync, worker
   loop).
-- Per-commit verification: targeted suites green at each commit
-  (13/18/7/7/6/5/2/2/5/4 cron 13, CRUD 7, scheduler 12, execution 2;
-  accountServer 18/18, library/agents flows re-run). A full-suite
-  milestone run (backend + frontend) was started at session close; the
-  per-area baselines were green at effort open and every touched suite
-  was re-run green per commit.
+- Per-commit verification: targeted suites green at each commit, and
+  the session-close full-suite milestone is GREEN:
+  **backend 380/380 across 46 files** (baseline 346 + 34 new),
+  **frontend 587/587 across 81 files** (baseline 544 + 43 new).
+  Exact per-commit table in verification.md.
 - Not finished (next session, in order): T033 routine UI (frontend
   client + store slice + Work-surface section); P08 connectors
   (T026–T029); P10 files/knowledge (T034–T037); Phase B polish

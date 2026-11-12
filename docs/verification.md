@@ -1014,8 +1014,10 @@ session close — see the note at the end):
 | a8c3ea698 | RF-021 execution e2e | routines-execution 2/2 (scripted provider over real sockets) |
 | a8e8ec5b4 | RF-022 worker loop | typecheck + build clean |
 
-Full frontend suite at the RF-013 milestone: **576/576 across 78 files**
-(includes the new suites through RF-013). A backend+frontend full-suite
-milestone run covering RF-014–RF-022 was started at session close;
-per-suite baselines and every touched suite were green at their
-commits (table above).
+Full-suite milestone at session close (after RF-022, 2026-11-12):
+
+| Command | Result |
+| --- | --- |
+| `cd backend && npm test` | **Pass — 380/380 across 46 files** (125.6s; baseline 346/41 + 34 new tests in 5 new routine suites) |
+| `cd frontend && npm run test -- --maxWorkers=1 --minWorkers=1` | **Pass — 587/587 across 81 files** (155.2s; baseline 544/73 + 43 new tests across 9 new suites) |
+| Intermediate milestone | frontend **576/576 across 78 files** at RF-013 |
