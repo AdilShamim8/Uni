@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { AppShell } from '@/components/layout/AppShell'
@@ -14,6 +14,7 @@ import { useCompareStore } from '@/state/compareStore'
 import { usePluginsStore } from '@/state/pluginsStore'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import { ChatPage } from '@/features/chat/ChatPage'
+import { ServerChatPage } from '@/features/chat/server/ServerChatPage'
 import { CommandPalette } from '@/features/search/CommandPalette'
 import { CompareDialog } from '@/features/compare/CompareDialog'
 import { PreviewHost } from '@/features/previews/PreviewHost'
@@ -91,6 +92,22 @@ export function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [setUi])
 
+  // Explicit sign-out (signed-in → signed-out) returns the chat
+  // surface to local mode; an unreachable backend at startup
+  // (loading → signed-out) never clears the persisted preference.
+  const sessionStatus = useServerSessionStore((state) => state.status)
+  const prevSessionStatus = useRef(sessionStatus)
+  useEffect(() => {
+    if (
+      prevSessionStatus.current === 'signed-in' &&
+      sessionStatus === 'signed-out' &&
+      useWorkspaceUiStore.getState().chatMode === 'server'
+    ) {
+      useWorkspaceUiStore.getState().setChatMode('local')
+    }
+    prevSessionStatus.current = sessionStatus
+  }, [sessionStatus])
+
   // The marketing home is a standalone page: no AppShell at all (the
   // shell would otherwise render an empty full-height div behind it).
   const isMarketingRoute = location.pathname === '/'
@@ -104,6 +121,11 @@ export function App() {
                 is unchanged so existing conversation links keep working. */}
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/c/:conversationId" element={<ChatPage />} />
+            {/* Server chats (Phase B unification): their own route
+                namespace so local /c/:id links never collide and every
+                server conversation has a direct, reload-safe URL. */}
+            <Route path="/sc" element={<ServerChatPage />} />
+            <Route path="/sc/:conversationId" element={<ServerChatPage />} />
             {/* Work — task briefs, demo execution, review */}
             <Route path="/work" element={<WorkPage />} />
             <Route path="/work/:taskId" element={<WorkPage />} />

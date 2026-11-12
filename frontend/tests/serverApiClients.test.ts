@@ -19,6 +19,13 @@ import {
   serverCanonicalSave,
 } from '@/services/api/serverLibrary'
 import {
+  listServerRoutines,
+  getServerRoutine,
+  createServerRoutine,
+  patchServerRoutine,
+  deleteServerRoutine,
+} from '@/services/api/serverRoutines'
+import {
   listServerAgentTools,
   listServerAgentSessions,
   createServerAgentSession,
@@ -299,5 +306,77 @@ describe('server agents client', () => {
     await cancelServerAgentRun('r-1')
     const [, init] = fetchMock.mock.calls.at(-1)!
     expect(init.method).toBe('POST')
+  })
+})
+
+describe('server routines client', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('lists routines at the exact route', async () => {
+    const fetchMock = vi.fn(async () =>
+      jsonResponse(200, { items: [{ id: 'r-1' }] }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const items = await listServerRoutines()
+    expect(items).toEqual([{ id: 'r-1' }])
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/v1/routines',
+      expect.objectContaining({ credentials: 'include' }),
+    )
+  })
+
+  it('fetches a routine with its run history', async () => {
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      jsonResponse(200, { routine: { id: 'r-1' }, runs: [{ id: 'rr-1' }] }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const detail = await getServerRoutine('r-1')
+    expect(detail.routine.id).toBe('r-1')
+    expect(detail.runs[0]!.id).toBe('rr-1')
+    const url = fetchMock.mock.calls[0]?.[0]
+    expect(String(url)).toBe('/api/v1/routines/r-1')
+  })
+
+  it('creates with the exact payload shape', async () => {
+    const fetchMock = vi.fn(async () => jsonResponse(201, { id: 'r-2' }))
+    vi.stubGlobal('fetch', fetchMock)
+    await createServerRoutine({
+      name: 'Morning brief',
+      prompt: 'Summarize.',
+      schedule: '30 9 * * 1-5',
+      catchUpMinutes: 30,
+    })
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(url).toBe('/api/v1/routines')
+    expect(init.method).toBe('POST')
+    expect(JSON.parse(String(init.body))).toEqual({
+      name: 'Morning brief',
+      prompt: 'Summarize.',
+      schedule: '30 9 * * 1-5',
+      catchUpMinutes: 30,
+    })
+  })
+
+  it('patches and deletes at the id-scoped routes', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(200, { id: 'r-1', paused: true }))
+      .mockResolvedValueOnce(jsonResponse(204))
+    vi.stubGlobal('fetch', fetchMock)
+    const patched = await patchServerRoutine('r-1', { paused: true })
+    expect(patched.paused).toBe(true)
+    const [patchUrl, patchInit] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(patchUrl).toBe('/api/v1/routines/r-1')
+    expect(patchInit.method).toBe('PATCH')
+
+    await deleteServerRoutine('r-1')
+    const [deleteUrl, deleteInit] = fetchMock.mock.calls[1] as unknown as [string, RequestInit]
+    expect(deleteUrl).toBe('/api/v1/routines/r-1')
+    expect(deleteInit.method).toBe('DELETE')
+  })
+
+  it('turns a validation error into a typed ApiError', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(400, ENVELOPE)))
+    await expect(createServerRoutine({ name: '', prompt: '', schedule: 'nope' })).rejects.toBeInstanceOf(ApiError)
   })
 })

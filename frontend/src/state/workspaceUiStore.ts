@@ -13,6 +13,17 @@ import { create } from 'zustand'
 
 export type InspectorTab = 'canvas' | 'context'
 
+/**
+ * Which conversation space the Chat destination shows (Phase B
+ * unification): 'local' — browser conversations through the local demo
+ * or BYOK adapters; 'server' — the signed-in account's server
+ * conversations with server-side runs. The mode is an explicit user
+ * choice, never an automatic fallback; the surfaces render honest
+ * unavailable states when their prerequisite (a signed-in session) is
+ * missing.
+ */
+export type ChatSurfaceMode = 'local' | 'server'
+
 interface LayoutPayload {
   focusMode: boolean
   selectedProjectId: string | null
@@ -20,6 +31,7 @@ interface LayoutPayload {
   inspectorTab: InspectorTab
   inspectorArtifactId: string | null
   inspectorWidth: number
+  chatMode: ChatSurfaceMode
 }
 
 export interface WorkspaceUiState {
@@ -30,10 +42,12 @@ export interface WorkspaceUiState {
   inspectorTab: InspectorTab
   inspectorArtifactId: string | null
   inspectorWidth: number
+  chatMode: ChatSurfaceMode
 
   initialize: () => void
   setFocusMode: (on: boolean) => void
   toggleFocusMode: () => void
+  setChatMode: (mode: ChatSurfaceMode) => void
   setSelectedProject: (projectId: string | null) => void
   openInspector: (options?: { tab?: InspectorTab; artifactId?: string | null }) => void
   closeInspector: () => void
@@ -91,6 +105,7 @@ function persistLayout(): void {
             inspectorTab: state.inspectorTab,
             inspectorArtifactId: state.inspectorArtifactId,
             inspectorWidth: state.inspectorWidth,
+            chatMode: state.chatMode,
           },
         }),
       )
@@ -108,6 +123,7 @@ export const useWorkspaceUiStore = create<WorkspaceUiState>()((set) => ({
   inspectorTab: 'canvas',
   inspectorArtifactId: null,
   inspectorWidth: INSPECTOR_DEFAULT_WIDTH,
+  chatMode: 'local',
 
   initialize: () => {
     const saved = loadLayout()
@@ -119,11 +135,14 @@ export const useWorkspaceUiStore = create<WorkspaceUiState>()((set) => ({
       inspectorTab: saved?.inspectorTab === 'context' ? 'context' : 'canvas',
       inspectorArtifactId: saved?.inspectorArtifactId ?? null,
       inspectorWidth: clampWidth(saved?.inspectorWidth ?? INSPECTOR_DEFAULT_WIDTH),
+      chatMode: saved?.chatMode === 'server' ? 'server' : 'local',
     })
   },
 
   setFocusMode: (on) => set({ focusMode: on }),
   toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
+
+  setChatMode: (mode) => set({ chatMode: mode }),
   setSelectedProject: (projectId) => set({ selectedProjectId: projectId }),
 
   openInspector: (options) =>
@@ -170,5 +189,6 @@ export function resetWorkspaceUiForTests(options: { keepStorage?: boolean } = {}
     inspectorTab: 'canvas',
     inspectorArtifactId: null,
     inspectorWidth: INSPECTOR_DEFAULT_WIDTH,
+    chatMode: 'local',
   })
 }

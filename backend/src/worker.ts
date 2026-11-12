@@ -6,6 +6,8 @@ import { runMigrations } from './db/migrate.js'
 import PgBoss from 'pg-boss'
 import { AGENT_RUN_QUEUE, dispatchOutbox, pruneOutbox, type JobPayload } from './modules/jobs/outbox.service.js'
 import { resumeAgentRun, reconcileStuckAgentRuns } from './modules/agent/agentRun.service.js'
+import { runSchedulerTick } from './modules/routines/routines.scheduler.js'
+import { executeRoutineFire } from './modules/routines/routines.executor.js'
 
 /**
  * The durable worker (T013). Runs the agent-run execution loop off a
@@ -87,10 +89,40 @@ async function main(): Promise<void> {
     })
   }, 60 * 60 * 1000)
 
+  // Routine scheduler (P09 / T031): a minute-cadence tick that claims
+  // due fires and executes them through the same engine + worker deps
+  // (idempotent claims; slot semantics per routine). Runs on the worker
+  // process only — the API process never fires routines.
+  const routineTimer = setInterval(() => {
+    void runSchedulerTick(db, (fire) => executeRoutineFire({ db, env }, fire))
+      .then((result) => {
+        if (result.claimed > 0) {
+          logger.info(
+            { claimed: result.claimed, considered: result.considered },
+            'routine tick fired',
+          )
+        }
+      })
+      .catch((error: unknown) => {
+        logger.error(
+          { err: error instanceof Error ? error.message : String(error) },
+          'routine tick failed',
+        )
+      })
+  }, 60_000)
+  // Fire once shortly after boot so a restart does not skip a due minute
+  // (the claim is idempotent; nothing double-fires).
+  setTimeout(() => {
+    void runSchedulerTick(db, (fire) => executeRoutineFire({ db, env }, fire)).catch(() => {
+      /* logged by the interval path on the next tick */
+    })
+  }, 5_000)
+
   const shutdown = async (signal: string) => {
     logger.info({ signal }, 'worker shutting down')
     clearInterval(dispatchTimer)
     clearInterval(pruneTimer)
+    clearInterval(routineTimer)
     await boss.stop({ graceful: true, timeout: 10_000 }).catch(() => undefined)
     await pool.end().catch(() => undefined)
     process.exit(0)

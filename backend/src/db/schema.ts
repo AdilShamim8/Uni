@@ -729,6 +729,8 @@ export const routines = pgTable(
     sessionId: text('session_id')
       .notNull()
       .references(() => agentSessions.id, { onDelete: 'cascade' }),
+    /** The employee the routine executes as (soft pin, like sessions). */
+    employeeId: text('employee_id'),
     name: text('name').notNull(),
     prompt: text('prompt').notNull(),
     /** 5-field cron expression, UTC. */
