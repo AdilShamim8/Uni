@@ -14,6 +14,7 @@ import { useCompareStore } from '@/state/compareStore'
 import { usePluginsStore } from '@/state/pluginsStore'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import { ChatPage } from '@/features/chat/ChatPage'
+import { ServerChatPage } from '@/features/chat/server/ServerChatPage'
 import { CommandPalette } from '@/features/search/CommandPalette'
 import { CompareDialog } from '@/features/compare/CompareDialog'
 import { PreviewHost } from '@/features/previews/PreviewHost'
@@ -104,6 +105,11 @@ export function App() {
                 is unchanged so existing conversation links keep working. */}
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/c/:conversationId" element={<ChatPage />} />
+            {/* Server chats (Phase B unification): their own route
+                namespace so local /c/:id links never collide and every
+                server conversation has a direct, reload-safe URL. */}
+            <Route path="/sc" element={<ServerChatPage />} />
+            <Route path="/sc/:conversationId" element={<ServerChatPage />} />
             {/* Work — task briefs, demo execution, review */}
             <Route path="/work" element={<WorkPage />} />
             <Route path="/work/:taskId" element={<WorkPage />} />
