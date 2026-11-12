@@ -326,7 +326,7 @@ describe('server routines client', () => {
   })
 
   it('fetches a routine with its run history', async () => {
-    const fetchMock = vi.fn(async () =>
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
       jsonResponse(200, { routine: { id: 'r-1' }, runs: [{ id: 'rr-1' }] }),
     )
     vi.stubGlobal('fetch', fetchMock)
