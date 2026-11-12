@@ -34,6 +34,7 @@ import {
 } from '@/features/agents/agentGallery'
 import { saveThreadDraft } from '@/features/conversation/threadDrafts'
 import { EmployeeView } from './EmployeeView'
+import { ServerEmployeesSection } from './ServerEmployeesSection'
 import type { AgentProfile } from '@/domain/workspaceTypes'
 import type { ToolId } from '@/domain/types'
 
@@ -118,6 +119,8 @@ function AgentDirectory() {
       </PageToolbar>
 
       <div className="flex-1 overflow-y-auto">
+        <ServerEmployeesSection />
+
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
