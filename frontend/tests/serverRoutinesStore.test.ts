@@ -24,6 +24,11 @@ const ROUTINE: ServerRoutine = {
 }
 
 function jsonResponse(status: number, body: unknown): Response {
+  // Null-body statuses (204/205/304) must not carry a body — the
+  // Response constructor throws otherwise.
+  if (status === 204 || status === 205 || status === 304) {
+    return new Response(null, { status })
+  }
   return new Response(JSON.stringify(body), {
     status,
     headers: { 'content-type': 'application/json' },
@@ -56,7 +61,12 @@ describe('serverSessionStore — routines slice', () => {
   })
 
   it('records the honest error when the load fails', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(500, { code: 'INTERNAL', message: 'boom' })))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_url: string, _init?: RequestInit) =>
+        jsonResponse(500, { code: 'INTERNAL', message: 'boom' }),
+      ),
+    )
     await useServerSessionStore.getState().loadServerRoutines()
     expect(useServerSessionStore.getState().serverRoutines).toEqual([])
     expect(useServerSessionStore.getState().serverRoutinesError).toBeTruthy()
@@ -88,20 +98,22 @@ describe('serverSessionStore — routines slice', () => {
 
   it('removes a routine from the slice after the server deletes it', async () => {
     useServerSessionStore.setState({ serverRoutines: [ROUTINE] })
-    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(204)))
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, _init?: RequestInit) => jsonResponse(204, null)))
     const ok = await useServerSessionStore.getState().removeServerRoutineFor('r-1')
     expect(ok).toBe(true)
     expect(useServerSessionStore.getState().serverRoutines).toEqual([])
   })
 
   it('discards stale results after a sign-out (generation guard)', async () => {
-    let releaseFetch: (() => void) | null = null
+    // A gate object dodges control-flow narrowing of a closure-assigned
+    // local (which TS would keep typed null at the call site).
+    const gate: { release: () => void } = { release: () => {} }
     vi.stubGlobal(
       'fetch',
       vi.fn(
-        () =>
+        (_url: string, _init?: RequestInit) =>
           new Promise<Response>((resolve) => {
-            releaseFetch = () => resolve(jsonResponse(200, { items: [ROUTINE] }))
+            gate.release = () => resolve(jsonResponse(200, { items: [ROUTINE] }))
           }),
       ),
     )
@@ -113,7 +125,7 @@ describe('serverSessionStore — routines slice', () => {
       sessionGeneration: state.sessionGeneration + 1,
       serverRoutines: [],
     }))
-    releaseFetch?.()
+    gate.release()
     await pending
     expect(useServerSessionStore.getState().serverRoutines).toEqual([])
   })
