@@ -95,7 +95,7 @@ describe('RoutineDetailDialog', () => {
       serverRoutines: [ROUTINE],
       openServerRoutineDetail: realOpenDetail,
     })
-    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+    const fetchMock = vi.fn(async () =>
       jsonResponse(200, { routine: ROUTINE, runs: RUNS }),
     )
     vi.stubGlobal('fetch', fetchMock)
