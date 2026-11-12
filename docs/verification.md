@@ -1052,3 +1052,17 @@ session (RF-035 typed-mock unused args; RF-039 unused variable) — the
 per-push Frontend CI run is green from RF-035 onward except the
 RF-037/RF-038 trees whose single lint error RF-039 removes; backend and
 contracts jobs green throughout on the pull_request matrix.
+
+
+## Reuse-first 500 — CI green on the head (2026-11-12, session 2 close)
+
+After two in-session fixes (RF-035/RF-039 lint, RF-042 pool-teardown
+race), the complete GitHub Actions matrix on PR #63's head
+`56be3e9d6bf5886491848065650ed2eb1ba1048a` is green:
+
+- CI (pull_request): Contracts (shared schemas) **success**, Backend
+  (typecheck + integration tests, 392 tests) **success**, Frontend
+  (typecheck + tests, 626 tests) **success**.
+- Frontend CI (push): **success**.
+- Local full suites on the same tree: backend **392/392 across 49
+  files**; frontend **626/626 across 87 files**.
