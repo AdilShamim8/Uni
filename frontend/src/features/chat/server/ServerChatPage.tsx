@@ -35,10 +35,15 @@ export function ServerChatPage() {
   const newServerConversation = useServerSessionStore((state) => state.newServerConversation)
   const [creating, setCreating] = useState(false)
 
-  // Load the conversation list when the session is signed in.
+  // Load the conversation list and the server providers (the
+  // destination picker's data — N004) when the session is signed in.
+  const loadServerProviders = useServerSessionStore((state) => state.loadServerProviders)
   useEffect(() => {
-    if (status === 'signed-in') void loadConversations()
-  }, [status, loadConversations])
+    if (status === 'signed-in') {
+      void loadConversations()
+      void loadServerProviders()
+    }
+  }, [status, loadConversations, loadServerProviders])
 
   // Route → open conversation. A URL with an unknown id falls back to
   // the index view (never an automatic fallback to another account's
