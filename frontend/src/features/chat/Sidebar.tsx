@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   Bot,
@@ -31,6 +31,7 @@ import { Tooltip } from '@/components/ui/Tooltip'
 import { IconButton } from '@/components/ui/IconButton'
 import { Menu, MenuItem } from '@/components/ui/Menu'
 import { Button } from '@/components/ui/Button'
+import { Segmented } from '@/components/ui/Segmented'
 import { ConversationListItem } from './ConversationListItem'
 
 export interface SidebarProps {
@@ -60,7 +61,7 @@ const DESTINATIONS: Destination[] = [
     label: 'Chat',
     icon: <MessageSquare size={17} />,
     path: '/chat',
-    match: (p) => p === '/chat' || p.startsWith('/c/'),
+    match: (p) => p === '/chat' || p.startsWith('/c/') || p.startsWith('/sc'),
     newLabel: 'New chat',
     newIcon: <Plus size={16} />,
   },
@@ -162,6 +163,21 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
   const selectedProjectId = useWorkspaceUiStore((state) => state.selectedProjectId)
   const setSelectedProject = useWorkspaceUiStore((state) => state.setSelectedProject)
   const openInspector = useWorkspaceUiStore((state) => state.openInspector)
+  const chatMode = useWorkspaceUiStore((state) => state.chatMode)
+  const setChatMode = useWorkspaceUiStore((state) => state.setChatMode)
+
+  // Server chat mode (Phase B): the explicit local/server choice. The
+  // server surfaces require a signed-in session — signed out, the
+  // sidebar stays local (the /sc route itself explains what is needed).
+  const serverMode = chatMode === 'server' && account !== null
+  const serverConversations = useServerSessionStore((state) => state.conversations)
+  const loadServerConversations = useServerSessionStore((state) => state.loadConversations)
+  const newServerConversation = useServerSessionStore((state) => state.newServerConversation)
+  useEffect(() => {
+    if (serverMode) void loadServerConversations()
+  }, [serverMode, loadServerConversations])
+
+  const chatPath = serverMode ? '/sc' : '/chat'
 
   const collapsed = forceExpanded ? false : collapsedPreference
   const [showArchived, setShowArchived] = useState(false)
@@ -231,7 +247,16 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
     [conversations],
   )
 
+  async function handleNewServerChat() {
+    const id = await newServerConversation('Server chat')
+    if (id) navigate(`/sc/${id}`)
+  }
+
   function handleNewChat(temporary = false) {
+    if (serverMode) {
+      void handleNewServerChat()
+      return
+    }
     const id = newConversation({ temporary })
     navigate(`/c/${id}`)
   }
@@ -292,7 +317,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
             key={entry.id}
             label={entry.label}
             tone={entry.match(location.pathname) ? 'accent' : 'default'}
-            onClick={() => go(entry.path)}
+            onClick={() => go(entry.id === 'chat' ? chatPath : entry.path)}
           >
             {entry.icon}
           </IconButton>
@@ -332,6 +357,24 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
             </IconButton>
           )}
         </div>
+
+        {account && (
+          <div className="px-1 pb-1.5 pt-1">
+            <Segmented
+              ariaLabel="Chat surface: local or server"
+              value={serverMode ? 'server' : 'local'}
+              options={[
+                { value: 'local', label: 'Local' },
+                { value: 'server', label: 'Server' },
+              ]}
+              onChange={(value) => {
+                setChatMode(value)
+                go(value === 'server' ? '/sc' : '/chat')
+              }}
+              className="w-full"
+            />
+          </div>
+        )}
 
         <Menu
           width="w-64"
@@ -424,7 +467,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
               key={entry.id}
               destination={entry}
               active={entry.match(location.pathname)}
-              onClick={() => go(entry.path)}
+              onClick={() => go(entry.id === 'chat' ? chatPath : entry.path)}
             />
           ))}
         </nav>
@@ -443,7 +486,7 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
             {destination.newIcon}
             <span className="truncate text-[14px]">{destination.newLabel}</span>
           </Button>
-          {destination.id === 'chat' && (
+          {destination.id === 'chat' && !serverMode && (
             <Tooltip label="New temporary chat — stays in memory only, never saved">
               <IconButton
                 label="New temporary chat"
@@ -551,6 +594,41 @@ export function Sidebar({ forceExpanded = false }: SidebarProps) {
                   ))}
                 </div>
               )}
+            </div>
+          </>
+        ) : serverMode ? (
+          <>
+            <p className="px-2 pb-1 text-[12px] font-medium text-ink-faint">
+              Server chats
+            </p>
+            <div className="min-h-0 flex-1 overflow-y-auto pb-2">
+              {serverConversations.length === 0 && (
+                <p className="px-2 py-6 text-center text-xs leading-relaxed text-ink-faint">
+                  No server conversations yet. Start one and it runs on your Uni server.
+                </p>
+              )}
+              <div className="flex flex-col gap-0.5">
+                {serverConversations.map((conversation) => (
+                  <button
+                    key={conversation.id}
+                    type="button"
+                    onClick={() => go(`/sc/${conversation.id}`)}
+                    aria-current={
+                      location.pathname === `/sc/${conversation.id}` ? 'page' : undefined
+                    }
+                    className={`min-touch flex w-full items-center gap-2 rounded-control py-[var(--pad-list-item)] pl-3 pr-1 text-left text-sm transition-colors ${
+                      location.pathname === `/sc/${conversation.id}`
+                        ? 'bg-accent-soft font-medium text-accent'
+                        : 'text-ink hover:bg-[var(--c-hover-wash)]'
+                    }`}
+                  >
+                    <span className="min-w-0 flex-1 truncate">{conversation.title}</span>
+                    <span className="shrink-0 text-[11px] text-ink-faint">
+                      {conversation.messageCount}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           </>
         ) : (
