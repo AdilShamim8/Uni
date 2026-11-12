@@ -106,7 +106,10 @@ bulk push. This file is the count of record for the effort.
 | 35 | RF-037 | P10 | Server knowledge section on Library (text ingestion, honest binary refusal, search with excerpts) + 7 tests | impl | `9112b35f9` | pushed ✓ |
 | 36 | RF-038 | T037 | knowledge_search agent tool over the files index (ungated read-only, unattended-allowed) + end-to-end engine test; routine roster gains the tool | impl | `4f08276c1` | pushed ✓ |
 | 37 | RF-039 | CI | Lint fix: unused userEvent variable in the knowledge section test | fix | `7f201e415` | pushed ✓ |
-| 38 | RF-040 | effort | Session-2 checkpoint: these rows, verification milestone, handoff | docs | (this commit) | pushed ✓ |
+| 38 | RF-040 | effort | Session-2 checkpoint: these rows, verification milestone, handoff | docs | `aaeca02e2` | pushed ✓ |
+| 39 | RF-041 | Phase E | Truthfulness: capability-matrix rows for shipped capabilities, API-map additions, README test badge | docs | `92a239a71` | pushed ✓ |
+| 40 | RF-042 | CI | Engine tests await full run quiescence (pool-teardown race that failed CI with all tests green) | test | `56be3e9d6` | pushed ✓ |
+| 41 | RF-043 | effort | Close-out checkpoint: counters + CI-green evidence | docs | (this commit) | pushed ✓ |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -132,13 +135,15 @@ one in order (the procedure is scripted in
 
 ## Counters (session 2 checkpoint, 2026-11-12)
 
-- `new_commits`: 40 (RF-001…RF-040; 36 implementation/test/fix + 4 docs)
-- `new_implementation_commits`: 36
-- `remote_present_commits`: 40 — every commit pushed ONE AT A TIME and
-  verified by SHA (session 1: 26 via catch-up after the token fix;
-  session 2: each pushed immediately). PR #62 exposes CI.
-- Target: 500 new commits · remaining: 460 — honest work continues
-  slice-by-slice; commits are never manufactured.
+- `new_commits`: 43 (RF-001…RF-043; 37 implementation/test/fix + 5 docs/effort)
+- `new_implementation_commits`: 37
+- `remote_present_commits`: 43 — every commit pushed ONE AT A TIME and
+  verified by SHA. RF-001…028 are ALSO IN MAIN (merged by the owner via
+  PR #62); the full branch is exposed by draft PR #63 with the complete
+  CI matrix GREEN on the head (`56be3e9d`: Contracts ✓ Backend ✓
+  Frontend ✓).
+- Target: 500 new commits · remaining: 457 — honest work continues
+  slice-by-slice; commits are never manufactured (prompt of record).
 
 ## Honest status at session close
 
