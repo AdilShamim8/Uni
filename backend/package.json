@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.88",
-    "@ai-sdk/openai-compatible": "3.0.84",
+    "@ai-sdk/openai-compatible": "3.0.87",
     "@fastify/cors": "^11.4.0",
     "@fastify/static": "^10.1.8",
     "@modelcontextprotocol/sdk": "1.32.2",
