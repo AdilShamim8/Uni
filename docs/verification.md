@@ -987,3 +987,35 @@ from git push). All effort commits are retained locally on the branch
 and pushed one at a time by `scripts/commit-push-one.sh` /
 `scripts/catch-up-push-one-by-one.sh` once a valid credential exists
 (exact transcript in the manifest's push-blocker section).
+
+## Reuse-first 500 — session 1 slices (2026-11-12)
+
+Per-commit targeted verification on `task/reuse-first-500` (every suite
+named below ran green at its own commit; full-suite milestone run at
+session close — see the note at the end):
+
+| Commit | Slice | Targeted checks |
+| --- | --- | --- |
+| fc6468aa6 | RF-005 chatMode store | workspaceChatMode 5/5; typecheck+lint |
+| ac4b1920e | RF-006 destination picker extraction | accountServer 18/18 (N004/N005/N010/N011 through the extracted component) |
+| 3f74d780b | RF-007 ServerTranscript | serverTranscript 7/7 |
+| 0eab9d2b4 | RF-008 ServerChatComposer | serverChatComposer 7/7 |
+| 9c7da8a1b | RF-009 ServerChatPage + /sc routes | serverChatPage 6/6 (incl. full-app route registration); smoke + mobileDrawer |
+| ae8f98bfc | RF-011 sidebar server mode | sidebarChatMode 5/5 (fetch-mocked session, real sign-in path) |
+| 304a12991 | RF-012 sign-out reset | sidebarChatMode 7/7 total |
+| 07bdb3095 | RF-013 e2e journey | serverChatJourney 2/2 (SSE frames over mocked fetch, idempotency keys asserted) |
+| ec44c27b0 | RF-014 agents server roster | serverEmployeesSection 5/5; agentsFlow + agentMemory |
+| d78fa707f | RF-015 library server section | serverArtifactsSection 4/4; libraryFlow |
+| 25dd68c25 | RF-016 routine contracts | contracts build + typecheck |
+| 67dcccf6e | RF-017 cron evaluator | routines-cron 13/13 |
+| be05f7ad0 | RF-018 routine CRUD | routines-crud 7/7 (embedded PostgreSQL) |
+| 5aa7b9ef8 | RF-019 scheduler tick | routines-scheduler-policy 7/7 + integration 5/5 |
+| 6372bd7c9 | RF-020 unattended execution design | routines-crud 7/7 + scheduler 12/12 re-run; typecheck+build |
+| a8c3ea698 | RF-021 execution e2e | routines-execution 2/2 (scripted provider over real sockets) |
+| a8e8ec5b4 | RF-022 worker loop | typecheck + build clean |
+
+Full frontend suite at the RF-013 milestone: **576/576 across 78 files**
+(includes the new suites through RF-013). A backend+frontend full-suite
+milestone run covering RF-014–RF-022 was started at session close;
+per-suite baselines and every touched suite were green at their
+commits (table above).
