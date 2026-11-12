@@ -136,7 +136,6 @@ describe('ServerKnowledgeSection on the Library page', () => {
   })
 
   it('refuses binary formats with the honest reason', async () => {
-    const user = userEvent.setup()
     stubServer()
     renderApp('/library')
     const input = await waitFor(() => {
