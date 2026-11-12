@@ -69,7 +69,29 @@ bulk push. This file is the count of record for the effort.
 
 | # | ID | Scope | Summary | Type | Commit | Remote check |
 | --- | --- | --- | --- | --- | --- | --- |
-| 1 | RF-001 | effort | This manifest + counting rules + branch opened | docs | (this commit) | **push blocked** — see below |
+| 1 | RF-001 | effort | Manifest + counting rules + branch opened | docs | `ceacca6ee` | push blocked (credential) |
+| 2 | RF-002 | effort | Foundation decision: retain Uni base — evidence tables (`docs/reuse-foundation-decision.md`) | docs | `768a10ed1` | push blocked |
+| 3 | RF-003 | effort | Baseline evidence: 346 backend + 544 frontend green at the baseline SHA | docs | `9d76d9aea` | push blocked |
+| 4 | RF-004 | effort | Capability matrix current-state audit (`docs/reuse-capability-matrix.md`) | docs | `665d2347e` | push blocked |
+| 5 | RF-005 | Phase B | Chat surface mode (local/server) in the workspace UI store + 5 tests | impl | `fc6468aa6` | push blocked |
+| 6 | RF-006 | Phase B | Extracted `ServerDestinationPicker` (N004/N005/N010/N011 semantics) for reuse; Account surface refactored onto it (18/18 accountServer) | impl | `ac4b1920e` | push blocked |
+| 7 | RF-007 | Phase B | `ServerTranscript` (active-branch highlight, live-run states, honest errors) + 7 tests | impl | `3f74d780b` | push blocked |
+| 8 | RF-008 | Phase B | `ServerChatComposer` (destination, send/stop, send-key preference, honest no-provider state) + 7 tests | impl | `0eab9d2b4` | push blocked |
+| 9 | RF-009 | Phase B | `ServerChatPage` + `/sc` routes (index, open thread, signed-out prompt) + 6 tests incl. app route registration | impl | `9c7da8a1b` | push blocked |
+| 10 | RF-010 | Phase B | `activePathIds` moved to a pure model module (lint/fast-refresh fix) | impl | `014e6b54b` | push blocked |
+| 11 | RF-011 | Phase B | Sidebar server chat mode: Local/Server toggle (signed-in), server conversation list, server new-chat + 5 tests | impl | `ae8f98bfc` | push blocked |
+| 12 | RF-012 | Phase B | Explicit sign-out resets chat mode to local (unreachable backend keeps the preference) + 2 tests | impl | `304a12991` | push blocked |
+| 13 | RF-013 | Phase B | End-to-end server chat journey test (send → node → run → SSE → terminal → persisted node; network-failure honesty) + provider loading fix in the surface | impl | `07bdb3095` | push blocked |
+| 14 | RF-014 | Phase C1 | Server employee roster on the Agents page (read-only, linked-profile threads, honest not-linked) + 5 tests | impl | `ec44c27b0` | push blocked |
+| 15 | RF-015 | Phase C2 | Server artifacts section on the Library page (preview, provenance, version counts) + 4 tests | impl | `d78fa707f` | push blocked |
+| 16 | RF-016 | C3 | Routine contracts: schedule vocabulary, DTOs, create/patch, run records (`contracts/routines.ts`) | impl | `25dd68c25` | push blocked |
+| 17 | RF-017 | C3 | Pure 5-field cron evaluator (parser, matcher, bounded next-fire) + 13 tests | impl | `67dcccf6e` | push blocked |
+| 18 | RF-018 | C3 | Routine CRUD service + routes (workspace scoping, session ownership, cron validation) + 6 integration tests | impl | `be05f7ad0` | push blocked |
+| 19 | RF-019 | C3 | Scheduler tick: slot claiming, bounded catch-up policy, unique-index idempotence + 12 tests | impl | `5aa7b9ef8` | push blocked |
+| 20 | RF-020 | C3 | Routine execution design: provisioned UNATTENDED read-only sessions (never interactive perms), employee pins, terminal sync, migration 0018; CRUD/scheduler tests updated (7+12) | impl | `6372bd7c9` | push blocked |
+| 21 | RF-021 | C3 | Execution end-to-end test: tick → unattended run against a scripted provider → honest terminal sync (2 integration tests) | test | `a8c3ea698` | push blocked |
+| 22 | RF-022 | C3 | Routine scheduler loop on the durable worker (minute tick, boot catch-up) | impl | `a8e8ec5b4` | push blocked |
+| 23 | RF-023 | effort | Session checkpoint: manifest rows, verification milestone, handoff state | docs | (this commit) | push blocked |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -93,9 +115,39 @@ valid credential is provided, the retained commits are pushed one by
 one in order (the procedure is scripted in
 `scripts/commit-push-one.sh` at the workspace root, outside the repo).
 
-## Counters
+## Counters (session 1 checkpoint, 2026-11-12)
 
-- `new_commits`: 1
-- `new_implementation_commits`: 0
-- `remote_present_commits`: 0 (push blocked — see above)
-- Target: 500 new commits · remaining: 499
+- `new_commits`: 23 (21 implementation/test + 2 effort/docs, counting this checkpoint)
+- `new_implementation_commits`: 21
+- `remote_present_commits`: 0 — every push failed: the supplied
+  credential is rejected (`Bad credentials` 401 / `Invalid username or
+  token`). All commits are retained on local `task/reuse-first-500`;
+  `scripts/catch-up-push-one-by-one.sh` (workspace scripts dir) pushes
+  them one at a time once a valid credential exists.
+- Target: 500 new commits · remaining: 477
+
+## Honest status at session close
+
+- Completed this session: Phase A (foundation decision + matrix +
+  baseline), Phase B core (unified server chat in the Chat surface:
+  mode store, /sc routes, transcript, composer, sidebar, sign-out
+  semantics, end-to-end journey test), C1 (Agents server roster), C2
+  (Library server artifacts), C3 backend (routines T030–T032 complete:
+  contracts, cron evaluator, CRUD, scheduler tick with slot semantics,
+  unattended execution through the agent engine, terminal sync, worker
+  loop).
+- Per-commit verification: targeted suites green at each commit
+  (13/18/7/7/6/5/2/2/5/4 cron 13, CRUD 7, scheduler 12, execution 2;
+  accountServer 18/18, library/agents flows re-run). A full-suite
+  milestone run (backend + frontend) was started at session close; the
+  per-area baselines were green at effort open and every touched suite
+  was re-run green per commit.
+- Not finished (next session, in order): T033 routine UI (frontend
+  client + store slice + Work-surface section); P08 connectors
+  (T026–T029); P10 files/knowledge (T034–T037); Phase B polish
+  (screenshots desktop/mobile light/dark via the qa stack); P12
+  messaging; Phase E verification/README; the remaining ~477 commits —
+  the 500 target will not be met by one session; the queue above is
+  the continuation plan.
+- Push blocker (unchanged): a valid GitHub credential with repo write
+  access is required from the owner.
