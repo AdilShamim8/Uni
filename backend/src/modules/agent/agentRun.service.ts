@@ -27,6 +27,7 @@ import {
 } from '../../db/schema.js'
 import { appendAgentTurn, loadAgentTurns } from './agentTurns.service.js'
 import { syncWorkRunOutcome } from '../work/workSync.service.js'
+import { syncRoutineRunOutcome } from '../routines/routinesSync.service.js'
 import { appendAgentEvent } from './agentEvents.service.js'
 import { findSessionRow, type AgentDatabase } from './agentSession.service.js'
 import { sessionRootPath, defaultAgentRoot, ensureSessionRoot, UnsafeRootDirError, UnsafeAgentRootError } from './sessionStore.js'
@@ -391,6 +392,20 @@ async function executeAgentRun(
       )
     } catch {
       /* work sync is best-effort; the agent terminal stands */
+    }
+    // T032 — a routine-delegated run syncs its outcome into the
+    // routine_run row the same way (idempotent; non-routine runs are
+    // a no-op). Best-effort for the same reason.
+    try {
+      await syncRoutineRunOutcome(
+        db,
+        session.workspaceId,
+        live.runId,
+        status,
+        payload.text ?? '',
+      )
+    } catch {
+      /* routine sync is best-effort; the agent terminal stands */
     }
   }
 

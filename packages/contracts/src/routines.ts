@@ -41,8 +41,13 @@ export type RoutineScheduleExpression = z.infer<typeof routineScheduleExpression
 
 export const routineDtoSchema = z.object({
   id: z.string().min(1),
-  /** The agent session fires run in (unattended mode). */
+  /**
+   * The routine's own agent session — provisioned server-side at
+   * creation in the unattended mode with a read-only roster.
+   */
   sessionId: z.string().min(1),
+  /** The employee the routine executes as, when linked. */
+  employeeId: z.string().nullable(),
   name: z.string().min(1).max(200),
   prompt: z.string().min(1).max(10_000),
   /** 5-field cron expression, UTC. */
@@ -59,11 +64,19 @@ export const routineDtoSchema = z.object({
 export type RoutineDto = z.infer<typeof routineDtoSchema>
 
 export const createRoutineRequestSchema = z.object({
-  sessionId: z.string().trim().min(1).max(200),
   name: z.string().trim().min(1).max(200),
   prompt: z.string().trim().min(1).max(10_000),
   schedule: routineScheduleExpressionSchema,
   catchUpMinutes: z.number().int().min(0).max(60 * 24 * 7).default(0),
+  /**
+   * Optional employee (AI worker) the routine executes as: the pinned
+   * provider/model and instructions come from the employee at run time.
+   * The routine's OWN session is provisioned server-side in the
+   * unattended mode with a read-only roster — a scheduled task never
+   * inherits interactive permissions (it cannot ask, and it cannot
+   * mutate).
+   */
+  employeeId: z.string().trim().min(1).max(200).nullable().optional(),
 })
 export type CreateRoutineRequest = z.infer<typeof createRoutineRequestSchema>
 

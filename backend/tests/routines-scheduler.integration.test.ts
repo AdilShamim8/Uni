@@ -11,20 +11,9 @@ import type { AgentDatabase } from '../src/modules/agent/agentSession.service.js
  * the unique index, and updates lastFireAt on claim.
  */
 
-async function createSession(app: TestApp['app'], cookie: string, name: string): Promise<string> {
-  const created = await app.inject({
-    method: 'POST',
-    url: '/api/v1/agent/sessions',
-    headers: { cookie, origin: 'http://localhost:5173' },
-    payload: { name, description: '', mode: 'default', tools: ['read'] },
-  })
-  return (created.json() as { id: string }).id
-}
-
 async function createRoutine(
   app: TestApp['app'],
   cookie: string,
-  sessionId: string,
   schedule: string,
 ): Promise<string> {
   const created = await app.inject({
@@ -32,27 +21,24 @@ async function createRoutine(
     url: '/api/v1/routines',
     headers: { cookie, origin: 'http://localhost:5173' },
     payload: {
-      sessionId,
       name: 'Tick test routine',
       prompt: 'Summarize.',
       schedule,
     },
   })
   expect(created.statusCode).toBe(201)
-  return (created.json() as { id: string }).id
+  return (created.json() as { id: string; sessionId: string }).id
 }
 
 describe('routine scheduler tick (T031)', () => {
   let testApp: TestApp
   let alice: { cookie: string }
   let db: RoutinesDatabase & AgentDatabase
-  let sessionId: string
   const fires: RoutineFire[] = []
 
   beforeAll(async () => {
     testApp = await startTestApp()
     alice = await signUpUser(testApp.app, { name: 'Alice Scheduler' })
-    sessionId = await createSession(testApp.app, alice.cookie, 'Scheduler session')
     db = (testApp.app as unknown as { database: { db: RoutinesDatabase } }).database.db
     await testApp.app.listen({ port: 0, host: '127.0.0.1' })
   }, 180_000)
@@ -63,7 +49,7 @@ describe('routine scheduler tick (T031)', () => {
   })
 
   it('claims a due fire and hands it to the executor', async () => {
-    await createRoutine(testApp.app, alice.cookie, sessionId, '* * * * *')
+    await createRoutine(testApp.app, alice.cookie, '* * * * *')
     const now = new Date()
     const result = await runSchedulerTick(db, async (fire) => {
       fires.push(fire)
@@ -72,8 +58,8 @@ describe('routine scheduler tick (T031)', () => {
     expect(result.considered).toBe(1)
     expect(result.claimed).toBe(1)
     expect(fires).toHaveLength(1)
-    expect(fires[0]!.sessionId).toBe(sessionId)
     expect(fires[0]!.prompt).toBe('Summarize.')
+    expect(fires[0]!.sessionId).toBeTruthy()
 
     // The claimed minute is the current minute, truncated.
     const currentMinute = Math.floor(now.getTime() / 60_000) * 60_000
@@ -101,7 +87,7 @@ describe('routine scheduler tick (T031)', () => {
   })
 
   it('never fires a paused or archived routine', async () => {
-    const routineId = await createRoutine(testApp.app, alice.cookie, sessionId, '* * * * *')
+    const routineId = await createRoutine(testApp.app, alice.cookie, '* * * * *')
     const { eq } = await import('drizzle-orm')
     const { routines } = await import('../src/db/schema.js')
 
@@ -123,7 +109,7 @@ describe('routine scheduler tick (T031)', () => {
   it('ignores an already-claimed minute through the unique index', async () => {
     // A routine whose last claimed minute is the current one (e.g. by a
     // concurrent process): the onConflictDoNothing insert claims nothing.
-    const routineId = await createRoutine(testApp.app, alice.cookie, sessionId, '* * * * *')
+    const routineId = await createRoutine(testApp.app, alice.cookie, '* * * * *')
     const now = new Date()
     // First claim succeeds.
     const first = await runSchedulerTick(db, async () => {}, now)

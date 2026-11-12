@@ -42,7 +42,7 @@ export async function routineRoutes(app: FastifyInstance): Promise<void> {
   app.post('/routines', async (request, reply) => {
     const body = createRoutineRequestSchema.parse(request.body ?? {})
     const routine = await createRoutine(db, request.workspace!.id, {
-      sessionId: body.sessionId,
+      employeeId: body.employeeId ?? null,
       name: body.name,
       prompt: body.prompt,
       schedule: body.schedule,
