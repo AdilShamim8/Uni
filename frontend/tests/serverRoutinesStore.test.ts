@@ -19,6 +19,7 @@ const ROUTINE: ServerRoutine = {
   paused: false,
   archived: false,
   lastFireAt: null,
+  nextFireAt: null,
   createdAt: 1,
   updatedAt: 1,
 }
