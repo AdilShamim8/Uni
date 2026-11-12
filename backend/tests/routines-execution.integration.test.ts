@@ -6,7 +6,8 @@ import { signUpUser, startTestApp, type TestApp } from './harness.js'
 import { runSchedulerTick } from '../src/modules/routines/routines.scheduler.js'
 import { executeRoutineFire } from '../src/modules/routines/routines.executor.js'
 import type { RoutinesDatabase } from '../src/modules/routines/routines.service.js'
-import type { AgentDatabase, RunEngineDeps } from '../src/modules/agent/agentRun.service.js'
+import type { RunEngineDeps } from '../src/modules/agent/agentRun.service.js'
+import type { AgentDatabase } from '../src/modules/agent/agentSession.service.js'
 import type { Env } from '../src/config/env.js'
 
 /**
