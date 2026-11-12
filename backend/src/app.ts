@@ -21,6 +21,7 @@ import { memoryRoutes } from './modules/memory/memory.routes.js'
 import { libraryRoutes } from './modules/library/library.routes.js'
 import { workRoutes } from './modules/work/work.routes.js'
 import { routineRoutes } from './modules/routines/routines.routes.js'
+import { connectorRoutes } from './modules/connectors/connectors.routes.js'
 import { pluginRoutes } from './modules/plugins/plugins.routes.js'
 import { mcpRoutes } from './modules/mcp/mcp.routes.js'
 import { agentRoutes } from './modules/agent/agent.routes.js'
@@ -74,6 +75,7 @@ export async function buildApp(options: BuildAppOptions = {}): Promise<FastifyIn
       await api.register(libraryRoutes)
       await api.register(workRoutes)
       await api.register(routineRoutes)
+      await api.register(connectorRoutes)
       await api.register(pluginRoutes)
       await api.register(mcpRoutes)
       await api.register(agentRoutes)
