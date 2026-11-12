@@ -10,7 +10,7 @@ import {
   type RoutineRunDto,
 } from '@uni/contracts'
 import { badRequest, notFound } from '../../lib/errors.js'
-import { InvalidCronError, parseCron } from './cron.js'
+import { InvalidCronError, parseCron, nextCronFire } from './cron.js'
 import { createSession, type AgentDatabase } from '../agent/agentSession.service.js'
 
 /**
@@ -25,7 +25,21 @@ import { createSession, type AgentDatabase } from '../agent/agentSession.service
 
 export type RoutinesDatabase = NodePgDatabase<typeof schema>
 
+/** Preview horizon for the computed next fire: 7 days of minutes. */
+const NEXT_FIRE_SCAN_MINUTES = 7 * 24 * 60
+
 function serializeRoutine(row: typeof routines.$inferSelect): RoutineDto {
+  // The next fire is computed by the server's own evaluator — paused
+  // routines do not fire, so their preview is honestly null.
+  let nextFireAt: number | null = null
+  if (!row.paused && !row.archived) {
+    try {
+      const next = nextCronFire(row.schedule, new Date(), NEXT_FIRE_SCAN_MINUTES)
+      nextFireAt = next ? next.getTime() : null
+    } catch {
+      nextFireAt = null // an unparseable stored schedule degrades honestly
+    }
+  }
   return routineDtoSchema.parse({
     id: row.id,
     sessionId: row.sessionId,
@@ -37,6 +51,7 @@ function serializeRoutine(row: typeof routines.$inferSelect): RoutineDto {
     paused: row.paused,
     archived: row.archived,
     lastFireAt: row.lastFireAt ? row.lastFireAt.getTime() : null,
+    nextFireAt,
     createdAt: row.createdAt.getTime(),
     updatedAt: row.updatedAt.getTime(),
   })
