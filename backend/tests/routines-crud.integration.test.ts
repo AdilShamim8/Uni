@@ -7,32 +7,15 @@ import { signUpUser, startTestApp, type TestApp } from './harness.js'
  * the scheduler's own parser, pause/archive flags, and run listing.
  */
 
-async function createSession(
-  app: TestApp['app'],
-  cookie: string,
-  name: string,
-): Promise<string> {
-  const created = await app.inject({
-    method: 'POST',
-    url: '/api/v1/agent/sessions',
-    headers: { cookie, origin: 'http://localhost:5173' },
-    payload: { name, description: '', mode: 'default', tools: ['read'] },
-  })
-  expect(created.statusCode).toBe(201)
-  return (created.json() as { id: string }).id
-}
-
 describe('routine CRUD (T030)', () => {
   let testApp: TestApp
   let alice: { cookie: string }
   let bob: { cookie: string }
-  let sessionId: string
 
   beforeAll(async () => {
     testApp = await startTestApp()
     alice = await signUpUser(testApp.app, { name: 'Alice Routines' })
     bob = await signUpUser(testApp.app, { name: 'Bob Routines' })
-    sessionId = await createSession(testApp.app, alice.cookie, 'Morning brief session')
     await testApp.app.listen({ port: 0, host: '127.0.0.1' })
   }, 180_000)
 
@@ -47,7 +30,6 @@ describe('routine CRUD (T030)', () => {
       url: '/api/v1/routines',
       headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
       payload: {
-        sessionId,
         name: 'Morning brief',
         prompt: 'Summarize overnight changes in my notes.',
         schedule: '30 9 * * 1-5',
@@ -81,15 +63,43 @@ describe('routine CRUD (T030)', () => {
       url: '/api/v1/routines',
       headers: { cookie: bob.cookie, origin: 'http://localhost:5173' },
       payload: {
-        sessionId,
-        name: 'Stolen routine',
-        prompt: 'Run in someone else\'s session.',
+        name: 'Foreign employee routine',
+        prompt: 'Run as someone else\'s employee.',
         schedule: '* * * * *',
+        employeeId: 'employee-that-does-not-exist',
       },
     })
     expect(created.statusCode).toBe(404)
     const body = created.json() as { code?: string }
     expect(body.code).toBe('not_found')
+  })
+
+  it('provisions the routine its own unattended read-only session', async () => {
+    const created = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/routines',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: {
+        name: 'Unattended check',
+        prompt: 'Check my notes.',
+        schedule: '*/15 * * * *',
+      },
+    })
+    expect(created.statusCode).toBe(201)
+    const routine = created.json() as { sessionId: string; employeeId: string | null }
+    expect(routine.employeeId).toBeNull()
+    expect(routine.sessionId).toBeTruthy()
+
+    // The provisioned session exists, is unattended, and read-only.
+    const session = await testApp.app.inject({
+      method: 'GET',
+      url: `/api/v1/agent/sessions/${routine.sessionId}`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+    })
+    expect(session.statusCode).toBe(200)
+    const body = session.json() as { mode: string; tools: string[] }
+    expect(body.mode).toBe('unattended')
+    expect(body.tools).toEqual(['read', 'list', 'grep', 'current_time', 'todo'])
   })
 
   it('rejects invalid schedules with the parser\'s reason', async () => {
@@ -98,7 +108,6 @@ describe('routine CRUD (T030)', () => {
       url: '/api/v1/routines',
       headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
       payload: {
-        sessionId,
         name: 'Impossible',
         prompt: 'Never fires.',
         schedule: '60 * * * *',
@@ -116,7 +125,6 @@ describe('routine CRUD (T030)', () => {
       url: '/api/v1/routines',
       headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
       payload: {
-        sessionId,
         name: 'Weekly digest',
         prompt: 'Digest the week.',
         schedule: '0 17 * * 5',
@@ -157,7 +165,6 @@ describe('routine CRUD (T030)', () => {
       url: '/api/v1/routines',
       headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
       payload: {
-        sessionId,
         name: 'Hourly check',
         prompt: 'Check for changes.',
         schedule: '0 * * * *',
@@ -185,7 +192,6 @@ describe('routine CRUD (T030)', () => {
       url: '/api/v1/routines',
       headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
       payload: {
-        sessionId,
         name: 'Temp routine',
         prompt: 'Temporary.',
         schedule: '*/10 * * * *',

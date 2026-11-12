@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { and, desc, eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import * as schema from '../../db/schema.js'
-import { agentSessions, routines, routineRuns } from '../../db/schema.js'
+import { routines, routineRuns } from '../../db/schema.js'
 import {
   routineDtoSchema,
   routineRunDtoSchema,
@@ -11,6 +11,7 @@ import {
 } from '@uni/contracts'
 import { badRequest, notFound } from '../../lib/errors.js'
 import { InvalidCronError, parseCron } from './cron.js'
+import { createSession, type AgentDatabase } from '../agent/agentSession.service.js'
 
 /**
  * The routines service (T030, P09): scheduled prompts inside agent
@@ -28,6 +29,7 @@ function serializeRoutine(row: typeof routines.$inferSelect): RoutineDto {
   return routineDtoSchema.parse({
     id: row.id,
     sessionId: row.sessionId,
+    employeeId: row.employeeId,
     name: row.name,
     prompt: row.prompt,
     schedule: row.schedule,
@@ -67,19 +69,43 @@ export function assertValidSchedule(schedule: string): void {
   }
 }
 
-async function assertSessionInWorkspace(
+/**
+ * The read-only roster a routine may ever use unattended: no shell, no
+ * writes, no web fetches (the unattended policy refuses them anyway —
+ * this is the same list, declared up front so the session row and the
+ * gate cannot drift).
+ */
+export const ROUTINE_ROSTER = ['read', 'list', 'grep', 'current_time', 'todo'] as const
+
+/**
+ * Provision the routine's own unattended session. Mode 'unattended' is
+ * deliberately NOT creatable through the public session API; routines
+ * are the one internal provisioner (scheduled tasks never inherit
+ * interactive permissions — they cannot ask and cannot mutate).
+ */
+async function provisionRoutineSession(
   db: RoutinesDatabase,
   workspaceId: string,
-  sessionId: string,
-): Promise<void> {
-  const rows = await db
-    .select({ id: agentSessions.id })
-    .from(agentSessions)
-    .where(and(eq(agentSessions.id, sessionId), eq(agentSessions.workspaceId, workspaceId)))
-    .limit(1)
-  if (!rows[0]) {
-    throw notFound('Agent session not found in this workspace.')
+  name: string,
+  employee: { id: string; providerId: string | null; modelId: string | null } | null,
+): Promise<string> {
+  const request = {
+    name: `Routine: ${name}`,
+    description: `Unattended session provisioned for the routine "${name}".`,
+    mode: 'unattended' as const,
+    tools: [...ROUTINE_ROSTER],
+    providerId: employee?.providerId ?? null,
+    modelId: employee?.modelId ?? null,
+    employeeId: employee?.id ?? null,
   }
+  const session = await createSession(
+    db as unknown as AgentDatabase,
+    workspaceId,
+    // 'unattended' is outside the public request union by design; this
+    // is the single internal call site that may widen it.
+    request as unknown as Parameters<typeof createSession>[2],
+  )
+  return session.id
 }
 
 export async function listRoutines(
@@ -123,21 +149,45 @@ export async function createRoutine(
   db: RoutinesDatabase,
   workspaceId: string,
   input: {
-    sessionId: string
     name: string
     prompt: string
     schedule: string
     catchUpMinutes: number
+    employeeId?: string | null
   },
 ): Promise<RoutineDto> {
   assertValidSchedule(input.schedule)
-  await assertSessionInWorkspace(db, workspaceId, input.sessionId)
+
+  // Resolve the employee pin (same workspace) when linked; a foreign or
+  // missing employee is an honest 404 before anything is provisioned.
+  let employee: { id: string; providerId: string | null; modelId: string | null } | null = null
+  if (input.employeeId) {
+    const rows = await db
+      .select({
+        id: schema.employees.id,
+        providerId: schema.employees.providerId,
+        modelId: schema.employees.modelId,
+      })
+      .from(schema.employees)
+      .where(
+        and(
+          eq(schema.employees.id, input.employeeId),
+          eq(schema.employees.workspaceId, workspaceId),
+        ),
+      )
+      .limit(1)
+    if (!rows[0]) throw notFound('Employee not found in this workspace.')
+    employee = rows[0]
+  }
+
+  const sessionId = await provisionRoutineSession(db, workspaceId, input.name, employee)
   const row = await db
     .insert(routines)
     .values({
       id: randomUUID(),
       workspaceId,
-      sessionId: input.sessionId,
+      sessionId,
+      employeeId: employee?.id ?? null,
       name: input.name,
       prompt: input.prompt,
       schedule: input.schedule,
