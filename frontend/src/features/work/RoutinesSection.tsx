@@ -8,6 +8,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { TextField } from '@/components/ui/TextField'
 import { describeSchedule } from './schedulePreview'
+import { RoutineDetailDialog } from './RoutineDetailDialog'
 
 /**
  * T033 — the routines section on the server Work surface: scheduled
@@ -36,6 +37,7 @@ export function RoutinesSection() {
   const removeServerRoutineFor = useServerSessionStore((state) => state.removeServerRoutineFor)
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ServerRoutine | null>(null)
+  const [detailTarget, setDetailTarget] = useState<ServerRoutine | null>(null)
 
   useEffect(() => {
     void loadServerRoutines()
@@ -81,9 +83,13 @@ export function RoutinesSection() {
             className="rounded-group border border-line bg-raised px-3.5 py-3"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-ink">
+              <button
+                type="button"
+                onClick={() => setDetailTarget(routine)}
+                className="min-w-0 flex-1 truncate text-left text-[14px] font-medium text-ink underline-offset-2 hover:underline"
+              >
                 {routine.name}
-              </span>
+              </button>
               <StatusPill
                 label={routine.paused ? 'Paused' : 'Active'}
                 tone={routine.paused ? 'neutral' : 'accent'}
@@ -129,6 +135,8 @@ export function RoutinesSection() {
           </li>
         ))}
       </ul>
+
+      <RoutineDetailDialog routine={detailTarget} onClose={() => setDetailTarget(null)} />
 
       <CreateRoutineDialog
         open={createOpen}

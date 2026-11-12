@@ -68,10 +68,12 @@ import {
 } from '@/services/api/serverWork'
 import {
   listServerRoutines,
+  getServerRoutine,
   createServerRoutine,
   patchServerRoutine,
   deleteServerRoutine,
   type ServerRoutine,
+  type ServerRoutineRun,
 } from '@/services/api/serverRoutines'
 import {
   listServerMcpServers,
@@ -235,6 +237,9 @@ interface ServerSessionState {
   serverRoutines: ServerRoutine[]
   serverRoutinesLoading: boolean
   serverRoutinesError: string | null
+  /** Run history for the routine whose detail dialog is open. */
+  serverRoutineRuns: ServerRoutineRun[]
+  serverRoutineRunsLoading: boolean
 
   /** Server MCP servers (T025), managed in the Plugins/settings surface. */
   serverMcpServers: ServerMcpServer[]
@@ -324,6 +329,8 @@ interface ServerSessionState {
   /** Server Work (T019): list + lifecycle actions through the API. */
   loadServerWorkTasks: () => Promise<void>
   loadServerRoutines: () => Promise<void>
+  openServerRoutineDetail: (routineId: string) => Promise<void>
+  closeServerRoutineDetail: () => void
   createServerRoutineFor: (input: {
     name: string
     prompt: string
@@ -406,6 +413,8 @@ const clearedServerData: Pick<
   | 'serverRoutines'
   | 'serverRoutinesLoading'
   | 'serverRoutinesError'
+  | 'serverRoutineRuns'
+  | 'serverRoutineRunsLoading'
   | 'serverMcpServers'
   | 'serverMcpServersLoading'
 > = {
@@ -438,6 +447,8 @@ const clearedServerData: Pick<
   serverRoutines: [],
   serverRoutinesLoading: false,
   serverRoutinesError: null,
+  serverRoutineRuns: [],
+  serverRoutineRunsLoading: false,
   serverMcpServers: [],
   serverMcpServersLoading: false,
 }
@@ -1222,6 +1233,33 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       if (!stillCurrent(generation)) return
       set({ serverWorkTasksLoading: false })
     }
+  },
+
+  openServerRoutineDetail: async (routineId) => {
+    const generation = get().sessionGeneration
+    set({ serverRoutineRunsLoading: true, serverRoutineRuns: [] })
+    try {
+      const detail = await getServerRoutine(routineId)
+      if (!stillCurrent(generation)) return
+      set({
+        serverRoutineRuns: detail.runs,
+        serverRoutineRunsLoading: false,
+        // Refresh the row too: the fetch carries the newest
+        // nextFireAt/lastFireAt.
+        serverRoutines: get().serverRoutines.some((entry) => entry.id === routineId)
+          ? get().serverRoutines.map((entry) =>
+              entry.id === routineId ? detail.routine : entry,
+            )
+          : [detail.routine, ...get().serverRoutines],
+      })
+    } catch (error) {
+      if (!stillCurrent(generation)) return
+      set({ serverRoutineRunsLoading: false, serverRoutinesError: errorMessage(error) })
+    }
+  },
+
+  closeServerRoutineDetail: () => {
+    set({ serverRoutineRuns: [], serverRoutineRunsLoading: false })
   },
 
   loadServerRoutines: async () => {
