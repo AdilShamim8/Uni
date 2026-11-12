@@ -43,6 +43,7 @@ describe('routine CRUD (T030)', () => {
       catchUpMinutes: number
       paused: boolean
       lastFireAt: string | null
+      nextFireAt: number | null
     }
     expect(routine.schedule).toBe('30 9 * * 1-5')
     expect(routine.catchUpMinutes).toBe(30)
