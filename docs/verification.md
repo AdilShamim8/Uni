@@ -1066,3 +1066,23 @@ race), the complete GitHub Actions matrix on PR #63's head
 - Frontend CI (push): **success**.
 - Local full suites on the same tree: backend **392/392 across 49
   files**; frontend **626/626 across 87 files**.
+
+
+## Reuse-first 500 — main is green again (2026-11-13)
+
+The owner merged PR #62 (RF-001…028) while the branch still carried
+three unfixed regressions, so main's push checks went red (Backend:
+pool-teardown unhandled error with all 46 test files passing; Frontend
+typecheck + verify: lint/test-file errors — all fixed later on the
+branch by RF-035/RF-039/RF-042). PR #63 (RF-029…043) carried the fixes;
+its head `81d613fd8` was green on all five checks, and merging it
+produced main head `f97c7d642` with every check green:
+
+- Backend (typecheck + integration tests) — **success**
+- Frontend (typecheck + tests) — **success**
+- Contracts (shared schemas) — **success**
+- verify (Frontend CI) — **success**
+- Vercel build + deploy — **success**
+
+This was verified live against the GitHub check-runs API on
+`f97c7d642`, not from logs alone.

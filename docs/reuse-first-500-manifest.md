@@ -109,7 +109,8 @@ bulk push. This file is the count of record for the effort.
 | 38 | RF-040 | effort | Session-2 checkpoint: these rows, verification milestone, handoff | docs | `aaeca02e2` | pushed ✓ |
 | 39 | RF-041 | Phase E | Truthfulness: capability-matrix rows for shipped capabilities, API-map additions, README test badge | docs | `92a239a71` | pushed ✓ |
 | 40 | RF-042 | CI | Engine tests await full run quiescence (pool-teardown race that failed CI with all tests green) | test | `56be3e9d6` | pushed ✓ |
-| 41 | RF-043 | effort | Close-out checkpoint: counters + CI-green evidence | docs | (this commit) | pushed ✓ |
+| 41 | RF-043 | effort | Close-out checkpoint: counters + CI-green evidence | docs | `81d613fd8` | pushed ✓ |
+| 42 | RF-044 | effort | PR #63 merged to main (`f97c7d642`): every failing main check green (Backend/Frontend/Contracts/verify/Vercel build+deploy) | docs | (this commit) | pushed ✓ |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -137,12 +138,13 @@ one in order (the procedure is scripted in
 
 - `new_commits`: 43 (RF-001…RF-043; 37 implementation/test/fix + 5 docs/effort)
 - `new_implementation_commits`: 37
-- `remote_present_commits`: 43 — every commit pushed ONE AT A TIME and
-  verified by SHA. RF-001…028 are ALSO IN MAIN (merged by the owner via
-  PR #62); the full branch is exposed by draft PR #63 with the complete
-  CI matrix GREEN on the head (`56be3e9d`: Contracts ✓ Backend ✓
-  Frontend ✓).
-- Target: 500 new commits · remaining: 457 — honest work continues
+- `remote_present_commits`: 44 — every commit pushed ONE AT A TIME and
+  verified by SHA. **ALL 43 effort commits are now IN MAIN**: PR #62
+  (RF-001…028, merged by the owner) + PR #63 (RF-029…043, merged
+  2026-11-13 after its head CI matrix was fully green). Main head
+  `f97c7d642` — every check green: Backend ✓ Frontend ✓ Contracts ✓
+  verify ✓ Vercel build+deploy ✓.
+- Target: 500 new commits · remaining: 456 — honest work continues
   slice-by-slice; commits are never manufactured (prompt of record).
 
 ## Honest status at session close

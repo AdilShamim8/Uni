@@ -1,3 +1,27 @@
+## Current state (updated 2026-11-13 — main green, all 43 effort commits landed)
+
+- **Main head `f97c7d642`** = merge of PR #63; every check green
+  (Backend/Frontend/Contracts/verify/Vercel build+deploy — verified via
+  the API). All RF-001…RF-043 work is in main. The work branch
+  `task/reuse-first-500` is reset to main and continues the effort.
+- **Session context:** the sandbox was recycled; the repo was re-cloned
+  and deps reinstalled. Push discipline script recreated at
+  `/home/z/my-project/scripts/commit-push-one.sh` (one commit, one
+  push, SHA-verified).
+- **Open maintenance (owner decision):** 10 dependabot PRs (#64…#73) —
+  safe-looking: @types/node patch, dotenv patch, ai 7.0.166 patch,
+  better-auth minor; risky majors: typescript 7, vite 8,
+  @vitejs/plugin-react 6, react-markdown 10, undici 8. Verify each
+  before merging; majors need dedicated verification sessions.
+- **Next executable slices (in order):** (1) B07 server workspace
+  export (JSON: employees, notes, routines, files metadata); (2)
+  employee pin selector in the routine create dialog; (3) Phase B
+  screenshot pass via the browser qa stack; (4) P08 fixture-verified
+  GitHub adapter (T027); (5) continued manifest queue toward 500 —
+  never padded.
+- **Blockers (unchanged):** no paid provider keys (live inference stays
+  fixture-verified); no Docker daemon (P11 inert by design).
+
 ## Current state (updated 2026-11-12, reuse-first-500 session 2 — 40 commits pushed, PR #62 open)
 
 - **Branch:** `task/reuse-first-500`, 40 commits, **every one pushed
