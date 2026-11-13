@@ -26,8 +26,25 @@ import { verifyGithubToken } from './github.adapter.js'
  * fabricate a live connection.
  */
 export async function connectorRoutes(app: FastifyInstance): Promise<void> {
-  app.get('/connectors', async () => {
-    const items = listConnectors()
+  /**
+   * RF-091 — a connector is 'available' to THIS caller when a
+   * verified credential exists in their workspace. The catalog rows
+   * are static; the status is per-request and honest.
+   */
+  async function statusFor(workspaceId: string, connectorId: string): Promise<'unavailable' | 'available'> {
+    const descriptor = await describeConnectorCredential(
+      app.database!.db,
+      workspaceId,
+      connectorId,
+    )
+    return descriptor?.status === 'verified' ? 'available' : 'unavailable'
+  }
+
+  app.get('/connectors', async (request) => {
+    const items = []
+    for (const connector of listConnectors()) {
+      items.push({ ...connector, status: await statusFor(request.workspace!.id, connector.id) })
+    }
     for (const connector of items) void connectorDtoSchema.parse(connector)
     return { items }
   })
@@ -35,8 +52,12 @@ export async function connectorRoutes(app: FastifyInstance): Promise<void> {
   app.get<{ Params: { connectorId: string } }>('/connectors/:connectorId', async (request) => {
     const connector = findConnector(request.params.connectorId)
     if (!connector) throw notFound('Connector not found.')
-    void connectorDtoSchema.parse(connector)
-    return connector
+    const enriched = {
+      ...connector,
+      status: await statusFor(request.workspace!.id, connector.id),
+    }
+    void connectorDtoSchema.parse(enriched)
+    return enriched
   })
 
   /**

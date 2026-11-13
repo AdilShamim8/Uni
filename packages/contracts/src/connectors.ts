@@ -38,11 +38,11 @@ export const connectorDtoSchema = z.object({
   /** Steps to make this connectable, in order; honest prerequisites only. */
   setup: z.array(z.string().min(1)).max(20),
   /**
-   * Connection status — always 'unavailable' in Uni today: no remote
-   * gateway is integrated. The field exists so the API shape is stable
-   * when a real integration lands.
+   * Connection status — 'unavailable' until a verified credential
+   * exists for the caller's workspace (T027: GitHub), then 'available'.
+   * Catalog-only connectors stay 'unavailable' honestly.
    */
-  status: z.literal('unavailable'),
+  status: z.enum(['unavailable', 'available']),
 })
 export type ConnectorDto = z.infer<typeof connectorDtoSchema>
 
