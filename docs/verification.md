@@ -1173,3 +1173,58 @@ Lesson recorded: this is the second time cancelled-CI merges broke
 main (see PR #62's merge). Dependabot majors need a dedicated
 verification session each; the CI-cancel race between quick
 back-to-back merges hides real failures.
+
+
+## Session 5 (2026-11-13) — routine editing + memory journal (14 commits)
+
+The owner asked for exactly fourteen new commits; each is a coherent
+tested slice, pushed one at a time with SHA verification, authored with
+the owner's noreply address.
+
+**Routine edit thread (T033):**
+
+- RF-057 `57a59e379` — PATCH /routines/:id accepts `employeeId`
+  (re-pin / unpin). The pin resolves exactly like create-time (foreign
+  employee = honest 404) and the provisioned session's
+  employee/provider/model follow, so execution matches the badge.
+  routines-crud 10/10, scheduler + execution 7/7.
+- RF-058 `c96ee729c` — the frontend client's patch input mirrors the
+  new field.
+- RF-059 `3cd2a6164` — `RoutineFormFields` extracted from the create
+  dialog; pure refactor, the 14 existing dialog tests unchanged and
+  green.
+- RF-060 `c7b8bce4e` — `editServerRoutineFor` store action
+  (generation-guarded, honest error). Store tests 8/8.
+- RF-061 `aabcbcdf4` — `EditRoutineDialog`: prefilled shared fields,
+  changed-only patch (Save disabled until something differs — the
+  server's "No fields to update." can never happen from this surface),
+  re-pin support, custom catch-up values stay visible. 6/6 tests.
+- RF-062 `4c911b3ae` — Edit action on routine rows (keyed dialog,
+  closes on success). Section suite 9/9 → 10/10.
+- RF-063 `f30dd7bbe` — Edit from the detail dialog; after a save the
+  detail view swaps in the saved row (no stale read).
+- RF-064 `0b81b1e8f` — failures-only filter on the run history
+  (error/skipped runs), with its own honest empty state. 7/7.
+
+**Memory journal thread (T016):**
+
+- RF-065 `138f56e45` — the journal client was dead code with a type
+  that never matched the real DTO; replaced with a field-for-field
+  mirror + the missing revert client, plus the journal store slice
+  (revert refreshes notes AND journal — a revert appends its own
+  entry). 4/4 store tests.
+- RF-066 `63d7b2ec4` — `MemoryJournalViewer` in the server memory
+  panel: collapsible, loads through the store, honest
+  loading/error/empty, per-entry revertibility. 3/3 (+ panel
+  regressions green).
+- RF-067 `7e068f23f` — revert behind a destructive confirmation;
+  cancel reverts nothing. 5/5 viewer tests.
+
+**Docs:** RF-068 `888758484` (handoff refresh), RF-069 (this section),
+RF-070 (manifest rows + counters).
+
+**Full-tree verification on the session head (exit codes captured
+unmasked):** backend **397/397 across 50 files**, frontend **651/651
+across 91 files**, typecheck + lint clean on both. better-auth 1.7.19
+(the owner's PR #71 merge) verified green before the session's work
+began (395/395 baseline).
