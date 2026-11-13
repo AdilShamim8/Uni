@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { signUpUser, startTestApp, type TestApp } from './harness.js'
+import { createDatabase } from '../src/db/client.js'
+import { routines, routineRuns } from '../src/db/schema.js'
 
 /**
  * B07 — workspace export over real HTTP + embedded PostgreSQL: the
@@ -113,6 +116,7 @@ describe('workspace export (B07)', () => {
       employees: body.employees.length,
       memoryNotes: body.memoryNotes.length,
       memoryJournal: body.memoryJournal.length,
+      routineRuns: body.routineRuns.length,
       routines: body.routines.length,
       files: body.files.length,
     })
@@ -171,6 +175,63 @@ describe('workspace export (B07)', () => {
       expect(body.memoryJournal[0]!.employeeId).toBe(employeeId)
       expect(body.memoryJournal[0]!.kind).toBe('created')
       expect(body.memoryJournal[0]!.diff).toContain('First fact')
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+
+  it('exports the latest routine runs with their outputs (RF-085)', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Runs' })
+      const created = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/routines',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { name: 'Exported routine', prompt: 'Do work.', schedule: '0 9 * * *' },
+      })
+      expect(created.statusCode).toBe(201)
+      const routineId = (created.json() as { id: string }).id
+
+      // Seed one completed run row directly — the scheduler itself is
+      // exercised elsewhere; the export contract is what is under test.
+      const database = createDatabase(test.databaseUrl)
+      try {
+        const routineRow = (
+          await database.db.select().from(routines).where(eq(routines.id, routineId))
+        )[0]!
+        await database.db.insert(routineRuns).values({
+          id: 'run-export-1',
+          workspaceId: routineRow.workspaceId,
+          routineId,
+          scheduledFor: new Date('2026-11-13T09:00:00Z'),
+          status: 'complete',
+          outputText: 'Fire output that must travel',
+          terminalAt: new Date('2026-11-13T09:00:02Z'),
+        })
+      } finally {
+        await database.pool.end()
+      }
+
+      const exportResponse = await test.app.inject({
+        method: 'GET',
+        url: '/api/v1/workspace/export',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      })
+      expect(exportResponse.statusCode).toBe(200)
+      const body = exportResponse.json() as {
+        routineRuns: Array<{
+          routineId: string
+          status: string
+          outputText: string
+        }>
+        counts: { routineRuns: number }
+      }
+      expect(body.counts.routineRuns).toBe(1)
+      expect(body.routineRuns).toHaveLength(1)
+      expect(body.routineRuns[0]!.routineId).toBe(routineId)
+      expect(body.routineRuns[0]!.status).toBe('complete')
+      expect(body.routineRuns[0]!.outputText).toContain('Fire output that must travel')
     } finally {
       await test.stop()
     }
