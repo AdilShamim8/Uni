@@ -1102,3 +1102,21 @@ This was verified live against the GitHub check-runs API on
 - Full-suite verification on the session-3 tree (2026-11-13):
   backend **394/394 across 49 files** (142s); frontend **629/629
   across 88 files** (174s, single-worker). Both green.
+
+
+## Session 3 close (2026-11-13) — PR #74 merged, main green again
+
+Two further CI hardenings landed after the checkpoint above:
+
+- RF-048 — the export test's account fixture missed the required
+  `workspace` field (Frontend typecheck + verify red; fixed and green).
+- RF-049 — `tests/agent-admission.integration.test.ts` flaked on CI
+  with a mid-file "fast shutdown request" to its embedded cluster:
+  the bind(0)-then-close port reservation races when parallel files
+  start clusters under CI load. The harness now retries startup on a
+  fresh port + data dir (up to 3 attempts) and probes that the
+  postmaster actually answers before the app connects. Backend green
+  on the same head.
+- PR #74 merged: main `9bb4dfab2` — Backend ✓ Frontend ✓ Contracts ✓
+  verify ✓ Vercel build/deploy/report-build-status ✓ (verified live
+  via the check-runs API).
