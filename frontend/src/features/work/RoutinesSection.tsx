@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarClock, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, CalendarClock, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerRoutine } from '@/services/api/serverRoutines'
 import { Button } from '@/components/ui/Button'
@@ -36,6 +36,9 @@ export function RoutinesSection() {
   )
   const removeServerRoutineFor = useServerSessionStore((state) => state.removeServerRoutineFor)
   const editServerRoutineFor = useServerSessionStore((state) => state.editServerRoutineFor)
+  const setServerRoutineArchivedFor = useServerSessionStore(
+    (state) => state.setServerRoutineArchivedFor,
+  )
   const serverEmployees = useServerSessionStore((state) => state.serverEmployees)
   const loadServerEmployees = useServerSessionStore((state) => state.loadServerEmployees)
   const [createOpen, setCreateOpen] = useState(false)
@@ -141,6 +144,25 @@ export function RoutinesSection() {
                 <Pencil size={13} />
                 Edit
               </Button>
+              {routine.archived ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void setServerRoutineArchivedFor(routine.id, false)}
+                >
+                  <ArchiveRestore size={13} />
+                  Unarchive
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void setServerRoutineArchivedFor(routine.id, true)}
+                >
+                  <Archive size={13} />
+                  Archive
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"

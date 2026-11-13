@@ -85,6 +85,7 @@ describe('RoutinesSection', () => {
       createServerRoutineFor: vi.fn(async () => true),
       setServerRoutinePausedFor: vi.fn(async () => true),
       editServerRoutineFor: vi.fn(async () => true),
+      setServerRoutineArchivedFor: vi.fn(async () => true),
       removeServerRoutineFor: vi.fn(async () => true),
     })
   })

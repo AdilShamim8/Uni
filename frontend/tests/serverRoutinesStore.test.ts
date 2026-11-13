@@ -72,6 +72,25 @@ describe('serverSessionStore — routines slice', () => {
     expect(useServerSessionStore.getState().serverRoutines[0]!.archived).toBe(true)
   })
 
+  it('archives and unarchives through the same action (RF-078)', async () => {
+    useServerSessionStore.setState({ serverRoutines: [ROUTINE] })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL, init?: RequestInit) => {
+        expect(String(url)).toContain('/routines/r-1')
+        expect(init?.method).toBe('PATCH')
+        const body = JSON.parse(init?.body as string) as { archived: boolean }
+        return jsonResponse(200, { ...ROUTINE, archived: body.archived })
+      }),
+    )
+    const archived = await useServerSessionStore.getState().setServerRoutineArchivedFor('r-1', true)
+    expect(archived).toBe(true)
+    expect(useServerSessionStore.getState().serverRoutines[0]!.archived).toBe(true)
+    const restored = await useServerSessionStore.getState().setServerRoutineArchivedFor('r-1', false)
+    expect(restored).toBe(true)
+    expect(useServerSessionStore.getState().serverRoutines[0]!.archived).toBe(false)
+  })
+
   it('records the honest error when the load fails', async () => {
     vi.stubGlobal(
       'fetch',

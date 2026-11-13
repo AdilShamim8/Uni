@@ -346,6 +346,8 @@ interface ServerSessionState {
     employeeId?: string | null
   }) => Promise<boolean>
   setServerRoutinePausedFor: (routineId: string, paused: boolean) => Promise<boolean>
+  /** RF-078 — archive/unarchive a routine (archived rows stay listable). */
+  setServerRoutineArchivedFor: (routineId: string, archived: boolean) => Promise<boolean>
   /** RF-060 — edit a routine's fields (changed-only); the row replaces in place. */
   editServerRoutineFor: (
     routineId: string,
@@ -1354,6 +1356,24 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     const generation = get().sessionGeneration
     try {
       const routine = await patchServerRoutine(routineId, { paused })
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverRoutines: state.serverRoutines.map((entry) =>
+          entry.id === routineId ? routine : entry,
+        ),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverRoutinesError: errorMessage(error) })
+      return false
+    }
+  },
+
+  setServerRoutineArchivedFor: async (routineId, archived) => {
+    const generation = get().sessionGeneration
+    try {
+      const routine = await patchServerRoutine(routineId, { archived })
       if (!stillCurrent(generation)) return false
       set((state) => ({
         serverRoutines: state.serverRoutines.map((entry) =>
