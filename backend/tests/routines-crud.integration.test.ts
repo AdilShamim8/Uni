@@ -62,6 +62,59 @@ describe('routine CRUD (T030)', () => {
     expect((listed.json() as { items: unknown[] }).items).toHaveLength(1)
   })
 
+  it('resolves the pinned employee name on create, list, and get', async () => {
+    const employee = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/employees',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { name: 'Researcher', description: 'Finds things' },
+    })
+    expect(employee.statusCode).toBe(201)
+    const employeeId = (employee.json() as { id: string }).id
+
+    const pinned = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/routines',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: {
+        name: 'Pinned brief',
+        prompt: 'Use the researcher instructions.',
+        schedule: '0 10 * * *',
+        employeeId,
+      },
+    })
+    expect(pinned.statusCode).toBe(201)
+    const pinnedBody = pinned.json() as { id: string; employeeId: string | null; employeeName: string | null }
+    expect(pinnedBody.employeeId).toBe(employeeId)
+    expect(pinnedBody.employeeName).toBe('Researcher')
+
+    const unpinned = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/routines',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { name: 'Plain brief', prompt: 'No pin.', schedule: '0 11 * * *' },
+    })
+    expect(unpinned.statusCode).toBe(201)
+    expect((unpinned.json() as { employeeName: string | null }).employeeName).toBeNull()
+
+    const listed = await testApp.app.inject({
+      method: 'GET',
+      url: '/api/v1/routines',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+    })
+    const items = (listed.json() as { items: Array<{ name: string; employeeName: string | null }> }).items
+    const byName = new Map(items.map((item) => [item.name, item.employeeName]))
+    expect(byName.get('Pinned brief')).toBe('Researcher')
+    expect(byName.get('Plain brief')).toBeNull()
+
+    const single = await testApp.app.inject({
+      method: 'GET',
+      url: `/api/v1/routines/${pinnedBody.id}`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+    })
+    expect((single.json() as { routine: { employeeName: string | null } }).routine.employeeName).toBe('Researcher')
+  })
+
   it('rejects a routine against a session in another workspace', async () => {
     const created = await testApp.app.inject({
       method: 'POST',
