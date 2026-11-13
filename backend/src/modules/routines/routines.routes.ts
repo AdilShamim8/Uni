@@ -61,6 +61,7 @@ export async function routineRoutes(app: FastifyInstance): Promise<void> {
       catchUpMinutes: body.catchUpMinutes,
       paused: body.paused,
       archived: body.archived,
+      employeeId: body.employeeId,
     })
     if (!routine) throw notFound('Routine not found.')
     void routineDtoSchema.parse(routine)
