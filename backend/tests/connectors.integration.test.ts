@@ -1,5 +1,14 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { signUpUser, startTestApp, type TestApp } from './harness.js'
+import { sql } from 'drizzle-orm'
+import { signUpUser, startTestApp, TEST_CREDENTIAL_MASTER_KEY, type TestApp } from './harness.js'
+import { createDatabase } from '../src/db/client.js'
+import {
+  storeConnectorCredential,
+  openConnectorCredential,
+  removeConnectorCredential,
+  recordCredentialCheck,
+  describeConnectorCredential,
+} from '../src/modules/connectors/connectorCredentials.service.js'
 
 /**
  * P08 / T026 — the connector catalog routes: session-scoped catalog
@@ -69,4 +78,70 @@ describe('connector catalog (T026)', () => {
     })
     expect(unauthenticated.statusCode).toBe(401)
   })
+})
+
+
+describe('connector credential storage (RF-087)', () => {
+  const ENV = { CREDENTIAL_MASTER_KEY: TEST_CREDENTIAL_MASTER_KEY, CREDENTIAL_KEY_ID: 'test' }
+
+  it('seals and reopens a token bound to the workspace+connector scope', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Connector' })
+      const workspaceId = (
+        (await test.app.inject({ method: 'GET', url: '/api/v1/me', headers: { cookie: alice.cookie } }))
+          .json() as { workspace: { id: string } }
+      ).workspace.id
+      const database = createDatabase(test.databaseUrl)
+      try {
+        await storeConnectorCredential(database.db, ENV, workspaceId, 'github', 'ghp_testtoken')
+        // The plaintext round-trips only through the opener.
+        expect(await openConnectorCredential(database.db, ENV, workspaceId, 'github')).toBe(
+          'ghp_testtoken',
+        )
+        // The stored row is an envelope, never plaintext.
+        const raw = await database.db.execute(
+          sql`select credential_envelope from connector_credential`,
+        )
+        const envelopeText = String(
+          (raw.rows as Array<{ credential_envelope: string }>)[0]!.credential_envelope,
+        )
+        expect(envelopeText).not.toContain('ghp_testtoken')
+        expect(JSON.parse(envelopeText)).toMatchObject({ alg: 'aes-256-gcm' })
+
+        // A different workspace scope cannot open it (AAD binding).
+        await expect(
+          openConnectorCredential(database.db, ENV, 'not-this-workspace', 'github'),
+        ).resolves.toBeNull()
+
+        // Descriptor: presence + status, never the token.
+        expect(await describeConnectorCredential(database.db, workspaceId, 'github')).toMatchObject({
+          connectorId: 'github',
+          status: 'untested',
+        })
+
+        // Replacing re-seals and resets the status.
+        await storeConnectorCredential(database.db, ENV, workspaceId, 'github', 'ghp_second')
+        expect(await openConnectorCredential(database.db, ENV, workspaceId, 'github')).toBe(
+          'ghp_second',
+        )
+
+        // A failed check records the honest state.
+        await recordCredentialCheck(database.db, workspaceId, 'github', false, '401 from GitHub')
+        expect(await describeConnectorCredential(database.db, workspaceId, 'github')).toMatchObject({
+          status: 'invalid',
+          lastError: '401 from GitHub',
+        })
+
+        // Removal is final and honest.
+        expect(await removeConnectorCredential(database.db, workspaceId, 'github')).toBe(true)
+        expect(await describeConnectorCredential(database.db, workspaceId, 'github')).toBeNull()
+        expect(await removeConnectorCredential(database.db, workspaceId, 'github')).toBe(false)
+      } finally {
+        await database.pool.end()
+      }
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
 })
