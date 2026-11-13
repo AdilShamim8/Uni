@@ -137,6 +137,42 @@ bulk push. This file is the count of record for the effort.
 | 66 | RF-068 | effort | handoff refresh: session-5 state, lessons, continuation queue | docs | `888758484` | pushed ✓ |
 | 67 | RF-069 | effort | verification.md session-5 evidence (full suites 397 + 651, exit codes unmasked) | docs | `769e2d73c` | pushed ✓ |
 | 68 | RF-070 | effort | Session-5 checkpoint: these rows, counters | docs | (this commit) | pushed ✓ |
+| 69 | RF-071 | T-agent | expose the employee soft pin (employeeId) on the agent-session DTO + test | impl | `99c17df02` | pushed ✓ |
+| 70 | RF-072 | T-agent | ServerAgentSession mirrors the employeeId soft pin | impl | `49bd47a57` | pushed ✓ |
+| 71 | RF-073 | T033 | the re-pin test verifies the session employeeId end-to-end (RF-071 made it observable) | test | `fe5ecaa88` | pushed ✓ |
+| 72 | RF-074 | T016 | EditEmployeeDialog (prefilled identity fields, changed-only patch, honest failure) | impl | `19a6aef58` | pushed ✓ |
+| 73 | RF-075 | T016 | Edit action on server employee rows (keyed dialog, saves through updateServerEmployee) | impl | `fa5296a40` | pushed ✓ |
+| 74 | RF-076 | T016 | first direct coverage of updateServerEmployee (row replacement, archived passthrough, rejection) | test | `950402cb4` | pushed ✓ |
+| 75 | RF-077 | T033 | archived routines view (store flag passthrough, section toggle, honest Archived badge) | impl | `95e19f033` | pushed ✓ |
+| 76 | RF-078 | T033 | archive/unarchive routine rows (store action replaces the row) | impl | `74f3d48b9` | pushed ✓ |
+| 77 | RF-079 | T016 | archived employees behind a disclosure (store flag passthrough, out-of-rotation rows) | impl | `a135774c4` | pushed ✓ |
+| 78 | RF-080 | T016 | archive/unarchive server employees (busy-guarded row actions) | impl | `94d6388d5` | pushed ✓ |
+| 79 | RF-081 | T016 | hash-guarded server note editing (PUT client, contentHash mirror, 409 → reload + conflict signal) | impl | `19b60b23a` | pushed ✓ |
+| 80 | RF-082 | T016 | server note editing UI in the panel (inline editor, Save/Cancel, hash-guarded) | impl | `17337a66e` | pushed ✓ |
+| 81 | RF-083 | T016 | prove the conflict flow (409 → notice + winner text) and journal refresh after edit | test | `f9807ba89` | pushed ✓ |
+| 82 | RF-084 | B07 | workspace export carries the memory journal (latest 200, honest count) | impl | `e9b6e78c8` | pushed ✓ |
+| 83 | RF-085 | B07 | workspace export carries the latest 50 routine runs (outputs included) | impl | `14ce32f7e` | pushed ✓ |
+| 84 | RF-086 | B07 | export client mirrors journal + runs; the settings card names its true contents | impl | `e06a73d7d` | pushed ✓ |
+| 85 | RF-087 | T027 | connector credential storage (secretBox-sealed per workspace+connector, status tracking) | impl | `6e822da96` | pushed ✓ |
+| 86 | RF-088 | T027 | GitHub adapter (injectable-fetch design: verify token, list PRs, list commits; fixture-verified) | impl | `1c9f86ab1` | pushed ✓ |
+| 87 | RF-089 | T027 | POST /connectors/:id/test (body token or stored credential; verdict recorded; honest 503 for catalog-only) | impl | `d0ebbbeed` | pushed ✓ |
+| 88 | RF-090 | T027 | connector credential routes (PUT sealed store, GET descriptor, DELETE; token never returns) | impl | `ca72b929d` | pushed ✓ |
+| 89 | RF-091 | T027 | catalog reports per-workspace truth (available only with a verified credential) | impl | `c9b34fe08` | pushed ✓ |
+| 90 | RF-092 | T027 | connector credential client (store/describe/delete/test; missing reads as null) | impl | `628c534d8` | pushed ✓ |
+| 91 | RF-093 | T027 | GitHub connect flow on the Plugins page (test-then-seal, badge flip, removal) | impl | `f69a3ecc5` | pushed ✓ |
+| 92 | RF-094 | T033 | describeSchedule names weekdays (Sundays, Fridays, Tuesdays-and-Thursdays) | impl | `6cb07c1cf` | pushed ✓ |
+| 93 | RF-095 | T033 | routine rows show the next fire relative too (in ~2h) beside the absolute time | impl | `1eab5bc84` | pushed ✓ |
+| 94 | RF-096 | T016 | memory panel warns when the linked employee is archived (out of rotation) | impl | `e96fe9c9d` | pushed ✓ |
+| 95 | RF-097 | T033 | archived routines disappear from the default view immediately (fix) | fix | `5e7783409` | pushed ✓ |
+| 96 | RF-098 | T016 | filter the memory journal by kind (added/edits/deletions, per-kind empty state) | impl | `aa1e4f5c7` | pushed ✓ |
+| 97 | RF-099 | F08 | the export row remembers the last export (Last exported 5m ago, persisted locally) | impl | `f8d8e1641` | pushed ✓ |
+| 98 | RF-100 | B04 | filter knowledge documents by title or file name (live, honest no-match state) | impl | `421099477` | pushed ✓ |
+| 99 | RF-101 | T033 | edit dialog keeps an archived pin visible; never re-pins on unrelated saves (fix) | fix | `2c4f8322a` | pushed ✓ |
+| 100 | RF-102 | T016 | memory panel shows the live budget (notes, characters, % of the ~4k sent) | impl | `7c18d898a` | pushed ✓ |
+| 101 | RF-103 | T033 | routine detail shows catch-up window and archived state | impl | `bf2f37211` | pushed ✓ |
+| 102 | RF-104 | T016 | journal viewer says when it shows the capped latest entries | impl | `bf7f9d2c9` | pushed ✓ |
+| 103 | RF-105 | T016 | employees header counts archived identities (· N archived) | impl | `6d4d210be` | pushed ✓ |
+| 104 | RF-106 | T016 | journal entries carry relative labels (3h ago) with exact time on the title | impl | `64d9867c3` | pushed ✓ |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -164,7 +200,7 @@ one in order (the procedure is scripted in
 
 - `new_commits`: 43 (RF-001…RF-043; 37 implementation/test/fix + 5 docs/effort)
 - `new_implementation_commits`: 37
-- `remote_present_commits`: 70 — every commit pushed ONE AT A TIME and
+- `remote_present_commits`: 111 — every commit pushed ONE AT A TIME and
   verified by SHA. **ALL 43 effort commits are now IN MAIN**: PR #62
   (RF-001…028, merged by the owner) + PR #63 (RF-029…043, merged
   2026-11-13 after its head CI matrix was fully green). Main head
@@ -186,8 +222,11 @@ one in order (the procedure is scripted in
   routine EDIT thread end-to-end (RF-057..RF-064) and the memory
   JOURNAL thread (RF-065..RF-067). better-auth 1.7.19 (owner's PR #71)
   verified green before the session's work began.
-- Target: 500 new commits · remaining: 430 (30 to the 100 milestone) —
-  honest work continues
+- Session 6 (2026-11-13, owner-requested batch of exactly 41): session
+  DTO pin exposure, employee edit + archived views, note editing, export
+  completeness, the GitHub connector (T027), and 13 verified small
+  improvements.
+- Target: 500 new commits · remaining: 389 — honest work continues
   slice-by-slice; commits are never manufactured (prompt of record).
 
 ## Honest status at session close
