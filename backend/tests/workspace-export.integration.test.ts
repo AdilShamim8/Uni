@@ -115,8 +115,8 @@ describe('workspace export (B07)', () => {
     expect(body.counts).toEqual({
       employees: body.employees.length,
       memoryNotes: body.memoryNotes.length,
-      memoryJournal: body.memoryJournal.length,
-      routineRuns: body.routineRuns.length,
+      memoryJournal: (body as unknown as { memoryJournal: unknown[] }).memoryJournal.length,
+      routineRuns: (body as unknown as { routineRuns: unknown[] }).routineRuns.length,
       routines: body.routines.length,
       files: body.files.length,
     })
