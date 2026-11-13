@@ -120,6 +120,17 @@ describe('RoutineDetailDialog', () => {
     )
   })
 
+  it('offers Edit through the footer and hands the routine back (RF-063)', async () => {
+    const onEdit = vi.fn()
+    useServerSessionStore.setState({ serverRoutines: [ROUTINE] })
+    render(
+      <RoutineDetailDialog routine={ROUTINE} onClose={() => {}} onEdit={onEdit} />,
+    )
+    const dialog = await screen.findByRole('dialog')
+    await userEvent.click(within(dialog).getByRole('button', { name: /Edit/i }))
+    expect(onEdit).toHaveBeenCalledWith(ROUTINE)
+  })
+
   it('shows the pinned employee when the routine has one', async () => {
     const pinned = { ...ROUTINE, employeeId: 'emp-1', employeeName: 'Researcher' }
     useServerSessionStore.setState({

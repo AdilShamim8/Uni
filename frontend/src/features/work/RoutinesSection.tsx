@@ -149,7 +149,11 @@ export function RoutinesSection() {
         ))}
       </ul>
 
-      <RoutineDetailDialog routine={detailTarget} onClose={() => setDetailTarget(null)} />
+      <RoutineDetailDialog
+        routine={detailTarget}
+        onClose={() => setDetailTarget(null)}
+        onEdit={(routine) => setEditTarget(routine)}
+      />
 
       <EditRoutineDialog
         key={editTarget?.id ?? 'none'}
@@ -160,7 +164,16 @@ export function RoutinesSection() {
         onClose={() => setEditTarget(null)}
         onSave={async (routineId, patch) => {
           const ok = await editServerRoutineFor(routineId, patch)
-          if (ok) setEditTarget(null)
+          if (ok) {
+            setEditTarget(null)
+            // Keep an open detail view honest: swap in the saved row.
+            if (detailTarget?.id === routineId) {
+              const fresh = useServerSessionStore
+                .getState()
+                .serverRoutines.find((entry) => entry.id === routineId)
+              if (fresh) setDetailTarget(fresh)
+            }
+          }
           return ok
         }}
       />
