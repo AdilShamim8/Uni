@@ -91,6 +91,41 @@ describe('agent sessions (abacusai-bot port)', () => {
     }
   }, 180_000)
 
+  it('exposes the employee soft pin on the DTO (RF-071)', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { email: uniqueEmail('alice') })
+      // Create with a pin, then clear it: the DTO must reflect both states.
+      const employee = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/employees',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { name: 'Pinned one', description: 'dto target' },
+      })
+      const employeeId = (employee.json() as { id: string }).id
+
+      const created = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/agent/sessions',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { name: 'Pinned session', employeeId },
+      })
+      expect(created.statusCode).toBe(201)
+      expect(((created.json() as { employeeId: string | null }).employeeId)).toBe(employeeId)
+
+      const cleared = await test.app.inject({
+        method: 'PATCH',
+        url: `/api/v1/agent/sessions/${(created.json() as { id: string }).id}`,
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { employeeId: null },
+      })
+      expect(cleared.statusCode).toBe(200)
+      expect(((cleared.json() as { employeeId: string | null }).employeeId)).toBeNull()
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+
   it('rejects traversal-shaped rootDir at the contract boundary (F01)', async () => {
     const test = await startTestApp()
     try {
