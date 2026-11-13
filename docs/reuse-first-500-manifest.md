@@ -121,7 +121,8 @@ bulk push. This file is the count of record for the effort.
 | 50 | RF-052 | T033 | routineDto carries the pinned employee's name (bulk-resolved on list, soft on get, validated on create) + integration test | impl | `5c3c7c210` | pushed ✓ |
 | 51 | RF-053 | T033 | Routines list row shows the pinned employee (runs-as badge, honest absence when unpinned) + tests | impl | `88f335416` | pushed ✓ |
 | 52 | RF-054 | T033 | Routine detail dialog shows the pinned employee (parity with the list row) + test | impl | `581db91f0` | pushed ✓ |
-| 53 | RF-055 | effort | Session-4 checkpoint: these rows, counters, verification | docs | (this commit) | pushed ✓ |
+| 53 | RF-055 | effort | Session-4 checkpoint: these rows, counters, verification | docs | `f2df56d9b` | pushed ✓ |
+| 54 | RF-056 | CI | MAIN REPAIR (not part of the requested 5): restore the verified dependency set after the owner's 20-commit dependabot wave (merged with cancelled CI) broke main — undici 8.12.4 killed every provider request (`invalid onRequestStart method`: npm-undici-8 Agent dispatcher vs Node's bundled fetch), typescript 7.0.2 has no compatible typescript-eslint (peer `<6.1.0`); vite 8 / plugin-react 6 / react-markdown 10 / oc 3.0.87 unverified majors also reverted; ai 7.0.166 + dotenv 18.0.10 kept (verified) | fix | (this commit) | pushed ✓ |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -149,7 +150,7 @@ one in order (the procedure is scripted in
 
 - `new_commits`: 43 (RF-001…RF-043; 37 implementation/test/fix + 5 docs/effort)
 - `new_implementation_commits`: 37
-- `remote_present_commits`: 55 — every commit pushed ONE AT A TIME and
+- `remote_present_commits`: 56 — every commit pushed ONE AT A TIME and
   verified by SHA. **ALL 43 effort commits are now IN MAIN**: PR #62
   (RF-001…028, merged by the owner) + PR #63 (RF-029…043, merged
   2026-11-13 after its head CI matrix was fully green). Main head

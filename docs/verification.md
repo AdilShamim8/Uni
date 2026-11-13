@@ -1140,3 +1140,36 @@ and authored with the owner's noreply address (attribution fix):
 
 Typecheck and lint clean at every commit (the RF-048 lesson holds: no
 commit ships without both).
+
+
+## Main repair (2026-11-13, RF-056) — after the dependabot wave broke main
+
+The owner merged a 20-commit dependabot wave whose CI runs were
+cancelled (never verified). Main went red on Backend / Frontend /
+verify:
+
+- **Backend**: undici 7.30.2 → 8.12.4 (major). The guarded transport
+  passes an npm-undici `Agent` as the `dispatcher` of Node's BUNDLED
+  global fetch; undici 8's dispatch requires the new
+  `onRequestStart`/`onResponseError` handler protocol, which the
+  bundled fetch does not implement — 61× `invalid onRequestStart
+  method` across 18 test files. Reproduced locally in a worktree with
+  main's exact lockfile (npm ci), NOT an artifact of CI load.
+- **Frontend + verify**: typescript 5.9.3 → 7.0.2 (major). No
+  typescript-eslint release supports it (peer `>=4.8.4 <6.1.0`,
+  checked @latest 8.72.2), so `npm ci` fails ERESOLVE.
+- Also unverified majors reverted: vite 8.3.6, @vitejs/plugin-react
+  6.3, react-markdown 10.1.0, @ai-sdk/openai-compatible 3.0.87,
+  @types/node 26.6.6. Kept (verified this morning): ai 7.0.166,
+  dotenv 18.0.10.
+
+Repair = dependency files restored to the last verified state
+(`70b4b05ac`) + a dependency-note comment in guardedTransport.ts
+warning the next bumper. Full verification on the repaired tree,
+exit codes captured unmasked: backend **395/395 (50 files)**,
+frontend **632/632 (88 files)**, typecheck + lint clean on both.
+
+Lesson recorded: this is the second time cancelled-CI merges broke
+main (see PR #62's merge). Dependabot majors need a dedicated
+verification session each; the CI-cancel race between quick
+back-to-back merges hides real failures.
