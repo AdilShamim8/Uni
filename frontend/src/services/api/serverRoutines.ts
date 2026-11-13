@@ -65,6 +65,8 @@ export interface PatchServerRoutineInput {
   catchUpMinutes?: number
   paused?: boolean
   archived?: boolean
+  /** Re-pin (null unpins); the provisioned session follows (RF-057). */
+  employeeId?: string | null
 }
 
 export async function listServerRoutines(

@@ -46,8 +46,11 @@ import {
   listServerMemoryNotes,
   addServerMemoryNote,
   deleteServerMemoryNote,
+  listServerMemoryJournal,
+  revertServerMemoryJournalEntry,
   type ServerEmployee,
   type ServerMemoryNote,
+  type ServerMemoryJournalEntry,
 } from '@/services/api/serverEmployees'
 import {
   listServerArtifacts,
@@ -220,6 +223,10 @@ interface ServerSessionState {
   serverMemoryNotes: Record<string, ServerMemoryNote[]>
   serverMemoryLoading: boolean
   serverMemoryError: string | null
+  /** RF-065 — the audit journal per employee (latest entries). */
+  serverMemoryJournal: Record<string, ServerMemoryJournalEntry[]>
+  serverMemoryJournalLoading: boolean
+  serverMemoryJournalError: string | null
 
   /** Server Library artifacts (T017). */
   serverArtifacts: ServerLibraryArtifact[]
@@ -339,6 +346,17 @@ interface ServerSessionState {
     employeeId?: string | null
   }) => Promise<boolean>
   setServerRoutinePausedFor: (routineId: string, paused: boolean) => Promise<boolean>
+  /** RF-060 — edit a routine's fields (changed-only); the row replaces in place. */
+  editServerRoutineFor: (
+    routineId: string,
+    patch: {
+      name?: string
+      prompt?: string
+      schedule?: string
+      catchUpMinutes?: number
+      employeeId?: string | null
+    },
+  ) => Promise<boolean>
   removeServerRoutineFor: (routineId: string) => Promise<boolean>
   createServerWorkTaskFor: (input: {
     title: string
@@ -363,6 +381,10 @@ interface ServerSessionState {
 
   /** T016 — server memory notes for a linked employee. */
   loadServerMemoryNotes: (employeeId: string) => Promise<void>
+  /** RF-065 — load the employee's memory audit journal. */
+  loadServerMemoryJournal: (employeeId: string) => Promise<void>
+  /** RF-065 — revert one journal entry; notes and journal refresh. */
+  revertServerMemoryJournalEntryFor: (employeeId: string, entryId: string) => Promise<boolean>
   addServerMemoryNoteFor: (employeeId: string, text: string) => Promise<boolean>
   removeServerMemoryNote: (employeeId: string, noteId: string) => Promise<boolean>
 
@@ -404,6 +426,9 @@ const clearedServerData: Pick<
   | 'serverMemoryNotes'
   | 'serverMemoryLoading'
   | 'serverMemoryError'
+  | 'serverMemoryJournal'
+  | 'serverMemoryJournalLoading'
+  | 'serverMemoryJournalError'
   | 'serverArtifacts'
   | 'serverArtifactsLoading'
   | 'serverAgentSessions'
@@ -436,6 +461,9 @@ const clearedServerData: Pick<
   serverEmployees: [],
   serverEmployeesLoading: false,
   serverMemoryNotes: {},
+  serverMemoryJournal: {},
+  serverMemoryJournalLoading: false,
+  serverMemoryJournalError: null,
   serverMemoryLoading: false,
   serverMemoryError: null,
   serverArtifacts: [],
@@ -1180,6 +1208,39 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     }
   },
 
+  loadServerMemoryJournal: async (employeeId) => {
+    const generation = get().sessionGeneration
+    set({ serverMemoryJournalLoading: true })
+    try {
+      const items = await listServerMemoryJournal(employeeId)
+      if (!stillCurrent(generation)) return
+      set((state) => ({
+        serverMemoryJournal: { ...state.serverMemoryJournal, [employeeId]: items },
+        serverMemoryJournalLoading: false,
+      }))
+    } catch (error) {
+      if (!stillCurrent(generation)) return
+      set({ serverMemoryJournalLoading: false, serverMemoryJournalError: errorMessage(error) })
+    }
+  },
+
+  revertServerMemoryJournalEntryFor: async (employeeId, entryId) => {
+    const generation = get().sessionGeneration
+    try {
+      await revertServerMemoryJournalEntry(employeeId, entryId)
+      if (!stillCurrent(generation)) return false
+      // A revert changes the note content AND appends its own journal
+      // entry — refresh both views before reporting success.
+      await get().loadServerMemoryNotes(employeeId)
+      await get().loadServerMemoryJournal(employeeId)
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverMemoryJournalError: errorMessage(error) })
+      return false
+    }
+  },
+
   addServerMemoryNoteFor: async (employeeId, text) => {
     const generation = get().sessionGeneration
     const trimmed = text.trim()
@@ -1293,6 +1354,24 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     const generation = get().sessionGeneration
     try {
       const routine = await patchServerRoutine(routineId, { paused })
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverRoutines: state.serverRoutines.map((entry) =>
+          entry.id === routineId ? routine : entry,
+        ),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverRoutinesError: errorMessage(error) })
+      return false
+    }
+  },
+
+  editServerRoutineFor: async (routineId, patch) => {
+    const generation = get().sessionGeneration
+    try {
+      const routine = await patchServerRoutine(routineId, patch)
       if (!stillCurrent(generation)) return false
       set((state) => ({
         serverRoutines: state.serverRoutines.map((entry) =>

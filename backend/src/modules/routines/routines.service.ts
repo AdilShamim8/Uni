@@ -11,7 +11,7 @@ import {
 } from '@uni/contracts'
 import { badRequest, notFound } from '../../lib/errors.js'
 import { InvalidCronError, parseCron, nextCronFire } from './cron.js'
-import { createSession, type AgentDatabase } from '../agent/agentSession.service.js'
+import { createSession, patchSession, type AgentDatabase } from '../agent/agentSession.service.js'
 
 /**
  * The routines service (T030, P09): scheduled prompts inside agent
@@ -256,6 +256,7 @@ export async function patchRoutine(
     catchUpMinutes?: number
     paused?: boolean
     archived?: boolean
+    employeeId?: string | null
   },
 ): Promise<RoutineDto | null> {
   if (input.schedule !== undefined) assertValidSchedule(input.schedule)
@@ -265,6 +266,35 @@ export async function patchRoutine(
     .where(and(eq(routines.id, routineId), eq(routines.workspaceId, workspaceId)))
     .limit(1)
   if (!existing[0]) return null
+
+  // A re-pin resolves exactly like the create-time pin (same-workspace
+  // employee, honest 404 before anything changes) and follows into the
+  // provisioned session — the execution identity must match the badge.
+  let employee: { id: string; name: string; providerId: string | null; modelId: string | null } | null = null
+  if (input.employeeId !== undefined && input.employeeId !== null) {
+    const rows = await db
+      .select({
+        id: schema.employees.id,
+        name: schema.employees.name,
+        providerId: schema.employees.providerId,
+        modelId: schema.employees.modelId,
+      })
+      .from(schema.employees)
+      .where(
+        and(eq(schema.employees.id, input.employeeId), eq(schema.employees.workspaceId, workspaceId)),
+      )
+      .limit(1)
+    if (!rows[0]) throw notFound('Employee not found in this workspace.')
+    employee = rows[0]
+  }
+  if (input.employeeId !== undefined) {
+    await patchSession(db as unknown as AgentDatabase, workspaceId, existing[0].sessionId, {
+      employeeId: employee?.id ?? null,
+      providerId: employee?.providerId ?? null,
+      modelId: employee?.modelId ?? null,
+    })
+  }
+
   const row = await db
     .update(routines)
     .set({ ...input, updatedAt: new Date() })
@@ -272,7 +302,7 @@ export async function patchRoutine(
     .returning()
   const updated = row[0]
   if (!updated) return null
-  return serializeRoutine(updated)
+  return serializeRoutine(updated, employee?.name ?? null)
 }
 
 export async function deleteRoutine(

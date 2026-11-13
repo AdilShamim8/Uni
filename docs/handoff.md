@@ -1,3 +1,52 @@
+# Handoff — the reuse-first-500 engagement (AdilShamim8/Uni)
+
+## Current state (updated 2026-11-13, session 5 — 70 effort commits, main green)
+
+- **Main head** = merge of PR #77 (repair) plus the owner's better-auth
+  1.7.19 bump (PR #71, verified green locally 395/395 and on CI before
+  session 5 started). Every check green on every merge this session.
+- **Count of record: 70 effort commits (RF-001…RF-070)**, each a real,
+  individually tested slice, every one pushed ONE AT A TIME with SHA
+  verification. Sessions: 1–2 (RF-001…RF-040), 3 (RF-041…RF-050,
+  PR #74), 4 (RF-051…RF-055 PR #76 + repair RF-056 PR #77), 5
+  (RF-057…RF-070).
+- **Session 5 (14 commits, owner-requested batch):** the routine EDIT
+  thread end-to-end — backend re-pin via PATCH with the provisioned
+  session following the new employee/provider/model (RF-057), the
+  client/store plumbing (RF-058, RF-060), a shared form-fields module
+  extracted from the create dialog (RF-059), the prefilled
+  EditRoutineDialog with changed-only patches (RF-061), Edit actions on
+  rows and in the detail dialog (RF-062/063), a failures-only filter on
+  the run history (RF-064); the memory-journal thread — the true DTO
+  mirror + revert client and journal store slice (RF-065), the
+  collapsible journal viewer in the server memory panel (RF-066), revert
+  behind a confirmation (RF-067); docs (RF-068/069/070).
+- **Attribution fixed since session 4:** commits are authored as
+  `Adil Shamim <157037615+AdilShamim8@users.noreply.github.com>` so they
+  credit the owner's contribution graph (sessions 1–3 were authored by
+  the sandbox identity and do not).
+- **Lessons that keep paying off:** (1) never trust a merged-but-
+  cancelled CI run — the owner's dependabot waves broke main twice
+  (typescript 7 has no typescript-eslint support; undici 8's dispatcher
+  protocol is incompatible with Node's bundled fetch — see the
+  dependency note in `backend/src/lib/guardedTransport.ts`); (2) capture
+  test-suite exit codes unmasked (a `| tail` + `echo` chain once hid a
+  failing run); (3) `npm ci` in a worktree with main's exact lockfile is
+  the fastest way to reproduce "works locally, red on CI".
+- **Next executable slices (in order):** (1) expose `employeeId` on the
+  agent-session DTO so re-pins are externally verifiable (the routines
+  test currently asserts the routine row only); (2) Phase B screenshot
+  pass via `backend/scripts/browser-qa-stack.mjs`; (3) P08
+  fixture-verified GitHub adapter (T027); (4) an edit affordance for
+  employee records (name/instructions/tools) — the patch endpoint
+  exists; (5) continued manifest queue toward 500 — never padded. The
+  owner asks for batches (5, then 14); ~30 more commits cross the
+  100 milestone.
+- **Blockers (unchanged):** no paid provider keys (live inference stays
+  fixture-verified); no Docker daemon (P11 inert by design).
+
+---
+
 ## Current state (updated 2026-11-13 — main green, all 43 effort commits landed)
 
 - **Main head `f97c7d642`** = merge of PR #63; every check green

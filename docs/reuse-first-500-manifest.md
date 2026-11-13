@@ -122,7 +122,21 @@ bulk push. This file is the count of record for the effort.
 | 51 | RF-053 | T033 | Routines list row shows the pinned employee (runs-as badge, honest absence when unpinned) + tests | impl | `88f335416` | pushed ✓ |
 | 52 | RF-054 | T033 | Routine detail dialog shows the pinned employee (parity with the list row) + test | impl | `581db91f0` | pushed ✓ |
 | 53 | RF-055 | effort | Session-4 checkpoint: these rows, counters, verification | docs | `f2df56d9b` | pushed ✓ |
-| 54 | RF-056 | CI | MAIN REPAIR (not part of the requested 5): restore the verified dependency set after the owner's 20-commit dependabot wave (merged with cancelled CI) broke main — undici 8.12.4 killed every provider request (`invalid onRequestStart method`: npm-undici-8 Agent dispatcher vs Node's bundled fetch), typescript 7.0.2 has no compatible typescript-eslint (peer `<6.1.0`); vite 8 / plugin-react 6 / react-markdown 10 / oc 3.0.87 unverified majors also reverted; ai 7.0.166 + dotenv 18.0.10 kept (verified) | fix | (this commit) | pushed ✓ |
+| 54 | RF-056 | CI | MAIN REPAIR (not part of the requested 5): restore the verified dependency set after the owner's 20-commit dependabot wave (merged with cancelled CI) broke main — undici 8.12.4 killed every provider request (`invalid onRequestStart method`: npm-undici-8 Agent dispatcher vs Node's bundled fetch), typescript 7.0.2 has no compatible typescript-eslint (peer `<6.1.0`); vite 8 / plugin-react 6 / react-markdown 10 / oc 3.0.87 unverified majors also reverted; ai 7.0.166 + dotenv 18.0.10 kept (verified) | fix | `989da6fee` | pushed ✓ |
+| 55 | RF-057 | T033 | PATCH /routines/:id accepts employeeId — re-pin/unpin with create-grade validation; the provisioned session's employee/provider/model follow the pin (execution matches the badge) + 2 integration tests | impl | `57a59e379` | pushed ✓ |
+| 56 | RF-058 | T033 | PatchServerRoutineInput mirrors the re-pin field | impl | `c96ee729c` | pushed ✓ |
+| 57 | RF-060 | T033 | editServerRoutineFor store action (changed-only patch, generation-guarded, honest error) + 2 tests | impl | `c7b8bce4e` | pushed ✓ |
+| 58 | RF-059 | T033 | RoutineFormFields extracted from the create dialog — pure refactor, existing tests unchanged and green | refactor | `3cd2a6164` | pushed ✓ |
+| 59 | RF-061 | T033 | EditRoutineDialog: prefilled shared fields, changed-only patch (Save disabled until a change), re-pin, custom catch-up stays visible + 6 tests | impl | `aabcbcdf4` | pushed ✓ |
+| 60 | RF-062 | T033 | Edit action on routine rows (keyed dialog, closes on success) + test | impl | `4c911b3ae` | pushed ✓ |
+| 61 | RF-063 | T033 | Edit from the detail dialog; the detail view swaps in the saved row after a save + 2 tests | impl | `f30dd7bbe` | pushed ✓ |
+| 62 | RF-064 | T033 | failures-only filter on the routine run history (error/skipped), honest empty state + test | impl | `0b81b1e8f` | pushed ✓ |
+| 63 | RF-065 | T016 | journal client: dead stale-typed code replaced with the true DTO mirror + the missing revert client; journal store slice (revert refreshes notes AND journal) + 4 tests | impl | `138f56e45` | pushed ✓ |
+| 64 | RF-066 | T016 | MemoryJournalViewer in the server memory panel (collapsible, honest states, per-entry revertibility) + 3 tests | impl | `63d7b2ec4` | pushed ✓ |
+| 65 | RF-067 | T016 | journal revert behind a destructive confirmation; cancel reverts nothing + 2 tests | impl | `7e068f23f` | pushed ✓ |
+| 66 | RF-068 | effort | handoff refresh: session-5 state, lessons, continuation queue | docs | `888758484` | pushed ✓ |
+| 67 | RF-069 | effort | verification.md session-5 evidence (full suites 397 + 651, exit codes unmasked) | docs | `769e2d73c` | pushed ✓ |
+| 68 | RF-070 | effort | Session-5 checkpoint: these rows, counters | docs | (this commit) | pushed ✓ |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -150,7 +164,7 @@ one in order (the procedure is scripted in
 
 - `new_commits`: 43 (RF-001…RF-043; 37 implementation/test/fix + 5 docs/effort)
 - `new_implementation_commits`: 37
-- `remote_present_commits`: 56 — every commit pushed ONE AT A TIME and
+- `remote_present_commits`: 70 — every commit pushed ONE AT A TIME and
   verified by SHA. **ALL 43 effort commits are now IN MAIN**: PR #62
   (RF-001…028, merged by the owner) + PR #63 (RF-029…043, merged
   2026-11-13 after its head CI matrix was fully green). Main head
@@ -168,7 +182,12 @@ one in order (the procedure is scripted in
   From this session on, commits are authored as
   `Adil Shamim <157037615+AdilShamim8@users.noreply.github.com>` so
   they credit the owner's account (earlier rows predate this fix).
-- Target: 500 new commits · remaining: 445 — honest work continues
+- Session 5 (2026-11-13, owner-requested batch of exactly 14): the
+  routine EDIT thread end-to-end (RF-057..RF-064) and the memory
+  JOURNAL thread (RF-065..RF-067). better-auth 1.7.19 (owner's PR #71)
+  verified green before the session's work began.
+- Target: 500 new commits · remaining: 430 (30 to the 100 milestone) —
+  honest work continues
   slice-by-slice; commits are never manufactured (prompt of record).
 
 ## Honest status at session close

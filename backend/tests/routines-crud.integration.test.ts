@@ -115,6 +115,104 @@ describe('routine CRUD (T030)', () => {
     expect((single.json() as { routine: { employeeName: string | null } }).routine.employeeName).toBe('Researcher')
   })
 
+  it('re-pins the routine and the provisioned session follows (RF-057)', async () => {
+    // Two employees to switch between.
+    const mk = async (name: string) => {
+      const res = await testApp.app.inject({
+        method: 'POST',
+        url: '/api/v1/employees',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { name, description: 'Pin target' },
+      })
+      expect(res.statusCode).toBe(201)
+      return res.json() as { id: string; name: string }
+    }
+    const first = await mk('Researcher')
+    const second = await mk('Writer')
+
+    const created = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/routines',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { name: 'Repin me', prompt: 'Do work.', schedule: '0 9 * * *', employeeId: first.id },
+    })
+    expect(created.statusCode).toBe(201)
+    const routine = created.json() as { id: string; sessionId: string; employeeId: string; employeeName: string | null }
+    expect(routine.employeeName).toBe('Researcher')
+
+    // The provisioned session exists before the re-pin.
+    const before = await testApp.app.inject({
+      method: 'GET',
+      url: `/api/v1/agent/sessions/${routine.sessionId}`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+    })
+    expect(before.statusCode).toBe(200)
+
+    // Re-pin to the second employee.
+    const repinned = await testApp.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/routines/${routine.id}`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { employeeId: second.id },
+    })
+    expect(repinned.statusCode).toBe(200)
+    const after = repinned.json() as { employeeId: string | null; employeeName: string | null }
+    expect(after.employeeId).toBe(second.id)
+    expect(after.employeeName).toBe('Writer')
+
+    // The re-pin followed into the provisioned session (patchSession ran
+    // server-side; the session is still there and healthy).
+    const session = await testApp.app.inject({
+      method: 'GET',
+      url: `/api/v1/agent/sessions/${routine.sessionId}`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+    })
+    expect(session.statusCode).toBe(200)
+
+    // Unpin: null clears both the routine and the session.
+    const unpinned = await testApp.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/routines/${routine.id}`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { employeeId: null },
+    })
+    expect(unpinned.statusCode).toBe(200)
+    expect(((unpinned.json() as { employeeId: string | null }).employeeId)).toBeNull()
+    const session2 = await testApp.app.inject({
+      method: 'GET',
+      url: `/api/v1/agent/sessions/${routine.sessionId}`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+    })
+    expect(session2.statusCode).toBe(200)
+  })
+
+  it('rejects a re-pin to a foreign workspace employee (RF-057)', async () => {
+    const created = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/routines',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { name: 'Foreign pin', prompt: 'Do work.', schedule: '0 9 * * *' },
+    })
+    expect(created.statusCode).toBe(201)
+    const routineId = (created.json() as { id: string }).id
+
+    const bobEmployee = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/employees',
+      headers: { cookie: bob.cookie, origin: 'http://localhost:5173' },
+      payload: { name: 'Bobs private', description: 'Foreign' },
+    })
+    const bobEmployeeId = (bobEmployee.json() as { id: string }).id
+
+    const res = await testApp.app.inject({
+      method: 'PATCH',
+      url: `/api/v1/routines/${routineId}`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { employeeId: bobEmployeeId },
+    })
+    expect(res.statusCode).toBe(404)
+  })
+
   it('rejects a routine against a session in another workspace', async () => {
     const created = await testApp.app.inject({
       method: 'POST',
