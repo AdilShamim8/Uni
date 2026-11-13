@@ -306,7 +306,7 @@ interface ServerSessionState {
   openServerAgentConversation: (agentId: string, title: string) => Promise<string | null>
 
   /** Server employees (T016): CRUD against the employee service. */
-  loadServerEmployees: () => Promise<void>
+  loadServerEmployees: (includeArchived?: boolean) => Promise<void>
   addServerEmployee: (input: {
     name: string
     description?: string
@@ -1082,11 +1082,11 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
   /* Server employees / Library / agent sessions (T014/T016/T017)      */
   /* ---------------------------------------------------------------- */
 
-  loadServerEmployees: async () => {
+  loadServerEmployees: async (includeArchived = false) => {
     const generation = get().sessionGeneration
     set({ serverEmployeesLoading: true })
     try {
-      const items = await listServerEmployees()
+      const items = await listServerEmployees(includeArchived)
       if (!stillCurrent(generation)) return
       set({ serverEmployees: items, serverEmployeesLoading: false })
     } catch {

@@ -63,7 +63,7 @@ function stubServer(employees: ServerEmployee[], signedIn = true): void {
         return jsonResponse(200, signedIn ? { session: { token: 't' }, user: USER } : null)
       }
       if (path === '/api/v1/me') return jsonResponse(200, ME)
-      if (path === '/api/v1/employees') {
+      if (path.startsWith('/api/v1/employees')) {
         return jsonResponse(200, { items: employees, page: { total: employees.length, limit: 50, offset: 0 } })
       }
       return jsonResponse(404, { code: 'not_found' })
@@ -106,6 +106,24 @@ describe('Agents page — server employees section', () => {
     })
   })
 
+  it('lists archived employees behind the disclosure (RF-079)', async () => {
+    stubServer(EMPLOYEES)
+    renderApp('/agents')
+
+    // The active roster shows; the archived one waits behind the toggle.
+    expect(await screen.findByText('Research Librarian')).toBeInTheDocument()
+    const archivedSection = await screen.findByLabelText('Archived server employees')
+    // Hidden until the details element opens.
+    expect(archivedSection).not.toBeVisible()
+    const user = userEvent.setup()
+    await user.click(screen.getByText(/Archived \(/))
+    expect(within(archivedSection).getByText('Archived one')).toBeInTheDocument()
+    expect(within(archivedSection).getByText(/out of rotation/)).toBeInTheDocument()
+    // The archived employee never appears in the active roster area.
+    const activeList = screen.getByLabelText('Active server employees')
+    expect(within(activeList).queryByText('Archived one')).toBeNull()
+  })
+
   it('stays hidden when signed out', async () => {
     stubServer(EMPLOYEES, false)
     renderApp('/agents')
@@ -127,8 +145,10 @@ describe('Agents page — server employees section', () => {
     const section = await screen.findByRole('region', { name: /server employees on this account/i })
     expect(withinText(section, 'Research Librarian')).toBe(true)
     expect(withinText(section, '1 on the server')).toBe(true)
-    // Archived employees never render.
-    expect(withinText(section, 'Archived one')).toBe(false)
+    // Archived employees never render in the ACTIVE roster; they live
+    // behind the disclosure (RF-079).
+    const activeList = within(section).getByLabelText('Active server employees')
+    expect(within(activeList).queryByText('Archived one')).toBeNull()
   })
 
   it('shows the honest empty state when the account has none', async () => {
