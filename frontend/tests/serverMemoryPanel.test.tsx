@@ -106,6 +106,44 @@ describe('MemoryPanel dual-mode (T016)', () => {
     expect(Object.keys(useAgentsStore.getState().memoryNotes)).toHaveLength(0)
   })
 
+  it('server mode edits a note through the hash-guarded PUT (RF-082)', async () => {
+    useServerSessionStore.setState({ status: 'signed-in', account: null })
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { id: 'n-1', text: 'Works in GMT+1', contentHash: 'a'.repeat(64), createdAt: 1 },
+        ],
+      }),
+    )
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        id: 'n-1',
+        text: 'Works in GMT+2',
+        contentHash: 'b'.repeat(64),
+        createdAt: 1,
+      }),
+    )
+    render(<MemoryPanel agentId={AGENT_ID} />)
+    await screen.findByText('Works in GMT+1')
+
+    await userEvent.click(screen.getByRole('button', { name: /Edit server note n-1/i }))
+    const input = screen.getByLabelText('Edit server memory note') as HTMLInputElement
+    expect(input.value).toBe('Works in GMT+1')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Works in GMT+2')
+    await userEvent.click(screen.getByRole('button', { name: /Save server note n-1/i }))
+
+    await screen.findByText('Works in GMT+2')
+    // The PUT presented the hash the caller had read.
+    const putCall = fetchMock.mock.calls.find((call) => call[1]?.method === 'PUT')
+    expect(putCall).toBeDefined()
+    expect(String(putCall![0])).toContain('/employees/emp-1/memory/n-1')
+    expect(JSON.parse(putCall![1]!.body as string)).toEqual({
+      text: 'Works in GMT+2',
+      expectedHash: 'a'.repeat(64),
+    })
+  })
+
   it('server mode deletes through the service with an honest error path', async () => {
     useServerSessionStore.setState({ status: 'signed-in', account: null })
     fetchMock.mockResolvedValueOnce(
