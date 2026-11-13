@@ -124,11 +124,11 @@ export function DataSection() {
       {serverStatus === 'signed-in' && (
         <SettingsGroup
           title="Server workspace"
-          footer="A complete snapshot of the data stored on your Uni server for this account: employees with their instructions, memory notes, routines, and knowledge documents with their extracted text. Workspace-scoped — it can never include another account's data."
+          footer="A complete snapshot of the data stored on your Uni server for this account: employees with their instructions, memory notes and their change journal, routines with their latest run outputs, and knowledge documents with their extracted text. Workspace-scoped — it can never include another account's data."
         >
           <SettingsRow
             label="Export server workspace"
-            description="One JSON file with everything the server holds for this account."
+            description="One JSON file: employees, memory notes + audit journal, routines + latest run outputs, knowledge files."
           >
             <div className="flex flex-col items-end gap-1">
               <Button

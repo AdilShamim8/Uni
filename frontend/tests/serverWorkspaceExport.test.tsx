@@ -24,9 +24,18 @@ const EXPORT = {
   exportedAt: 1_700_000_000_000,
   employees: [],
   memoryNotes: [],
+  memoryJournal: [],
+  routineRuns: [],
   routines: [],
   files: [],
-  counts: { employees: 0, memoryNotes: 0, routines: 0, files: 0 },
+  counts: {
+    employees: 0,
+    memoryNotes: 0,
+    memoryJournal: 0,
+    routines: 0,
+    routineRuns: 0,
+    files: 0,
+  },
 }
 
 function jsonResponse(status: number, body: unknown): Response {
