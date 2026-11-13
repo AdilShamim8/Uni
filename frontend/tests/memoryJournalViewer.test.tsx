@@ -123,6 +123,28 @@ describe('MemoryJournalViewer (RF-066)', () => {
     expect(revert).toHaveBeenCalledWith('emp-1', 'j-1')
   })
 
+  it('filters the journal by kind (RF-098)', async () => {
+    const user = userEvent.setup()
+    // One edited + one created entry; nothing deleted.
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [ENTRY, NON_REVERTIBLE] }))
+    render(<MemoryJournalViewer employeeId="emp-1" />)
+
+    await user.click(screen.getByRole('button', { name: /Show change history/i }))
+    const list = await screen.findByLabelText('Journal entries')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2)
+
+    await user.selectOptions(screen.getByLabelText(/Show/), 'edited')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1)
+    expect(within(list).getAllByRole('listitem')[0]!.textContent).toContain('edited')
+
+    await user.selectOptions(screen.getByLabelText(/Show/), 'created')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1)
+
+    // A kind with no entries says so honestly.
+    await user.selectOptions(screen.getByLabelText(/Show/), 'deleted')
+    expect(await screen.findByText(/No deleted entries in this view/i)).toBeInTheDocument()
+  })
+
   it('cancelling the confirmation reverts nothing (RF-067)', async () => {
     const user = userEvent.setup()
     const revert = vi.fn(async () => true)
