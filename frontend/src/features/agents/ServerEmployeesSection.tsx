@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bot, CloudOff, MessageSquare, Pencil, Users } from 'lucide-react'
+import { Archive, ArchiveRestore, Bot, CloudOff, MessageSquare, Pencil, Users } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import { useAgentsStore } from '@/state/agentsStore'
 import { EditEmployeeDialog } from './EditEmployeeDialog'
@@ -22,6 +22,7 @@ export function ServerEmployeesSection() {
   const serverEmployeesLoading = useServerSessionStore((state) => state.serverEmployeesLoading)
   const loadServerEmployees = useServerSessionStore((state) => state.loadServerEmployees)
   const updateServerEmployee = useServerSessionStore((state) => state.updateServerEmployee)
+  const [busyEmployeeId, setBusyEmployeeId] = useState<string | null>(null)
   const [editTarget, setEditTarget] = useState<ServerEmployee | null>(null)
   const agents = useAgentsStore((state) => state.agents)
 
@@ -97,6 +98,21 @@ export function ServerEmployeesSection() {
                   <Pencil size={13} aria-hidden="true" />
                   Edit
                 </button>
+                <button
+                  type="button"
+                  aria-label={`Archive employee ${employee.name}`}
+                  disabled={busyEmployeeId === employee.id}
+                  onClick={() => {
+                    setBusyEmployeeId(employee.id)
+                    void updateServerEmployee(employee.id, { archived: true }).finally(() => {
+                      setBusyEmployeeId(null)
+                    })
+                  }}
+                  className="press inline-flex min-touch items-center gap-1.5 rounded-control border border-line px-2.5 py-1.5 text-[12.5px] font-medium text-ink-faint transition-colors hover:bg-subtle hover:text-ink disabled:opacity-50"
+                >
+                  <Archive size={13} aria-hidden="true" />
+                  Archive
+                </button>
                 {linkedAgent ? (
                   <Link
                     to={`/agents/${linkedAgent.id}`}
@@ -137,6 +153,21 @@ export function ServerEmployeesSection() {
                     {employee.description || 'No description'} · out of rotation
                   </span>
                 </span>
+                <button
+                  type="button"
+                  aria-label={`Unarchive employee ${employee.name}`}
+                  disabled={busyEmployeeId === employee.id}
+                  onClick={() => {
+                    setBusyEmployeeId(employee.id)
+                    void updateServerEmployee(employee.id, { archived: false }).finally(() => {
+                      setBusyEmployeeId(null)
+                    })
+                  }}
+                  className="press inline-flex min-touch shrink-0 items-center gap-1.5 rounded-control border border-line px-2.5 py-1.5 text-[12.5px] font-medium text-ink transition-colors hover:bg-subtle disabled:opacity-50"
+                >
+                  <ArchiveRestore size={13} aria-hidden="true" />
+                  Unarchive
+                </button>
               </li>
             ))}
           </ul>

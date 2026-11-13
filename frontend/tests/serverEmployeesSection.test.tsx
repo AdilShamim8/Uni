@@ -124,6 +124,31 @@ describe('Agents page — server employees section', () => {
     expect(within(activeList).queryByText('Archived one')).toBeNull()
   })
 
+  it('archives an active employee from its row (RF-080)', async () => {
+    stubServer(EMPLOYEES)
+    const update = vi.fn(async () => true)
+    useServerSessionStore.setState({ updateServerEmployee: update })
+    renderApp('/agents')
+
+    const user = userEvent.setup()
+    await screen.findByText('Research Librarian')
+    await user.click(screen.getByRole('button', { name: /Archive employee Research Librarian/i }))
+    expect(update).toHaveBeenCalledWith('e-1', { archived: true })
+  })
+
+  it('unarchives an archived employee from the disclosure (RF-080)', async () => {
+    stubServer(EMPLOYEES)
+    const update = vi.fn(async () => true)
+    useServerSessionStore.setState({ updateServerEmployee: update })
+    renderApp('/agents')
+
+    const user = userEvent.setup()
+    await screen.findByText('Research Librarian')
+    await user.click(screen.getByText(/Archived \(/))
+    await user.click(screen.getByRole('button', { name: /Unarchive employee Archived one/i }))
+    expect(update).toHaveBeenCalledWith('e-2', { archived: false })
+  })
+
   it('stays hidden when signed out', async () => {
     stubServer(EMPLOYEES, false)
     renderApp('/agents')
