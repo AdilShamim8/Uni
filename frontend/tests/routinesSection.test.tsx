@@ -200,6 +200,18 @@ describe('RoutinesSection', () => {
     expect(pause).toHaveBeenCalledWith('r-1', true)
   })
 
+  it('hides archived rows in the default view (RF-097)', () => {
+    useServerSessionStore.setState({
+      serverRoutines: [ROUTINE, { ...ROUTINE, id: 'r-2', name: 'Old digest', archived: true }],
+    })
+    render(<RoutinesSection />)
+
+    expect(screen.getByText('Morning brief')).toBeInTheDocument()
+    expect(screen.queryByText('Old digest')).toBeNull()
+    // The archived toggle is still the way to see it.
+    expect(screen.getByLabelText('Show archived routines')).toBeInTheDocument()
+  })
+
   it('delete asks for confirmation first', async () => {
     const user = userEvent.setup()
     const remove = vi.fn(async () => true)
