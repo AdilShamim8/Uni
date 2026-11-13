@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import {
   API_ROOT,
+  ApiError,
   apiFetch,
   type ApiErrorEnvelope,
 } from '@/services/api/client'
@@ -48,6 +49,7 @@ import {
   deleteServerMemoryNote,
   listServerMemoryJournal,
   revertServerMemoryJournalEntry,
+  putServerMemoryNote,
   type ServerEmployee,
   type ServerMemoryNote,
   type ServerMemoryJournalEntry,
@@ -387,6 +389,15 @@ interface ServerSessionState {
   loadServerMemoryJournal: (employeeId: string) => Promise<void>
   /** RF-065 — revert one journal entry; notes and journal refresh. */
   revertServerMemoryJournalEntryFor: (employeeId: string, entryId: string) => Promise<boolean>
+  /**
+   * RF-081 — edit a note through the hash-guarded PUT. Returns
+   * 'saved', 'conflict' (stale hash — notes reloaded), or 'error'.
+   */
+  editServerMemoryNoteFor: (
+    employeeId: string,
+    noteId: string,
+    text: string,
+  ) => Promise<'saved' | 'conflict' | 'error'>
   addServerMemoryNoteFor: (employeeId: string, text: string) => Promise<boolean>
   removeServerMemoryNote: (employeeId: string, noteId: string) => Promise<boolean>
 
@@ -1240,6 +1251,42 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
       if (!stillCurrent(generation)) return false
       set({ serverMemoryJournalError: errorMessage(error) })
       return false
+    }
+  },
+
+  editServerMemoryNoteFor: async (employeeId, noteId, text) => {
+    const generation = get().sessionGeneration
+    const trimmed = text.trim()
+    if (!trimmed) return 'error'
+    const current = (get().serverMemoryNotes[employeeId] ?? []).find(
+      (note) => note.id === noteId,
+    )
+    if (!current) return 'error'
+    try {
+      const note = await putServerMemoryNote(employeeId, noteId, trimmed, current.contentHash)
+      if (!stillCurrent(generation)) return 'error'
+      set((state) => ({
+        serverMemoryNotes: {
+          ...state.serverMemoryNotes,
+          [employeeId]: (state.serverMemoryNotes[employeeId] ?? []).map((entry) =>
+            entry.id === noteId ? note : entry,
+          ),
+        },
+      }))
+      if (get().serverMemoryJournal[employeeId]) {
+        await get().loadServerMemoryJournal(employeeId)
+      }
+      return 'saved'
+    } catch (error) {
+      if (!stillCurrent(generation)) return 'error'
+      if (error instanceof ApiError && error.status === 409) {
+        // Stale hash: the note changed since the caller opened it —
+        // reload the honest current state.
+        await get().loadServerMemoryNotes(employeeId)
+        return 'conflict'
+      }
+      set({ serverMemoryError: errorMessage(error) })
+      return 'error'
     }
   },
 
