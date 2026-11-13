@@ -80,7 +80,10 @@ describe('server workspace export (Settings → Data)', () => {
     stubObjectUrl()
     vi.stubGlobal('fetch', fetchMock)
     stubObjectUrl()
-    useServerSessionStore.setState({ status: 'signed-in', account: { user: USER } })
+    useServerSessionStore.setState({
+      status: 'signed-in',
+      account: { user: USER, workspace: ME.workspace },
+    })
 
     const user = userEvent.setup()
     renderApp('/chat')
@@ -128,7 +131,10 @@ describe('server workspace export (Settings → Data)', () => {
       }),
     )
     stubObjectUrl()
-    useServerSessionStore.setState({ status: 'signed-in', account: { user: USER } })
+    useServerSessionStore.setState({
+      status: 'signed-in',
+      account: { user: USER, workspace: ME.workspace },
+    })
 
     const user = userEvent.setup()
     renderApp('/chat')
