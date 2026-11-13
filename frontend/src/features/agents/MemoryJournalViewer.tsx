@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { History, Loader2 } from 'lucide-react'
+import { History, Loader2, Undo2 } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import type { ServerMemoryJournalEntry } from '@/services/api/serverEmployees'
 
 /**
  * RF-066 — the server memory audit journal viewer (T016): the
@@ -13,7 +15,9 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
   const loading = useServerSessionStore((state) => state.serverMemoryJournalLoading)
   const error = useServerSessionStore((state) => state.serverMemoryJournalError)
   const loadServerMemoryJournal = useServerSessionStore((state) => state.loadServerMemoryJournal)
+  const revertEntry = useServerSessionStore((state) => state.revertServerMemoryJournalEntryFor)
   const [open, setOpen] = useState(false)
+  const [revertTarget, setRevertTarget] = useState<ServerMemoryJournalEntry | null>(null)
 
   useEffect(() => {
     if (open) void loadServerMemoryJournal(employeeId)
@@ -33,6 +37,20 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
         {open ? 'Hide change history' : 'Show change history'}
       </button>
 
+      <ConfirmDialog
+        open={revertTarget !== null}
+        title="Revert this change?"
+        body={`The note returns to its previous content. The revert itself is journaled — you can undo it the same way.`}
+        confirmLabel="Revert"
+        destructive
+        onConfirm={() => {
+          if (!revertTarget) return
+          const target = revertTarget
+          setRevertTarget(null)
+          void revertEntry(employeeId, target.id)
+        }}
+        onClose={() => setRevertTarget(null)}
+      />
       {open && (
         <div className="mt-2 rounded-[12px] border border-line bg-panel px-3.5 py-3">
           {loading && (
@@ -66,9 +84,15 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
                     </span>
                     <span>{new Date(entry.createdAt).toLocaleString()}</span>
                     {entry.canRevert ? (
-                      <span className="rounded-[5px] bg-subtle px-1.5 py-0.5 text-[10.5px] text-ink-soft">
-                        revertible
-                      </span>
+                      <button
+                        type="button"
+                        aria-label={`Revert change from ${new Date(entry.createdAt).toLocaleString()}`}
+                        onClick={() => setRevertTarget(entry)}
+                        className="flex items-center gap-1 rounded-[5px] bg-subtle px-1.5 py-0.5 text-[10.5px] text-ink-soft transition-colors hover:text-ink"
+                      >
+                        <Undo2 size={10} />
+                        Revert
+                      </button>
                     ) : (
                       entry.revertUnavailableReason && (
                         <span className="text-[10.5px]">{entry.revertUnavailableReason}</span>
