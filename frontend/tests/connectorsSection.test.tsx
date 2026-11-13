@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { within } from '@testing-library/react'
 import { renderApp, setupAppTest } from './helpers'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 
@@ -86,6 +87,106 @@ describe('ConnectorsSection on the Plugins page', () => {
     expect(screen.getAllByText('Not connected').length).toBeGreaterThan(0)
     // Never a live-connection claim.
     expect(section.textContent).not.toContain('Connected')
+  })
+
+  it('connects GitHub: tested token, sealed save, honest badge flip (RF-093)', async () => {
+    const user = userEvent.setup()
+    let githubVerified = false
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL, init?: RequestInit) => {
+        const path = String(url)
+        if (path === '/api/auth/get-session') {
+          return jsonResponse(200, { session: { token: 't' }, user: USER })
+        }
+        if (path === '/api/v1/me') return jsonResponse(200, ME)
+        if (path === '/api/v1/connectors') {
+          return jsonResponse(200, {
+            items: CONNECTORS.map((entry) =>
+              entry.id === 'github'
+                ? { ...entry, status: githubVerified ? 'available' : 'unavailable' }
+                : entry,
+            ),
+          })
+        }
+        if (path === '/api/v1/connectors/github/test' && init?.method === 'POST') {
+          return jsonResponse(200, {
+            connectorId: 'github',
+            ok: true,
+            login: 'adilshamim',
+            status: 200,
+            error: null,
+          })
+        }
+        if (path === '/api/v1/connectors/github/credential' && init?.method === 'PUT') {
+          githubVerified = true
+          return jsonResponse(201, {
+            connectorId: 'github',
+            status: 'untested',
+            lastCheckedAt: null,
+            lastError: null,
+          })
+        }
+        return jsonResponse(404, { code: 'not_found' })
+      }),
+    )
+    renderApp('/plugins')
+
+    // Expand the GitHub card inside the connector catalog (the Plugins
+    // page's own registry cards also mention GitHub).
+    const catalog = await screen.findByLabelText('Connector catalog')
+    const githubCard = within(catalog).getByText('GitHub').closest('li')!
+    await user.click(within(githubCard).getByRole('button', { name: 'What it needs' }))
+    await user.type(screen.getByLabelText('GitHub access token'), 'github_pat_readonly')
+    await user.click(screen.getByRole('button', { name: 'Test & save' }))
+
+    // The honest success notice names the account; the badge flips.
+    expect(await screen.findByRole('status')).toHaveTextContent('Connected as adilshamim')
+    await waitFor(() => {
+      expect(within(githubCard).getByText('Connected')).toBeInTheDocument()
+    })
+    // The badge is scoped: it says Connected, never Not connected.
+    expect(within(githubCard).queryByText('Not connected')).toBeNull()
+  })
+
+  it('rejects a bad token honestly and stores nothing (RF-093)', async () => {
+    const user = userEvent.setup()
+    const putCalls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string | URL, init?: RequestInit) => {
+        const path = String(url)
+        if (path === '/api/auth/get-session') {
+          return jsonResponse(200, { session: { token: 't' }, user: USER })
+        }
+        if (path === '/api/v1/me') return jsonResponse(200, ME)
+        if (path === '/api/v1/connectors') return jsonResponse(200, { items: CONNECTORS })
+        if (path === '/api/v1/connectors/github/test' && init?.method === 'POST') {
+          return jsonResponse(200, {
+            connectorId: 'github',
+            ok: false,
+            login: null,
+            status: 401,
+            error: 'GitHub responded 401.',
+          })
+        }
+        if (path === '/api/v1/connectors/github/credential' && init?.method === 'PUT') {
+          putCalls.push(path)
+        }
+        return jsonResponse(404, { code: 'not_found' })
+      }),
+    )
+    renderApp('/plugins')
+
+    const catalog = await screen.findByLabelText('Connector catalog')
+    const githubCard = within(catalog).getByText('GitHub').closest('li')!
+    await user.click(within(githubCard).getByRole('button', { name: 'What it needs' }))
+    await user.type(screen.getByLabelText('GitHub access token'), 'github_pat_wrong')
+    await user.click(screen.getByRole('button', { name: 'Test & save' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent('401')
+    // A rejected token never reaches storage.
+    expect(putCalls).toHaveLength(0)
   })
 
   it('discloses the real setup steps on demand', async () => {

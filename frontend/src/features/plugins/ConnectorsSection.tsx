@@ -16,6 +16,11 @@ export function ConnectorsSection() {
   const [connectors, setConnectors] = useState<ServerConnector[]>([])
   const [loading, setLoading] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  // RF-093 — the GitHub connect flow (T027). Token tested first, then
+  // stored only on a verified result; removal flips the status back.
+  const [token, setToken] = useState('')
+  const [connectBusy, setConnectBusy] = useState(false)
+  const [connectNotice, setConnectNotice] = useState<{ ok: boolean; text: string } | null>(null)
 
   useEffect(() => {
     if (status !== 'signed-in') return
@@ -37,6 +42,11 @@ export function ConnectorsSection() {
     }
   }, [status])
 
+  async function reloadCatalog(): Promise<void> {
+    const { listServerConnectors } = await import('@/services/api/serverConnectors')
+    setConnectors(await listServerConnectors())
+  }
+
   if (status !== 'signed-in') return null
 
   return (
@@ -51,8 +61,9 @@ export function ConnectorsSection() {
         </span>
       </div>
       <p className="mb-3 text-[12.5px] leading-relaxed text-ink-soft">
-        External services Uni could read and act through with your credentials. None are
-        connected yet — each card lists exactly what a real connection needs.
+        External services Uni could read and act through with your credentials. Each
+        card lists exactly what a real connection needs; GitHub connects with a
+        read-only token that is sealed on your server.
       </p>
 
       <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2" aria-label="Connector catalog list">
@@ -70,8 +81,14 @@ export function ConnectorsSection() {
                     {connector.description}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-subtle px-2 py-0.5 text-[11px] font-medium text-ink-faint">
-                  Not connected
+                <span
+                  className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    connector.status === 'available'
+                      ? 'bg-accent-soft text-accent'
+                      : 'bg-subtle text-ink-faint'
+                  }`}
+                >
+                  {connector.status === 'available' ? 'Connected' : 'Not connected'}
                 </span>
               </div>
 
@@ -109,6 +126,95 @@ export function ConnectorsSection() {
                     <p className="mt-2 text-[12px] leading-relaxed text-ink-faint">
                       Then you could ask: “{connector.routes[0]}”
                     </p>
+                  )}
+                  {connector.id === 'github' && (
+                    <div className="mt-3 border-t border-line pt-2.5">
+                      <label className="flex flex-col gap-1.5">
+                        <span className="text-[11.5px] font-medium text-ink-soft">
+                          Personal access token (read-only)
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <input
+                            type="password"
+                            value={token}
+                            onChange={(event) => setToken(event.target.value)}
+                            aria-label="GitHub access token"
+                            placeholder="github_pat_…"
+                            className="min-touch min-w-0 flex-1 rounded-control border border-line bg-panel px-2.5 py-1.5 text-[12.5px] text-ink focus:border-accent focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            disabled={connectBusy || token.trim().length === 0}
+                            onClick={async () => {
+                              setConnectBusy(true)
+                              setConnectNotice(null)
+                              try {
+                                const { testServerConnector, storeServerConnectorCredential } =
+                                  await import('@/services/api/serverConnectors')
+                                const result = await testServerConnector('github', token.trim())
+                                if (!result.ok) {
+                                  setConnectNotice({ ok: false, text: result.error ?? 'The token was rejected by GitHub.' })
+                                  return
+                                }
+                                await storeServerConnectorCredential('github', token.trim())
+                                await reloadCatalog()
+                                setToken('')
+                                setConnectNotice({
+                                  ok: true,
+                                  text: `Connected as ${result.login ?? 'your account'} — the token is sealed on your server.`,
+                                })
+                              } catch (error) {
+                                setConnectNotice({
+                                  ok: false,
+                                  text: error instanceof Error ? error.message : 'The connection failed.',
+                                })
+                              } finally {
+                                setConnectBusy(false)
+                              }
+                            }}
+                            className="press min-touch rounded-control border border-line px-2.5 py-1.5 text-[12px] font-medium text-ink transition-colors hover:bg-panel disabled:opacity-50"
+                          >
+                            {connectBusy ? 'Testing…' : 'Test & save'}
+                          </button>
+                          {connector.status === 'available' && (
+                            <button
+                              type="button"
+                              disabled={connectBusy}
+                              onClick={async () => {
+                                setConnectBusy(true)
+                                setConnectNotice(null)
+                                try {
+                                  const { deleteServerConnectorCredential } = await import(
+                                    '@/services/api/serverConnectors'
+                                  )
+                                  await deleteServerConnectorCredential('github')
+                                  await reloadCatalog()
+                                  setConnectNotice({ ok: true, text: 'Credential removed — GitHub is disconnected.' })
+                                } catch (error) {
+                                  setConnectNotice({
+                                    ok: false,
+                                    text: error instanceof Error ? error.message : 'Removal failed.',
+                                  })
+                                } finally {
+                                  setConnectBusy(false)
+                                }
+                              }}
+                              className="press min-touch rounded-control px-2.5 py-1.5 text-[12px] font-medium text-ink-faint transition-colors hover:text-danger disabled:opacity-50"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
+                      </label>
+                      {connectNotice && (
+                        <p
+                          role="status"
+                          className={`mt-1.5 text-[12px] ${connectNotice.ok ? 'text-accent' : 'text-danger'}`}
+                        >
+                          {connectNotice.text}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
