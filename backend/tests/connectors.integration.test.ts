@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { sql } from 'drizzle-orm'
 import { signUpUser, startTestApp, TEST_CREDENTIAL_MASTER_KEY, type TestApp } from './harness.js'
 import { createDatabase } from '../src/db/client.js'
@@ -140,6 +140,132 @@ describe('connector credential storage (RF-087)', () => {
       } finally {
         await database.pool.end()
       }
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+})
+
+
+describe('connector connection test route (RF-089)', () => {
+  function githubFixture(status: number, body: unknown): () => Promise<Response> {
+    return async () =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'content-type': 'application/json' },
+      })
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('verifies a body token against GitHub without storing anything', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Test' })
+      vi.stubGlobal('fetch', vi.fn(githubFixture(200, { login: 'adilshamim' })))
+      const res = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/connectors/github/test',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { token: 'ghp_fresh' },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json() as { ok: boolean; login: string | null; status: number }
+      expect(body).toMatchObject({ ok: true, login: 'adilshamim', status: 200 })
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+
+  it('reports a rejected token honestly and never pretends success', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Bad' })
+      vi.stubGlobal('fetch', vi.fn(githubFixture(401, { message: 'Bad credentials' })))
+      const res = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/connectors/github/test',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { token: 'ghp_wrong' },
+      })
+      expect(res.statusCode).toBe(200)
+      const body = res.json() as { ok: boolean; status: number; error: string | null }
+      expect(body.ok).toBe(false)
+      expect(body.status).toBe(401)
+      expect(body.error).toContain('401')
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+
+  it('requires a token when nothing is stored (honest 400)', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice None' })
+      const res = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/connectors/github/test',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: {},
+      })
+      expect(res.statusCode).toBe(400)
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+
+  it('tests the STORED credential and records the verdict (RF-089)', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Stored' })
+      const workspaceId = (
+        (await test.app.inject({ method: 'GET', url: '/api/v1/me', headers: { cookie: alice.cookie } }))
+          .json() as { workspace: { id: string } }
+      ).workspace.id
+      const database = createDatabase(test.databaseUrl)
+      try {
+        await storeConnectorCredential(
+          database.db,
+          { CREDENTIAL_MASTER_KEY: TEST_CREDENTIAL_MASTER_KEY, CREDENTIAL_KEY_ID: 'test' },
+          workspaceId,
+          'github',
+          'ghp_stored',
+        )
+        vi.stubGlobal('fetch', vi.fn(githubFixture(200, { login: 'stored-login' })))
+        const res = await test.app.inject({
+          method: 'POST',
+          url: '/api/v1/connectors/github/test',
+          headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+          payload: {},
+        })
+        expect(res.statusCode).toBe(200)
+        expect(res.json()).toMatchObject({ ok: true, login: 'stored-login' })
+
+        // The stored credential's status was recorded as verified.
+        expect(
+          await describeConnectorCredential(database.db, workspaceId, 'github'),
+        ).toMatchObject({ status: 'verified' })
+      } finally {
+        await database.pool.end()
+      }
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+
+  it('says honestly that non-GitHub connectors have no adapter yet (503)', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Gmail' })
+      const res = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/connectors/gmail/test',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { token: 'whatever' },
+      })
+      expect(res.statusCode).toBe(503)
     } finally {
       await test.stop()
     }

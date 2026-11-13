@@ -1,7 +1,17 @@
 import type { FastifyInstance } from 'fastify'
-import { connectorDtoSchema } from '@uni/contracts'
-import { notFound } from '../../lib/errors.js'
+import {
+  connectorDtoSchema,
+  connectorTestRequestSchema,
+  connectorTestResultDtoSchema,
+} from '@uni/contracts'
+import { AppError, badRequest, notFound } from '../../lib/errors.js'
 import { findConnector, listConnectors } from './connectors.catalog.js'
+import {
+  openConnectorCredential,
+  recordCredentialCheck,
+  type ConnectorCredentialEnv,
+} from './connectorCredentials.service.js'
+import { verifyGithubToken } from './github.adapter.js'
 
 /**
  * P08 / T026 — the connector catalog routes. Session-scoped like every
@@ -23,4 +33,58 @@ export async function connectorRoutes(app: FastifyInstance): Promise<void> {
     void connectorDtoSchema.parse(connector)
     return connector
   })
+
+  /**
+   * RF-089 — test a GitHub credential. With a token in the body, THAT
+   * token is verified (nothing is stored). Without one, the stored
+   * credential is verified and its status recorded. The adapter talks
+   * to the real api.github.com; tests drive it through a stubbed fetch.
+   */
+  app.post<{ Params: { connectorId: string } }>(
+    '/connectors/:connectorId/test',
+    async (request) => {
+      const connector = findConnector(request.params.connectorId)
+      if (!connector) throw notFound('Connector not found.')
+      if (connector.id !== 'github') {
+        throw new AppError(
+          'UNAVAILABLE',
+          `No adapter exists for "${connector.id}" yet — this one is catalog-only today.`,
+          503,
+        )
+      }
+      const db = app.database!.db
+      const env = app.env as ConnectorCredentialEnv & { CREDENTIAL_KEY_ID: string }
+      const body = connectorTestRequestSchema.parse(request.body ?? {})
+
+      let token = body.token
+      let stored = false
+      if (!token) {
+        token = (await openConnectorCredential(db, env, request.workspace!.id, 'github')) ?? undefined
+        stored = token !== undefined
+        if (!token) {
+          throw badRequest('No token provided and no credential is stored for GitHub.')
+        }
+      }
+
+      const result = await verifyGithubToken(fetch, token)
+      if (stored) {
+        await recordCredentialCheck(
+          db,
+          request.workspace!.id,
+          'github',
+          result.ok,
+          result.ok ? undefined : result.error,
+        )
+      }
+      const dto = {
+        connectorId: 'github',
+        ok: result.ok,
+        login: result.ok ? result.data.login : null,
+        status: result.ok ? 200 : result.status,
+        error: result.ok ? null : result.error,
+      }
+      void connectorTestResultDtoSchema.parse(dto)
+      return dto
+    },
+  )
 }
