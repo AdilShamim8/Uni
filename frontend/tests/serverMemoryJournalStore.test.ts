@@ -92,6 +92,28 @@ describe('server memory note editing (RF-081)', () => {
     )
   })
 
+  it('refreshes an already-loaded journal after an edit (RF-083)', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(200, { ...NOTE, text: 'new text', contentHash: 'b'.repeat(64) }),
+      )
+      .mockResolvedValueOnce(jsonResponse(200, { items: [] }))
+    useServerSessionStore.setState({
+      serverMemoryJournal: { 'emp-1': [] },
+    })
+
+    const result = await useServerSessionStore
+      .getState()
+      .editServerMemoryNoteFor('emp-1', 'note-1', 'new text')
+
+    expect(result).toBe('saved')
+    // The journal reload followed the edit.
+    const journalCall = fetchMock.mock.calls.find((call) =>
+      String(call[0]).includes('/memory/journal'),
+    )
+    expect(journalCall).toBeDefined()
+  })
+
   it('reports an error and keeps state untouched on other failures', async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse(500, { message: 'boom' }))
     const result = await useServerSessionStore

@@ -144,6 +144,42 @@ describe('MemoryPanel dual-mode (T016)', () => {
     })
   })
 
+  it('a stale edit conflicts honestly: notice shown, winner rendered (RF-083)', async () => {
+    useServerSessionStore.setState({ status: 'signed-in', account: null })
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { id: 'n-1', text: 'Works in GMT+1', contentHash: 'a'.repeat(64), createdAt: 1 },
+        ],
+      }),
+    )
+    // The PUT loses the race: someone else saved first.
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(409, { message: 'This note changed since you opened it.' }),
+    )
+    // The store then reloads the honest current state.
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { id: 'n-1', text: 'Works in GMT+3', contentHash: 'c'.repeat(64), createdAt: 3 },
+        ],
+      }),
+    )
+    render(<MemoryPanel agentId={AGENT_ID} />)
+    await screen.findByText('Works in GMT+1')
+
+    await userEvent.click(screen.getByRole('button', { name: /Edit server note n-1/i }))
+    const input = screen.getByLabelText('Edit server memory note')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Works in GMT+2')
+    await userEvent.click(screen.getByRole('button', { name: /Save server note n-1/i }))
+
+    // The honest outcome: the notice explains, the winner's text shows.
+    expect(await screen.findByRole('status')).toHaveTextContent(/changed on the server/i)
+    await screen.findByText('Works in GMT+3')
+    expect(screen.queryByLabelText('Edit server memory note')).toBeNull()
+  })
+
   it('server mode deletes through the service with an honest error path', async () => {
     useServerSessionStore.setState({ status: 'signed-in', account: null })
     fetchMock.mockResolvedValueOnce(
