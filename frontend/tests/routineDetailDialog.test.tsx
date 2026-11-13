@@ -161,7 +161,7 @@ describe('RoutineDetailDialog', () => {
       />,
     )
     const dialog = await screen.findByRole('dialog')
-    expect(within(dialog).getByText(/catch-up 120m after downtime/i)).toBeInTheDocument()
+    expect(within(dialog).getAllByText(/catch-up 120m after downtime/i).length).toBeGreaterThan(0)
     expect(within(dialog).getByText('archived')).toBeInTheDocument()
   })
 

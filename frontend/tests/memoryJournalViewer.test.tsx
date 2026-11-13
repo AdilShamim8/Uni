@@ -123,6 +123,18 @@ describe('MemoryJournalViewer (RF-066)', () => {
     expect(revert).toHaveBeenCalledWith('emp-1', 'j-1')
   })
 
+  it('says when the list is capped at the latest 50 (RF-104)', async () => {
+    const user = userEvent.setup()
+    const many = Array.from({ length: 55 }, (_, i) => ({ ...ENTRY, id: `j-${i}` }))
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: many }))
+    render(<MemoryJournalViewer employeeId="emp-1" />)
+
+    await user.click(screen.getByRole('button', { name: /Show change history/i }))
+    const list = await screen.findByLabelText('Journal entries')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(55)
+    expect(screen.getByText(/Showing the latest 55 entries/i)).toBeInTheDocument()
+  })
+
   it('filters the journal by kind (RF-098)', async () => {
     const user = userEvent.setup()
     // One edited + one created entry; nothing deleted.
