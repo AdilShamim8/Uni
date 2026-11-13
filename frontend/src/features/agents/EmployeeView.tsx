@@ -5,6 +5,7 @@ import {
   Briefcase,
   CalendarClock,
   ChevronDown,
+  Pencil,
   PencilLine,
   Plus,
   Puzzle,
@@ -644,6 +645,11 @@ export function MemoryPanel({ agentId }: { agentId: string }) {
   const [draft, setDraft] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editText, setEditText] = useState('')
+  // Server-mode note editing (RF-082): separate state so the two modes
+  // never fight over one editing target.
+  const [serverEditingId, setServerEditingId] = useState<string | null>(null)
+  const [serverEditText, setServerEditText] = useState('')
+  const [serverEditNotice, setServerEditNotice] = useState<string | null>(null)
 
   // T016 — server mode: notes live on the linked server employee (the
   // same identity Chat and Assign task use); the panel loads them from
@@ -655,6 +661,7 @@ export function MemoryPanel({ agentId }: { agentId: string }) {
   const loadServerMemoryNotes = useServerSessionStore((state) => state.loadServerMemoryNotes)
   const addServerMemoryNoteFor = useServerSessionStore((state) => state.addServerMemoryNoteFor)
   const removeServerMemoryNote = useServerSessionStore((state) => state.removeServerMemoryNote)
+  const editServerMemoryNoteFor = useServerSessionStore((state) => state.editServerMemoryNoteFor)
   const inServerMode = serverStatus === 'signed-in'
   const linkedEmployeeId = agent?.serverEmployeeId ?? null
 
@@ -751,23 +758,87 @@ export function MemoryPanel({ agentId }: { agentId: string }) {
             <ul className="flex flex-col gap-2">
               {serverNotes.map((note) => (
                 <li key={note.id} className="rounded-[12px] border border-line bg-raised px-3.5 py-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-ink">{note.text}</p>
-                    <div className="flex shrink-0 gap-0.5">
-                      <button
-                        type="button"
-                        aria-label="Delete server note"
-                        onClick={() => {
-                          void removeServerMemoryNote(linkedEmployeeId, note.id)
-                        }}
-                        className="min-touch rounded-control p-1 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                  {serverEditingId === note.id ? (
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="text"
+                        value={serverEditText}
+                        onChange={(event) => setServerEditText(event.target.value)}
+                        aria-label="Edit server memory note"
+                        className="min-touch min-w-0 flex-1 rounded-control border border-line bg-panel px-3 py-1.5 text-sm text-ink focus:border-accent focus:outline-none"
+                      />
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          aria-label={`Save server note ${note.id}`}
+                          onClick={async () => {
+                            const result = await editServerMemoryNoteFor(
+                              linkedEmployeeId,
+                              note.id,
+                              serverEditText,
+                            )
+                            if (result === 'saved') {
+                              setServerEditingId(null)
+                              setServerEditNotice(null)
+                            } else if (result === 'conflict') {
+                              setServerEditNotice(
+                                'This note changed on the server — it now shows the current version. Edit again to build on it.',
+                              )
+                              setServerEditingId(null)
+                            } else {
+                              setServerEditNotice('The server rejected the edit — try again.')
+                            }
+                          }}
+                          className="press min-touch rounded-control border border-line px-2.5 py-1 text-[12px] font-medium text-ink transition-colors hover:bg-subtle"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Cancel editing server note ${note.id}`}
+                          onClick={() => setServerEditingId(null)}
+                          className="press min-touch rounded-control px-2.5 py-1 text-[12px] font-medium text-ink-faint transition-colors hover:text-ink"
+                        >
+                          Cancel
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="min-w-0 flex-1 text-[13px] leading-relaxed text-ink">{note.text}</p>
+                      <div className="flex shrink-0 gap-0.5">
+                        <button
+                          type="button"
+                          aria-label={`Edit server note ${note.id}`}
+                          onClick={() => {
+                            setServerEditingId(note.id)
+                            setServerEditText(note.text)
+                            setServerEditNotice(null)
+                          }}
+                          className="min-touch rounded-control p-1 text-ink-faint transition-colors hover:bg-subtle hover:text-ink"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label="Delete server note"
+                          onClick={() => {
+                            void removeServerMemoryNote(linkedEmployeeId, note.id)
+                          }}
+                          className="min-touch rounded-control p-1 text-ink-faint transition-colors hover:bg-danger-soft hover:text-danger"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </li>
               ))}
+              {serverEditNotice && (
+                <p role="status" className="px-1 text-xs text-ink-soft">
+                  {serverEditNotice}
+                </p>
+              )}
             </ul>
           )}
           <p className="mt-1.5 px-1 text-[11px] text-ink-faint">
