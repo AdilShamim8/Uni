@@ -1,3 +1,38 @@
+## Current state (updated 2026-11-12, reuse-first-500 session 2 — 40 commits pushed, PR #62 open)
+
+- **Branch:** `task/reuse-first-500`, 40 commits, **every one pushed
+  individually and SHA-verified** (the second credential worked; PR #62
+  was opened by the owner and exposes CI). Count of record:
+  `docs/reuse-first-500-manifest.md` (40/500).
+- **Shipped in session 2:** (1) T033 complete — the routines UI:
+  serverRoutines client, store slice, RoutinesSection on the server
+  Work surface (create/pause/delete + detail dialog with honest run
+  history), server-computed nextFireAt preview, describeSchedule
+  labels. (2) P08 — the connector catalog: backend module + routes
+  (honest 'unavailable' everywhere, session-scoped) and the Plugins
+  page section (not-connected cards, real setup steps, docs links).
+  (3) P10 — files & knowledge end-to-end: file_document table
+  (migration 0019), honest extraction (plain-text formats only,
+  binaries refused), bounded lexical retrieval with real excerpts,
+  Library knowledge section (ingest/search/delete), and the
+  knowledge_search agent tool wired into the engine (ungated
+  read-only, unattended-allowed, in the routine roster) with an
+  end-to-end engine test against a scripted provider.
+- **Verification:** full suites green on the committed tree — backend
+  **392/392 across 49 files**, frontend **626/626 across 87 files**
+  (details in verification.md). Two CI lint regressions introduced and
+  fixed in-session (RF-035, RF-039).
+- **Next executable slices (in order):** (1) confirm CI green on the
+  RF-039 head; (2) screenshots desktop/mobile × light/dark via
+  `backend/scripts/browser-qa-stack.mjs` (Phase B acceptance); (3)
+  P08 deeper connectors (T027+: a fixture-verified GitHub adapter with
+  stored credentials); (4) P11 isolated execution (needs a sandbox
+  runtime — stays honestly inert without one); (5) P12 messaging
+  adapters; (6) README + capability-matrix rows for the new surfaces;
+  continue the manifest queue toward 500 — never padded.
+- **Blockers:** no paid provider keys (live inference stays
+  fixture-verified); no Docker daemon (P11 inert by design).
+
 ## Current state (updated 2026-11-12, reuse-first-500 session 1 — push blocked, 23 local commits)
 
 - **Branch:** `task/reuse-first-500` from `a84aac2b0` (= origin/main at

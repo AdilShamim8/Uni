@@ -38,6 +38,14 @@ export interface ToolContext {
    * honestly with 'not configured'.
    */
   callMcpTool?: (tool: string, args: Record<string, unknown>, signal: AbortSignal) => Promise<ToolOutcome>
+  /**
+   * P10 — searches the workspace's knowledge index (files module).
+   * Absent in bare/test contexts: knowledge_search then fails
+   * honestly with 'not configured'.
+   */
+  searchKnowledge?: (query: string, limit: number) => Promise<
+    Array<{ documentId: string; title: string; excerpt: string; score: number }>
+  >
 }
 
 export interface ToolOutcome {
@@ -365,6 +373,32 @@ async function execMcpCall(
   )
 }
 
+async function execKnowledgeSearch(
+  ctx: ToolContext,
+  raw: unknown,
+): Promise<ToolOutcome> {
+  const input = toolInputSchemas.knowledge_search.parse(raw)
+  if (!ctx.searchKnowledge) {
+    return { ok: false, output: 'knowledge_search is not configured in this context.' }
+  }
+  try {
+    const hits = await ctx.searchKnowledge(input.query, input.limit ?? 8)
+    if (hits.length === 0) {
+      return { ok: true, output: 'No matching documents in this workspace.' }
+    }
+    const lines = hits.map(
+      (hit, index) =>
+        `${index + 1}. ${hit.title} (score ${hit.score})\n${hit.excerpt}`,
+    )
+    return { ok: true, output: cut(lines.join('\n\n')) }
+  } catch (error) {
+    return {
+      ok: false,
+      output: `knowledge_search failed: ${error instanceof Error ? error.message : String(error)}`,
+    }
+  }
+}
+
 async function execTodo(raw: unknown): Promise<ToolOutcome> {
   const input = toolInputSchemas.todo.parse(raw)
   const lines = input.todos.map(
@@ -396,6 +430,7 @@ export const ROSTER: readonly RosterEntry[] = [
     executing: async (ctx) => execCurrentTime(ctx),
   },
   { name: 'todo', executing: async (_ctx, input) => execTodo(input) },
+  { name: 'knowledge_search', executing: execKnowledgeSearch },
 ]
 
 /**

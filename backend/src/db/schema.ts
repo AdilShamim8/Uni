@@ -751,6 +751,34 @@ export const routines = pgTable(
 )
 
 /**
+ * A workspace-scoped document with extracted text (P10, T034): the
+ * knowledge-retrieval source of truth. Extraction is honest —
+ * 'unsupported'/'failed' rows keep their bytes but never count toward
+ * retrieval.
+ */
+export const fileDocuments = pgTable(
+  'file_document',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    fileName: text('file_name').notNull(),
+    sizeBytes: integer('size_bytes').notNull().default(0),
+    extension: text('extension').notNull(),
+    mimeType: text('mime_type').notNull().default('text/plain'),
+    extraction: text('extraction').notNull().default('pending'),
+    extractedText: text('extracted_text').notNull().default(''),
+    extractionError: text('extraction_error'),
+    charCount: integer('char_count').notNull().default(0),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('file_document_workspace_idx').on(table.workspaceId, table.createdAt)],
+)
+
+/**
  * One fire of a routine. `slotClaimedAt` is the advisory-lock-guarded
  * claim (only one process may run a given routine at a time); terminal
  * statuses match agent runs.

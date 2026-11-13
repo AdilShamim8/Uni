@@ -28,6 +28,8 @@ export interface ServerRoutine {
   paused: boolean
   archived: boolean
   lastFireAt: number | null
+  /** Server-computed preview (RF-030); null when paused or nothing fires within 7 days. */
+  nextFireAt: number | null
   createdAt: number
   updatedAt: number
 }

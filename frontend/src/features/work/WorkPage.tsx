@@ -23,6 +23,7 @@ import { MobileMenuButton } from '@/components/layout/MobileMenuButton'
 import { downloadText, slugifyTitle } from '@/features/chat/exportUtils'
 import { ThreadComposer } from '@/features/conversation/ThreadComposer'
 import { TaskThread } from './TaskThread'
+import { RoutinesSection } from './RoutinesSection'
 import { TASK_TEMPLATES, inferDeliverable } from './taskTemplates'
 import {
   TASK_STATUS_LABELS,
@@ -209,6 +210,8 @@ function ServerWorkHome() {
             before anything wider. Reports save to the server Library through one canonical
             operation.
           </p>
+
+          <RoutinesSection />
         </div>
       </div>
     </div>

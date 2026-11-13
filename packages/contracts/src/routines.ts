@@ -58,6 +58,12 @@ export const routineDtoSchema = z.object({
   archived: z.boolean(),
   /** Last fire start (epoch ms); null before the first fire. */
   lastFireAt: z.number().int().nonnegative().nullable(),
+  /**
+   * The next scheduled minute (epoch ms) computed by the server's own
+   * cron evaluator at read time — the single truth for previews. Null
+   * when nothing matches within the 7-day horizon (or while paused).
+   */
+  nextFireAt: z.number().int().nonnegative().nullable(),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
 })

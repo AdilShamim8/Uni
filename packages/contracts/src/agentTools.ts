@@ -29,6 +29,12 @@ export const agentToolNameSchema = z.enum([
    * at the transport.
    */
   'mcp_call',
+  /**
+   * P10 — search the workspace's knowledge index (documents with
+   * extracted text) and return bounded excerpts. Read-only over the
+   * workspace's own data, so it is never gated and never mutating.
+   */
+  'knowledge_search',
 ])
 export type AgentToolName = z.infer<typeof agentToolNameSchema>
 
@@ -127,6 +133,13 @@ export const AGENT_TOOL_DESCRIPTORS: readonly AgentToolDescriptor[] = [
     mutating: false,
     gated: false,
   },
+  {
+    name: 'knowledge_search',
+    description:
+      'Search this workspace\'s knowledge (uploaded documents with extracted text) and return the best excerpts with their titles.',
+    mutating: false,
+    gated: false,
+  },
 ]
 
 export const agentToolDescriptorDtoSchema = z.object({
@@ -165,6 +178,10 @@ export const toolInputSchemas = {
     url: z.string().url().max(2_000),
   }),
   exit_plan_mode: z.object({ plan: z.string().max(20_000).optional() }),
+  knowledge_search: z.object({
+    query: z.string().min(1).max(2_000),
+    limit: z.number().int().min(1).max(20).optional(),
+  }),
   current_time: z.object({}).strict(),
   todo: z.object({
     todos: z
