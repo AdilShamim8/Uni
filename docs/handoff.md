@@ -1,5 +1,30 @@
 # Handoff — the reuse-first-500 engagement (AdilShamim8/Uni)
 
+## Current state (updated 2026-11-13, session 6 — 111 effort commits)
+
+- **Count of record: 111 effort commits (RF-001…RF-111)**, every one
+  pushed individually by the owner's noreply identity. Sessions 5 (14)
+  and 6 (41) landed via PRs #78/#79-style merges — see the manifest.
+- **Session 6 (41 commits):** session-DTO employeeId exposure; employee
+  editing + archived views; hash-guarded memory-note editing with 409
+  conflict handling; export completeness (journal + latest 50 routine
+  runs); the GitHub connector end-to-end (sealed credentials via
+  migration 0020, fixture-verified adapter, honest catalog status,
+  Plugins connect flow); plus weekday schedule labels, relative
+  next-fire, journal kind filter/cap/relative labels, knowledge filter,
+  last-export note, live memory budget, archived-visibility fixes.
+- **Next executable slices:** (1) the GitHub adapter's PR/commit routes
+  exposed through the Work/chat tool layer; (2) Phase B screenshots via
+  backend/scripts/browser-qa-stack.mjs; (3) employee provider/model pins
+  in the edit dialog; (4) session list surfaces for the exposed pin;
+  (5) continued queue toward 500 — never padded.
+- **Blockers (unchanged):** no paid provider keys (live inference stays
+  fixture-verified); no Docker daemon (P11 inert by design).
+
+---
+
+# Handoff — the reuse-first-500 engagement (AdilShamim8/Uni)
+
 ## Current state (updated 2026-11-13, session 5 — 70 effort commits, main green)
 
 - **Main head** = merge of PR #77 (repair) plus the owner's better-auth

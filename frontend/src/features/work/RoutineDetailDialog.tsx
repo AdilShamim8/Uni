@@ -85,6 +85,10 @@ export function RoutineDetailDialog({
             </span>
           )}
           <span>{describeSchedule(routine.schedule)}</span>
+          {routine.catchUpMinutes > 0 && (
+            <span>catch-up {routine.catchUpMinutes}m after downtime</span>
+          )}
+          {routine.archived && <span className="font-medium text-ink-soft">archived</span>}
           <code className="rounded-[6px] bg-subtle px-1.5 py-0.5">{routine.schedule}</code>
           <span>
             {routine.catchUpMinutes > 0

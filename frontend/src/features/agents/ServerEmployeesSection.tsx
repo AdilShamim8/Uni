@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bot, CloudOff, MessageSquare, Users } from 'lucide-react'
+import { Archive, ArchiveRestore, Bot, CloudOff, MessageSquare, Pencil, Users } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import { useAgentsStore } from '@/state/agentsStore'
+import { EditEmployeeDialog } from './EditEmployeeDialog'
+import type { ServerEmployee } from '@/services/api/serverEmployees'
 
 /**
  * Phase C1 — the server employee roster on the Agents page. When the
@@ -19,10 +21,15 @@ export function ServerEmployeesSection() {
   const serverEmployees = useServerSessionStore((state) => state.serverEmployees)
   const serverEmployeesLoading = useServerSessionStore((state) => state.serverEmployeesLoading)
   const loadServerEmployees = useServerSessionStore((state) => state.loadServerEmployees)
+  const updateServerEmployee = useServerSessionStore((state) => state.updateServerEmployee)
+  const [busyEmployeeId, setBusyEmployeeId] = useState<string | null>(null)
+  const [editTarget, setEditTarget] = useState<ServerEmployee | null>(null)
   const agents = useAgentsStore((state) => state.agents)
 
   useEffect(() => {
-    if (status === 'signed-in') void loadServerEmployees()
+    // This surface owns the archived view, so it loads the full roster;
+    // every consumer filters by archived as needed.
+    if (status === 'signed-in') void loadServerEmployees(true)
   }, [status, loadServerEmployees])
 
   if (status !== 'signed-in') return null
@@ -35,6 +42,7 @@ export function ServerEmployeesSection() {
   )
 
   const active = serverEmployees.filter((employee) => !employee.archived)
+  const archived = serverEmployees.filter((employee) => employee.archived)
 
   return (
     <section
@@ -47,7 +55,9 @@ export function ServerEmployeesSection() {
           On this account
         </h2>
         <span className="text-xs text-ink-faint">
-          {serverEmployeesLoading ? 'loading…' : `${active.length} on the server`}
+          {serverEmployeesLoading
+            ? 'loading…'
+            : `${active.length} on the server${archived.length > 0 ? ` · ${archived.length} archived` : ''}`}
         </span>
       </div>
 
@@ -59,7 +69,7 @@ export function ServerEmployeesSection() {
       )}
 
       {active.length > 0 && (
-        <ul className="flex flex-col gap-1.5">
+        <ul className="flex flex-col gap-1.5" aria-label="Active server employees">
           {active.map((employee) => {
             const linkedAgent = linkedAgentByEmployeeId.get(employee.id) ?? null
             return (
@@ -81,6 +91,30 @@ export function ServerEmployeesSection() {
                     {employee.description || 'No description'}
                   </span>
                 </span>
+                <button
+                  type="button"
+                  aria-label={`Edit employee ${employee.name}`}
+                  onClick={() => setEditTarget(employee)}
+                  className="press inline-flex min-touch items-center gap-1.5 rounded-control border border-line px-2.5 py-1.5 text-[12.5px] font-medium text-ink transition-colors hover:bg-subtle"
+                >
+                  <Pencil size={13} aria-hidden="true" />
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  aria-label={`Archive employee ${employee.name}`}
+                  disabled={busyEmployeeId === employee.id}
+                  onClick={() => {
+                    setBusyEmployeeId(employee.id)
+                    void updateServerEmployee(employee.id, { archived: true }).finally(() => {
+                      setBusyEmployeeId(null)
+                    })
+                  }}
+                  className="press inline-flex min-touch items-center gap-1.5 rounded-control border border-line px-2.5 py-1.5 text-[12.5px] font-medium text-ink-faint transition-colors hover:bg-subtle hover:text-ink disabled:opacity-50"
+                >
+                  <Archive size={13} aria-hidden="true" />
+                  Archive
+                </button>
                 {linkedAgent ? (
                   <Link
                     to={`/agents/${linkedAgent.id}`}
@@ -101,11 +135,62 @@ export function ServerEmployeesSection() {
         </ul>
       )}
 
+      {archived.length > 0 && (
+        <details className="mt-2 rounded-group border border-line bg-panel px-3.5 py-2.5">
+          <summary className="cursor-pointer text-[12.5px] font-medium text-ink-soft">
+            Archived ({archived.length})
+          </summary>
+          <ul className="mt-2 flex flex-col gap-1.5" aria-label="Archived server employees">
+            {archived.map((employee) => (
+              <li
+                key={employee.id}
+                className="flex items-center gap-3 rounded-group border border-line bg-raised px-3 py-2 opacity-70"
+              >
+                <Bot size={14} className="shrink-0 text-ink-faint" aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13.5px] font-medium text-ink">
+                    {employee.name}
+                  </span>
+                  <span className="block truncate text-[12px] text-ink-faint">
+                    {employee.description || 'No description'} · out of rotation
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  aria-label={`Unarchive employee ${employee.name}`}
+                  disabled={busyEmployeeId === employee.id}
+                  onClick={() => {
+                    setBusyEmployeeId(employee.id)
+                    void updateServerEmployee(employee.id, { archived: false }).finally(() => {
+                      setBusyEmployeeId(null)
+                    })
+                  }}
+                  className="press inline-flex min-touch shrink-0 items-center gap-1.5 rounded-control border border-line px-2.5 py-1.5 text-[12.5px] font-medium text-ink transition-colors hover:bg-subtle disabled:opacity-50"
+                >
+                  <ArchiveRestore size={13} aria-hidden="true" />
+                  Unarchive
+                </button>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       <p className="mt-2 text-[11.5px] leading-relaxed text-ink-faint">
         Server employees are the durable identities your Uni server uses for Work assignments
         and memory. Their threads and notes live server-side; local profiles below stay in
         this browser.
       </p>
+      <EditEmployeeDialog
+        key={editTarget?.id ?? 'none'}
+        employee={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSave={async (employeeId, patch) => {
+          const ok = await updateServerEmployee(employeeId, patch)
+          if (ok) setEditTarget(null)
+          return ok
+        }}
+      />
     </section>
   )
 }

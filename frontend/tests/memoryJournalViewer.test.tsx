@@ -123,6 +123,54 @@ describe('MemoryJournalViewer (RF-066)', () => {
     expect(revert).toHaveBeenCalledWith('emp-1', 'j-1')
   })
 
+  it('labels entries relatively and keeps the exact time on the title (RF-106)', async () => {
+    const user = userEvent.setup()
+    const threeHoursAgo = Date.now() - 3 * 3_600_000
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { items: [{ ...ENTRY, createdAt: threeHoursAgo }] }),
+    )
+    render(<MemoryJournalViewer employeeId="emp-1" />)
+
+    await user.click(screen.getByRole('button', { name: /Show change history/i }))
+    const list = await screen.findByLabelText('Journal entries')
+    const timeLabel = within(list).getByText(/3h ago/)
+    expect(timeLabel).toHaveAttribute('title', new Date(threeHoursAgo).toLocaleString())
+  })
+
+  it('says when the list is capped at the latest 50 (RF-104)', async () => {
+    const user = userEvent.setup()
+    const many = Array.from({ length: 55 }, (_, i) => ({ ...ENTRY, id: `j-${i}` }))
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: many }))
+    render(<MemoryJournalViewer employeeId="emp-1" />)
+
+    await user.click(screen.getByRole('button', { name: /Show change history/i }))
+    const list = await screen.findByLabelText('Journal entries')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(55)
+    expect(screen.getByText(/Showing the latest 55 entries/i)).toBeInTheDocument()
+  })
+
+  it('filters the journal by kind (RF-098)', async () => {
+    const user = userEvent.setup()
+    // One edited + one created entry; nothing deleted.
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [ENTRY, NON_REVERTIBLE] }))
+    render(<MemoryJournalViewer employeeId="emp-1" />)
+
+    await user.click(screen.getByRole('button', { name: /Show change history/i }))
+    const list = await screen.findByLabelText('Journal entries')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(2)
+
+    await user.selectOptions(screen.getByLabelText(/Show/), 'edited')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1)
+    expect(within(list).getAllByRole('listitem')[0]!.textContent).toContain('edited')
+
+    await user.selectOptions(screen.getByLabelText(/Show/), 'created')
+    expect(within(list).getAllByRole('listitem')).toHaveLength(1)
+
+    // A kind with no entries says so honestly.
+    await user.selectOptions(screen.getByLabelText(/Show/), 'deleted')
+    expect(await screen.findByText(/No deleted entries in this view/i)).toBeInTheDocument()
+  })
+
   it('cancelling the confirmation reverts nothing (RF-067)', async () => {
     const user = userEvent.setup()
     const revert = vi.fn(async () => true)

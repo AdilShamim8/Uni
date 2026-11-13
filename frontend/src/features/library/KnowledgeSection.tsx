@@ -28,10 +28,21 @@ export function KnowledgeSection() {
   const [addOpen, setAddOpen] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
+  const [filter, setFilter] = useState('')
+  const normalizedFilter = filter.trim().toLowerCase()
+
   const ordered = useMemo(
     () => Object.values(documents).sort((a, b) => b.createdAt - a.createdAt),
     [documents],
   )
+  // RF-100 — a plain substring filter over title and file name.
+  const visible = normalizedFilter
+    ? ordered.filter(
+        (doc) =>
+          doc.title.toLowerCase().includes(normalizedFilter) ||
+          (doc.fileName ?? '').toLowerCase().includes(normalizedFilter),
+      )
+    : ordered
 
   const deleteTarget = deleteId ? documents[deleteId] : undefined
 
@@ -60,9 +71,22 @@ export function KnowledgeSection() {
             the Context panel and your messages retrieve labeled excerpts from these documents.
           </p>
         </div>
+      ) : visible.length === 0 ? (
+        <p className="mt-3 text-[13px] text-ink-faint">No documents match this filter.</p>
       ) : (
+        <div>
+          {ordered.length > 3 && (
+            <input
+              type="search"
+              value={filter}
+              onChange={(event) => setFilter(event.target.value)}
+              aria-label="Filter documents"
+              placeholder="Filter by title or file name"
+              className="mb-1 block w-full rounded-control border border-line bg-panel px-3 py-1.5 text-[13px] text-ink placeholder:text-ink-faint focus:border-accent focus:outline-none"
+            />
+          )}
         <ul className="mt-3 flex flex-col gap-2">
-          {ordered.map((doc) => (
+          {visible.map((doc) => (
             <li
               key={doc.id}
               className="flex items-center gap-3 rounded-group border border-line bg-raised px-4 py-3 transition-colors hover:bg-subtle"
@@ -88,6 +112,7 @@ export function KnowledgeSection() {
             </li>
           ))}
         </ul>
+        </div>
       )}
 
       <RetrievalTester />

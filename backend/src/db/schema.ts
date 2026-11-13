@@ -454,6 +454,39 @@ export const memoryJournal = pgTable(
   (table) => [index('memory_journal_employee_created_idx').on(table.employeeId, table.createdAt)],
 )
 
+/**
+ * P08 / T027 — connector credentials (GitHub first): one stored token
+ * per workspace+connector, sealed in a secretBox envelope. The token
+ * is NEVER returned by any route; only its verification status is.
+ */
+export const connectorCredentials = pgTable(
+  'connector_credential',
+  {
+    id: text('id').primaryKey(),
+    workspaceId: text('workspace_id')
+      .notNull()
+      .references(() => workspaces.id, { onDelete: 'cascade' }),
+    /** Catalog connector id, e.g. 'github'. */
+    connectorId: text('connector_id').notNull(),
+    /** secretBox envelope JSON for the token. */
+    credentialEnvelope: text('credential_envelope').notNull(),
+    /** 'untested' | 'verified' | 'invalid'. */
+    status: text('status').notNull().default('untested'),
+    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+    lastError: text('last_error'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [
+    uniqueIndex('connector_credential_workspace_connector_uq').on(
+      table.workspaceId,
+      table.connectorId,
+    ),
+  ],
+)
+
+export type ConnectorCredentialRow = typeof connectorCredentials.$inferSelect
+
 /* ------------------------------------------------------------------ */
 /* Library (B04) — artifacts with versions                             */
 /* ------------------------------------------------------------------ */

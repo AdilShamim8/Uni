@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import {
   API_ROOT,
+  ApiError,
   apiFetch,
   type ApiErrorEnvelope,
 } from '@/services/api/client'
@@ -48,6 +49,7 @@ import {
   deleteServerMemoryNote,
   listServerMemoryJournal,
   revertServerMemoryJournalEntry,
+  putServerMemoryNote,
   type ServerEmployee,
   type ServerMemoryNote,
   type ServerMemoryJournalEntry,
@@ -306,7 +308,7 @@ interface ServerSessionState {
   openServerAgentConversation: (agentId: string, title: string) => Promise<string | null>
 
   /** Server employees (T016): CRUD against the employee service. */
-  loadServerEmployees: () => Promise<void>
+  loadServerEmployees: (includeArchived?: boolean) => Promise<void>
   addServerEmployee: (input: {
     name: string
     description?: string
@@ -335,7 +337,7 @@ interface ServerSessionState {
 
   /** Server Work (T019): list + lifecycle actions through the API. */
   loadServerWorkTasks: () => Promise<void>
-  loadServerRoutines: () => Promise<void>
+  loadServerRoutines: (includeArchived?: boolean) => Promise<void>
   openServerRoutineDetail: (routineId: string) => Promise<void>
   closeServerRoutineDetail: () => void
   createServerRoutineFor: (input: {
@@ -346,6 +348,8 @@ interface ServerSessionState {
     employeeId?: string | null
   }) => Promise<boolean>
   setServerRoutinePausedFor: (routineId: string, paused: boolean) => Promise<boolean>
+  /** RF-078 — archive/unarchive a routine (archived rows stay listable). */
+  setServerRoutineArchivedFor: (routineId: string, archived: boolean) => Promise<boolean>
   /** RF-060 — edit a routine's fields (changed-only); the row replaces in place. */
   editServerRoutineFor: (
     routineId: string,
@@ -385,6 +389,15 @@ interface ServerSessionState {
   loadServerMemoryJournal: (employeeId: string) => Promise<void>
   /** RF-065 — revert one journal entry; notes and journal refresh. */
   revertServerMemoryJournalEntryFor: (employeeId: string, entryId: string) => Promise<boolean>
+  /**
+   * RF-081 — edit a note through the hash-guarded PUT. Returns
+   * 'saved', 'conflict' (stale hash — notes reloaded), or 'error'.
+   */
+  editServerMemoryNoteFor: (
+    employeeId: string,
+    noteId: string,
+    text: string,
+  ) => Promise<'saved' | 'conflict' | 'error'>
   addServerMemoryNoteFor: (employeeId: string, text: string) => Promise<boolean>
   removeServerMemoryNote: (employeeId: string, noteId: string) => Promise<boolean>
 
@@ -1080,11 +1093,11 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
   /* Server employees / Library / agent sessions (T014/T016/T017)      */
   /* ---------------------------------------------------------------- */
 
-  loadServerEmployees: async () => {
+  loadServerEmployees: async (includeArchived = false) => {
     const generation = get().sessionGeneration
     set({ serverEmployeesLoading: true })
     try {
-      const items = await listServerEmployees()
+      const items = await listServerEmployees(includeArchived)
       if (!stillCurrent(generation)) return
       set({ serverEmployees: items, serverEmployeesLoading: false })
     } catch {
@@ -1241,6 +1254,42 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     }
   },
 
+  editServerMemoryNoteFor: async (employeeId, noteId, text) => {
+    const generation = get().sessionGeneration
+    const trimmed = text.trim()
+    if (!trimmed) return 'error'
+    const current = (get().serverMemoryNotes[employeeId] ?? []).find(
+      (note) => note.id === noteId,
+    )
+    if (!current) return 'error'
+    try {
+      const note = await putServerMemoryNote(employeeId, noteId, trimmed, current.contentHash)
+      if (!stillCurrent(generation)) return 'error'
+      set((state) => ({
+        serverMemoryNotes: {
+          ...state.serverMemoryNotes,
+          [employeeId]: (state.serverMemoryNotes[employeeId] ?? []).map((entry) =>
+            entry.id === noteId ? note : entry,
+          ),
+        },
+      }))
+      if (get().serverMemoryJournal[employeeId]) {
+        await get().loadServerMemoryJournal(employeeId)
+      }
+      return 'saved'
+    } catch (error) {
+      if (!stillCurrent(generation)) return 'error'
+      if (error instanceof ApiError && error.status === 409) {
+        // Stale hash: the note changed since the caller opened it —
+        // reload the honest current state.
+        await get().loadServerMemoryNotes(employeeId)
+        return 'conflict'
+      }
+      set({ serverMemoryError: errorMessage(error) })
+      return 'error'
+    }
+  },
+
   addServerMemoryNoteFor: async (employeeId, text) => {
     const generation = get().sessionGeneration
     const trimmed = text.trim()
@@ -1323,11 +1372,11 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     set({ serverRoutineRuns: [], serverRoutineRunsLoading: false })
   },
 
-  loadServerRoutines: async () => {
+  loadServerRoutines: async (includeArchived = false) => {
     const generation = get().sessionGeneration
     set({ serverRoutinesLoading: true, serverRoutinesError: null })
     try {
-      const items = await listServerRoutines()
+      const items = await listServerRoutines(includeArchived)
       if (!stillCurrent(generation)) return
       set({ serverRoutines: items, serverRoutinesLoading: false })
     } catch (error) {
@@ -1354,6 +1403,24 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     const generation = get().sessionGeneration
     try {
       const routine = await patchServerRoutine(routineId, { paused })
+      if (!stillCurrent(generation)) return false
+      set((state) => ({
+        serverRoutines: state.serverRoutines.map((entry) =>
+          entry.id === routineId ? routine : entry,
+        ),
+      }))
+      return true
+    } catch (error) {
+      if (!stillCurrent(generation)) return false
+      set({ serverRoutinesError: errorMessage(error) })
+      return false
+    }
+  },
+
+  setServerRoutineArchivedFor: async (routineId, archived) => {
+    const generation = get().sessionGeneration
+    try {
+      const routine = await patchServerRoutine(routineId, { archived })
       if (!stillCurrent(generation)) return false
       set((state) => ({
         serverRoutines: state.serverRoutines.map((entry) =>

@@ -106,6 +106,122 @@ describe('MemoryPanel dual-mode (T016)', () => {
     expect(Object.keys(useAgentsStore.getState().memoryNotes)).toHaveLength(0)
   })
 
+  it('server mode edits a note through the hash-guarded PUT (RF-082)', async () => {
+    useServerSessionStore.setState({ status: 'signed-in', account: null })
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { id: 'n-1', text: 'Works in GMT+1', contentHash: 'a'.repeat(64), createdAt: 1 },
+        ],
+      }),
+    )
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        id: 'n-1',
+        text: 'Works in GMT+2',
+        contentHash: 'b'.repeat(64),
+        createdAt: 1,
+      }),
+    )
+    render(<MemoryPanel agentId={AGENT_ID} />)
+    await screen.findByText('Works in GMT+1')
+
+    await userEvent.click(screen.getByRole('button', { name: /Edit server note n-1/i }))
+    const input = screen.getByLabelText('Edit server memory note') as HTMLInputElement
+    expect(input.value).toBe('Works in GMT+1')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Works in GMT+2')
+    await userEvent.click(screen.getByRole('button', { name: /Save server note n-1/i }))
+
+    await screen.findByText('Works in GMT+2')
+    // The PUT presented the hash the caller had read.
+    const putCall = fetchMock.mock.calls.find((call) => call[1]?.method === 'PUT')
+    expect(putCall).toBeDefined()
+    expect(String(putCall![0])).toContain('/employees/emp-1/memory/n-1')
+    expect(JSON.parse(putCall![1]!.body as string)).toEqual({
+      text: 'Works in GMT+2',
+      expectedHash: 'a'.repeat(64),
+    })
+  })
+
+  it('a stale edit conflicts honestly: notice shown, winner rendered (RF-083)', async () => {
+    useServerSessionStore.setState({ status: 'signed-in', account: null })
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { id: 'n-1', text: 'Works in GMT+1', contentHash: 'a'.repeat(64), createdAt: 1 },
+        ],
+      }),
+    )
+    // The PUT loses the race: someone else saved first.
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(409, { message: 'This note changed since you opened it.' }),
+    )
+    // The store then reloads the honest current state.
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { id: 'n-1', text: 'Works in GMT+3', contentHash: 'c'.repeat(64), createdAt: 3 },
+        ],
+      }),
+    )
+    render(<MemoryPanel agentId={AGENT_ID} />)
+    await screen.findByText('Works in GMT+1')
+
+    await userEvent.click(screen.getByRole('button', { name: /Edit server note n-1/i }))
+    const input = screen.getByLabelText('Edit server memory note')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'Works in GMT+2')
+    await userEvent.click(screen.getByRole('button', { name: /Save server note n-1/i }))
+
+    // The honest outcome: the notice explains, the winner's text shows.
+    expect(await screen.findByRole('status')).toHaveTextContent(/changed on the server/i)
+    await screen.findByText('Works in GMT+3')
+    expect(screen.queryByLabelText('Edit server memory note')).toBeNull()
+  })
+
+  it('shows the live memory budget (RF-102)', async () => {
+    useServerSessionStore.setState({ status: 'signed-in', account: null })
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { id: 'n-1', text: '0123456789', contentHash: 'a'.repeat(64), createdAt: 1 },
+          { id: 'n-2', text: 'x'.repeat(30), contentHash: 'b'.repeat(64), createdAt: 2 },
+        ],
+      }),
+    )
+    render(<MemoryPanel agentId={AGENT_ID} />)
+    expect(await screen.findByText(/2 notes · 40 characters/i)).toBeInTheDocument()
+    expect(screen.getByText(/1% of the ~4,000-character budget/i)).toBeInTheDocument()
+  })
+
+  it('warns honestly when the linked employee is archived (RF-096)', async () => {
+    useServerSessionStore.setState({
+      status: 'signed-in',
+      account: null,
+      serverEmployees: [
+        {
+          id: 'emp-1',
+          name: 'Archived helper',
+          description: '',
+          instructions: '',
+          category: 'personal',
+          providerId: null,
+          modelId: null,
+          tools: [],
+          starters: [],
+          archived: true,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+    })
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [] }))
+    render(<MemoryPanel agentId={AGENT_ID} />)
+
+    expect(await screen.findByRole('warning')).toHaveTextContent(/archived — out of rotation/i)
+  })
+
   it('server mode deletes through the service with an honest error path', async () => {
     useServerSessionStore.setState({ status: 'signed-in', account: null })
     fetchMock.mockResolvedValueOnce(

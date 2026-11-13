@@ -24,6 +24,7 @@ export function serializeSession(row: SessionRow): AgentSessionDto {
     status: row.status as AgentSessionDto['status'],
     providerId: row.providerId,
     modelId: row.modelId,
+    employeeId: row.employeeId ?? null,
     rootDir: row.rootDir,
     tools: Array.isArray(row.tools) ? row.tools : [],
     archived: row.archived,

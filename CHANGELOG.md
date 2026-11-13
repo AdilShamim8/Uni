@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-11-13 — sessions 4–6 (RF-041…RF-111)
+
+- **Routines:** full editing end-to-end (re-pin an employee via PATCH with
+  the provisioned session following the pin), an edit dialog with
+  changed-only patches, failures-only run filter, archived views with
+  archive/unarchive, relative next-fire labels, weekday-named schedules.
+- **Memory:** the audit journal surfaced in the UI (viewer, kind filter,
+  revert behind a confirmation), hash-guarded note editing with honest
+  409 conflict handling, live budget line, archived-employee warnings.
+- **Employees:** edit dialog + row actions, archived disclosure with
+  unarchive, archived counts.
+- **Connectors:** GitHub is connectable for real — secretBox-sealed
+  credential storage, a fixture-verified adapter (verify token / PRs /
+  commits), a test-then-seal connect flow on the Plugins page, and a
+  catalog that reports per-workspace availability honestly.
+- **Export:** the workspace snapshot now carries the memory journal and
+  the latest 50 routine run outputs; the settings card names its true
+  contents and remembers the last export.
+- **Library:** document filtering by title or file name.
+
+
 All notable changes to Uni are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) with the repo's
 existing `type(scope): summary` commit vocabulary.

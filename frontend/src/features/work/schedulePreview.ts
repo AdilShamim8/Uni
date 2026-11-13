@@ -34,7 +34,7 @@ export function describeSchedule(schedule: string): string {
       ? 'Weekends'
       : dayOfWeek === '*'
         ? 'Daily'
-        : `Day of week ${dayOfWeek}`
+        : namedDays(dayOfWeek)
 
   const timeLabel = hour !== '*' ? `${pad(hour)}:${pad(minute)} UTC` : 'each hour'
 
@@ -47,4 +47,17 @@ export function describeSchedule(schedule: string): string {
 function pad(field: string): string {
   if (!/^\d+$/.test(field)) return field
   return field.padStart(2, '0')
+}
+
+/** RF-094 — weekday names a human says: 0/7 Sunday … 6 Saturday. */
+const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+
+function namedDays(dayOfWeek: string): string {
+  const parts = dayOfWeek.split(',')
+  const labels = parts.map((part) => {
+    if (/^[0-7]$/.test(part)) return `${DAY_NAMES[Number(part) % 7]}s`
+    return ''
+  })
+  if (labels.every((label) => label !== '')) return labels.join(' and ')
+  return `Day of week ${dayOfWeek}`
 }

@@ -10,6 +10,18 @@ import type { ServerMemoryJournalEntry } from '@/services/api/serverEmployees'
  * from the journal service. Entries are read-only here; the revert
  * action lands on top of this viewer (RF-067).
  */
+/** RF-106 — coarse past labels for journal entries (title keeps the exact time). */
+function describePast(instant: number, now = Date.now()): string {
+  const minutes = Math.round((now - instant) / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(instant).toLocaleDateString()
+}
+
 export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
   const journal = useServerSessionStore((state) => state.serverMemoryJournal)
   const loading = useServerSessionStore((state) => state.serverMemoryJournalLoading)
@@ -17,13 +29,17 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
   const loadServerMemoryJournal = useServerSessionStore((state) => state.loadServerMemoryJournal)
   const revertEntry = useServerSessionStore((state) => state.revertServerMemoryJournalEntryFor)
   const [open, setOpen] = useState(false)
+  // RF-098 — filter the audit trail by what happened.
+  const [kindFilter, setKindFilter] = useState<'all' | 'created' | 'edited' | 'deleted'>('all')
   const [revertTarget, setRevertTarget] = useState<ServerMemoryJournalEntry | null>(null)
 
   useEffect(() => {
     if (open) void loadServerMemoryJournal(employeeId)
   }, [open, employeeId, loadServerMemoryJournal])
 
-  const entries = journal[employeeId] ?? []
+  const entries = (journal[employeeId] ?? []).filter(
+    (entry) => kindFilter === 'all' || entry.kind === kindFilter,
+  )
 
   return (
     <section aria-label="Server memory journal" className="mt-3">
@@ -66,7 +82,34 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
           )}
           {!loading && !error && entries.length === 0 && (
             <p className="text-xs text-ink-faint">
-              No changes recorded yet — every add, edit, and delete lands here.
+              {kindFilter === 'all'
+                ? 'No changes recorded yet — every add, edit, and delete lands here.'
+                : `No ${kindFilter} entries in this view.`}
+            </p>
+          )}
+          {!loading && (journal[employeeId] ?? []).length > 0 && (
+            <label className="mb-1.5 flex w-fit items-center gap-1.5 text-[11px] text-ink-faint">
+              Show
+              <select
+                value={kindFilter}
+                onChange={(event) => {
+                  const value = event.target.value
+                  if (value === 'created' || value === 'edited' || value === 'deleted' || value === 'all') {
+                    setKindFilter(value)
+                  }
+                }}
+                className="rounded-[6px] border border-line bg-panel px-1.5 py-0.5 text-[11px] text-ink-soft"
+              >
+                <option value="all">all changes</option>
+                <option value="created">added</option>
+                <option value="edited">edits</option>
+                <option value="deleted">deletions</option>
+              </select>
+            </label>
+          )}
+          {!loading && (journal[employeeId] ?? []).length >= 50 && (
+            <p className="mb-1 text-[10.5px] text-ink-faint">
+              Showing the latest {(journal[employeeId] ?? []).length} entries.
             </p>
           )}
           {!loading && entries.length > 0 && (
@@ -82,7 +125,7 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
                       by {entry.actor}
                       {entry.via ? ` · ${entry.via}` : ''}
                     </span>
-                    <span>{new Date(entry.createdAt).toLocaleString()}</span>
+                    <span title={new Date(entry.createdAt).toLocaleString()}>{describePast(entry.createdAt)}</span>
                     {entry.canRevert ? (
                       <button
                         type="button"

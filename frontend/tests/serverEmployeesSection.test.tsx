@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { cleanup, screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderApp, setupAppTest } from './helpers'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerEmployee } from '@/services/api/serverEmployees'
@@ -62,7 +63,7 @@ function stubServer(employees: ServerEmployee[], signedIn = true): void {
         return jsonResponse(200, signedIn ? { session: { token: 't' }, user: USER } : null)
       }
       if (path === '/api/v1/me') return jsonResponse(200, ME)
-      if (path === '/api/v1/employees') {
+      if (path.startsWith('/api/v1/employees')) {
         return jsonResponse(200, { items: employees, page: { total: employees.length, limit: 50, offset: 0 } })
       }
       return jsonResponse(404, { code: 'not_found' })
@@ -79,6 +80,79 @@ describe('Agents page — server employees section', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it('opens the edit dialog from a row and saves through the store (RF-075)', async () => {
+    stubServer(EMPLOYEES)
+    const update = vi.fn(async () => true)
+    useServerSessionStore.setState({ updateServerEmployee: update })
+    renderApp('/agents')
+
+    const user = userEvent.setup()
+    await screen.findByText('Research Librarian')
+    await user.click(screen.getByRole('button', { name: /Edit employee Research Librarian/i }))
+    const dialog = await screen.findByRole('dialog')
+    expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toBe(
+      'Research Librarian',
+    )
+
+    await user.clear(within(dialog).getByLabelText('Name'))
+    await user.type(within(dialog).getByLabelText('Name'), 'Writer')
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    expect(update).toHaveBeenCalledWith('e-1', { name: 'Writer' })
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  it('counts archived employees in the header (RF-105)', async () => {
+    stubServer(EMPLOYEES)
+    renderApp('/agents')
+    expect(await screen.findByText(/1 on the server · 1 archived/i)).toBeInTheDocument()
+  })
+
+  it('lists archived employees behind the disclosure (RF-079)', async () => {
+    stubServer(EMPLOYEES)
+    renderApp('/agents')
+
+    // The active roster shows; the archived one waits behind the toggle.
+    expect(await screen.findByText('Research Librarian')).toBeInTheDocument()
+    const archivedSection = await screen.findByLabelText('Archived server employees')
+    // Hidden until the details element opens.
+    expect(archivedSection).not.toBeVisible()
+    const user = userEvent.setup()
+    await user.click(screen.getByText(/Archived \(/))
+    expect(within(archivedSection).getByText('Archived one')).toBeInTheDocument()
+    expect(within(archivedSection).getByText(/out of rotation/)).toBeInTheDocument()
+    // The archived employee never appears in the active roster area.
+    const activeList = screen.getByLabelText('Active server employees')
+    expect(within(activeList).queryByText('Archived one')).toBeNull()
+  })
+
+  it('archives an active employee from its row (RF-080)', async () => {
+    stubServer(EMPLOYEES)
+    const update = vi.fn(async () => true)
+    useServerSessionStore.setState({ updateServerEmployee: update })
+    renderApp('/agents')
+
+    const user = userEvent.setup()
+    await screen.findByText('Research Librarian')
+    await user.click(screen.getByRole('button', { name: /Archive employee Research Librarian/i }))
+    expect(update).toHaveBeenCalledWith('e-1', { archived: true })
+  })
+
+  it('unarchives an archived employee from the disclosure (RF-080)', async () => {
+    stubServer(EMPLOYEES)
+    const update = vi.fn(async () => true)
+    useServerSessionStore.setState({ updateServerEmployee: update })
+    renderApp('/agents')
+
+    const user = userEvent.setup()
+    await screen.findByText('Research Librarian')
+    await user.click(screen.getByText(/Archived \(/))
+    await user.click(screen.getByRole('button', { name: /Unarchive employee Archived one/i }))
+    expect(update).toHaveBeenCalledWith('e-2', { archived: false })
   })
 
   it('stays hidden when signed out', async () => {
@@ -102,8 +176,10 @@ describe('Agents page — server employees section', () => {
     const section = await screen.findByRole('region', { name: /server employees on this account/i })
     expect(withinText(section, 'Research Librarian')).toBe(true)
     expect(withinText(section, '1 on the server')).toBe(true)
-    // Archived employees never render.
-    expect(withinText(section, 'Archived one')).toBe(false)
+    // Archived employees never render in the ACTIVE roster; they live
+    // behind the disclosure (RF-079).
+    const activeList = within(section).getByLabelText('Active server employees')
+    expect(within(activeList).queryByText('Archived one')).toBeNull()
   })
 
   it('shows the honest empty state when the account has none', async () => {

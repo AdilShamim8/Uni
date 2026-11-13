@@ -140,13 +140,14 @@ describe('routine CRUD (T030)', () => {
     const routine = created.json() as { id: string; sessionId: string; employeeId: string; employeeName: string | null }
     expect(routine.employeeName).toBe('Researcher')
 
-    // The provisioned session exists before the re-pin.
+    // The provisioned session exists before the re-pin, pinned to the
+    // first employee (RF-071 made this externally verifiable).
     const before = await testApp.app.inject({
       method: 'GET',
       url: `/api/v1/agent/sessions/${routine.sessionId}`,
       headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
     })
-    expect(before.statusCode).toBe(200)
+    expect(((before.json() as { employeeId: string | null }).employeeId)).toBe(first.id)
 
     // Re-pin to the second employee.
     const repinned = await testApp.app.inject({
@@ -160,14 +161,14 @@ describe('routine CRUD (T030)', () => {
     expect(after.employeeId).toBe(second.id)
     expect(after.employeeName).toBe('Writer')
 
-    // The re-pin followed into the provisioned session (patchSession ran
-    // server-side; the session is still there and healthy).
+    // The re-pin followed into the provisioned session: its employeeId
+    // now points at the new pin.
     const session = await testApp.app.inject({
       method: 'GET',
       url: `/api/v1/agent/sessions/${routine.sessionId}`,
       headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
     })
-    expect(session.statusCode).toBe(200)
+    expect(((session.json() as { employeeId: string | null }).employeeId)).toBe(second.id)
 
     // Unpin: null clears both the routine and the session.
     const unpinned = await testApp.app.inject({
@@ -183,7 +184,7 @@ describe('routine CRUD (T030)', () => {
       url: `/api/v1/agent/sessions/${routine.sessionId}`,
       headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
     })
-    expect(session2.statusCode).toBe(200)
+    expect(((session2.json() as { employeeId: string | null }).employeeId)).toBeNull()
   })
 
   it('rejects a re-pin to a foreign workspace employee (RF-057)', async () => {
