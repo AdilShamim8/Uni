@@ -1,7 +1,14 @@
 import { desc, eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import * as schema from '../../db/schema.js'
-import { employees, memoryNotes, routines, fileDocuments, memoryJournal } from '../../db/schema.js'
+import {
+  employees,
+  memoryNotes,
+  routines,
+  fileDocuments,
+  memoryJournal,
+  routineRuns,
+} from '../../db/schema.js'
 import { workspaceExportDtoSchema, type WorkspaceExportDto } from '@uni/contracts'
 
 /**
@@ -17,7 +24,7 @@ export async function buildWorkspaceExport(
   db: WorkspaceDatabase,
   workspaceId: string,
 ): Promise<WorkspaceExportDto> {
-  const [employeeRows, noteRows, journalRows, routineRows, fileRows] = await Promise.all([
+  const [employeeRows, noteRows, journalRows, routineRows, runRows, fileRows] = await Promise.all([
     db.select().from(employees).where(eq(employees.workspaceId, workspaceId)).orderBy(desc(employees.updatedAt)),
     db.select().from(memoryNotes).where(eq(memoryNotes.workspaceId, workspaceId)).orderBy(desc(memoryNotes.updatedAt)),
     db
@@ -27,6 +34,12 @@ export async function buildWorkspaceExport(
       .orderBy(desc(memoryJournal.createdAt))
       .limit(200),
     db.select().from(routines).where(eq(routines.workspaceId, workspaceId)).orderBy(desc(routines.createdAt)),
+    db
+      .select()
+      .from(routineRuns)
+      .where(eq(routineRuns.workspaceId, workspaceId))
+      .orderBy(desc(routineRuns.createdAt))
+      .limit(50),
     db.select().from(fileDocuments).where(eq(fileDocuments.workspaceId, workspaceId)).orderBy(desc(fileDocuments.createdAt)),
   ])
 
@@ -82,6 +95,18 @@ export async function buildWorkspaceExport(
       createdAt: row.createdAt.getTime(),
       updatedAt: row.updatedAt.getTime(),
     })),
+    routineRuns: runRows.map((row) => ({
+      id: row.id,
+      routineId: row.routineId,
+      scheduledFor: row.scheduledFor.getTime(),
+      status: row.status,
+      agentRunId: row.agentRunId,
+      outputText: row.outputText,
+      errorCode: row.errorCode,
+      errorMessage: row.errorMessage,
+      terminalAt: row.terminalAt ? row.terminalAt.getTime() : null,
+      createdAt: row.createdAt.getTime(),
+    })),
     files: fileRows.map((row) => ({
       id: row.id,
       title: row.title,
@@ -98,6 +123,7 @@ export async function buildWorkspaceExport(
       memoryNotes: noteRows.length,
       memoryJournal: journalRows.length,
       routines: routineRows.length,
+      routineRuns: runRows.length,
       files: fileRows.length,
     },
   }

@@ -74,6 +74,19 @@ export const exportMemoryJournalEntrySchema = z.object({
   createdAt: z.number().int().nonnegative(),
 })
 
+export const exportRoutineRunSchema = z.object({
+  id: z.string().min(1),
+  routineId: z.string().min(1),
+  scheduledFor: z.number().int().nonnegative(),
+  status: z.string(),
+  agentRunId: z.string().nullable(),
+  outputText: z.string(),
+  errorCode: z.string().nullable(),
+  errorMessage: z.string().nullable(),
+  terminalAt: z.number().int().nonnegative().nullable(),
+  createdAt: z.number().int().nonnegative(),
+})
+
 export const workspaceExportDtoSchema = z.object({
   /** Format identity: exports stay importable if the shape evolves. */
   format: z.literal('uni.workspace.export/1'),
@@ -83,6 +96,8 @@ export const workspaceExportDtoSchema = z.object({
   /** Latest journal entries (bounded) — the audit trail travels too. */
   memoryJournal: z.array(exportMemoryJournalEntrySchema),
   routines: z.array(exportRoutineSchema),
+  /** Latest routine runs (bounded) — the fire history travels too. */
+  routineRuns: z.array(exportRoutineRunSchema),
   files: z.array(exportFileDocumentSchema),
   /** Counts derived from the arrays above — same rows, no drift. */
   counts: z.object({
@@ -90,6 +105,7 @@ export const workspaceExportDtoSchema = z.object({
     memoryNotes: z.number().int().nonnegative(),
     memoryJournal: z.number().int().nonnegative(),
     routines: z.number().int().nonnegative(),
+    routineRuns: z.number().int().nonnegative(),
     files: z.number().int().nonnegative(),
   }),
 })
