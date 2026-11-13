@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Pencil } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerRoutine, ServerRoutineRun } from '@/services/api/serverRoutines'
 import { Dialog } from '@/components/ui/Dialog'
@@ -24,9 +25,12 @@ const STATUS_TONE: Record<ServerRoutineRun['status'], string> = {
 export function RoutineDetailDialog({
   routine,
   onClose,
+  onEdit,
 }: {
   routine: ServerRoutine | null
   onClose: () => void
+  /** RF-063 — when provided, the footer offers Edit for this routine. */
+  onEdit?: (routine: ServerRoutine) => void
 }) {
   const runs = useServerSessionStore((state) => state.serverRoutineRuns)
   const runsLoading = useServerSessionStore((state) => state.serverRoutineRunsLoading)
@@ -52,9 +56,17 @@ export function RoutineDetailDialog({
       title={routine.name}
       size="lg"
       footer={
-        <Button variant="ghost" onClick={handleClose}>
-          Close
-        </Button>
+        <>
+          {onEdit && routine && (
+            <Button variant="secondary" onClick={() => onEdit(routine)}>
+              <Pencil size={13} />
+              Edit
+            </Button>
+          )}
+          <Button variant="ghost" onClick={handleClose}>
+            Close
+          </Button>
+        </>
       }
     >
       <div className="flex flex-col gap-3">
