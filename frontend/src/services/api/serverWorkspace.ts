@@ -55,10 +55,40 @@ export interface ServerWorkspaceExport {
     charCount: number
     createdAt: number
   }>
+  /** Latest journal entries (bounded, RF-084). */
+  memoryJournal: Array<{
+    id: string
+    employeeId: string
+    noteId: string | null
+    actor: string
+    via: string
+    kind: string
+    diff: string
+    added: number
+    removed: number
+    canRevert: boolean
+    revertUnavailableReason: string | null
+    createdAt: number
+  }>
+  /** Latest routine runs (bounded, RF-085). */
+  routineRuns: Array<{
+    id: string
+    routineId: string
+    scheduledFor: number
+    status: string
+    agentRunId: string | null
+    outputText: string
+    errorCode: string | null
+    errorMessage: string | null
+    terminalAt: number | null
+    createdAt: number
+  }>
   counts: {
     employees: number
     memoryNotes: number
+    memoryJournal: number
     routines: number
+    routineRuns: number
     files: number
   }
 }
