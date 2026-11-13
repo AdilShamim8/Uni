@@ -1,5 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
-import { cleanup, screen, waitFor } from '@testing-library/react'
+import { cleanup, screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { renderApp, setupAppTest } from './helpers'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerEmployee } from '@/services/api/serverEmployees'
@@ -79,6 +80,30 @@ describe('Agents page — server employees section', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+  })
+
+  it('opens the edit dialog from a row and saves through the store (RF-075)', async () => {
+    stubServer(EMPLOYEES)
+    const update = vi.fn(async () => true)
+    useServerSessionStore.setState({ updateServerEmployee: update })
+    renderApp('/agents')
+
+    const user = userEvent.setup()
+    await screen.findByText('Research Librarian')
+    await user.click(screen.getByRole('button', { name: /Edit employee Research Librarian/i }))
+    const dialog = await screen.findByRole('dialog')
+    expect((within(dialog).getByLabelText('Name') as HTMLInputElement).value).toBe(
+      'Research Librarian',
+    )
+
+    await user.clear(within(dialog).getByLabelText('Name'))
+    await user.type(within(dialog).getByLabelText('Name'), 'Writer')
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+
+    expect(update).toHaveBeenCalledWith('e-1', { name: 'Writer' })
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
   })
 
   it('stays hidden when signed out', async () => {
