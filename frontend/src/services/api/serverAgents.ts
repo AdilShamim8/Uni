@@ -21,6 +21,8 @@ export interface ServerAgentSession {
   status: AgentSessionStatus
   providerId: string | null
   modelId: string | null
+  /** The employee this session acts as (null = workspace default). RF-071. */
+  employeeId: string | null
   rootDir: string
   tools: string[]
   archived: boolean

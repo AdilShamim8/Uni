@@ -85,6 +85,7 @@ describe('RoutinesSection', () => {
       createServerRoutineFor: vi.fn(async () => true),
       setServerRoutinePausedFor: vi.fn(async () => true),
       editServerRoutineFor: vi.fn(async () => true),
+      setServerRoutineArchivedFor: vi.fn(async () => true),
       removeServerRoutineFor: vi.fn(async () => true),
     })
   })
@@ -197,6 +198,18 @@ describe('RoutinesSection', () => {
 
     await user.click(screen.getByRole('button', { name: /Pause/ }))
     expect(pause).toHaveBeenCalledWith('r-1', true)
+  })
+
+  it('hides archived rows in the default view (RF-097)', () => {
+    useServerSessionStore.setState({
+      serverRoutines: [ROUTINE, { ...ROUTINE, id: 'r-2', name: 'Old digest', archived: true }],
+    })
+    render(<RoutinesSection />)
+
+    expect(screen.getByText('Morning brief')).toBeInTheDocument()
+    expect(screen.queryByText('Old digest')).toBeNull()
+    // The archived toggle is still the way to see it.
+    expect(screen.getByLabelText('Show archived routines')).toBeInTheDocument()
   })
 
   it('delete asks for confirmation first', async () => {

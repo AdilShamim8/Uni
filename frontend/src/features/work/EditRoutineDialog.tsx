@@ -48,6 +48,17 @@ export function EditRoutineDialog({
   // target changes (no effect-driven setState cascades).
   if (!routine) return null
 
+  // RF-101 — keep the CURRENT pin selectable even when its employee is
+  // archived (the caller's list excludes archived rows); the prefill
+  // must show the truth, and a name-only save must not re-pin.
+  const pinOptions =
+    routine.employeeId && !employees.some((employee) => employee.id === routine.employeeId)
+      ? [
+          { id: routine.employeeId, name: routine.employeeName ?? 'Pinned employee (archived)' },
+          ...employees,
+        ]
+      : employees
+
   const patch = diffPatch(routine, form)
 
   async function submit() {
@@ -86,7 +97,7 @@ export function EditRoutineDialog({
         <RoutineFormFields
           state={form}
           onChange={(changed) => setForm((current) => ({ ...current, ...changed }))}
-          employees={employees}
+          employees={pinOptions}
         />
         {error && (
           <p role="alert" className="text-[12.5px] text-danger">

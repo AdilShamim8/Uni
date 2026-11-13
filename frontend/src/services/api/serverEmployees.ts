@@ -25,6 +25,8 @@ export interface ServerEmployee {
 export interface ServerMemoryNote {
   id: string
   text: string
+  /** Optimistic-concurrency token; a PUT must present the hash it read. */
+  contentHash: string
   createdAt: number
 }
 
@@ -114,6 +116,23 @@ export async function addServerMemoryNote(
   return apiFetch<ServerMemoryNote>(
     `${API_ROOT}/employees/${encodeURIComponent(employeeId)}/memory`,
     { method: 'POST', body: JSON.stringify({ text }) },
+  )
+}
+
+/**
+ * RF-081 — edit a note server-side. The backend guards on the hash the
+ * caller last saw: a stale hash is rejected with 409 + the current
+ * note, so concurrent edits never silently overwrite each other.
+ */
+export async function putServerMemoryNote(
+  employeeId: string,
+  noteId: string,
+  text: string,
+  expectedHash: string,
+): Promise<ServerMemoryNote> {
+  return apiFetch<ServerMemoryNote>(
+    `${API_ROOT}/employees/${encodeURIComponent(employeeId)}/memory/${encodeURIComponent(noteId)}`,
+    { method: 'PUT', body: JSON.stringify({ text, expectedHash }) },
   )
 }
 

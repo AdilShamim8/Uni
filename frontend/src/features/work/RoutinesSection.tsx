@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarClock, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react'
+import { Archive, ArchiveRestore, CalendarClock, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerRoutine } from '@/services/api/serverRoutines'
 import { Button } from '@/components/ui/Button'
@@ -7,6 +7,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { describeSchedule } from './schedulePreview'
+import { relativeFuture } from './relativeTime'
 import {
   EMPTY_ROUTINE_FORM,
   RoutineFormFields,
@@ -29,12 +30,22 @@ export function RoutinesSection() {
   const serverRoutinesLoading = useServerSessionStore((state) => state.serverRoutinesLoading)
   const serverRoutinesError = useServerSessionStore((state) => state.serverRoutinesError)
   const loadServerRoutines = useServerSessionStore((state) => state.loadServerRoutines)
+  const [showArchived, setShowArchived] = useState(false)
+  // RF-097 — the default view lists active routines only; an archived
+  // row (e.g. just archived from this list) disappears immediately
+  // instead of lingering until the next reload.
+  const visibleRoutines = showArchived
+    ? serverRoutines
+    : serverRoutines.filter((routine) => !routine.archived)
   const createServerRoutineFor = useServerSessionStore((state) => state.createServerRoutineFor)
   const setServerRoutinePausedFor = useServerSessionStore(
     (state) => state.setServerRoutinePausedFor,
   )
   const removeServerRoutineFor = useServerSessionStore((state) => state.removeServerRoutineFor)
   const editServerRoutineFor = useServerSessionStore((state) => state.editServerRoutineFor)
+  const setServerRoutineArchivedFor = useServerSessionStore(
+    (state) => state.setServerRoutineArchivedFor,
+  )
   const serverEmployees = useServerSessionStore((state) => state.serverEmployees)
   const loadServerEmployees = useServerSessionStore((state) => state.loadServerEmployees)
   const [createOpen, setCreateOpen] = useState(false)
@@ -43,9 +54,9 @@ export function RoutinesSection() {
   const [detailTarget, setDetailTarget] = useState<ServerRoutine | null>(null)
 
   useEffect(() => {
-    void loadServerRoutines()
+    void loadServerRoutines(showArchived)
     void loadServerEmployees()
-  }, [loadServerRoutines, loadServerEmployees])
+  }, [loadServerRoutines, loadServerEmployees, showArchived])
 
   return (
     <section aria-label="Server routines" className="mt-10">
@@ -54,6 +65,16 @@ export function RoutinesSection() {
           <CalendarClock size={15} className="text-ink-faint" aria-hidden="true" />
           Routines
         </h3>
+        <label className="mr-auto flex w-fit cursor-pointer items-center gap-1.5 text-[12px] text-ink-faint">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(event) => setShowArchived(event.target.checked)}
+            className="h-3.5 w-3.5 accent-[var(--color-accent)]"
+            aria-label="Show archived routines"
+          />
+          Archived
+        </label>
         <Button variant="secondary" size="sm" onClick={() => setCreateOpen(true)}>
           <Plus size={14} />
           New routine
@@ -74,14 +95,14 @@ export function RoutinesSection() {
         </p>
       )}
 
-      {serverRoutines.length === 0 && !serverRoutinesLoading && (
+      {visibleRoutines.length === 0 && !serverRoutinesLoading && (
         <p className="mt-3 text-[13px] text-ink-faint">
           No routines yet — schedule one and the server runs it for you.
         </p>
       )}
 
       <ul className="mt-3 flex flex-col gap-2" aria-label="Server routines list">
-        {serverRoutines.map((routine) => (
+        {visibleRoutines.map((routine) => (
           <li
             key={routine.id}
             className="rounded-group border border-line bg-raised px-3.5 py-3"
@@ -94,10 +115,13 @@ export function RoutinesSection() {
               >
                 {routine.name}
               </button>
-              <StatusPill
-                label={routine.paused ? 'Paused' : 'Active'}
-                tone={routine.paused ? 'neutral' : 'accent'}
-              />
+              <div className="flex shrink-0 items-center gap-1.5">
+                {routine.archived && <StatusPill label="Archived" tone="neutral" />}
+                <StatusPill
+                  label={routine.paused ? 'Paused' : 'Active'}
+                  tone={routine.paused ? 'neutral' : 'accent'}
+                />
+              </div>
             </div>
             <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">
               {routine.prompt}
@@ -114,7 +138,10 @@ export function RoutinesSection() {
                 <span>catch-up {routine.catchUpMinutes}m</span>
               )}
               {routine.nextFireAt !== null ? (
-                <span>next {new Date(routine.nextFireAt).toLocaleString()}</span>
+                <span>
+                  next {new Date(routine.nextFireAt).toLocaleString()} (
+                  {relativeFuture(routine.nextFireAt)})
+                </span>
               ) : routine.paused ? null : (
                 <span>no upcoming fire in the next 7 days</span>
               )}
@@ -127,6 +154,25 @@ export function RoutinesSection() {
                 <Pencil size={13} />
                 Edit
               </Button>
+              {routine.archived ? (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void setServerRoutineArchivedFor(routine.id, false)}
+                >
+                  <ArchiveRestore size={13} />
+                  Unarchive
+                </Button>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void setServerRoutineArchivedFor(routine.id, true)}
+                >
+                  <Archive size={13} />
+                  Archive
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"

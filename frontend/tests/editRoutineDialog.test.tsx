@@ -137,6 +137,24 @@ describe('EditRoutineDialog', () => {
     })
   })
 
+  it('shows an archived pin honestly and never re-pins on unrelated saves (RF-101)', async () => {
+    const user = userEvent.setup()
+    const onSave = renderDialog(
+      { ...ROUTINE, employeeId: 'emp-9', employeeName: 'Retired helper' },
+    )
+    const dialog = await screen.findByRole('dialog')
+
+    expect(within(dialog).getByLabelText('Run as employee (optional)')).toHaveValue('emp-9')
+    expect(within(dialog).getByText(/Retired helper/)).toBeInTheDocument()
+
+    await user.clear(within(dialog).getByLabelText('Name'))
+    await user.type(within(dialog).getByLabelText('Name'), 'Renamed')
+    await user.click(within(dialog).getByRole('button', { name: 'Save changes' }))
+    await waitFor(() => {
+      expect(onSave).toHaveBeenCalledWith('r-1', { name: 'Renamed' })
+    })
+  })
+
   it('keeps the dialog open with an honest message when the server rejects', async () => {
     const user = userEvent.setup()
     renderDialog(ROUTINE, vi.fn(async () => false))

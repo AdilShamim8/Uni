@@ -81,6 +81,8 @@ export const agentSessionDtoSchema = z.object({
   /** Soft pin: resolved at send time, survives provider deletion. */
   providerId: z.string().nullable(),
   modelId: z.string().nullable(),
+  /** The employee this session acts as (null = workspace default). */
+  employeeId: z.string().nullable(),
   /** Directory root file tools are confined to (relative to the workspace agent root). */
   rootDir: z.string().min(1).max(500),
   /** Tool names enabled for this session (roster names, see agentTools.ts). */

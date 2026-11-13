@@ -7,6 +7,24 @@ import { describeSchedule } from '@/features/work/schedulePreview'
  * nextFireAt.
  */
 
+describe('weekday names (RF-094)', () => {
+  it('names single weekdays the way a human says them', () => {
+    expect(describeSchedule('0 9 * * 0')).toBe('Sundays at 09:00 UTC')
+    expect(describeSchedule('0 9 * * 1')).toBe('Mondays at 09:00 UTC')
+    expect(describeSchedule('30 17 * * 5')).toBe('Fridays at 17:30 UTC')
+  })
+
+  it('names lists of weekdays and accepts 7 as Sunday', () => {
+    expect(describeSchedule('0 9 * * 0,6')).toBe('Weekends at 09:00 UTC')
+    expect(describeSchedule('0 9 * * 6,7')).toBe('Saturdays and Sundays at 09:00 UTC')
+  })
+
+  it('falls back to the raw field for anything exotic', () => {
+    expect(describeSchedule('0 9 * * 1-3')).toBe('Day of week 1-3 at 09:00 UTC')
+    expect(describeSchedule('0 9 * * mon')).toBe('Day of week mon at 09:00 UTC')
+  })
+})
+
 describe('describeSchedule', () => {
   it('labels every-minute expressions', () => {
     expect(describeSchedule('* * * * *')).toBe('Every minute')
@@ -26,7 +44,7 @@ describe('describeSchedule', () => {
   it('labels monthly and rarely-seen shapes honestly (falls back to raw)', () => {
     expect(describeSchedule('0 9 1 * *')).toBe('Day 1 of the month at 09:00 UTC')
     expect(describeSchedule('0 9 * 3 *')).toBe('0 9 * 3 * (month 3)')
-    expect(describeSchedule('0 9 * * 2,4')).toBe('Day of week 2,4 at 09:00 UTC')
+    expect(describeSchedule('0 9 * * 2,4')).toBe('Tuesdays and Thursdays at 09:00 UTC')
   })
 
   it('passes through malformed expressions unchanged', () => {

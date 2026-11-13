@@ -152,6 +152,19 @@ describe('RoutineDetailDialog', () => {
     })
   })
 
+  it('shows the catch-up window and archived state honestly (RF-103)', async () => {
+    useServerSessionStore.setState({ serverRoutines: [] })
+    render(
+      <RoutineDetailDialog
+        routine={{ ...ROUTINE, catchUpMinutes: 120, archived: true }}
+        onClose={() => {}}
+      />,
+    )
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getAllByText(/catch-up 120m after downtime/i).length).toBeGreaterThan(0)
+    expect(within(dialog).getByText('archived')).toBeInTheDocument()
+  })
+
   it('offers Edit through the footer and hands the routine back (RF-063)', async () => {
     const onEdit = vi.fn()
     useServerSessionStore.setState({ serverRoutines: [ROUTINE] })

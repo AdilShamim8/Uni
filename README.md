@@ -685,3 +685,17 @@ PR checklist live in [CONTRIBUTING.md](CONTRIBUTING.md). The one rule:
 
 Built to prove a premium AI workspace can be free, private, and honest.
 Enjoy! ✨
+
+
+## Recent additions (November 2026)
+
+- **Routine editing** — rename, re-prompt, reschedule, change catch-up, and
+  re-pin an employee on any routine; the provisioned session follows the pin.
+- **Memory audit journal** — every add/edit/delete to an employee's memory
+  is journaled server-side, viewable per employee, and revertible.
+- **Archived views** — routines and employees archive out of rotation and
+  come back the same way; the UI never hides that state.
+- **GitHub connector** — store a read-only PAT (sealed at rest), test it
+  against the real API, and the catalog reports your workspace's truth.
+- **Complete workspace export** — employees, memory notes + journal,
+  routines + latest run outputs, knowledge files.
