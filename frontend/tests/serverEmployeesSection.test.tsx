@@ -106,6 +106,12 @@ describe('Agents page — server employees section', () => {
     })
   })
 
+  it('counts archived employees in the header (RF-105)', async () => {
+    stubServer(EMPLOYEES)
+    renderApp('/agents')
+    expect(await screen.findByText(/1 on the server · 1 archived/i)).toBeInTheDocument()
+  })
+
   it('lists archived employees behind the disclosure (RF-079)', async () => {
     stubServer(EMPLOYEES)
     renderApp('/agents')
