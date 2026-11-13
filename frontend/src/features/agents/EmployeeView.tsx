@@ -658,6 +658,7 @@ export function MemoryPanel({ agentId }: { agentId: string }) {
   const serverMemoryNotes = useServerSessionStore((state) => state.serverMemoryNotes)
   const serverMemoryLoading = useServerSessionStore((state) => state.serverMemoryLoading)
   const serverMemoryError = useServerSessionStore((state) => state.serverMemoryError)
+  const serverEmployees = useServerSessionStore((state) => state.serverEmployees)
   const loadServerMemoryNotes = useServerSessionStore((state) => state.loadServerMemoryNotes)
   const addServerMemoryNoteFor = useServerSessionStore((state) => state.addServerMemoryNoteFor)
   const removeServerMemoryNote = useServerSessionStore((state) => state.removeServerMemoryNote)
@@ -745,6 +746,19 @@ export function MemoryPanel({ agentId }: { agentId: string }) {
       </div>
       {inServerMode && linkedEmployeeId ? (
         <div aria-label="Server memory notes">
+          {(() => {
+            // RF-096 — an archived employee is out of rotation; the
+            // thread must say so instead of failing silently later.
+            const linked = linkedEmployeeId
+              ? serverEmployees.find((employee) => employee.id === linkedEmployeeId)
+              : undefined
+            return linked?.archived ? (
+              <p role="warning" className="mb-2 rounded-control bg-subtle px-2.5 py-1.5 text-[12px] text-ink-soft">
+                This employee is archived — out of rotation for new assignments. Re-activate it
+                from the Agents page to schedule work again.
+              </p>
+            ) : null
+          })()}
           {serverMemoryLoading && <p className="px-1 text-xs text-ink-faint">Loading notes…</p>}
           {serverMemoryError && (
             <p role="alert" className="px-1 text-xs text-danger">{serverMemoryError}</p>

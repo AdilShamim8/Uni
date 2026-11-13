@@ -180,6 +180,33 @@ describe('MemoryPanel dual-mode (T016)', () => {
     expect(screen.queryByLabelText('Edit server memory note')).toBeNull()
   })
 
+  it('warns honestly when the linked employee is archived (RF-096)', async () => {
+    useServerSessionStore.setState({
+      status: 'signed-in',
+      account: null,
+      serverEmployees: [
+        {
+          id: 'emp-1',
+          name: 'Archived helper',
+          description: '',
+          instructions: '',
+          category: 'personal',
+          providerId: null,
+          modelId: null,
+          tools: [],
+          starters: [],
+          archived: true,
+          createdAt: 1,
+          updatedAt: 1,
+        },
+      ],
+    })
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [] }))
+    render(<MemoryPanel agentId={AGENT_ID} />)
+
+    expect(await screen.findByRole('warning')).toHaveTextContent(/archived — out of rotation/i)
+  })
+
   it('server mode deletes through the service with an honest error path', async () => {
     useServerSessionStore.setState({ status: 'signed-in', account: null })
     fetchMock.mockResolvedValueOnce(
