@@ -33,6 +33,76 @@ const ENTRY: ServerMemoryJournalEntry = {
   createdAt: 123,
 }
 
+describe('server memory note editing (RF-081)', () => {
+  const fetchMock = vi.fn()
+  const NOTE = { id: 'note-1', text: 'old text', contentHash: 'a'.repeat(64), createdAt: 1 }
+
+  beforeEach(() => {
+    vi.stubGlobal('fetch', fetchMock)
+    fetchMock.mockReset()
+    useServerSessionStore.setState({
+      status: 'signed-in',
+      sessionGeneration: 1,
+      serverMemoryNotes: { 'emp-1': [NOTE] },
+      serverMemoryJournal: {},
+      serverMemoryError: null,
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('saves an edit with the hash it read and replaces the note', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { ...NOTE, text: 'new text', contentHash: 'b'.repeat(64) }),
+    )
+    const result = await useServerSessionStore
+      .getState()
+      .editServerMemoryNoteFor('emp-1', 'note-1', 'new text')
+    expect(result).toBe('saved')
+    const note = useServerSessionStore.getState().serverMemoryNotes['emp-1']![0]!
+    expect(note.text).toBe('new text')
+    expect(note.contentHash).toBe('b'.repeat(64))
+    // The PUT presented the hash the caller had read.
+    const init = fetchMock.mock.calls[0]![1] as RequestInit
+    expect(JSON.parse(init.body as string)).toEqual({
+      text: 'new text',
+      expectedHash: 'a'.repeat(64),
+    })
+  })
+
+  it('reports a conflict and reloads the honest state on 409', async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        jsonResponse(409, { message: 'This note changed since you opened it.' }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse(200, {
+          items: [{ ...NOTE, text: 'someone else won', contentHash: 'c'.repeat(64) }],
+        }),
+      )
+    const result = await useServerSessionStore
+      .getState()
+      .editServerMemoryNoteFor('emp-1', 'note-1', 'my stale edit')
+    expect(result).toBe('conflict')
+    // The store now holds the winner's version, not the stale edit.
+    expect(useServerSessionStore.getState().serverMemoryNotes['emp-1']![0]!.text).toBe(
+      'someone else won',
+    )
+  })
+
+  it('reports an error and keeps state untouched on other failures', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(500, { message: 'boom' }))
+    const result = await useServerSessionStore
+      .getState()
+      .editServerMemoryNoteFor('emp-1', 'note-1', 'new text')
+    expect(result).toBe('error')
+    expect(useServerSessionStore.getState().serverMemoryError).toBeTruthy()
+    expect(useServerSessionStore.getState().serverMemoryNotes['emp-1']![0]!.text).toBe('old text')
+  })
+})
+
 describe('server memory journal store (RF-065)', () => {
   const fetchMock = vi.fn()
 
