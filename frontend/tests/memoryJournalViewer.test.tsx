@@ -95,8 +95,52 @@ describe('MemoryJournalViewer (RF-066)', () => {
     await user.click(screen.getByRole('button', { name: /Show change history/i }))
     const list = await screen.findByLabelText('Journal entries')
     const items = within(list).getAllByRole('listitem')
-    expect(within(items[0]!).getByText('revertible')).toBeInTheDocument()
+    // Revertible entries offer the action; others say why not.
+    expect(within(items[0]!).getByRole('button', { name: /Revert change from/i })).toBeInTheDocument()
+    expect(
+      within(items[1]!).queryByRole('button', { name: /Revert change from/i }),
+    ).toBeNull()
     expect(within(items[1]!).getByText('history before this entry')).toBeInTheDocument()
+  })
+
+  it('reverts behind a confirmation and goes through the store (RF-067)', async () => {
+    const user = userEvent.setup()
+    const revert = vi.fn(async () => true)
+    useServerSessionStore.setState({ revertServerMemoryJournalEntryFor: revert })
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [ENTRY] }))
+    render(<MemoryJournalViewer employeeId="emp-1" />)
+
+    await user.click(screen.getByRole('button', { name: /Show change history/i }))
+    const list = await screen.findByLabelText('Journal entries')
+
+    await user.click(within(list).getByRole('button', { name: /Revert change from/i }))
+    // The confirmation explains what a revert does before anything fires.
+    const confirm = await screen.findByRole('dialog')
+    expect(within(confirm).getByText(/returns to its previous content/i)).toBeInTheDocument()
+    expect(revert).not.toHaveBeenCalled()
+
+    await user.click(within(confirm).getByRole('button', { name: 'Revert' }))
+    expect(revert).toHaveBeenCalledWith('emp-1', 'j-1')
+  })
+
+  it('cancelling the confirmation reverts nothing (RF-067)', async () => {
+    const user = userEvent.setup()
+    const revert = vi.fn(async () => true)
+    useServerSessionStore.setState({ revertServerMemoryJournalEntryFor: revert })
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { items: [ENTRY] }))
+    render(<MemoryJournalViewer employeeId="emp-1" />)
+
+    await user.click(screen.getByRole('button', { name: /Show change history/i }))
+    const list = await screen.findByLabelText('Journal entries')
+
+    await user.click(within(list).getByRole('button', { name: /Revert change from/i }))
+    const confirm = await screen.findByRole('dialog')
+    await user.click(within(confirm).getByRole('button', { name: 'Cancel' }))
+
+    expect(revert).not.toHaveBeenCalled()
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
   })
 
   it('shows the honest empty state and the honest error', async () => {
