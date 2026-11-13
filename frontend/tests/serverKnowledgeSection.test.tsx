@@ -3,6 +3,7 @@ import { cleanup, fireEvent, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderApp, setupAppTest } from './helpers'
 import { useServerSessionStore } from '@/state/serverSessionStore'
+import { useKnowledgeStore } from '@/state/knowledgeStore'
 
 /**
  * P10 — server knowledge on the Library page: text-file ingestion with
@@ -199,5 +200,43 @@ describe('ServerKnowledgeSection on the Library page', () => {
     await waitFor(() => {
       expect(screen.queryByText('Q3 planning')).not.toBeInTheDocument()
     })
+  })
+})
+
+
+/** RF-100 — the document filter narrows by title and file name. */
+describe('knowledge document filter (RF-100)', () => {
+  beforeEach(() => {
+    cleanup()
+    setupAppTest()
+  })
+
+  it('narrows the list live and says so when nothing matches', async () => {
+    const docs: ReturnType<typeof useKnowledgeStore.getState>['documents'] = {}
+    for (const n of [1, 2, 3, 4]) {
+      docs[`d-${n}`] = {
+        id: `d-${n}`,
+        title: n % 2 === 0 ? `Release notes ${n}` : `Q${n} planning`,
+        fileName: n % 2 === 0 ? `release-${n}.md` : `plan-${n}.md`,
+        source: 'file',
+        chunkCount: 2,
+        charCount: 100,
+        createdAt: n,
+        updatedAt: n,
+      }
+    }
+    useKnowledgeStore.setState({ documents: docs })
+    renderApp('/library')
+
+    await screen.findByText('Q1 planning')
+    expect(screen.getAllByRole('listitem')).toHaveLength(4)
+
+    await userEvent.type(screen.getByLabelText('Filter documents'), 'release')
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getByText('Release notes 2')).toBeInTheDocument()
+
+    await userEvent.clear(screen.getByLabelText('Filter documents'))
+    await userEvent.type(screen.getByLabelText('Filter documents'), 'zzz')
+    expect(await screen.findByText('No documents match this filter.')).toBeInTheDocument()
   })
 })
