@@ -113,7 +113,10 @@ bulk push. This file is the count of record for the effort.
 | 42 | RF-044 | effort | PR #63 merged to main (`f97c7d642`): every failing main check green (Backend/Frontend/Contracts/verify/Vercel build+deploy) | docs | `a0a60c567` | pushed ✓ |
 | 43 | RF-045 | B07 | Workspace export endpoint: contracts + service + route (complete honest snapshot, workspace-isolated, counts derived from rows) + 2 integration tests | impl | `e358309d7` | pushed ✓ |
 | 44 | RF-046 | B07 | Server workspace export UI in Settings → Data (signed-in card, honest busy/error states, dated download) + 3 tests | impl | `212ecaa17` | pushed ✓ |
-| 45 | RF-047 | effort | Session-3 checkpoint: these rows, counters, verification | docs | (this commit) | pushed ✓ |
+| 45 | RF-047 | effort | Session-3 checkpoint: these rows, counters, verification | docs | `4c7571b82` | pushed ✓ |
+| 46 | RF-048 | CI | Complete the account fixture in the export test (CI typecheck: workspace field required) | fix | `cab409f5e` | pushed ✓ |
+| 47 | RF-049 | CI | Harness: retry embedded-PG startup with a fresh port + post-start TCP probe (CI port-race flake in agent-admission) | test | `03e732478` | pushed ✓ |
+| 48 | RF-050 | effort | Session-3 close: PR #74 merged (`9bb4dfab2`), main green on every check | docs | (this commit) | pushed ✓ |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -141,18 +144,19 @@ one in order (the procedure is scripted in
 
 - `new_commits`: 43 (RF-001…RF-043; 37 implementation/test/fix + 5 docs/effort)
 - `new_implementation_commits`: 37
-- `remote_present_commits`: 48 — every commit pushed ONE AT A TIME and
+- `remote_present_commits`: 50 — every commit pushed ONE AT A TIME and
   verified by SHA. **ALL 43 effort commits are now IN MAIN**: PR #62
   (RF-001…028, merged by the owner) + PR #63 (RF-029…043, merged
   2026-11-13 after its head CI matrix was fully green). Main head
   `f97c7d642` — every check green: Backend ✓ Frontend ✓ Contracts ✓
   verify ✓ Vercel build+deploy ✓.
-- Session 3 (2026-11-13) additionally shipped B07: the server
-  workspace export, end-to-end (RF-045 backend + RF-046 frontend,
-  RF-047 checkpoint). Main also carries a one-commit branch fast-forward
-  push (the PR #63 merge commit) after the owner's merge left the
-  remote branch behind.
-- Target: 500 new commits · remaining: 452 — honest work continues
+- Session 3 (2026-11-13) additionally shipped B07 end-to-end (RF-045
+  backend + RF-046 frontend) plus two CI hardenings (RF-048 typecheck
+  fixture, RF-049 embedded-PG port-race retry) — merged via PR #74
+  (`9bb4dfab2`), main green on every check including the Vercel
+  production deploy. Main also carries two one-commit branch
+  fast-forward pushes after each merge left the remote branch behind.
+- Target: 500 new commits · remaining: 450 — honest work continues
   slice-by-slice; commits are never manufactured (prompt of record).
 
 ## Honest status at session close
