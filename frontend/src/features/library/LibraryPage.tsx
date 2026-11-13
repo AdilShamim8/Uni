@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { useLibraryStore } from '@/state/libraryStore'
 import { ServerArtifactsSection } from './ServerArtifactsSection'
+import { ServerKnowledgeSection } from './ServerKnowledgeSection'
 import { KnowledgeSection } from '@/features/library/KnowledgeSection'
 import { useWorkspaceUiStore } from '@/state/workspaceUiStore'
 import { useAgentsStore } from '@/state/agentsStore'
@@ -107,6 +108,7 @@ export function LibraryPage() {
 
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-column px-3 py-6 sm:px-4">
+          <ServerKnowledgeSection />
           <ServerArtifactsSection />
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>

@@ -9,7 +9,7 @@ through one honest interface that costs **$0** and runs from your browser.
 
 [![CI](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml/badge.svg)](https://github.com/AdilShamim8/Uni/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-8b5cf6.svg)](frontend/LICENSE)
-[![Frontend tests](https://img.shields.io/badge/tests-445%20frontend%20%2B%20117%20backend-10b981.svg)](#%EF%B8%8F-architecture)
+[![Frontend tests](https://img.shields.io/badge/tests-626%20frontend%20%2B%20392%20backend-10b981.svg)](#%EF%B8%8F-architecture)
 
 [Live demo](https://universe-mu-two.vercel.app/) · [Quick start](#-quick-start-3-commands) · [Connect a provider](#-connect-your-first-provider-step-by-step) · [The 100% free path](#-the-100-free-path)
 

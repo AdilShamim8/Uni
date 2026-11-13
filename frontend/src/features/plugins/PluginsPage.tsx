@@ -16,6 +16,7 @@ import { PLUGIN_CATEGORY_LABELS, type PluginCategory, type PluginManifest } from
 import { PLUGIN_CATALOG } from './registry'
 import { usePluginsStore } from '@/state/pluginsStore'
 import { useServerSessionStore } from '@/state/serverSessionStore'
+import { ConnectorsSection } from './ConnectorsSection'
 import { Button } from '@/components/ui/Button'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { HeaderExtras } from '@/components/layout/HeaderExtras'
@@ -45,6 +46,7 @@ export function PluginsPage() {
     <>
       <PluginCatalogue onOpen={setSelectedId} />
       <McpServersSection />
+      <ConnectorsSection />
     </>
   )
 }

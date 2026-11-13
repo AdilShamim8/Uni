@@ -90,7 +90,14 @@ describe('routine execution end-to-end (T032)', () => {
     for (;;) {
       const rows = await db.select().from(routineRuns).where(eq(routineRuns.id, runId)).limit(1)
       const row = rows[0]
-      if (row && row.terminalAt) return row
+      if (row && row.terminalAt) {
+        // The routine sync fires near the END of the run loop's terminal
+        // resolution; settle briefly so no post-terminal write races
+        // this file's pool teardown (an unhandled pool error fails CI
+        // even with every test green).
+        await new Promise((resolve) => setTimeout(resolve, 250))
+        return row
+      }
       if (Date.now() - started > timeoutMs) throw new Error('routine run did not reach a terminal')
       await new Promise((resolve) => setTimeout(resolve, 100))
     }

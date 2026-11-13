@@ -43,11 +43,16 @@ describe('routine CRUD (T030)', () => {
       catchUpMinutes: number
       paused: boolean
       lastFireAt: string | null
+      nextFireAt: number | null
     }
     expect(routine.schedule).toBe('30 9 * * 1-5')
     expect(routine.catchUpMinutes).toBe(30)
     expect(routine.paused).toBe(false)
     expect(routine.lastFireAt).toBeNull()
+
+    // The server's own evaluator computed the next fire preview.
+    expect(typeof routine.nextFireAt).toBe('number')
+    expect(routine.nextFireAt!).toBeGreaterThan(Date.now())
 
     const listed = await testApp.app.inject({
       method: 'GET',
@@ -99,7 +104,7 @@ describe('routine CRUD (T030)', () => {
     expect(session.statusCode).toBe(200)
     const body = session.json() as { mode: string; tools: string[] }
     expect(body.mode).toBe('unattended')
-    expect(body.tools).toEqual(['read', 'list', 'grep', 'current_time', 'todo'])
+    expect(body.tools).toEqual(['read', 'list', 'grep', 'current_time', 'todo', 'knowledge_search'])
   })
 
   it('rejects invalid schedules with the parser\'s reason', async () => {
@@ -139,9 +144,11 @@ describe('routine CRUD (T030)', () => {
       payload: { paused: true, schedule: '0 18 * * 5' },
     })
     expect(patched.statusCode).toBe(200)
-    const updated = patched.json() as { paused: boolean; schedule: string }
+    const updated = patched.json() as { paused: boolean; schedule: string; nextFireAt: number | null }
     expect(updated.paused).toBe(true)
     expect(updated.schedule).toBe('0 18 * * 5')
+    // A paused routine does not fire — the preview is honestly null.
+    expect(updated.nextFireAt).toBeNull()
 
     // Bob cannot see or patch Alice's routine.
     const bobGet = await testApp.app.inject({

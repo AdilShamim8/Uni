@@ -22,6 +22,9 @@ export const UNATTENDED_TOOLS: Readonly<Record<string, UnattendedRule>> = {
   current_time: 'allow',
   exit_plan_mode: 'allow',
   todo: 'allow',
+  // P10 — reads only this workspace's own indexed documents with
+  // bounded excerpts; no filesystem, no network, no side effects.
+  knowledge_search: 'allow',
   read: 'workspace-read',
   list: 'workspace-read',
   grep: 'workspace-read',
