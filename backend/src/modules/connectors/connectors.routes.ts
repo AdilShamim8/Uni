@@ -1,14 +1,19 @@
 import type { FastifyInstance } from 'fastify'
 import {
+  connectorCredentialDtoSchema,
   connectorDtoSchema,
   connectorTestRequestSchema,
   connectorTestResultDtoSchema,
 } from '@uni/contracts'
+import { z } from 'zod'
 import { AppError, badRequest, notFound } from '../../lib/errors.js'
 import { findConnector, listConnectors } from './connectors.catalog.js'
 import {
+  describeConnectorCredential,
   openConnectorCredential,
   recordCredentialCheck,
+  removeConnectorCredential,
+  storeConnectorCredential,
   type ConnectorCredentialEnv,
 } from './connectorCredentials.service.js'
 import { verifyGithubToken } from './github.adapter.js'
@@ -33,6 +38,66 @@ export async function connectorRoutes(app: FastifyInstance): Promise<void> {
     void connectorDtoSchema.parse(connector)
     return connector
   })
+
+  /**
+   * RF-090 — store (replace) the connector credential. The token is
+   * sealed before it touches disk; the response is the descriptor —
+   * the token never comes back out.
+   */
+  app.put<{ Params: { connectorId: string } }>(
+    '/connectors/:connectorId/credential',
+    async (request, reply) => {
+      const connector = findConnector(request.params.connectorId)
+      if (!connector) throw notFound('Connector not found.')
+      if (connector.id !== 'github') {
+        throw new AppError(
+          'UNAVAILABLE',
+          `Credentials for "${connector.id}" cannot be stored yet — this connector is catalog-only.`,
+          503,
+        )
+      }
+      const body = z.object({ token: z.string().trim().min(1).max(400) }).parse(request.body ?? {})
+      const db = app.database!.db
+      const env = app.env as ConnectorCredentialEnv & { CREDENTIAL_KEY_ID: string }
+      await storeConnectorCredential(db, env, request.workspace!.id, 'github', body.token)
+      const descriptor = await describeConnectorCredential(db, request.workspace!.id, 'github')
+      void connectorCredentialDtoSchema.parse(descriptor)
+      return reply.status(201).send(descriptor)
+    },
+  )
+
+  /** RF-090 — the credential descriptor (presence + status, never the token). */
+  app.get<{ Params: { connectorId: string } }>(
+    '/connectors/:connectorId/credential',
+    async (request) => {
+      const connector = findConnector(request.params.connectorId)
+      if (!connector) throw notFound('Connector not found.')
+      const descriptor = await describeConnectorCredential(
+        app.database!.db,
+        request.workspace!.id,
+        connector.id,
+      )
+      if (!descriptor) throw notFound('No credential stored for this connector.')
+      void connectorCredentialDtoSchema.parse(descriptor)
+      return descriptor
+    },
+  )
+
+  /** RF-090 — remove the stored credential. */
+  app.delete<{ Params: { connectorId: string } }>(
+    '/connectors/:connectorId/credential',
+    async (request, reply) => {
+      const connector = findConnector(request.params.connectorId)
+      if (!connector) throw notFound('Connector not found.')
+      const removed = await removeConnectorCredential(
+        app.database!.db,
+        request.workspace!.id,
+        connector.id,
+      )
+      if (!removed) throw notFound('No credential stored for this connector.')
+      return reply.status(204).send()
+    },
+  )
 
   /**
    * RF-089 — test a GitHub credential. With a token in the body, THAT

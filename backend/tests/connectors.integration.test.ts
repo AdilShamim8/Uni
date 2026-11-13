@@ -271,3 +271,76 @@ describe('connector connection test route (RF-089)', () => {
     }
   }, 180_000)
 })
+
+
+describe('connector credential routes (RF-090)', () => {
+  it('stores, describes, and removes a credential — the token never returns', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Store' })
+      const headers = { cookie: alice.cookie, origin: 'http://localhost:5173' }
+
+      const stored = await test.app.inject({
+        method: 'PUT',
+        url: '/api/v1/connectors/github/credential',
+        headers,
+        payload: { token: 'ghp_never-echo' },
+      })
+      expect(stored.statusCode).toBe(201)
+      const descriptor = stored.json() as {
+        connectorId: string
+        status: string
+        lastError: unknown
+      }
+      expect(descriptor).toMatchObject({ connectorId: 'github', status: 'untested' })
+      expect(JSON.stringify(stored.json())).not.toContain('ghp_never-echo')
+
+      // The descriptor route says the same thing.
+      const described = await test.app.inject({
+        method: 'GET',
+        url: '/api/v1/connectors/github/credential',
+        headers,
+      })
+      expect(described.statusCode).toBe(200)
+      expect(described.json()).toMatchObject({ connectorId: 'github', status: 'untested' })
+
+      // Removal is honest: 204 then 404.
+      const removed = await test.app.inject({
+        method: 'DELETE',
+        url: '/api/v1/connectors/github/credential',
+        headers,
+      })
+      expect(removed.statusCode).toBe(204)
+      const gone = await test.app.inject({
+        method: 'GET',
+        url: '/api/v1/connectors/github/credential',
+        headers,
+      })
+      expect(gone.statusCode).toBe(404)
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+
+  it('is workspace-scoped: another account never sees the credential', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Scope' })
+      const bob = await signUpUser(test.app, { name: 'Bob Scope' })
+      await test.app.inject({
+        method: 'PUT',
+        url: '/api/v1/connectors/github/credential',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { token: 'ghp_alice' },
+      })
+      const bobs = await test.app.inject({
+        method: 'GET',
+        url: '/api/v1/connectors/github/credential',
+        headers: { cookie: bob.cookie, origin: 'http://localhost:5173' },
+      })
+      expect(bobs.statusCode).toBe(404)
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
+})
