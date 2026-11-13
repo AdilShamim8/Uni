@@ -55,7 +55,9 @@ export function ServerEmployeesSection() {
           On this account
         </h2>
         <span className="text-xs text-ink-faint">
-          {serverEmployeesLoading ? 'loading…' : `${active.length} on the server`}
+          {serverEmployeesLoading
+            ? 'loading…'
+            : `${active.length} on the server${archived.length > 0 ? ` · ${archived.length} archived` : ''}`}
         </span>
       </div>
 
