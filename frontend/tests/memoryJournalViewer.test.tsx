@@ -123,6 +123,20 @@ describe('MemoryJournalViewer (RF-066)', () => {
     expect(revert).toHaveBeenCalledWith('emp-1', 'j-1')
   })
 
+  it('labels entries relatively and keeps the exact time on the title (RF-106)', async () => {
+    const user = userEvent.setup()
+    const threeHoursAgo = Date.now() - 3 * 3_600_000
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, { items: [{ ...ENTRY, createdAt: threeHoursAgo }] }),
+    )
+    render(<MemoryJournalViewer employeeId="emp-1" />)
+
+    await user.click(screen.getByRole('button', { name: /Show change history/i }))
+    const list = await screen.findByLabelText('Journal entries')
+    const timeLabel = within(list).getByText(/3h ago/)
+    expect(timeLabel).toHaveAttribute('title', new Date(threeHoursAgo).toLocaleString())
+  })
+
   it('says when the list is capped at the latest 50 (RF-104)', async () => {
     const user = userEvent.setup()
     const many = Array.from({ length: 55 }, (_, i) => ({ ...ENTRY, id: `j-${i}` }))
