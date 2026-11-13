@@ -84,6 +84,18 @@ describe('serverSessionStore — employees slice', () => {
     expect(body).toEqual({ archived: true })
   })
 
+  it('loads with the archived flag when asked (RF-079)', async () => {
+    const fetchMock = vi.fn(async (url: string | URL) => {
+      if (String(url).includes('/employees')) {
+        expect(String(url)).toContain('archived=true')
+      }
+      return jsonResponse(200, { items: [{ ...EMPLOYEE, archived: true }] })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    await useServerSessionStore.getState().loadServerEmployees(true)
+    expect(useServerSessionStore.getState().serverEmployees[0]!.archived).toBe(true)
+  })
+
   it('records the honest error when the server rejects an update', async () => {
     vi.stubGlobal(
       'fetch',
