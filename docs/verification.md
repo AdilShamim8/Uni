@@ -1228,3 +1228,24 @@ unmasked):** backend **397/397 across 50 files**, frontend **651/651
 across 91 files**, typecheck + lint clean on both. better-auth 1.7.19
 (the owner's PR #71 merge) verified green before the session's work
 began (395/395 baseline).
+
+
+## Session 6 (2026-11-13) — 41 owner-requested commits (RF-071…RF-111)
+
+Session-DTO pin exposure (RF-071/072/073); employee edit UI + archived
+views (RF-074..080); hash-guarded server note editing with conflict UX
+(RF-081..083); export completeness — journal + latest 50 routine runs +
+honest settings copy (RF-084..086); the GitHub connector end-to-end —
+secretBox-sealed credentials + migration 0020, fixture-verified adapter,
+test/store/describe/remove routes, per-workspace catalog truth, Plugins
+connect flow (RF-087..093); and fourteen smaller verified improvements
+(RF-094..106: weekday labels, relative next-fire, archived warnings and
+visibility fixes, journal kind filter + cap note + relative labels,
+last-export note, knowledge filter, live memory budget, detail catch-up).
+Docs: RF-107 CHANGELOG, RF-108 README, this section (RF-109), the
+manifest checkpoint (RF-110), handoff refresh (RF-111).
+
+Every commit typechecked, linted, and ran its targeted suite before its
+individual push; two mid-session pushes with gate slips (RF-074 null
+guard, RF-097 missing test) were amended and lease-pushed before the PR.
+Full-suite totals: see the CI run on the session PR head.
