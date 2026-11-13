@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useAgentsStore } from '@/state/agentsStore'
 import { useServerSessionStore } from '@/state/serverSessionStore'
+import { MemoryJournalViewer } from './MemoryJournalViewer'
 import type {
   ServerConversationDetail,
   ServerActiveRun,
@@ -774,6 +775,7 @@ export function MemoryPanel({ agentId }: { agentId: string }) {
             credential shapes before persistence — and are included in future
             requests to this employee from every surface.
           </p>
+          <MemoryJournalViewer employeeId={linkedEmployeeId} />
         </div>
       ) : mine.length === 0 ? (
         <p className="px-1 text-xs text-ink-faint">
