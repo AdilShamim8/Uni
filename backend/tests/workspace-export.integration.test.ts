@@ -1,0 +1,141 @@
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { signUpUser, startTestApp, type TestApp } from './harness.js'
+
+/**
+ * B07 — workspace export over real HTTP + embedded PostgreSQL: the
+ * endpoint returns a complete snapshot of the caller's own workspace
+ * (employees, memory notes, routines, knowledge files with extracted
+ * text), with counts derived from the same rows it serializes, and
+ * never a byte of another workspace's data.
+ */
+
+describe('workspace export (B07)', () => {
+  let testApp: TestApp
+  let alice: { cookie: string }
+  let bob: { cookie: string }
+
+  beforeAll(async () => {
+    testApp = await startTestApp()
+    alice = await signUpUser(testApp.app, { name: 'Alice Export' })
+    bob = await signUpUser(testApp.app, { name: 'Bob Export' })
+    await testApp.app.listen({ port: 0, host: '127.0.0.1' })
+  }, 180_000)
+
+  afterAll(async () => {
+    await testApp?.app.close()
+    await testApp?.stop()
+  })
+
+  it('exports the complete workspace with honest counts, isolated from others', async () => {
+    // Seed Alice's workspace through the real APIs.
+    const employee = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/employees',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { name: 'Researcher', description: 'Finds things', instructions: 'Be terse.' },
+    })
+    expect(employee.statusCode).toBe(201)
+    const employeeId = (employee.json() as { id: string }).id
+
+    const note = await testApp.app.inject({
+      method: 'POST',
+      url: `/api/v1/employees/${employeeId}/memory`,
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: { text: 'Prefers bullet-point answers.' },
+    })
+    expect(note.statusCode).toBe(201)
+
+    const routine = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/routines',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: {
+        name: 'Morning brief',
+        prompt: 'Summarize.',
+        schedule: '30 9 * * 1-5',
+        catchUpMinutes: 30,
+      },
+    })
+    expect(routine.statusCode).toBe(201)
+
+    const file = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/files',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      payload: {
+        title: 'Q3 notes',
+        fileName: 'q3.md',
+        content: 'Ship the export endpoint.',
+      },
+    })
+    expect(file.statusCode).toBe(201)
+
+    // Bob has his own data that must never leak into Alice's export.
+    const bobEmployee = await testApp.app.inject({
+      method: 'POST',
+      url: '/api/v1/employees',
+      headers: { cookie: bob.cookie, origin: 'http://localhost:5173' },
+      payload: { name: 'Bob Private' },
+    })
+    expect(bobEmployee.statusCode).toBe(201)
+
+    // Alice's export: complete and honest.
+    const exported = await testApp.app.inject({
+      method: 'GET',
+      url: '/api/v1/workspace/export',
+      headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+    })
+    expect(exported.statusCode).toBe(200)
+    expect(exported.headers['content-disposition']).toContain('uni-workspace-export-')
+
+    const body = exported.json() as {
+      format: string
+      employees: Array<{ id: string; name: string; instructions: string }>
+      memoryNotes: Array<{ employeeId: string; text: string }>
+      routines: Array<{ name: string; schedule: string }>
+      files: Array<{ title: string; extractedText: string }>
+      counts: { employees: number; memoryNotes: number; routines: number; files: number }
+    }
+
+    expect(body.format).toBe('uni.workspace.export/1')
+    expect(body.employees.length).toBe(1)
+    expect(body.employees[0]!.name).toBe('Researcher')
+    expect(body.employees[0]!.instructions).toBe('Be terse.')
+    expect(body.memoryNotes.length).toBe(1)
+    expect(body.memoryNotes[0]!.text).toBe('Prefers bullet-point answers.')
+    expect(body.routines.length).toBe(1)
+    expect(body.routines[0]!.schedule).toBe('30 9 * * 1-5')
+    expect(body.files.length).toBe(1)
+    expect(body.files[0]!.extractedText).toBe('Ship the export endpoint.')
+
+    // Counts are derived from the arrays — same rows, no drift.
+    expect(body.counts).toEqual({
+      employees: body.employees.length,
+      memoryNotes: body.memoryNotes.length,
+      routines: body.routines.length,
+      files: body.files.length,
+    })
+
+    // None of Bob's data appears.
+    expect(body.employees.some((entry) => entry.name === 'Bob Private')).toBe(false)
+
+    // Bob's export contains only his own employee.
+    const bobsExport = await testApp.app.inject({
+      method: 'GET',
+      url: '/api/v1/workspace/export',
+      headers: { cookie: bob.cookie, origin: 'http://localhost:5173' },
+    })
+    expect(bobsExport.statusCode).toBe(200)
+    const bobBody = bobsExport.json() as { employees: Array<{ name: string }> }
+    expect(bobBody.employees.length).toBe(1)
+    expect(bobBody.employees[0]!.name).toBe('Bob Private')
+  })
+
+  it('requires a session (401 without one)', async () => {
+    const unauthenticated = await testApp.app.inject({
+      method: 'GET',
+      url: '/api/v1/workspace/export',
+    })
+    expect(unauthenticated.statusCode).toBe(401)
+  })
+})

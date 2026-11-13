@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsGroup'
 import { downloadText } from '@/features/chat/exportUtils'
+import { useServerSessionStore } from '@/state/serverSessionStore'
 import {
   buildWorkspaceBackup,
   parseWorkspaceBackup,
@@ -30,6 +31,9 @@ export function DataSection() {
   const clearHistory = useAppStore((state) => state.clearHistory)
   const resetDemoData = useAppStore((state) => state.resetDemoData)
   const showToast = useAppStore((state) => state.showToast)
+  const serverStatus = useServerSessionStore((state) => state.status)
+  const [serverExportBusy, setServerExportBusy] = useState(false)
+  const [serverExportError, setServerExportError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<'clear' | 'reset' | null>(null)
   const [pendingRestore, setPendingRestore] = useState<PendingRestore | null>(null)
   const [restoreError, setRestoreError] = useState<string | null>(null)
@@ -38,6 +42,27 @@ export function DataSection() {
   function handleExport() {
     downloadText('uni-chats-and-settings.json', exportAllData(), 'application/json')
     showToast('Chats and settings exported as JSON')
+  }
+
+  async function handleServerExport() {
+    if (serverExportBusy) return
+    setServerExportBusy(true)
+    setServerExportError(null)
+    try {
+      const { exportServerWorkspace } = await import('@/services/api/serverWorkspace')
+      const payload = await exportServerWorkspace()
+      const date = new Date(payload.exportedAt).toISOString().slice(0, 10)
+      downloadText(
+        `uni-server-workspace-${date}.json`,
+        JSON.stringify(payload, null, 2),
+        'application/json',
+      )
+      showToast('Server workspace exported as JSON')
+    } catch (error) {
+      setServerExportError(error instanceof Error ? error.message : 'Export failed — try again.')
+    } finally {
+      setServerExportBusy(false)
+    }
   }
 
   function handleBackup() {
@@ -95,6 +120,36 @@ export function DataSection() {
           </Button>
         </SettingsRow>
       </SettingsGroup>
+
+      {serverStatus === 'signed-in' && (
+        <SettingsGroup
+          title="Server workspace"
+          footer="A complete snapshot of the data stored on your Uni server for this account: employees with their instructions, memory notes, routines, and knowledge documents with their extracted text. Workspace-scoped — it can never include another account's data."
+        >
+          <SettingsRow
+            label="Export server workspace"
+            description="One JSON file with everything the server holds for this account."
+          >
+            <div className="flex flex-col items-end gap-1">
+              <Button
+                variant="secondary"
+                size="sm"
+                aria-label="Export server workspace data"
+                disabled={serverExportBusy}
+                onClick={() => void handleServerExport()}
+              >
+                <Download size={14} />
+                {serverExportBusy ? 'Exporting…' : 'Export'}
+              </Button>
+              {serverExportError && (
+                <span role="alert" className="text-[12px] text-danger">
+                  {serverExportError}
+                </span>
+              )}
+            </div>
+          </SettingsRow>
+        </SettingsGroup>
+      )}
 
       <SettingsGroup
         title="Workspace backup"
