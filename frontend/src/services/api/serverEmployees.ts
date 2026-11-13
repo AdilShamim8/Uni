@@ -28,10 +28,27 @@ export interface ServerMemoryNote {
   createdAt: number
 }
 
-export interface ServerMemoryAuditEntry {
+/**
+ * RF-065 — the journal entry as the API actually returns it
+ * (contracts memoryJournalEntryDtoSchema). The previous
+ * ServerMemoryAuditEntry shape never matched the DTO; this one is a
+ * field-for-field mirror.
+ */
+export interface ServerMemoryJournalEntry {
   id: string
-  action: string
-  summary: string
+  employeeId: string
+  noteId: string | null
+  actor: 'user' | 'employee' | 'import' | 'system'
+  via: string
+  kind: 'created' | 'edited' | 'deleted'
+  beforeHash: string | null
+  afterHash: string | null
+  before: string | null
+  diff: string
+  added: number
+  removed: number
+  canRevert: boolean
+  revertUnavailableReason: string | null
   createdAt: number
 }
 
@@ -113,9 +130,24 @@ export async function deleteServerMemoryNote(
 export async function listServerMemoryJournal(
   employeeId: string,
   limit = 50,
-): Promise<ServerMemoryAuditEntry[]> {
-  const page = await apiFetch<{ items: ServerMemoryAuditEntry[] }>(
+): Promise<ServerMemoryJournalEntry[]> {
+  const page = await apiFetch<{ items: ServerMemoryJournalEntry[] }>(
     `${API_ROOT}/employees/${encodeURIComponent(employeeId)}/memory/journal?limit=${limit}`,
   )
   return page.items
+}
+
+/**
+ * Revert one journal entry server-side. The response carries the
+ * restored note (null when the revert removes it) and the journal
+ * entry the revert itself appended.
+ */
+export async function revertServerMemoryJournalEntry(
+  employeeId: string,
+  entryId: string,
+): Promise<{ note: ServerMemoryNote | null; entry: ServerMemoryJournalEntry | null }> {
+  return apiFetch<{ note: ServerMemoryNote | null; entry: ServerMemoryJournalEntry | null }>(
+    `${API_ROOT}/employees/${encodeURIComponent(employeeId)}/memory/journal/${encodeURIComponent(entryId)}/revert`,
+    { method: 'POST' },
+  )
 }

@@ -83,6 +83,42 @@ describe('serverSessionStore — routines slice', () => {
     expect(useServerSessionStore.getState().serverRoutines[0]?.id).toBe('r-1')
   })
 
+  it('edits a routine through the store and replaces the row (RF-060)', async () => {
+    useServerSessionStore.setState({ serverRoutines: [ROUTINE] })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse(200, {
+          ...ROUTINE,
+          name: 'Renamed',
+          schedule: '*/15 9-17 * * 1-5',
+          employeeId: 'emp-1',
+          employeeName: 'Researcher',
+        }),
+      ),
+    )
+    const ok = await useServerSessionStore.getState().editServerRoutineFor('r-1', {
+      name: 'Renamed',
+      schedule: '*/15 9-17 * * 1-5',
+      employeeId: 'emp-1',
+    })
+    expect(ok).toBe(true)
+    const row = useServerSessionStore.getState().serverRoutines[0]!
+    expect(row.name).toBe('Renamed')
+    expect(row.schedule).toBe('*/15 9-17 * * 1-5')
+    expect(row.employeeName).toBe('Researcher')
+  })
+
+  it('records the honest error when an edit is rejected (RF-060)', async () => {
+    useServerSessionStore.setState({ serverRoutines: [ROUTINE], serverRoutinesError: null })
+    vi.stubGlobal('fetch', vi.fn(async () => jsonResponse(409, { message: 'Schedule rejected.' })))
+    const ok = await useServerSessionStore
+      .getState()
+      .editServerRoutineFor('r-1', { name: 'Renamed' })
+    expect(ok).toBe(false)
+    expect(useServerSessionStore.getState().serverRoutinesError).toBeTruthy()
+  })
+
   it('pause/resume replaces the row in place', async () => {
     useServerSessionStore.setState({ serverRoutines: [ROUTINE] })
     vi.stubGlobal(

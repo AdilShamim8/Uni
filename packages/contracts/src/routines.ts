@@ -99,6 +99,12 @@ export const patchRoutineRequestSchema = z
     catchUpMinutes: z.number().int().min(0).max(60 * 24 * 7).optional(),
     paused: z.boolean().optional(),
     archived: z.boolean().optional(),
+    /**
+     * Re-pin the routine to another employee (null unpins). The
+     * provisioned session's employee/provider/model follow the pin so
+     * execution matches what the UI shows.
+     */
+    employeeId: z.string().min(1).nullable().optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: 'No fields to update.' })
 export type PatchRoutineRequest = z.infer<typeof patchRoutineRequestSchema>
