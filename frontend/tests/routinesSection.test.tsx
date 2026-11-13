@@ -28,6 +28,11 @@ const ROUTINE: ServerRoutine = {
   updatedAt: 2,
 }
 
+const EMPLOYEES = [
+  { id: 'emp-1', name: 'Researcher', archived: false },
+  { id: 'emp-2', name: 'Old helper', archived: true },
+]
+
 describe('RoutinesSection', () => {
   beforeEach(() => {
     cleanup()
@@ -38,6 +43,8 @@ describe('RoutinesSection', () => {
       serverRoutinesLoading: false,
       serverRoutinesError: null,
       loadServerRoutines: vi.fn(async () => {}),
+      serverEmployees: EMPLOYEES,
+      loadServerEmployees: vi.fn(async () => {}),
       createServerRoutineFor: vi.fn(async () => true),
       setServerRoutinePausedFor: vi.fn(async () => true),
       removeServerRoutineFor: vi.fn(async () => true),
@@ -86,10 +93,33 @@ describe('RoutinesSection', () => {
       prompt: 'Wrap up the day.',
       schedule: '0 * * * *',
       catchUpMinutes: 0,
+      employeeId: null,
     })
     // A successful create closes the dialog.
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  it('pins the routine to a chosen employee and skips archived ones', async () => {
+    const user = userEvent.setup()
+    const create = vi.fn(async () => true)
+    useServerSessionStore.setState({ createServerRoutineFor: create })
+    render(<RoutinesSection />)
+
+    await user.click(screen.getByRole('button', { name: /New routine/i }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Name'), 'Weekly brief')
+    await user.type(within(dialog).getByLabelText('Prompt'), 'Weekly rollup.')
+    await user.selectOptions(within(dialog).getByLabelText('Run as employee (optional)'), 'emp-1')
+    await user.click(within(dialog).getByRole('button', { name: 'Create routine' }))
+
+    expect(create).toHaveBeenCalledWith({
+      name: 'Weekly brief',
+      prompt: 'Weekly rollup.',
+      schedule: '0 * * * *',
+      catchUpMinutes: 0,
+      employeeId: 'emp-1',
     })
   })
 

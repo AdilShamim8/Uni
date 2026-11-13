@@ -35,13 +35,16 @@ export function RoutinesSection() {
     (state) => state.setServerRoutinePausedFor,
   )
   const removeServerRoutineFor = useServerSessionStore((state) => state.removeServerRoutineFor)
+  const serverEmployees = useServerSessionStore((state) => state.serverEmployees)
+  const loadServerEmployees = useServerSessionStore((state) => state.loadServerEmployees)
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ServerRoutine | null>(null)
   const [detailTarget, setDetailTarget] = useState<ServerRoutine | null>(null)
 
   useEffect(() => {
     void loadServerRoutines()
-  }, [loadServerRoutines])
+    void loadServerEmployees()
+  }, [loadServerRoutines, loadServerEmployees])
 
   return (
     <section aria-label="Server routines" className="mt-10">
@@ -141,6 +144,9 @@ export function RoutinesSection() {
       <CreateRoutineDialog
         open={createOpen}
         onClose={() => setCreateOpen(false)}
+        employees={serverEmployees
+          .filter((employee) => !employee.archived)
+          .map((employee) => ({ id: employee.id, name: employee.name }))}
         onCreate={async (input) => {
           const ok = await createServerRoutineFor(input)
           if (ok) setCreateOpen(false)
@@ -172,6 +178,7 @@ function CreateRoutineDialog({
   open,
   onClose,
   onCreate,
+  employees,
 }: {
   open: boolean
   onClose: () => void
@@ -180,13 +187,17 @@ function CreateRoutineDialog({
     prompt: string
     schedule: string
     catchUpMinutes: number
+    employeeId?: string | null
   }) => Promise<boolean>
+  /** Non-archived employees offered for the soft pin. */
+  employees: Array<{ id: string; name: string }>
 }) {
   const [name, setName] = useState('')
   const [prompt, setPrompt] = useState('')
   const [schedule, setSchedule] = useState(SCHEDULE_PRESETS[1]!.value)
   const [customSchedule, setCustomSchedule] = useState('')
   const [catchUp, setCatchUp] = useState('0')
+  const [employeeId, setEmployeeId] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -202,6 +213,7 @@ function CreateRoutineDialog({
       prompt: prompt.trim(),
       schedule: effectiveSchedule,
       catchUpMinutes: Number.isFinite(Number(catchUp)) ? Math.max(0, Number(catchUp)) : 0,
+      employeeId: employeeId || null,
     })
     setSubmitting(false)
     if (!ok) {
@@ -212,6 +224,7 @@ function CreateRoutineDialog({
     setPrompt('')
     setCustomSchedule('')
     setCatchUp('0')
+    setEmployeeId('')
   }
 
   return (
@@ -274,6 +287,21 @@ function CreateRoutineDialog({
             placeholder="*/15 9-17 * * 1-5"
           />
         )}
+        <label className="flex flex-col gap-1.5">
+          <span className="text-[12.5px] font-medium text-ink-soft">Run as employee (optional)</span>
+          <select
+            value={employeeId}
+            onChange={(event) => setEmployeeId(event.target.value)}
+            className="rounded-control border border-line bg-panel px-2.5 py-2 text-[14px] text-ink"
+          >
+            <option value="">Session's employee — use its instructions and tools</option>
+            {employees.map((employee) => (
+              <option key={employee.id} value={employee.id}>
+                {employee.name} — its instructions and tools
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="flex flex-col gap-1.5">
           <span className="text-[12.5px] font-medium text-ink-soft">
             Catch-up window after downtime (minutes)
