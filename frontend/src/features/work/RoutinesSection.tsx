@@ -31,6 +31,12 @@ export function RoutinesSection() {
   const serverRoutinesError = useServerSessionStore((state) => state.serverRoutinesError)
   const loadServerRoutines = useServerSessionStore((state) => state.loadServerRoutines)
   const [showArchived, setShowArchived] = useState(false)
+  // RF-097 — the default view lists active routines only; an archived
+  // row (e.g. just archived from this list) disappears immediately
+  // instead of lingering until the next reload.
+  const visibleRoutines = showArchived
+    ? serverRoutines
+    : serverRoutines.filter((routine) => !routine.archived)
   const createServerRoutineFor = useServerSessionStore((state) => state.createServerRoutineFor)
   const setServerRoutinePausedFor = useServerSessionStore(
     (state) => state.setServerRoutinePausedFor,
@@ -89,14 +95,14 @@ export function RoutinesSection() {
         </p>
       )}
 
-      {serverRoutines.length === 0 && !serverRoutinesLoading && (
+      {visibleRoutines.length === 0 && !serverRoutinesLoading && (
         <p className="mt-3 text-[13px] text-ink-faint">
           No routines yet — schedule one and the server runs it for you.
         </p>
       )}
 
       <ul className="mt-3 flex flex-col gap-2" aria-label="Server routines list">
-        {serverRoutines.map((routine) => (
+        {visibleRoutines.map((routine) => (
           <li
             key={routine.id}
             className="rounded-group border border-line bg-raised px-3.5 py-3"
