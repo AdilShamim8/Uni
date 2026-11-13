@@ -112,6 +112,7 @@ describe('workspace export (B07)', () => {
     expect(body.counts).toEqual({
       employees: body.employees.length,
       memoryNotes: body.memoryNotes.length,
+      memoryJournal: body.memoryJournal.length,
       routines: body.routines.length,
       files: body.files.length,
     })
@@ -130,6 +131,50 @@ describe('workspace export (B07)', () => {
     expect(bobBody.employees.length).toBe(1)
     expect(bobBody.employees[0]!.name).toBe('Bob Private')
   })
+
+  it('exports the memory journal with the notes it audits (RF-084)', async () => {
+    const test = await startTestApp()
+    try {
+      const alice = await signUpUser(test.app, { name: 'Alice Journal' })
+      const employee = await test.app.inject({
+        method: 'POST',
+        url: '/api/v1/employees',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { name: 'Audited one', description: 'journal export target' },
+      })
+      const employeeId = (employee.json() as { id: string }).id
+      await test.app.inject({
+        method: 'POST',
+        url: `/api/v1/employees/${employeeId}/memory`,
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+        payload: { text: 'First fact' },
+      })
+
+      const exportResponse = await test.app.inject({
+        method: 'GET',
+        url: '/api/v1/workspace/export',
+        headers: { cookie: alice.cookie, origin: 'http://localhost:5173' },
+      })
+      expect(exportResponse.statusCode).toBe(200)
+      const body = exportResponse.json() as {
+        memoryJournal: Array<{
+          employeeId: string
+          kind: string
+          actor: string
+          diff: string
+        }>
+        counts: { memoryJournal: number }
+      }
+      // The add created exactly one journal entry, and it travelled.
+      expect(body.counts.memoryJournal).toBe(1)
+      expect(body.memoryJournal).toHaveLength(1)
+      expect(body.memoryJournal[0]!.employeeId).toBe(employeeId)
+      expect(body.memoryJournal[0]!.kind).toBe('created')
+      expect(body.memoryJournal[0]!.diff).toContain('First fact')
+    } finally {
+      await test.stop()
+    }
+  }, 180_000)
 
   it('requires a session (401 without one)', async () => {
     const unauthenticated = await testApp.app.inject({

@@ -59,18 +59,36 @@ export const exportFileDocumentSchema = z.object({
   createdAt: z.number().int().nonnegative(),
 })
 
+export const exportMemoryJournalEntrySchema = z.object({
+  id: z.string().min(1),
+  employeeId: z.string().min(1),
+  noteId: z.string().nullable(),
+  actor: z.string(),
+  via: z.string(),
+  kind: z.string(),
+  diff: z.string(),
+  added: z.number().int().nonnegative(),
+  removed: z.number().int().nonnegative(),
+  canRevert: z.boolean(),
+  revertUnavailableReason: z.string().nullable(),
+  createdAt: z.number().int().nonnegative(),
+})
+
 export const workspaceExportDtoSchema = z.object({
   /** Format identity: exports stay importable if the shape evolves. */
   format: z.literal('uni.workspace.export/1'),
   exportedAt: z.number().int().nonnegative(),
   employees: z.array(exportEmployeeSchema),
   memoryNotes: z.array(exportMemoryNoteSchema),
+  /** Latest journal entries (bounded) — the audit trail travels too. */
+  memoryJournal: z.array(exportMemoryJournalEntrySchema),
   routines: z.array(exportRoutineSchema),
   files: z.array(exportFileDocumentSchema),
   /** Counts derived from the arrays above — same rows, no drift. */
   counts: z.object({
     employees: z.number().int().nonnegative(),
     memoryNotes: z.number().int().nonnegative(),
+    memoryJournal: z.number().int().nonnegative(),
     routines: z.number().int().nonnegative(),
     files: z.number().int().nonnegative(),
   }),
