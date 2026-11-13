@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CalendarClock, Pause, Play, Plus, Trash2 } from 'lucide-react'
+import { CalendarClock, Pause, Pencil, Play, Plus, Trash2 } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerRoutine } from '@/services/api/serverRoutines'
 import { Button } from '@/components/ui/Button'
@@ -15,6 +15,7 @@ import {
   type RoutineFormState,
 } from './routineFormFields'
 import { RoutineDetailDialog } from './RoutineDetailDialog'
+import { EditRoutineDialog } from './EditRoutineDialog'
 
 /**
  * T033 — the routines section on the server Work surface: scheduled
@@ -33,10 +34,12 @@ export function RoutinesSection() {
     (state) => state.setServerRoutinePausedFor,
   )
   const removeServerRoutineFor = useServerSessionStore((state) => state.removeServerRoutineFor)
+  const editServerRoutineFor = useServerSessionStore((state) => state.editServerRoutineFor)
   const serverEmployees = useServerSessionStore((state) => state.serverEmployees)
   const loadServerEmployees = useServerSessionStore((state) => state.loadServerEmployees)
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<ServerRoutine | null>(null)
+  const [editTarget, setEditTarget] = useState<ServerRoutine | null>(null)
   const [detailTarget, setDetailTarget] = useState<ServerRoutine | null>(null)
 
   useEffect(() => {
@@ -120,6 +123,10 @@ export function RoutinesSection() {
               )}
             </div>
             <div className="mt-2.5 flex items-center gap-1.5">
+              <Button variant="ghost" size="sm" onClick={() => setEditTarget(routine)}>
+                <Pencil size={13} />
+                Edit
+              </Button>
               <Button
                 variant="ghost"
                 size="sm"
@@ -143,6 +150,20 @@ export function RoutinesSection() {
       </ul>
 
       <RoutineDetailDialog routine={detailTarget} onClose={() => setDetailTarget(null)} />
+
+      <EditRoutineDialog
+        key={editTarget?.id ?? 'none'}
+        routine={editTarget}
+        employees={serverEmployees
+          .filter((employee) => !employee.archived)
+          .map((employee) => ({ id: employee.id, name: employee.name }))}
+        onClose={() => setEditTarget(null)}
+        onSave={async (routineId, patch) => {
+          const ok = await editServerRoutineFor(routineId, patch)
+          if (ok) setEditTarget(null)
+          return ok
+        }}
+      />
 
       <CreateRoutineDialog
         open={createOpen}
