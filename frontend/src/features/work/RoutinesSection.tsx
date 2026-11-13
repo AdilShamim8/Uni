@@ -7,6 +7,7 @@ import { Dialog } from '@/components/ui/Dialog'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { describeSchedule } from './schedulePreview'
+import { relativeFuture } from './relativeTime'
 import {
   EMPTY_ROUTINE_FORM,
   RoutineFormFields,
@@ -131,7 +132,10 @@ export function RoutinesSection() {
                 <span>catch-up {routine.catchUpMinutes}m</span>
               )}
               {routine.nextFireAt !== null ? (
-                <span>next {new Date(routine.nextFireAt).toLocaleString()}</span>
+                <span>
+                  next {new Date(routine.nextFireAt).toLocaleString()} (
+                  {relativeFuture(routine.nextFireAt)})
+                </span>
               ) : routine.paused ? null : (
                 <span>no upcoming fire in the next 7 days</span>
               )}
