@@ -95,6 +95,11 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
               </select>
             </label>
           )}
+          {!loading && (journal[employeeId] ?? []).length >= 50 && (
+            <p className="mb-1 text-[10.5px] text-ink-faint">
+              Showing the latest {(journal[employeeId] ?? []).length} entries.
+            </p>
+          )}
           {!loading && entries.length > 0 && (
             <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto" aria-label="Journal entries">
               {entries.map((entry) => (
