@@ -1,7 +1,7 @@
 import { desc, eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import * as schema from '../../db/schema.js'
-import { employees, memoryNotes, routines, fileDocuments } from '../../db/schema.js'
+import { employees, memoryNotes, routines, fileDocuments, memoryJournal } from '../../db/schema.js'
 import { workspaceExportDtoSchema, type WorkspaceExportDto } from '@uni/contracts'
 
 /**
@@ -17,9 +17,15 @@ export async function buildWorkspaceExport(
   db: WorkspaceDatabase,
   workspaceId: string,
 ): Promise<WorkspaceExportDto> {
-  const [employeeRows, noteRows, routineRows, fileRows] = await Promise.all([
+  const [employeeRows, noteRows, journalRows, routineRows, fileRows] = await Promise.all([
     db.select().from(employees).where(eq(employees.workspaceId, workspaceId)).orderBy(desc(employees.updatedAt)),
     db.select().from(memoryNotes).where(eq(memoryNotes.workspaceId, workspaceId)).orderBy(desc(memoryNotes.updatedAt)),
+    db
+      .select()
+      .from(memoryJournal)
+      .where(eq(memoryJournal.workspaceId, workspaceId))
+      .orderBy(desc(memoryJournal.createdAt))
+      .limit(200),
     db.select().from(routines).where(eq(routines.workspaceId, workspaceId)).orderBy(desc(routines.createdAt)),
     db.select().from(fileDocuments).where(eq(fileDocuments.workspaceId, workspaceId)).orderBy(desc(fileDocuments.createdAt)),
   ])
@@ -47,6 +53,20 @@ export async function buildWorkspaceExport(
       text: row.text,
       createdAt: row.createdAt.getTime(),
       updatedAt: row.updatedAt.getTime(),
+    })),
+    memoryJournal: journalRows.map((row) => ({
+      id: row.id,
+      employeeId: row.employeeId,
+      noteId: row.noteId,
+      actor: row.actor,
+      via: row.via,
+      kind: row.kind,
+      diff: row.diff,
+      added: row.added,
+      removed: row.removed,
+      canRevert: row.canRevert,
+      revertUnavailableReason: row.revertUnavailableReason,
+      createdAt: row.createdAt.getTime(),
     })),
     routines: routineRows.map((row) => ({
       id: row.id,
@@ -76,6 +96,7 @@ export async function buildWorkspaceExport(
     counts: {
       employees: employeeRows.length,
       memoryNotes: noteRows.length,
+      memoryJournal: journalRows.length,
       routines: routineRows.length,
       files: fileRows.length,
     },
