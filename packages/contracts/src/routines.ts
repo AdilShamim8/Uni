@@ -48,6 +48,11 @@ export const routineDtoSchema = z.object({
   sessionId: z.string().min(1),
   /** The employee the routine executes as, when linked. */
   employeeId: z.string().nullable(),
+  /**
+   * The linked employee's name at read time (null when unpinned, or
+   * when the employee row is gone — the pin is soft, history survives).
+   */
+  employeeName: z.string().nullable(),
   name: z.string().min(1).max(200),
   prompt: z.string().min(1).max(10_000),
   /** 5-field cron expression, UTC. */

@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RoutinesSection } from '@/features/work/RoutinesSection'
+import type { ServerEmployee } from '@/services/api/serverEmployees'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerRoutine } from '@/services/api/serverRoutines'
 
@@ -16,6 +17,7 @@ const ROUTINE: ServerRoutine = {
   id: 'r-1',
   sessionId: 's-1',
   employeeId: null,
+  employeeName: null,
   name: 'Morning brief',
   prompt: 'Summarize overnight changes.',
   schedule: '30 9 * * 1-5',
@@ -28,6 +30,46 @@ const ROUTINE: ServerRoutine = {
   updatedAt: 2,
 }
 
+const EMPLOYEES: ServerEmployee[] = [
+  {
+    id: 'emp-1',
+    name: 'Researcher',
+    description: 'Finds things',
+    instructions: 'Be terse.',
+    category: 'specialist',
+    providerId: null,
+    modelId: null,
+    tools: [],
+    starters: [],
+    archived: false,
+    createdAt: 1,
+    updatedAt: 1,
+  },
+  {
+    id: 'emp-2',
+    name: 'Old helper',
+    description: 'Retired',
+    instructions: '',
+    category: 'personal',
+    providerId: null,
+    modelId: null,
+    tools: [],
+    starters: [],
+    archived: true,
+    createdAt: 1,
+    updatedAt: 1,
+  },
+]
+
+/** Same shape, pinned to the Researcher employee (RF-052/053). */
+const PINNED_ROUTINE: ServerRoutine = {
+  ...ROUTINE,
+  id: 'r-2',
+  name: 'Pinned brief',
+  employeeId: 'emp-1',
+  employeeName: 'Researcher',
+}
+
 describe('RoutinesSection', () => {
   beforeEach(() => {
     cleanup()
@@ -38,6 +80,8 @@ describe('RoutinesSection', () => {
       serverRoutinesLoading: false,
       serverRoutinesError: null,
       loadServerRoutines: vi.fn(async () => {}),
+      serverEmployees: EMPLOYEES,
+      loadServerEmployees: vi.fn(async () => {}),
       createServerRoutineFor: vi.fn(async () => true),
       setServerRoutinePausedFor: vi.fn(async () => true),
       removeServerRoutineFor: vi.fn(async () => true),
@@ -55,6 +99,18 @@ describe('RoutinesSection', () => {
     expect(screen.getByText(/catch-up 30m/)).toBeInTheDocument()
     expect(screen.getByText(/last fired/)).toBeInTheDocument()
     expect(screen.getByText('Active')).toBeInTheDocument()
+  })
+
+  it('lists the pinned employee on the routine row (and nothing when unpinned)', () => {
+    useServerSessionStore.setState({
+      serverRoutines: [ROUTINE, PINNED_ROUTINE],
+    })
+    render(<RoutinesSection />)
+
+    const pinnedRow = screen.getByText('Pinned brief').closest('li')!
+    expect(within(pinnedRow).getByText(/runs as Researcher/i)).toBeInTheDocument()
+    const plainRow = screen.getByText('Morning brief').closest('li')!
+    expect(within(plainRow).queryByText(/runs as/i)).not.toBeInTheDocument()
   })
 
   it('shows the honest empty state when none exist', () => {
@@ -86,10 +142,33 @@ describe('RoutinesSection', () => {
       prompt: 'Wrap up the day.',
       schedule: '0 * * * *',
       catchUpMinutes: 0,
+      employeeId: null,
     })
     // A successful create closes the dialog.
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+  })
+
+  it('pins the routine to a chosen employee and skips archived ones', async () => {
+    const user = userEvent.setup()
+    const create = vi.fn(async () => true)
+    useServerSessionStore.setState({ createServerRoutineFor: create })
+    render(<RoutinesSection />)
+
+    await user.click(screen.getByRole('button', { name: /New routine/i }))
+    const dialog = await screen.findByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Name'), 'Weekly brief')
+    await user.type(within(dialog).getByLabelText('Prompt'), 'Weekly rollup.')
+    await user.selectOptions(within(dialog).getByLabelText('Run as employee (optional)'), 'emp-1')
+    await user.click(within(dialog).getByRole('button', { name: 'Create routine' }))
+
+    expect(create).toHaveBeenCalledWith({
+      name: 'Weekly brief',
+      prompt: 'Weekly rollup.',
+      schedule: '0 * * * *',
+      catchUpMinutes: 0,
+      employeeId: 'emp-1',
     })
   })
 

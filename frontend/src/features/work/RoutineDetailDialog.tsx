@@ -60,6 +60,11 @@ export function RoutineDetailDialog({
       <div className="flex flex-col gap-3">
         <p className="text-[13px] leading-relaxed text-ink-soft">{routine.prompt}</p>
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-ink-faint">
+          {routine.employeeName !== null && (
+            <span className="rounded-[6px] bg-subtle px-1.5 py-0.5 text-ink-soft">
+              runs as {routine.employeeName}
+            </span>
+          )}
           <span>{describeSchedule(routine.schedule)}</span>
           <code className="rounded-[6px] bg-subtle px-1.5 py-0.5">{routine.schedule}</code>
           <span>

@@ -16,6 +16,7 @@ const ROUTINE: ServerRoutine = {
   id: 'r-1',
   sessionId: 's-1',
   employeeId: null,
+  employeeName: null,
   name: 'Morning brief',
   prompt: 'Summarize overnight changes.',
   schedule: '30 9 * * 1-5',
@@ -117,6 +118,20 @@ describe('RoutineDetailDialog', () => {
       '/api/v1/routines/r-1',
       expect.objectContaining({ credentials: 'include' }),
     )
+  })
+
+  it('shows the pinned employee when the routine has one', async () => {
+    const pinned = { ...ROUTINE, employeeId: 'emp-1', employeeName: 'Researcher' }
+    useServerSessionStore.setState({
+      serverRoutines: [pinned],
+      openServerRoutineDetail: realOpenDetail,
+    })
+    const user = userEvent.setup()
+    renderDialog(pinned)
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText(/runs as Researcher/i)).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
   })
 
   it('shows the honest empty state before the first fire', async () => {
