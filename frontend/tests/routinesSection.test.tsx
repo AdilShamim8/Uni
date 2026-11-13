@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RoutinesSection } from '@/features/work/RoutinesSection'
+import type { ServerEmployee } from '@/services/api/serverEmployees'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import type { ServerRoutine } from '@/services/api/serverRoutines'
 
@@ -16,6 +17,7 @@ const ROUTINE: ServerRoutine = {
   id: 'r-1',
   sessionId: 's-1',
   employeeId: null,
+  employeeName: null,
   name: 'Morning brief',
   prompt: 'Summarize overnight changes.',
   schedule: '30 9 * * 1-5',
@@ -28,10 +30,45 @@ const ROUTINE: ServerRoutine = {
   updatedAt: 2,
 }
 
-const EMPLOYEES = [
-  { id: 'emp-1', name: 'Researcher', archived: false },
-  { id: 'emp-2', name: 'Old helper', archived: true },
+const EMPLOYEES: ServerEmployee[] = [
+  {
+    id: 'emp-1',
+    name: 'Researcher',
+    description: 'Finds things',
+    instructions: 'Be terse.',
+    category: 'specialist',
+    providerId: null,
+    modelId: null,
+    tools: [],
+    starters: [],
+    archived: false,
+    createdAt: 1,
+    updatedAt: 1,
+  },
+  {
+    id: 'emp-2',
+    name: 'Old helper',
+    description: 'Retired',
+    instructions: '',
+    category: 'personal',
+    providerId: null,
+    modelId: null,
+    tools: [],
+    starters: [],
+    archived: true,
+    createdAt: 1,
+    updatedAt: 1,
+  },
 ]
+
+/** Same shape, pinned to the Researcher employee (RF-052/053). */
+const PINNED_ROUTINE: ServerRoutine = {
+  ...ROUTINE,
+  id: 'r-2',
+  name: 'Pinned brief',
+  employeeId: 'emp-1',
+  employeeName: 'Researcher',
+}
 
 describe('RoutinesSection', () => {
   beforeEach(() => {
@@ -62,6 +99,18 @@ describe('RoutinesSection', () => {
     expect(screen.getByText(/catch-up 30m/)).toBeInTheDocument()
     expect(screen.getByText(/last fired/)).toBeInTheDocument()
     expect(screen.getByText('Active')).toBeInTheDocument()
+  })
+
+  it('lists the pinned employee on the routine row (and nothing when unpinned)', () => {
+    useServerSessionStore.setState({
+      serverRoutines: [ROUTINE, PINNED_ROUTINE],
+    })
+    render(<RoutinesSection />)
+
+    const pinnedRow = screen.getByText('Pinned brief').closest('li')!
+    expect(within(pinnedRow).getByText(/runs as Researcher/i)).toBeInTheDocument()
+    const plainRow = screen.getByText('Morning brief').closest('li')!
+    expect(within(plainRow).queryByText(/runs as/i)).not.toBeInTheDocument()
   })
 
   it('shows the honest empty state when none exist', () => {

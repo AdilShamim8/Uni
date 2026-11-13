@@ -16,6 +16,7 @@ const ROUTINE: ServerRoutine = {
   id: 'r-1',
   sessionId: 's-1',
   employeeId: null,
+  employeeName: null,
   name: 'Morning brief',
   prompt: 'Summarize overnight changes.',
   schedule: '30 9 * * 1-5',

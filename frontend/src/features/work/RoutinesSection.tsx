@@ -102,6 +102,11 @@ export function RoutinesSection() {
               {routine.prompt}
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-ink-faint">
+              {routine.employeeName !== null && (
+                <span className="rounded-[6px] bg-subtle px-1.5 py-0.5 text-ink-soft">
+                  runs as {routine.employeeName}
+                </span>
+              )}
               <span>{describeSchedule(routine.schedule)}</span>
               <code className="rounded-[6px] bg-subtle px-1.5 py-0.5">{routine.schedule}</code>
               {routine.catchUpMinutes > 0 && (
