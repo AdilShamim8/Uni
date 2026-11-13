@@ -133,6 +133,10 @@ export function RoutineFormFields({
           <option value="30">30 minutes</option>
           <option value="120">2 hours</option>
           <option value="1440">24 hours</option>
+          {/* A stored value outside the presets stays visible and editable. */}
+          {!['0', '30', '120', '1440'].includes(state.catchUp) && (
+            <option value={state.catchUp}>{state.catchUp} minutes (custom)</option>
+          )}
         </select>
       </label>
     </>
