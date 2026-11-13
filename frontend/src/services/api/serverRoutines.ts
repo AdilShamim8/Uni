@@ -20,6 +20,8 @@ export interface ServerRoutine {
   /** The routine's own unattended agent session (server-provisioned). */
   sessionId: string
   employeeId: string | null
+  /** The pinned employee's name at read time (null when unpinned). */
+  employeeName: string | null
   name: string
   prompt: string
   /** 5-field cron expression, UTC. */
