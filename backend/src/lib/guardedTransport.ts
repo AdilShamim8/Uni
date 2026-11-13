@@ -7,6 +7,16 @@ import type { Env } from '../config/env.js'
  * The single guarded outbound transport for provider traffic — used by
  * connection tests, model discovery, and AI SDK generation alike.
  *
+ * DEPENDENCY NOTE (2026-11-13): undici is pinned to 7.x ON PURPOSE.
+ * The guarded fetch passes an npm-undici `Agent` as the `dispatcher`
+ * of Node's BUNDLED global fetch; undici 8's dispatch validates a new
+ * handler protocol (`onRequestStart`/`onResponseError`) that Node's
+ * bundled fetch does not implement, so every provider request dies
+ * with "invalid onRequestStart method" (observed on main after an
+ * unverified 8.12.4 bump). Unpinning requires routing fetch through
+ * undici 8's own `fetch` (same-package dispatcher) and re-verifying
+ * the whole provider suite — not a casual dependabot merge.
+ *
  * Properties enforced on EVERY outbound request:
  * - SSRF validation first: the URL is parsed and its hostname resolved
  *   through `resolveProviderEndpoint` (private/loopback/link-local/
