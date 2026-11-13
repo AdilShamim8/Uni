@@ -1086,3 +1086,19 @@ produced main head `f97c7d642` with every check green:
 
 This was verified live against the GitHub check-runs API on
 `f97c7d642`, not from logs alone.
+
+
+## Session 3 (2026-11-13) — main healed + B07 workspace export
+
+- The four failing checks the owner reported were main's push runs
+  stuck on the PR #62 merge tree (missing RF-035/039/042). PR #63's
+  fully-green head was merged; main `f97c7d642` then passed every
+  check (verified live via the API).
+- B07 shipped end-to-end: `GET /api/v1/workspace/export` (contract-
+  validated snapshot; counts derived from serialized rows) + the
+  Settings → Data export card. Targeted suites at their commits:
+  workspace-export.integration 2/2; serverWorkspaceExport 3/3;
+  settings regression 16/16; lint + typecheck clean.
+- Full-suite verification on the session-3 tree (2026-11-13):
+  backend **394/394 across 49 files** (142s); frontend **629/629
+  across 88 files** (174s, single-worker). Both green.
