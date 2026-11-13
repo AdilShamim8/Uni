@@ -124,6 +124,46 @@ describe('server workspace export (Settings → Data)', () => {
     HTMLAnchorElement.prototype.click = originalClick
   })
 
+  it('remembers and shows the last export instant (RF-099)', async () => {
+    localStorage.removeItem('uni-last-server-export')
+    const fetchMock = vi.fn(async (url: string | URL) => {
+      const path = String(url)
+      if (path === '/api/auth/get-session') {
+        return jsonResponse(200, { session: { token: 't' }, user: USER })
+      }
+      if (path === '/api/v1/me') return jsonResponse(200, ME)
+      if (path === '/api/v1/workspace/export') return jsonResponse(200, EXPORT)
+      return jsonResponse(404, { code: 'not_found' })
+    })
+    stubObjectUrl()
+    vi.stubGlobal('fetch', fetchMock)
+    useServerSessionStore.setState({
+      status: 'signed-in',
+      account: { user: USER, workspace: ME.workspace },
+    })
+
+    const user = userEvent.setup()
+    renderApp('/chat')
+    await user.click(screen.getByRole('button', { name: /Alice/i }))
+    await user.click(await screen.findByRole('menuitem', { name: 'Settings' }))
+    const dialog = within(await screen.findByRole('dialog', { name: 'Settings' }))
+    await user.click(dialog.getByRole('button', { name: 'Data' }))
+    expect(dialog.queryByText(/Last exported/i)).toBeNull()
+
+    const anchorClick = vi.fn()
+    const originalClick = HTMLAnchorElement.prototype.click
+    HTMLAnchorElement.prototype.click = anchorClick
+    await user.click(dialog.getByRole('button', { name: 'Export server workspace data' }))
+    await waitFor(() => {
+      expect(anchorClick).toHaveBeenCalled()
+    })
+    HTMLAnchorElement.prototype.click = originalClick
+
+    expect(dialog.getByText(/Last exported just now/i)).toBeInTheDocument()
+    expect(localStorage.getItem('uni-last-server-export')).toBeTruthy()
+    localStorage.removeItem('uni-last-server-export')
+  })
+
   it('shows the honest error when the server refuses', async () => {
     vi.stubGlobal(
       'fetch',

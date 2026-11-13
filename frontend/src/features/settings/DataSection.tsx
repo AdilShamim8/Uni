@@ -26,6 +26,18 @@ interface PendingRestore {
   restore: () => void
 }
 
+/** RF-099 — where the last server-export instant is remembered. */
+const LAST_EXPORT_KEY = 'uni-last-server-export'
+
+function describePast(instant: number, now = Date.now()): string {
+  const minutes = Math.round((now - instant) / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  return new Date(instant).toLocaleDateString()
+}
+
 export function DataSection() {
   const exportAllData = useAppStore((state) => state.exportAllData)
   const clearHistory = useAppStore((state) => state.clearHistory)
@@ -33,6 +45,12 @@ export function DataSection() {
   const showToast = useAppStore((state) => state.showToast)
   const serverStatus = useServerSessionStore((state) => state.status)
   const [serverExportBusy, setServerExportBusy] = useState(false)
+  // RF-099 — when this account last left an export on disk.
+  const [lastExportAt, setLastExportAt] = useState<number | null>(() => {
+    const raw = localStorage.getItem(LAST_EXPORT_KEY)
+    const parsed = raw ? Number(raw) : NaN
+    return Number.isFinite(parsed) ? parsed : null
+  })
   const [serverExportError, setServerExportError] = useState<string | null>(null)
   const [confirming, setConfirming] = useState<'clear' | 'reset' | null>(null)
   const [pendingRestore, setPendingRestore] = useState<PendingRestore | null>(null)
@@ -57,6 +75,9 @@ export function DataSection() {
         JSON.stringify(payload, null, 2),
         'application/json',
       )
+      const at = Date.now()
+      localStorage.setItem(LAST_EXPORT_KEY, String(at))
+      setLastExportAt(at)
       showToast('Server workspace exported as JSON')
     } catch (error) {
       setServerExportError(error instanceof Error ? error.message : 'Export failed — try again.')
@@ -141,6 +162,11 @@ export function DataSection() {
                 <Download size={14} />
                 {serverExportBusy ? 'Exporting…' : 'Export'}
               </Button>
+              {lastExportAt !== null && (
+                <span className="text-[11px] text-ink-faint">
+                  Last exported {describePast(lastExportAt)}
+                </span>
+              )}
               {serverExportError && (
                 <span role="alert" className="text-[12px] text-danger">
                   {serverExportError}
