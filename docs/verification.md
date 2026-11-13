@@ -1120,3 +1120,23 @@ Two further CI hardenings landed after the checkpoint above:
 - PR #74 merged: main `9bb4dfab2` — Backend ✓ Frontend ✓ Contracts ✓
   verify ✓ Vercel build/deploy/report-build-status ✓ (verified live
   via the check-runs API).
+
+
+## Session 4 (2026-11-13) — routines employee pin, end-to-end (5 commits)
+
+The owner asked for exactly five new commits by their account; each is
+a coherent tested slice, pushed one at a time with SHA verification,
+and authored with the owner's noreply address (attribution fix):
+
+- RF-051 `9c39ed8e9` — create-dialog employee selector (default: the
+  session's employee; archived excluded). routinesSection 8/8.
+- RF-052 `5c3c7c210` — `employeeName` on the routine DTO: bulk-resolved
+  for lists (one query per page of pins), soft per-routine on get,
+  validated on create. routines-crud 8/8, scheduler + execution 7/7.
+- RF-053 `88f335416` — runs-as badge in list rows + client mirror;
+  fixtures updated. routinesSection 8/8, detail 4/4, store 7/7.
+- RF-054 `581db91f0` — same badge in the detail dialog. detail 5/5.
+- RF-055 (this commit) — checkpoint rows + counters.
+
+Typecheck and lint clean at every commit (the RF-048 lesson holds: no
+commit ships without both).
