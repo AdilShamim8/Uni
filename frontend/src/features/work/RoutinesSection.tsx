@@ -29,6 +29,7 @@ export function RoutinesSection() {
   const serverRoutinesLoading = useServerSessionStore((state) => state.serverRoutinesLoading)
   const serverRoutinesError = useServerSessionStore((state) => state.serverRoutinesError)
   const loadServerRoutines = useServerSessionStore((state) => state.loadServerRoutines)
+  const [showArchived, setShowArchived] = useState(false)
   const createServerRoutineFor = useServerSessionStore((state) => state.createServerRoutineFor)
   const setServerRoutinePausedFor = useServerSessionStore(
     (state) => state.setServerRoutinePausedFor,
@@ -43,9 +44,9 @@ export function RoutinesSection() {
   const [detailTarget, setDetailTarget] = useState<ServerRoutine | null>(null)
 
   useEffect(() => {
-    void loadServerRoutines()
+    void loadServerRoutines(showArchived)
     void loadServerEmployees()
-  }, [loadServerRoutines, loadServerEmployees])
+  }, [loadServerRoutines, loadServerEmployees, showArchived])
 
   return (
     <section aria-label="Server routines" className="mt-10">
@@ -54,6 +55,16 @@ export function RoutinesSection() {
           <CalendarClock size={15} className="text-ink-faint" aria-hidden="true" />
           Routines
         </h3>
+        <label className="mr-auto flex w-fit cursor-pointer items-center gap-1.5 text-[12px] text-ink-faint">
+          <input
+            type="checkbox"
+            checked={showArchived}
+            onChange={(event) => setShowArchived(event.target.checked)}
+            className="h-3.5 w-3.5 accent-[var(--color-accent)]"
+            aria-label="Show archived routines"
+          />
+          Archived
+        </label>
         <Button variant="secondary" size="sm" onClick={() => setCreateOpen(true)}>
           <Plus size={14} />
           New routine
@@ -94,10 +105,13 @@ export function RoutinesSection() {
               >
                 {routine.name}
               </button>
-              <StatusPill
-                label={routine.paused ? 'Paused' : 'Active'}
-                tone={routine.paused ? 'neutral' : 'accent'}
-              />
+              <div className="flex shrink-0 items-center gap-1.5">
+                {routine.archived && <StatusPill label="Archived" tone="neutral" />}
+                <StatusPill
+                  label={routine.paused ? 'Paused' : 'Active'}
+                  tone={routine.paused ? 'neutral' : 'accent'}
+                />
+              </div>
             </div>
             <p className="mt-1 line-clamp-2 text-[12.5px] leading-relaxed text-ink-soft">
               {routine.prompt}

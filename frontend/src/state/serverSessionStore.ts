@@ -335,7 +335,7 @@ interface ServerSessionState {
 
   /** Server Work (T019): list + lifecycle actions through the API. */
   loadServerWorkTasks: () => Promise<void>
-  loadServerRoutines: () => Promise<void>
+  loadServerRoutines: (includeArchived?: boolean) => Promise<void>
   openServerRoutineDetail: (routineId: string) => Promise<void>
   closeServerRoutineDetail: () => void
   createServerRoutineFor: (input: {
@@ -1323,11 +1323,11 @@ export const useServerSessionStore = create<ServerSessionState>()((set, get) => 
     set({ serverRoutineRuns: [], serverRoutineRunsLoading: false })
   },
 
-  loadServerRoutines: async () => {
+  loadServerRoutines: async (includeArchived = false) => {
     const generation = get().sessionGeneration
     set({ serverRoutinesLoading: true, serverRoutinesError: null })
     try {
-      const items = await listServerRoutines()
+      const items = await listServerRoutines(includeArchived)
       if (!stillCurrent(generation)) return
       set({ serverRoutines: items, serverRoutinesLoading: false })
     } catch (error) {

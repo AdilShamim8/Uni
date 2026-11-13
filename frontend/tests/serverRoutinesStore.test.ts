@@ -62,6 +62,16 @@ describe('serverSessionStore — routines slice', () => {
     expect(useServerSessionStore.getState().serverRoutinesError).toBeNull()
   })
 
+  it('loads with the archived flag when asked (RF-077)', async () => {
+    const fetchMock = vi.fn(async (url: string | URL) => {
+      expect(String(url)).toContain('includeArchived=true')
+      return jsonResponse(200, { items: [{ ...ROUTINE, archived: true }] })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    await useServerSessionStore.getState().loadServerRoutines(true)
+    expect(useServerSessionStore.getState().serverRoutines[0]!.archived).toBe(true)
+  })
+
   it('records the honest error when the load fails', async () => {
     vi.stubGlobal(
       'fetch',
