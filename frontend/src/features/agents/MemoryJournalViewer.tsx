@@ -10,6 +10,18 @@ import type { ServerMemoryJournalEntry } from '@/services/api/serverEmployees'
  * from the journal service. Entries are read-only here; the revert
  * action lands on top of this viewer (RF-067).
  */
+/** RF-106 — coarse past labels for journal entries (title keeps the exact time). */
+function describePast(instant: number, now = Date.now()): string {
+  const minutes = Math.round((now - instant) / 60_000)
+  if (minutes < 1) return 'just now'
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(instant).toLocaleDateString()
+}
+
 export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
   const journal = useServerSessionStore((state) => state.serverMemoryJournal)
   const loading = useServerSessionStore((state) => state.serverMemoryJournalLoading)
@@ -113,7 +125,7 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
                       by {entry.actor}
                       {entry.via ? ` · ${entry.via}` : ''}
                     </span>
-                    <span>{new Date(entry.createdAt).toLocaleString()}</span>
+                    <span title={new Date(entry.createdAt).toLocaleString()}>{describePast(entry.createdAt)}</span>
                     {entry.canRevert ? (
                       <button
                         type="button"
