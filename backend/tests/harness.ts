@@ -1,5 +1,6 @@
 import EmbeddedPostgres from 'embedded-postgres'
 import { mkdtemp, rm, mkdir } from 'node:fs/promises'
+import { connect } from 'node:net'
 import { join } from 'node:path'
 import type { FastifyInstance } from 'fastify'
 import { buildApp } from '../src/app.js'
@@ -23,10 +24,31 @@ export const TRUSTED_ORIGIN = 'http://localhost:5173'
 /** Deterministic 32-byte test master key (base64) for credential envelopes. */
 export const TEST_CREDENTIAL_MASTER_KEY = Buffer.alloc(32, 7).toString('base64')
 
+/**
+ * Probe that something actually answers on the port — the postmaster
+ * must be listening before the app connects.
+ */
+function probeTcp(port: number, timeoutMs = 3_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const socket = connect(port, '127.0.0.1')
+    socket.setTimeout(timeoutMs)
+    socket.once('connect', () => {
+      socket.destroy()
+      resolve()
+    })
+    socket.once('timeout', () => {
+      socket.destroy()
+      reject(new Error(`postmaster did not answer on port ${port}`))
+    })
+    socket.once('error', (error) => {
+      socket.destroy()
+      reject(error)
+    })
+  })
+}
+
 export async function startTestApp(): Promise<TestApp> {
   const scratch = await ensureScratchRoot()
-  const dataDir = await mkdtemp(join(scratch, 'uni-pg-'))
-  const port = await getFreePort()
   // Agent session roots default to /var/lib/uni/agent, which tests (and
   // most dev machines) cannot write. Point the per-test agent root at a
   // scratch directory before any code reads the env override.
@@ -35,15 +57,36 @@ export async function startTestApp(): Promise<TestApp> {
   await mkdir(agentRoot, { recursive: true })
   process.env.UNI_AGENT_ROOT = agentRoot
 
-  const postgres = new EmbeddedPostgres({
-    databaseDir: dataDir,
-    user: 'uni',
-    password: 'uni',
-    port,
-    persistent: true,
-  })
-  await postgres.initialise()
-  await postgres.start()
+  // Parallel test files each start an embedded cluster; reserving a
+  // port with bind(0)-then-close has an inherent rebind race under CI
+  // load. Retry with a fresh port+dataDir when the cluster cannot own
+  // its port, and probe that the postmaster actually answers.
+  let postgres!: EmbeddedPostgres
+  let dataDir!: string
+  let port = 0
+  const maxAttempts = 3
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    dataDir = await mkdtemp(join(scratch, 'uni-pg-'))
+    port = await getFreePort()
+    postgres = new EmbeddedPostgres({
+      databaseDir: dataDir,
+      user: 'uni',
+      password: 'uni',
+      port,
+      persistent: true,
+    })
+    try {
+      await postgres.initialise()
+      await postgres.start()
+      await probeTcp(port)
+      break
+    } catch (error) {
+      await postgres.stop().catch(() => {})
+      await rm(dataDir, { recursive: true, force: true }).catch(() => {})
+      if (attempt === maxAttempts) throw error
+    }
+  }
+
   await postgres.createDatabase('uni_test')
 
   const databaseUrl = `postgres://uni:uni@127.0.0.1:${port}/uni_test`
