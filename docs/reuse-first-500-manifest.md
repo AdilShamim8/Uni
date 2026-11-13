@@ -116,7 +116,12 @@ bulk push. This file is the count of record for the effort.
 | 45 | RF-047 | effort | Session-3 checkpoint: these rows, counters, verification | docs | `4c7571b82` | pushed ✓ |
 | 46 | RF-048 | CI | Complete the account fixture in the export test (CI typecheck: workspace field required) | fix | `cab409f5e` | pushed ✓ |
 | 47 | RF-049 | CI | Harness: retry embedded-PG startup with a fresh port + post-start TCP probe (CI port-race flake in agent-admission) | test | `03e732478` | pushed ✓ |
-| 48 | RF-050 | effort | Session-3 close: PR #74 merged (`9bb4dfab2`), main green on every check | docs | (this commit) | pushed ✓ |
+| 48 | RF-050 | effort | Session-3 close: PR #74 merged (`9bb4dfab2`), main green on every check | docs | `b04d11495` | pushed ✓ |
+| 49 | RF-051 | T033 | Employee pin selector in the routine create dialog (soft pin, archived employees excluded, session's employee as default) | impl | `9c39ed8e9` | pushed ✓ |
+| 50 | RF-052 | T033 | routineDto carries the pinned employee's name (bulk-resolved on list, soft on get, validated on create) + integration test | impl | `5c3c7c210` | pushed ✓ |
+| 51 | RF-053 | T033 | Routines list row shows the pinned employee (runs-as badge, honest absence when unpinned) + tests | impl | `88f335416` | pushed ✓ |
+| 52 | RF-054 | T033 | Routine detail dialog shows the pinned employee (parity with the list row) + test | impl | `581db91f0` | pushed ✓ |
+| 53 | RF-055 | effort | Session-4 checkpoint: these rows, counters, verification | docs | (this commit) | pushed ✓ |
 
 ## Push blocker (recorded 2026-11-12, effort open)
 
@@ -144,7 +149,7 @@ one in order (the procedure is scripted in
 
 - `new_commits`: 43 (RF-001…RF-043; 37 implementation/test/fix + 5 docs/effort)
 - `new_implementation_commits`: 37
-- `remote_present_commits`: 50 — every commit pushed ONE AT A TIME and
+- `remote_present_commits`: 55 — every commit pushed ONE AT A TIME and
   verified by SHA. **ALL 43 effort commits are now IN MAIN**: PR #62
   (RF-001…028, merged by the owner) + PR #63 (RF-029…043, merged
   2026-11-13 after its head CI matrix was fully green). Main head
@@ -156,7 +161,13 @@ one in order (the procedure is scripted in
   (`9bb4dfab2`), main green on every check including the Vercel
   production deploy. Main also carries two one-commit branch
   fast-forward pushes after each merge left the remote branch behind.
-- Target: 500 new commits · remaining: 450 — honest work continues
+- Session 4 (2026-11-13, owner-requested batch of exactly 5) completed
+  the routines employee pin end-to-end: dialog selector (RF-051),
+  DTO name resolution (RF-052), list + detail badges (RF-053/054).
+  From this session on, commits are authored as
+  `Adil Shamim <157037615+AdilShamim8@users.noreply.github.com>` so
+  they credit the owner's account (earlier rows predate this fix).
+- Target: 500 new commits · remaining: 445 — honest work continues
   slice-by-slice; commits are never manufactured (prompt of record).
 
 ## Honest status at session close

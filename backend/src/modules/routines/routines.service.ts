@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import * as schema from '../../db/schema.js'
 import { routines, routineRuns } from '../../db/schema.js'
@@ -28,7 +28,10 @@ export type RoutinesDatabase = NodePgDatabase<typeof schema>
 /** Preview horizon for the computed next fire: 7 days of minutes. */
 const NEXT_FIRE_SCAN_MINUTES = 7 * 24 * 60
 
-function serializeRoutine(row: typeof routines.$inferSelect): RoutineDto {
+function serializeRoutine(
+  row: typeof routines.$inferSelect,
+  employeeName: string | null = null,
+): RoutineDto {
   // The next fire is computed by the server's own evaluator — paused
   // routines do not fire, so their preview is honestly null.
   let nextFireAt: number | null = null
@@ -44,6 +47,7 @@ function serializeRoutine(row: typeof routines.$inferSelect): RoutineDto {
     id: row.id,
     sessionId: row.sessionId,
     employeeId: row.employeeId,
+    employeeName,
     name: row.name,
     prompt: row.prompt,
     schedule: row.schedule,
@@ -143,9 +147,17 @@ export async function listRoutines(
     .where(eq(routines.workspaceId, workspaceId))
     .orderBy(desc(routines.updatedAt))
     .limit(200)
-  return rows
-    .filter((row) => includeArchived || !row.archived)
-    .map(serializeRoutine)
+  const visible = rows.filter((row) => includeArchived || !row.archived)
+  const pinnedIds = [...new Set(visible.map((row) => row.employeeId).filter((id): id is string => id !== null))]
+  const names = new Map<string, string>()
+  if (pinnedIds.length > 0) {
+    const employeeRows = await db
+      .select({ id: schema.employees.id, name: schema.employees.name })
+      .from(schema.employees)
+      .where(and(eq(schema.employees.workspaceId, workspaceId), inArray(schema.employees.id, pinnedIds)))
+    for (const employee of employeeRows) names.set(employee.id, employee.name)
+  }
+  return visible.map((row) => serializeRoutine(row, row.employeeId ? (names.get(row.employeeId) ?? null) : null))
 }
 
 export async function getRoutine(
@@ -166,7 +178,16 @@ export async function getRoutine(
     .where(eq(routineRuns.routineId, routineId))
     .orderBy(desc(routineRuns.scheduledFor))
     .limit(100)
-  return { routine: serializeRoutine(row), runs: runRows.map(serializeRun) }
+  let employeeName: string | null = null
+  if (row.employeeId) {
+    const employeeRow = await db
+      .select({ name: schema.employees.name })
+      .from(schema.employees)
+      .where(and(eq(schema.employees.id, row.employeeId), eq(schema.employees.workspaceId, workspaceId)))
+      .limit(1)
+    employeeName = employeeRow[0]?.name ?? null
+  }
+  return { routine: serializeRoutine(row, employeeName), runs: runRows.map(serializeRun) }
 }
 
 export async function createRoutine(
@@ -184,11 +205,12 @@ export async function createRoutine(
 
   // Resolve the employee pin (same workspace) when linked; a foreign or
   // missing employee is an honest 404 before anything is provisioned.
-  let employee: { id: string; providerId: string | null; modelId: string | null } | null = null
+  let employee: { id: string; name: string; providerId: string | null; modelId: string | null } | null = null
   if (input.employeeId) {
     const rows = await db
       .select({
         id: schema.employees.id,
+        name: schema.employees.name,
         providerId: schema.employees.providerId,
         modelId: schema.employees.modelId,
       })
@@ -220,7 +242,7 @@ export async function createRoutine(
     .returning()
   const created = row[0]
   if (!created) throw new Error('Routine insert returned no row.')
-  return serializeRoutine(created)
+  return serializeRoutine(created, employee?.name ?? null)
 }
 
 export async function patchRoutine(
