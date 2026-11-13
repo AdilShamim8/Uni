@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Bot, CloudOff, MessageSquare, Users } from 'lucide-react'
+import { Bot, CloudOff, MessageSquare, Pencil, Users } from 'lucide-react'
 import { useServerSessionStore } from '@/state/serverSessionStore'
 import { useAgentsStore } from '@/state/agentsStore'
+import { EditEmployeeDialog } from './EditEmployeeDialog'
+import type { ServerEmployee } from '@/services/api/serverEmployees'
 
 /**
  * Phase C1 — the server employee roster on the Agents page. When the
@@ -19,6 +21,8 @@ export function ServerEmployeesSection() {
   const serverEmployees = useServerSessionStore((state) => state.serverEmployees)
   const serverEmployeesLoading = useServerSessionStore((state) => state.serverEmployeesLoading)
   const loadServerEmployees = useServerSessionStore((state) => state.loadServerEmployees)
+  const updateServerEmployee = useServerSessionStore((state) => state.updateServerEmployee)
+  const [editTarget, setEditTarget] = useState<ServerEmployee | null>(null)
   const agents = useAgentsStore((state) => state.agents)
 
   useEffect(() => {
@@ -81,6 +85,15 @@ export function ServerEmployeesSection() {
                     {employee.description || 'No description'}
                   </span>
                 </span>
+                <button
+                  type="button"
+                  aria-label={`Edit employee ${employee.name}`}
+                  onClick={() => setEditTarget(employee)}
+                  className="press inline-flex min-touch items-center gap-1.5 rounded-control border border-line px-2.5 py-1.5 text-[12.5px] font-medium text-ink transition-colors hover:bg-subtle"
+                >
+                  <Pencil size={13} aria-hidden="true" />
+                  Edit
+                </button>
                 {linkedAgent ? (
                   <Link
                     to={`/agents/${linkedAgent.id}`}
@@ -106,6 +119,16 @@ export function ServerEmployeesSection() {
         and memory. Their threads and notes live server-side; local profiles below stay in
         this browser.
       </p>
+      <EditEmployeeDialog
+        key={editTarget?.id ?? 'none'}
+        employee={editTarget}
+        onClose={() => setEditTarget(null)}
+        onSave={async (employeeId, patch) => {
+          const ok = await updateServerEmployee(employeeId, patch)
+          if (ok) setEditTarget(null)
+          return ok
+        }}
+      />
     </section>
   )
 }
