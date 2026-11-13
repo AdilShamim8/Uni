@@ -120,6 +120,20 @@ describe('RoutineDetailDialog', () => {
     )
   })
 
+  it('shows the pinned employee when the routine has one', async () => {
+    const pinned = { ...ROUTINE, employeeId: 'emp-1', employeeName: 'Researcher' }
+    useServerSessionStore.setState({
+      serverRoutines: [pinned],
+      openServerRoutineDetail: realOpenDetail,
+    })
+    const user = userEvent.setup()
+    renderDialog(pinned)
+
+    const dialog = await screen.findByRole('dialog')
+    expect(within(dialog).getByText(/runs as Researcher/i)).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Close' }))
+  })
+
   it('shows the honest empty state before the first fire', async () => {
     useServerSessionStore.setState({
       serverRoutineRuns: [],
