@@ -860,6 +860,18 @@ export function MemoryPanel({ agentId }: { agentId: string }) {
             credential shapes before persistence — and are included in future
             requests to this employee from every surface.
           </p>
+          <p className="mt-1 px-1 text-[11px] text-ink-faint">
+            {serverNotes.length} note{serverNotes.length === 1 ? '' : 's'} ·{' '}
+            {serverNotes.reduce((sum, note) => sum + note.text.length, 0).toLocaleString()}{' '}
+            characters · about{' '}
+            {Math.min(
+              100,
+              Math.round(
+                (serverNotes.reduce((sum, note) => sum + note.text.length, 0) / 4000) * 100,
+              ),
+            )}
+            % of the ~4,000-character budget sent with each request
+          </p>
           <MemoryJournalViewer employeeId={linkedEmployeeId} />
         </div>
       ) : mine.length === 0 ? (

@@ -180,6 +180,21 @@ describe('MemoryPanel dual-mode (T016)', () => {
     expect(screen.queryByLabelText('Edit server memory note')).toBeNull()
   })
 
+  it('shows the live memory budget (RF-102)', async () => {
+    useServerSessionStore.setState({ status: 'signed-in', account: null })
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(200, {
+        items: [
+          { id: 'n-1', text: '0123456789', contentHash: 'a'.repeat(64), createdAt: 1 },
+          { id: 'n-2', text: 'x'.repeat(30), contentHash: 'b'.repeat(64), createdAt: 2 },
+        ],
+      }),
+    )
+    render(<MemoryPanel agentId={AGENT_ID} />)
+    expect(await screen.findByText(/2 notes · 40 characters/i)).toBeInTheDocument()
+    expect(screen.getByText(/1% of the ~4,000-character budget/i)).toBeInTheDocument()
+  })
+
   it('warns honestly when the linked employee is archived (RF-096)', async () => {
     useServerSessionStore.setState({
       status: 'signed-in',
