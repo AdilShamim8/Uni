@@ -17,13 +17,17 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
   const loadServerMemoryJournal = useServerSessionStore((state) => state.loadServerMemoryJournal)
   const revertEntry = useServerSessionStore((state) => state.revertServerMemoryJournalEntryFor)
   const [open, setOpen] = useState(false)
+  // RF-098 — filter the audit trail by what happened.
+  const [kindFilter, setKindFilter] = useState<'all' | 'created' | 'edited' | 'deleted'>('all')
   const [revertTarget, setRevertTarget] = useState<ServerMemoryJournalEntry | null>(null)
 
   useEffect(() => {
     if (open) void loadServerMemoryJournal(employeeId)
   }, [open, employeeId, loadServerMemoryJournal])
 
-  const entries = journal[employeeId] ?? []
+  const entries = (journal[employeeId] ?? []).filter(
+    (entry) => kindFilter === 'all' || entry.kind === kindFilter,
+  )
 
   return (
     <section aria-label="Server memory journal" className="mt-3">
@@ -66,8 +70,30 @@ export function MemoryJournalViewer({ employeeId }: { employeeId: string }) {
           )}
           {!loading && !error && entries.length === 0 && (
             <p className="text-xs text-ink-faint">
-              No changes recorded yet — every add, edit, and delete lands here.
+              {kindFilter === 'all'
+                ? 'No changes recorded yet — every add, edit, and delete lands here.'
+                : `No ${kindFilter} entries in this view.`}
             </p>
+          )}
+          {!loading && (journal[employeeId] ?? []).length > 0 && (
+            <label className="mb-1.5 flex w-fit items-center gap-1.5 text-[11px] text-ink-faint">
+              Show
+              <select
+                value={kindFilter}
+                onChange={(event) => {
+                  const value = event.target.value
+                  if (value === 'created' || value === 'edited' || value === 'deleted' || value === 'all') {
+                    setKindFilter(value)
+                  }
+                }}
+                className="rounded-[6px] border border-line bg-panel px-1.5 py-0.5 text-[11px] text-ink-soft"
+              >
+                <option value="all">all changes</option>
+                <option value="created">added</option>
+                <option value="edited">edits</option>
+                <option value="deleted">deletions</option>
+              </select>
+            </label>
           )}
           {!loading && entries.length > 0 && (
             <ul className="flex max-h-64 flex-col gap-2 overflow-y-auto" aria-label="Journal entries">
