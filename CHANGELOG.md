@@ -1,5 +1,47 @@
 # Changelog
 
+## 2026-11-14 — session 7 (RF-112…RF-202): CI repair + the verification buildout
+
+- **CI repair:** the export integration test's inline payload type was
+  four sections behind its own counts assertion — it now declares all
+  six (RF-112); the connectors badge test raced an
+  asynchronously-loaded catalog — it now waits for the badges (RF-113).
+  Both workflows green again on the repair head.
+- **CI hardening:** Frontend CI cancels superseded runs; the backend CI
+  job verifies the production build, not just types; the contracts CI
+  job runs the new schema suite (RF-114/RF-115/RF-139).
+- **Contracts:** a 22-file / 157-test Vitest suite over every shared
+  schema — accept/reject per domain, the honest invariants, the
+  public-surface guard, the export drift guard (the RF-112 bug class),
+  and an edge-case wave over request bounds (RF-117…RF-138,
+  RF-187…RF-195).
+- **Security:** SECURITY.md — the honest reporting policy and the
+  invariants reviewers can hold the code to (RF-116); unit coverage for
+  the AES-256-GCM credential envelope (fresh nonces, scope-bound AAD,
+  silent-on-failure decrypt, RF-177).
+- **Backend:** unit tests for pg error classification, the in-process
+  run registry, the connector catalog vs the shared contract, AppError
+  helpers, pino secret redaction, withTimeout, providerUrls
+  delegation, and the schema-validated environment (production
+  DATABASE_URL gate) — RF-154…RF-156, RF-178/RF-179, RF-182/RF-183,
+  RF-196.
+- **Frontend:** the routine form state moved out of the component file
+  (react-refresh warnings gone — lint fully clean, RF-140); 40 new
+  test files (~230 tests) covering the design-system primitives,
+  Markdown rendering, SSE parsing, context resolution, the plugin
+  registry/receipts, six server API clients, settings surfaces, the
+  searchable model picker, and previously uncovered pure modules —
+  RF-141…RF-153, RF-162…RF-176, RF-180/RF-181, RF-184,
+  RF-197…RF-201.
+- **Docs:** `docs/testing.md` (the local verification matrix),
+  `docs/contracts-guide.md` (the shared-boundary rules), README refresh
+  with current suite counts and verification pointers (RF-157…RF-159).
+
+**Full-suite totals at the session close:** backend 471/471 (60 files),
+frontend 871/871 (123 files), contracts 157/157 (22 files); typecheck,
+lint, and production builds clean everywhere. Every commit was pushed
+individually as the owner requested.
+
 ## 2026-11-13 — sessions 4–6 (RF-041…RF-111)
 
 - **Routines:** full editing end-to-end (re-pin an employee via PATCH with
