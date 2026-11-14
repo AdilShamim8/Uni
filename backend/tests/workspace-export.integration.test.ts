@@ -95,9 +95,18 @@ describe('workspace export (B07)', () => {
       format: string
       employees: Array<{ id: string; name: string; instructions: string }>
       memoryNotes: Array<{ employeeId: string; text: string }>
+      memoryJournal: Array<{ id: string; kind: string }>
       routines: Array<{ name: string; schedule: string }>
+      routineRuns: Array<{ id: string; status: string }>
       files: Array<{ title: string; extractedText: string }>
-      counts: { employees: number; memoryNotes: number; routines: number; files: number }
+      counts: {
+        employees: number
+        memoryNotes: number
+        memoryJournal: number
+        routines: number
+        routineRuns: number
+        files: number
+      }
     }
 
     expect(body.format).toBe('uni.workspace.export/1')
