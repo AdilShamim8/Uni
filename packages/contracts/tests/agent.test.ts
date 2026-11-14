@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   AGENT_SWITCHABLE_MODES,
+  agentEventsQuerySchema,
   agentModeSchema,
   agentSessionDtoSchema,
   agentSessionStatusSchema,
   createAgentSessionRequestSchema,
   isValidRootDir,
+  patchAgentSessionRequestSchema,
   parseAgentModeStrict,
+  permissionDecisionSchema,
+  permissionDenialSchema,
+  sendAgentMessageRequestSchema,
 } from '../src/index.js'
 
 /**
@@ -95,5 +100,48 @@ describe('isValidRootDir (the F01 gate)', () => {
     expect(isValidRootDir('a/./b')).toBe(false)
     expect(isValidRootDir('a/.hidden')).toBe(false)
     expect(isValidRootDir('//')).toBe(false)
+  })
+})
+
+describe('session requests and permissions', () => {
+  it('session creation rejects a traversing rootDir at the contract level', () => {
+    expect(
+      createAgentSessionRequestSchema.safeParse({ name: 'Desk', rootDir: 'a/../b' }).success,
+    ).toBe(false)
+    expect(
+      createAgentSessionRequestSchema.safeParse({ name: 'Desk', rootDir: 'sessions/x' }).success,
+    ).toBe(true)
+  })
+
+  it('a session patch with no fields is rejected', () => {
+    expect(patchAgentSessionRequestSchema.safeParse({}).success).toBe(false)
+    expect(patchAgentSessionRequestSchema.safeParse({ archived: true }).success).toBe(true)
+  })
+
+  it('a permission decision defaults to approving just this once', () => {
+    const decision = permissionDecisionSchema.parse({ requestId: 'pr_1', decision: 'approve' })
+    expect(decision.scope).toBe('once')
+    expect(permissionDecisionSchema.safeParse({ requestId: 'pr_1', decision: 'maybe' }).success).toBe(
+      false,
+    )
+  })
+
+  it('a denial tells the model why, so it adapts instead of retrying', () => {
+    const denial = permissionDenialSchema.parse({ requestId: 'pr_1', reason: 'Outside the root.' })
+    expect(denial.reason).toBe('Outside the root.')
+  })
+
+  it('the replay cursor coerces and allows -1 (replay everything)', () => {
+    expect(agentEventsQuerySchema.parse({})).toEqual({ after: 0 })
+    expect(agentEventsQuerySchema.parse({ after: '-1' })).toEqual({ after: -1 })
+    expect(agentEventsQuerySchema.safeParse({ after: '-2' }).success).toBe(false)
+  })
+
+  it('a message send is bounded and may carry an idempotency key', () => {
+    expect(sendAgentMessageRequestSchema.safeParse({ text: 'Go.' }).success).toBe(true)
+    expect(sendAgentMessageRequestSchema.safeParse({ text: '   ' }).success).toBe(false)
+    expect(
+      sendAgentMessageRequestSchema.safeParse({ text: 'x'.repeat(50_001) }).success,
+    ).toBe(false)
   })
 })
