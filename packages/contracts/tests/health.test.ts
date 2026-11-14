@@ -35,3 +35,10 @@ describe('health contracts', () => {
     ).toBe(false)
   })
 })
+
+describe('readiness envelope completeness', () => {
+  it('the checks object with its database axis is required, not optional', () => {
+    expect(healthReadySchema.safeParse({ status: 'ready' }).success).toBe(false)
+    expect(healthReadySchema.safeParse({ status: 'ready', checks: {} }).success).toBe(false)
+  })
+})
