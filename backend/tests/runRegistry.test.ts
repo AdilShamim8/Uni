@@ -116,3 +116,13 @@ describe('run event bus', () => {
     expect(seenByB).toEqual([])
   })
 })
+
+describe('registry cleanup', () => {
+  it('a run with no subscribers finishes cleanly (no ghost sets)', () => {
+    const runId = track('run-nosub')
+    registerRun(runId)
+    finishRun(runId)
+    finishRun(runId) // second finish is a safe no-op
+    expect(getRunHandle(runId)).toBeNull()
+  })
+})
