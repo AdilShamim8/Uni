@@ -83,3 +83,14 @@ describe('routineFormValid', () => {
     expect(routineFormValid({ ...custom, customSchedule: '*/15 * * * *' })).toBe(true)
   })
 })
+
+describe('custom catch-up visibility contract', () => {
+  it('a stored catch-up outside the presets is preserved verbatim by the state helpers', () => {
+    const state: RoutineFormState = { ...EMPTY_ROUTINE_FORM, catchUp: '45' }
+    // The helpers never normalize: the select renders the custom option
+    // from the raw string (see RoutineFormFields), and the submit mapping
+    // parses it server-side.
+    expect(state.catchUp).toBe('45')
+    expect(routineFormValid({ ...state, name: 'N', prompt: 'P' })).toBe(true)
+  })
+})
