@@ -58,4 +58,21 @@ describe('canonical save result', () => {
     expect(canonicalSaveResultSchema.parse(result)).toEqual(result)
     expect(canonicalSaveResultSchema.safeParse({ ...result, version: 0 }).success).toBe(false)
   })
+
+  it('markdown is bounded at exactly 500,000 characters', () => {
+    expect(
+      createLibraryArtifactRequestSchema.safeParse({
+        title: 'Big',
+        kind: 'document',
+        markdown: 'x'.repeat(500_000),
+      }).success,
+    ).toBe(true)
+    expect(
+      createLibraryArtifactRequestSchema.safeParse({
+        title: 'Big',
+        kind: 'document',
+        markdown: 'x'.repeat(500_001),
+      }).success,
+    ).toBe(false)
+  })
 })
