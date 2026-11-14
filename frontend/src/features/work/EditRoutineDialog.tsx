@@ -2,13 +2,13 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Dialog } from '@/components/ui/Dialog'
 import type { ServerRoutine } from '@/services/api/serverRoutines'
+import { RoutineFormFields } from './routineFormFields'
 import {
   CUSTOM_SCHEDULE,
   SCHEDULE_PRESETS,
-  RoutineFormFields,
   effectiveSchedule,
   type RoutineFormState,
-} from './routineFormFields'
+} from './routineFormState'
 
 /**
  * RF-061 — the routine edit dialog (T033): the shared form fields

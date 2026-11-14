@@ -8,13 +8,13 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { StatusPill } from '@/components/ui/StatusPill'
 import { describeSchedule } from './schedulePreview'
 import { relativeFuture } from './relativeTime'
+import { RoutineFormFields } from './routineFormFields'
 import {
   EMPTY_ROUTINE_FORM,
-  RoutineFormFields,
   effectiveSchedule,
   routineFormValid,
   type RoutineFormState,
-} from './routineFormFields'
+} from './routineFormState'
 import { RoutineDetailDialog } from './RoutineDetailDialog'
 import { EditRoutineDialog } from './EditRoutineDialog'
 
