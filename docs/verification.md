@@ -1292,14 +1292,16 @@ Every commit typechecked and ran its targeted suite before its
 individual push. This section is refreshed with full-suite totals at
 the session close.
 
-**Session-7 close totals (exit codes captured unmasked):** backend
-typecheck + build + **471/471 across 60 files** (8 registry tests after
-RF-206); frontend lint clean + typecheck + production build +
-**871/871 across 123 files** (schedulePreview 11 after RF-205,
-routineFormState 9 after RF-207); contracts typecheck (src + tests) +
-build + **158/158 across 22 files** (connectors 8 after RF-208). One
-mid-session gate slip (RF-184 pushed an unused import before the
-typecheck gate ran) was fixed by RF-186 immediately after, before any
-later commit. Session 7 closed at RF-208: **97 commits — the CI repair
-RF-112/RF-113, then 95 verified improvements, every one pushed
-individually as the owner requested.**
+**Session-7 close totals:** the last full-suite runs (exit codes
+captured unmasked) measured backend typecheck + build + **471/471
+across 60 files** and frontend lint + typecheck + production build +
+**871/871 across 123 files**; the closing per-file additions were
+verified individually after those runs — RF-206 (+1 backend registry
+test → **472**), RF-205 (+1 schedulePreview) and RF-207 (+1
+routineFormState) (→ **873 frontend**) — and the contracts suite was
+re-run in full after RF-208: typecheck (src + tests) + build +
+**157/157 across 22 files**. One mid-session gate slip (RF-184 pushed
+an unused import before the typecheck gate ran) was fixed by RF-186
+immediately after, before any later commit. Session 7 closed at
+RF-210: **99 commits — the CI repair RF-112/RF-113, then 97 verified
+improvements, every one pushed individually as the owner requested.**
