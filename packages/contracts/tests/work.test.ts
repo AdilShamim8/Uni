@@ -89,4 +89,27 @@ describe('work receipts', () => {
         .success,
     ).toBe(false)
   })
+
+  it('receipt sources are bounded at 200 and tools at 500', () => {
+    const base = { provenance: 'provider-generated' as const }
+    expect(
+      workRunReceiptsSchema.safeParse({
+        ...base,
+        sources: Array.from({ length: 201 }, () => ({ kind: 'file' as const, id: 'x' })),
+        tools: [],
+      }).success,
+    ).toBe(false)
+    expect(
+      workRunReceiptsSchema.safeParse({
+        ...base,
+        sources: [],
+        tools: Array.from({ length: 501 }, () => ({
+          tool: 'read',
+          outcome: 'ok' as const,
+          detail: 'd',
+          at: 1,
+        })),
+      }).success,
+    ).toBe(false)
+  })
 })
