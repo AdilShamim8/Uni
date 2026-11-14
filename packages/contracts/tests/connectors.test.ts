@@ -95,4 +95,20 @@ describe('connector credentials and tests', () => {
     expect(connectorTestResultDtoSchema.parse(result)).toEqual(result)
     expect(connectorTestResultDtoSchema.safeParse({ ...result, status: -1 }).success).toBe(false)
   })
+
+  it('the credential view timestamps are nonnegative integers or null', () => {
+    const credential = {
+      connectorId: 'github',
+      status: 'verified',
+      lastCheckedAt: 0,
+      lastError: 'The key was rejected.',
+    }
+    expect(connectorCredentialDtoSchema.parse(credential)).toEqual(credential)
+    expect(
+      connectorCredentialDtoSchema.safeParse({ ...credential, lastCheckedAt: -1 }).success,
+    ).toBe(false)
+    expect(
+      connectorCredentialDtoSchema.safeParse({ ...credential, lastCheckedAt: 1.5 }).success,
+    ).toBe(false)
+  })
 })
