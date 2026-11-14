@@ -88,4 +88,17 @@ describe('routine DTO', () => {
       routineDtoSchema.safeParse({ ...dto, employeeName: undefined }).success,
     ).toBe(false)
   })
+
+  it('names cap at 200 and prompts at 10,000 characters', () => {
+    const base = { name: 'N', prompt: 'P', schedule: '30 9 * * 1-5' }
+    expect(createRoutineRequestSchema.safeParse({ ...base, name: 'x'.repeat(201) }).success).toBe(
+      false,
+    )
+    expect(
+      createRoutineRequestSchema.safeParse({ ...base, prompt: 'x'.repeat(10_001) }).success,
+    ).toBe(false)
+    expect(createRoutineRequestSchema.safeParse({ ...base, prompt: 'x'.repeat(10_000) }).success).toBe(
+      true,
+    )
+  })
 })
