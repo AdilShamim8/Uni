@@ -113,3 +113,59 @@ describe('conversation patch + node creation', () => {
     ).toBe(true)
   })
 })
+
+describe('conversation request bounds', () => {
+  it('node creation bounds its optional metadata arrays', () => {
+    expect(
+      createNodeRequestSchema.safeParse({
+        role: 'assistant',
+        content: 'done',
+        error: 'x'.repeat(2_001),
+      }).success,
+    ).toBe(false)
+    expect(
+      createNodeRequestSchema.safeParse({
+        role: 'assistant',
+        content: 'done',
+        error: 'x'.repeat(2_000),
+      }).success,
+    ).toBe(true)
+    expect(
+      createNodeRequestSchema.safeParse({
+        role: 'assistant',
+        content: 'done',
+        tools: Array.from({ length: 21 }, () => 'read'),
+      }).success,
+    ).toBe(false)
+    expect(
+      createNodeRequestSchema.safeParse({
+        role: 'assistant',
+        content: 'done',
+        attachments: Array.from({ length: 21 }, () => ({})),
+      }).success,
+    ).toBe(false)
+    expect(
+      createNodeRequestSchema.safeParse({
+        role: 'assistant',
+        content: 'done',
+        sources: Array.from({ length: 51 }, () => ({})),
+      }).success,
+    ).toBe(false)
+  })
+
+  it('the optimistic-concurrency timestamp cannot be negative', () => {
+    expect(
+      patchConversationRequestSchema.safeParse({ expectedUpdatedAt: -1 }).success,
+    ).toBe(false)
+    expect(
+      patchConversationRequestSchema.safeParse({ expectedUpdatedAt: 0 }).success,
+    ).toBe(true)
+  })
+
+  it('conversation creation caps the optional title at 200', () => {
+    expect(
+      patchConversationRequestSchema.safeParse({ title: 'x'.repeat(201) }).success,
+    ).toBe(false)
+    expect(patchConversationRequestSchema.safeParse({ title: 'x'.repeat(200) }).success).toBe(true)
+  })
+})
