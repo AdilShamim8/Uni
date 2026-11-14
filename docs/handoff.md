@@ -1,18 +1,28 @@
 # Handoff — the reuse-first-500 engagement (AdilShamim8/Uni)
 
-## Current state (updated 2026-11-13, session 6 — 111 effort commits)
+## Current state (updated 2026-11-14, session 7 — 202 effort commits)
 
-- **Count of record: 111 effort commits (RF-001…RF-111)**, every one
-  pushed individually by the owner's noreply identity. Sessions 5 (14)
-  and 6 (41) landed via PRs #78/#79-style merges — see the manifest.
-- **Session 6 (41 commits):** session-DTO employeeId exposure; employee
-  editing + archived views; hash-guarded memory-note editing with 409
-  conflict handling; export completeness (journal + latest 50 routine
-  runs); the GitHub connector end-to-end (sealed credentials via
-  migration 0020, fixture-verified adapter, honest catalog status,
-  Plugins connect flow); plus weekday schedule labels, relative
-  next-fire, journal kind filter/cap/relative labels, knowledge filter,
-  last-export note, live memory budget, archived-visibility fixes.
+- **Count of record: 202 effort commits (RF-001…RF-202)**, every one
+  pushed individually by the owner's noreply identity. Session 7 (91
+  commits, RF-112…RF-202) landed direct on `main`, one push per
+  commit, per the owner's instruction.
+- **Session 7 (91 commits):** the two red CI checks on the session-6
+  merge head repaired first (stale export-test payload type RF-112;
+  racy connectors badge assertion RF-113); then CI hardening
+  (supersede-cancel on Frontend CI, backend production-build gate,
+  SECURITY.md); the contracts package gained a 22-file/157-test schema
+  suite wired into CI; ~46 new test files across backend (pgErrors,
+  runRegistry, connectors catalog, secretBox, logger, errors, timeout,
+  providerUrls, env) and frontend (design-system primitives, Markdown,
+  SSE parser, context resolution, plugin registry/receipts, six server
+  API clients, settings surfaces, searchable model picker); the
+  routine form state refactor made frontend lint fully clean; docs:
+  testing.md, contracts-guide.md, README/CHANGELOG/verification
+  refresh.
+- **Close totals (verified unmasked):** backend 471/471 (60 files) +
+  build; frontend 871/871 (123 files) + lint + build; contracts
+  157/157 (22 files) + build. One gate slip (RF-184 unused import)
+  fixed by RF-186 before anything later.
 - **Next executable slices:** (1) the GitHub adapter's PR/commit routes
   exposed through the Work/chat tool layer; (2) Phase B screenshots via
   backend/scripts/browser-qa-stack.mjs; (3) employee provider/model pins
