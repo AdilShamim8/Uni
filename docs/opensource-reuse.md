@@ -24,6 +24,7 @@ resolved versions in `backend/package-lock.json` as of B01 (2026-10-23).
 | pino | 9.14.0 | MIT | B01 | Structured logging with secret redaction |
 | dotenv | 18.0.9 | BSD-2-Clause | B01 | Local-development .env loading (never production) |
 | vitest (dev) | 2.1.9 | MIT | B01 | Backend unit + integration tests |
+| vitest (dev, packages/contracts) | 5.1.0 | MIT | RF-117 | Contracts schema accept/reject suite |
 | tsx (dev) | 4.23.15 | MIT | B01 | Development runner / migration runner |
 | typescript (dev) | 5.6.3 | Apache-2.0 | B01 | Type checking and builds |
 | embedded-postgres (dev/test) | 18.4.0-beta.17 | MIT | B01 | Real PostgreSQL binaries for disposable integration tests |
