@@ -84,7 +84,11 @@ describe('ConnectorsSection on the Plugins page', () => {
 
     const section = await screen.findByRole('region', { name: /connector catalog/i })
     expect(section.textContent).toContain('GitHub')
-    expect(screen.getAllByText('Not connected').length).toBeGreaterThan(0)
+    // The catalog loads asynchronously (dynamic import + fetch), so the
+    // cards can render a beat after the section itself — wait for the
+    // honest badge instead of racing the section's first paint.
+    const badges = await screen.findAllByText('Not connected')
+    expect(badges.length).toBeGreaterThan(0)
     // Never a live-connection claim.
     expect(section.textContent).not.toContain('Connected')
   })
