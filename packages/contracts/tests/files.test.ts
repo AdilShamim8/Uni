@@ -67,4 +67,18 @@ describe('retrieval', () => {
     ).toBe(true)
     expect(retrievalResponseSchema.safeParse({ hits: [] }).success).toBe(false)
   })
+
+  it('the hit list is bounded at 20 even if the index over-delivers', () => {
+    expect(
+      retrievalResponseSchema.safeParse({
+        hits: Array.from({ length: 21 }, (_, i) => ({
+          documentId: `doc_${i}`,
+          title: 'T',
+          excerpt: 'e',
+          score: 1,
+        })),
+        query: 'q',
+      }).success,
+    ).toBe(false)
+  })
 })
