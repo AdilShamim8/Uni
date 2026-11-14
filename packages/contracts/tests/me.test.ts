@@ -31,3 +31,22 @@ describe('me response contract', () => {
     ).toBe(false)
   })
 })
+
+describe('me workspace role vocabulary', () => {
+  const base = {
+    user: { id: 'usr_1', email: 'a@b.test', name: 'A', createdAt: 1 },
+    workspace: { id: 'ws_1', name: 'W', role: 'owner' },
+  }
+  it('any non-empty role string is accepted — the vocabulary is the server’s, not the contract’s', () => {
+    expect(
+      meResponseSchema.safeParse({ ...base, workspace: { ...base.workspace, role: 'member' } })
+        .success,
+    ).toBe(true)
+    expect(
+      meResponseSchema.safeParse({
+        ...base,
+        workspace: { ...base.workspace, role: 'owner:admin' },
+      }).success,
+    ).toBe(true)
+  })
+})
