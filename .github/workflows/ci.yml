@@ -33,6 +33,9 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: npm run typecheck
+      # The schemas are the coupling point both sides rely on — the
+      # accept/reject suite guards them against drift.
+      - run: npm test
 
   frontend:
     name: Frontend (typecheck + tests)
