@@ -52,3 +52,19 @@ describe('describeSchedule', () => {
     expect(describeSchedule('')).toBe('')
   })
 })
+
+describe('hourly and padding edges', () => {
+  it('a stepped hour is not the plain hourly shape — the raw field stays visible', () => {
+    expect(describeSchedule('30 */2 * * *')).toBe('Daily at */2:30 UTC')
+    expect(describeSchedule('0 */2 * * *')).toBe('Daily at */2:00 UTC')
+  })
+
+  it('single-digit hours and minutes are zero-padded in time labels', () => {
+    expect(describeSchedule('5 9 * * *')).toBe('Daily at 09:05 UTC')
+    expect(describeSchedule('5 9 * * 0')).toBe('Sundays at 09:05 UTC')
+  })
+
+  it('a fixed minute with a wildcard hour is the hourly shape, whatever else varies', () => {
+    expect(describeSchedule('0 * 1 * *')).toBe('Hourly at :00')
+  })
+})
