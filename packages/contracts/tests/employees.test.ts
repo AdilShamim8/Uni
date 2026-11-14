@@ -60,3 +60,25 @@ describe('employee create/patch requests', () => {
     expect(patchEmployeeRequestSchema.safeParse({ archived: true }).success).toBe(true)
   })
 })
+
+describe('employee field bounds', () => {
+  it('descriptions cap at 2,000 and instructions at 20,000 characters', () => {
+    expect(createEmployeeRequestSchema.safeParse({ name: 'W', description: 'x'.repeat(2_001) }).success).toBe(false)
+    expect(createEmployeeRequestSchema.safeParse({ name: 'W', description: 'x'.repeat(2_000) }).success).toBe(true)
+    expect(
+      createEmployeeRequestSchema.safeParse({ name: 'W', instructions: 'x'.repeat(20_001) }).success,
+    ).toBe(false)
+    expect(
+      createEmployeeRequestSchema.safeParse({ name: 'W', instructions: 'x'.repeat(20_000) }).success,
+    ).toBe(true)
+  })
+
+  it('each tool name is bounded at 100 characters', () => {
+    expect(
+      createEmployeeRequestSchema.safeParse({ name: 'W', tools: ['x'.repeat(101)] }).success,
+    ).toBe(false)
+    expect(
+      createEmployeeRequestSchema.safeParse({ name: 'W', tools: ['x'.repeat(100)] }).success,
+    ).toBe(true)
+  })
+})
