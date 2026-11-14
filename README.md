@@ -515,6 +515,16 @@ server proxies `/api` and `/health` to port 4000), or configure
 > dotenv behavior). If a `DATABASE_URL` is already exported in your shell,
 > the one in `.env` is ignored — unset it or export the value you want.
 
+**Verifying a change** — every suite runs locally with no Docker and no
+system PostgreSQL; [`docs/testing.md`](docs/testing.md) has the full
+matrix (what to run per workspace, what CI runs, Node version notes).
+The shared contracts package has its own schema suite, and its rules —
+including "a contract change updates both sides in the same change" —
+are documented in
+[`docs/contracts-guide.md`](docs/contracts-guide.md). Found something
+security-relevant? [`SECURITY.md`](.github/SECURITY.md) is the honest
+reporting policy and the invariants reviewers can hold the code to.
+
 ---
 
 ## 📁 Project structure
@@ -525,17 +535,17 @@ Uni/
 │   ├── src/features/          #   chat, settings, work, agents, plugins, library…
 │   ├── src/state/             #   Zustand stores + persistence slices
 │   ├── src/services/          #   live adapter, BYOK connection, storage
-│   ├── src/components/ui/     #   the design system (Button, Menu, Dialog…)
-│   └── tests/                 #   48 files / 339 tests (Vitest + Testing Library)
+│   ├── src/components/ui/     #   design system (Button, Menu, Dialog…)
+│   └── tests/                 #   108 files / 770 tests (Vitest + Testing Library)
 ├── backend/                   # Fastify modular monolith (optional server mode)
 │   ├── src/modules/           #   auth, providers, conversations, runs, memory…
 │   ├── src/lib/               #   secretBox (AES-256-GCM), urlGuard (SSRF), logger
 │   ├── drizzle/               #   committed migrations
-│   └── tests/                 #   13 files / 105 integration tests (embedded PG)
-├── packages/contracts/        # shared DTOs + zod schemas (the only coupling)
+│   └── tests/                 #   54 files / 434 tests (embedded PostgreSQL)
+├── packages/contracts/        # shared DTOs + zod schemas + 22-file test suite
 ├── docs/                      # project records: roadmap, verification, handoff
 ├── infra/docker-compose.yml   # dev PostgreSQL
-└── .github/workflows/ci.yml   # contracts + frontend + backend CI
+└── .github/workflows/         # CI (contracts + frontend + backend), Frontend CI
 ```
 
 ---
