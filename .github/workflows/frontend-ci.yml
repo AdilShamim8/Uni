@@ -10,6 +10,12 @@ on:
       - "frontend/**"
       - ".github/workflows/frontend-ci.yml"
 
+# Rapid successive pushes supersede each other — cancel the outdated
+# run instead of queueing it behind the latest commit (mirrors ci.yml).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     runs-on: ubuntu-latest
