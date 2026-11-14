@@ -97,4 +97,25 @@ describe('memory block (prompt-context view)', () => {
     expect(memoryBlockDtoSchema.parse(block)).toEqual(block)
     expect(memoryBlockDtoSchema.safeParse({ ...block, block: null }).success).toBe(true)
   })
+
+  it('journal hashes are nullable — the before on a created note, the after on a deleted one', () => {
+    const created = {
+      id: 'j_2',
+      employeeId: 'emp_1',
+      noteId: 'note_2',
+      actor: 'user',
+      via: 'api',
+      kind: 'created',
+      beforeHash: null,
+      afterHash: 'c'.repeat(64),
+      before: null,
+      diff: '+new note',
+      added: 1,
+      removed: 0,
+      canRevert: true,
+      revertUnavailableReason: null,
+      createdAt: 2,
+    }
+    expect(memoryJournalEntryDtoSchema.parse(created)).toEqual(created)
+  })
 })
