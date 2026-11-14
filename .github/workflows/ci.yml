@@ -78,6 +78,9 @@ jobs:
           npm run build
       - run: npm ci
       - run: npm run typecheck
+      # The production build (tsc emit) is a deployable artifact claim —
+      # verify it compiles, not just that types check.
+      - run: npm run build
       # Integration tests boot an embedded PostgreSQL per file — no service
       # container needed; linux runners download the binaries on install.
       - run: npm test
