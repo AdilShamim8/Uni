@@ -80,4 +80,52 @@ describe('run creation and DTO', () => {
     expect(runDtoSchema.parse(dto)).toEqual(dto)
     expect(runDtoSchema.safeParse({ ...dto, providerKind: 'google' }).success).toBe(false)
   })
+
+  it('usage is nullable — a run may finish without token counts', () => {
+    const dto = {
+      id: 'run_2',
+      conversationId: 'cv_1',
+      parentNodeId: 'nd_1',
+      providerId: null,
+      providerKind: 'openai-compatible',
+      providerEndpoint: 'http://localhost:1234/v1',
+      modelId: 'local',
+      status: 'error',
+      outputText: '',
+      usage: null,
+      errorCode: 'provider_error',
+      errorMessage: 'The provider refused.',
+      createdAt: 1,
+      updatedAt: 1,
+      terminalAt: 1,
+    }
+    expect(runDtoSchema.parse(dto)).toEqual(dto)
+  })
+})
+
+describe('run request/event bounds', () => {
+  it('the idempotency key is bounded at 200 characters', () => {
+    expect(
+      createRunRequestSchema.safeParse({
+        parentNodeId: 'nd_1',
+        providerId: 'p',
+        idempotencyKey: 'k'.repeat(201),
+      }).success,
+    ).toBe(false)
+    expect(
+      createRunRequestSchema.safeParse({
+        parentNodeId: 'nd_1',
+        providerId: 'p',
+        idempotencyKey: 'k'.repeat(200),
+      }).success,
+    ).toBe(true)
+  })
+
+  it('every terminal status is a member of the run status vocabulary', () => {
+    for (const status of RUN_TERMINAL_STATUSES) {
+      expect(runStatusSchema.safeParse(status).success).toBe(true)
+    }
+    expect(RUN_TERMINAL_STATUSES).not.toContain('running')
+    expect(RUN_TERMINAL_STATUSES).not.toContain('cancelling')
+  })
 })
