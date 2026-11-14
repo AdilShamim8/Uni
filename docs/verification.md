@@ -1249,3 +1249,45 @@ Every commit typechecked, linted, and ran its targeted suite before its
 individual push; two mid-session pushes with gate slips (RF-074 null
 guard, RF-097 missing test) were amended and lease-pushed before the PR.
 Full-suite totals: see the CI run on the session PR head.
+
+
+## Session 7 (2026-11-14) — owner-requested: CI repair + verification buildout (RF-112…) — IN PROGRESS
+
+The two red checks on the session-6 merge head (`af9012663`) were
+repaired first; the session then continued as owner-requested verified
+increments, each pushed individually.
+
+- **CI repair (RF-112/RF-113):** the export integration test's inline
+  type declared four payload sections while its own counts assertion
+  (and the contract) carried six — the type now declares all six; the
+  connectors badge test was racing the asynchronously-loaded catalog —
+  it now awaits the badges (`findAllByText`). Full local verification
+  before either push: backend typecheck + **415/415**, frontend lint +
+  typecheck + **695/695** + production build. Both GitHub workflows
+  green on the repair head `2609c619b`.
+- **CI + repo (RF-114..RF-116):** Frontend CI gained the
+  supersede-cancel concurrency group; the backend CI job now verifies
+  the production build (not just types); `SECURITY.md` states the
+  honest reporting policy and the invariants reviewers can hold.
+- **Contracts suite (RF-117..RF-139):** the shared boundary gained a
+  22-file / 137-test Vitest suite — accept/reject per domain, the
+  honest invariants, the public-surface guard, and the export drift
+  guard that fails on the exact RF-112 bug class. CI's contracts job
+  runs it on every push.
+- **Frontend (RF-140..RF-153):** the routine form helpers moved out of
+  the component file (react-refresh warnings → lint fully clean), plus
+  13 new test files (**75 tests**) over previously uncovered modules:
+  SSE parser, canvas diff, context resolution, plugin registry and
+  receipts, task templates, provider error labels, five server API
+  clients, readFileText.
+- **Backend (RF-154..RF-156):** unit coverage for pgErrors (drizzle
+  cause-wrapping), the in-process run registry (terminal sentinel,
+  subscriber isolation), and the connectors catalog vs the shared
+  contract (**19 tests**).
+- **Docs (RF-157..):** `docs/testing.md` (the local verification
+  matrix), `docs/contracts-guide.md` (the shared-boundary rules),
+  README refresh (current suite counts, verification pointers).
+
+Every commit typechecked and ran its targeted suite before its
+individual push. This section is refreshed with full-suite totals at
+the session close.
