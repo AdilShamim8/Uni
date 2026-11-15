@@ -39,3 +39,10 @@ The 500-commit / 500-push contract of record for this effort.
 | OA-021 | 2026-11-15T04:46:30Z | `94ee7222f6027de7dbd69a3d7844ba30312f24af` | O16 | 3 files changed, 59 insertions(+) |
 | OA-022 | 2026-11-15T04:46:44Z | `46770c92865e9843e583ce1cf91a5d20581b7611` | O20 | 3 files changed, 43 insertions(+), 1 deletion(-) |
 | OA-023 | 2026-11-15T04:46:57Z | `2baf2e6a590fbda7ddc6e03a95db31ebcfb48510` | O-contract | 1 file changed, 1 insertion(+) |
+| OA-025 | 2026-11-15T05:18:48Z | `417cb235e6f8e869b37e2ac6821fb193260bee78` | O16-CI | 4 files changed, 36 insertions(+), 21 deletions(-) |
+| OA-026 | 2026-11-15T05:26:36Z | `86ff4edc7235fda605df73d114f31449c23a281e` | O16-CI | 1 file changed, 11 insertions(+), 2 deletions(-) |
+| OA-027 | 2026-11-15T05:32:39Z | `d28ecf562462948e07a0d7ccb5d63bfed567a1ff` | O16-CI | 1 file changed, 2 insertions(+), 2 deletions(-) |
+| OA-028 | 2026-11-15T05:45:08Z | `0c4d92c8ae26036445dd55386fa21afb7afffe33` | O16-CI | 2 files changed, 9 insertions(+), 1 deletion(-) |
+| OA-029 | 2026-11-15T06:39:24Z | `42994503819d934a8580a156f792529b6fd517ae` | O16-CI | 1 file changed, 7 insertions(+) |
+| OA-024 | 2026-11-15 | `0959785bfd9667fc6a9c02ce0e6c9fadaabc858f` | O20 | final session-1 ledger + handoff counts (23/500, all pushed one-by-one and SHA-verified) |
+| OA-030 | 2026-11-15 | `11a39b7b0f958a380215ee342e83c59eda983a57` | O16/O20 | record the session-2 CI iteration: 5 real failure classes found on hosted runners, each fixed (OA-025..OA-029); pnpm check fully green in run #8 |
