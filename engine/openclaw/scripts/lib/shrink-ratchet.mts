@@ -116,8 +116,11 @@ export function loadRatchetSnapshot<T>(
   staged: boolean,
   parse: (source: string) => T,
 ) {
+  // "<rev>:<path>" and ":<path>" resolve from the repository root, so a nested
+  // engine checkout (Uni imports this tree at engine/openclaw) must address
+  // blobs through the cwd-relative "./" form, which also works at a repo root.
   const source = staged
-    ? readGitText(root, ["show", ":" + baselinePath])
+    ? readGitText(root, ["show", ":./" + baselinePath])
     : fs.readFileSync(path.join(root, baselinePath), "utf8");
   return parse(source);
 }
@@ -130,7 +133,7 @@ export function loadRatchetReference<T>(
 ) {
   const entry = readGitText(root, ["ls-tree", "--name-only", ref, "--", baselinePath]).trim();
   return entry === baselinePath
-    ? parse(readGitText(root, ["show", ref + ":" + baselinePath]))
+    ? parse(readGitText(root, ["show", `${ref}:./${baselinePath}`]))
     : null;
 }
 
@@ -140,7 +143,7 @@ export function loadRatchetSources(root: string, filePaths: string[], ref = "") 
   }
   const output = execFileSync("git", ["cat-file", "--batch", "-z"], {
     cwd: root,
-    input: filePaths.map((filePath) => ref + ":" + filePath).join("\0") + "\0",
+    input: filePaths.map((filePath) => `${ref ? `${ref}:./` : ":./"}${filePath}`).join("\0") + "\0",
     maxBuffer: GIT_MAX_BUFFER,
   });
   const sources = new Map<string, string>();

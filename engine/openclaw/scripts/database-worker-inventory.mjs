@@ -4032,21 +4032,28 @@ function findCalls(source) {
 export function loadInventorySources(root = defaultRoot, ref = "", staged = false) {
   const roots = ["src", "extensions", "packages", "scripts"];
   const snapshot = ref !== "" || staged;
-  const result = spawnSync(
-    snapshot ? "git" : "rg",
-    snapshot
-      ? ref
-        ? ["ls-tree", "-r", "--name-only", "-z", ref, "--", ...roots]
-        : ["ls-files", "-z", "--", ...roots]
-      : [
-          "--files",
-          "--null",
-          "-g",
-          "*.{ts,tsx,js,mjs,mts,cts,cjs}",
-          ...roots.filter((dir) => fs.existsSync(path.join(root, dir))),
-        ],
-    { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
-  );
+  const runSourceScan = (command, args) =>
+    spawnSync(command, args, { cwd: root, encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
+  let result = snapshot
+    ? runSourceScan(
+        "git",
+        ref
+          ? ["ls-tree", "-r", "--name-only", "-z", ref, "--", ...roots]
+          : ["ls-files", "-z", "--", ...roots],
+      )
+    : runSourceScan("rg", [
+        "--files",
+        "--null",
+        "-g",
+        "*.{ts,tsx,js,mjs,mts,cts,cjs}",
+        ...roots.filter((dir) => fs.existsSync(path.join(root, dir))),
+      ]);
+  if (!snapshot && result.error && "code" in result.error && result.error.code === "ENOENT") {
+    // ripgrep is not guaranteed on every host that runs the worktree scan (for
+    // example GitHub CI runners without preinstalled rg). git ls-files lists
+    // the same tracked files; the extension filter below keeps the parity.
+    result = runSourceScan("git", ["ls-files", "-z", "--", ...roots]);
+  }
   if (result.error || (result.status !== 0 && result.status !== 1)) {
     throw result.error ?? new Error(result.stderr || "SQLite inventory source scan failed");
   }

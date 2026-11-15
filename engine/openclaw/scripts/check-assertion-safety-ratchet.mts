@@ -320,7 +320,12 @@ export function collectAssertionSafetyReport(root: string, ref: string) {
     report.source.baselineBlob = entries.get(BASELINE_PATH)?.blob ?? null;
     report.source.packageBlob = entries.get("package.json")?.blob ?? null;
     report.source.lockfileBlob = entries.get("pnpm-lock.yaml")?.blob ?? null;
-    const baseline = parseRatchetCounts(git(["show", `${commit}:${BASELINE_PATH}`]), BASELINE_PATH);
+    // "./" addresses the blob relative to this checkout's directory, which is
+    // also correct at a repository root (Uni nests this tree at engine/openclaw).
+    const baseline = parseRatchetCounts(
+      git(["show", `${commit}:./${BASELINE_PATH}`]),
+      BASELINE_PATH,
+    );
     report.totals.allowances = [...baseline.values()].reduce((total, count) => total + count, 0);
     const paths = new Set([
       ...[...entries.keys()].filter(
@@ -467,7 +472,7 @@ export function main(root = process.cwd(), argv: string[] = process.argv.slice(2
     renameSourceRoots: TYPE_ASSERTION_PRODUCTION_ROOTS,
     collectCurrent: (options) => collectCurrentAssertionSafetyCounts(root, options),
     countAtRef(ref, filePath) {
-      const source = execFileSync("git", ["show", `${ref}:${filePath}`], {
+      const source = execFileSync("git", ["show", `${ref}:./${filePath}`], {
         cwd: root,
         encoding: "utf8",
         maxBuffer: GIT_MAX_BUFFER,
