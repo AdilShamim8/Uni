@@ -10,5 +10,6 @@ export const UI_APPEARANCE_TYPEFACE_VALUES = [
   "fraunces",
   "lora",
   "jetbrains-mono",
+  "inter",
   "system",
 ] as const;
