@@ -91,6 +91,7 @@
           manuscript: 1,
           rose: 1,
           miami: 1,
+          uni: 1,
         };
         var MODES = { system: 1, light: 1, dark: 1 };
         var LEGACY = {
@@ -145,7 +146,7 @@
           if (typeof t !== "string") t = "";
           if (typeof m !== "string") m = "";
           var legacy = LEGACY[t];
-          var theme = THEMES[t] ? t : legacy ? legacy.split(":")[0] : "claw";
+          var theme = THEMES[t] ? t : legacy ? legacy.split(":")[0] : "uni";
           var mode = MODES[m] ? m : legacy ? legacy.split(":")[1] : "system";
           if (mode === "system") {
             mode = window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
@@ -163,6 +164,7 @@
             manuscript: ["manuscript", "manuscript-light"],
             rose: ["rose", "rose-light"],
             miami: ["miami", "miami-light"],
+            uni: ["uni", "uni-light"],
           };
           var pair = FAMILIES[theme];
           var resolved = pair
@@ -294,6 +296,14 @@
 
       html[data-theme="miami-light"] {
         background: #f2eef1;
+      }
+
+      html[data-theme="uni"] {
+        background: #121212;
+      }
+
+      html[data-theme="uni-light"] {
+        background: #f8f8f6;
       }
 
       body {

@@ -17,7 +17,8 @@ export function parseThemeSelection(
   themeRaw: unknown,
   modeRaw: unknown,
 ): { theme: ThemeName; mode: ThemeMode } {
-  const normalizedTheme = themeRaw === "custom" || isThemeId(themeRaw) ? themeRaw : "claw";
+  // Unknown stored values fall back to the Uni default family.
+  const normalizedTheme = themeRaw === "custom" || isThemeId(themeRaw) ? themeRaw : "uni";
   const normalizedMode = normalizeThemeMode(modeRaw) ?? "system";
 
   return { theme: normalizedTheme, mode: normalizedMode };

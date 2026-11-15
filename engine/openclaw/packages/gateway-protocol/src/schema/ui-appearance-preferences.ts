@@ -9,7 +9,9 @@ import { UI_APPEARANCE_TYPEFACE_VALUES } from "./ui-appearance-typefaces.js";
 export { normalizeTabIconPreference, type TabIconPreference } from "./tab-icon.js";
 /** Constant browser defaults; omitted config preferences remain omitted. */
 export const UI_PREFERENCE_DEFAULTS = {
-  theme: "claw",
+  // Uni adoption: the Uni palette is the default Control UI theme. Existing
+  // profiles keep their stored preference; only omitted values fall back here.
+  theme: "uni",
   themeMode: "system",
   chatShowThinking: true,
   chatShowToolCalls: true,

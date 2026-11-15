@@ -40,7 +40,9 @@ function applyThemePresentation(settings: UiPreferences, catalogTheme?: CatalogT
   }
   const root = document.documentElement;
   const dynamic = settings.theme.includes("/");
-  const effectiveTheme = dynamic && !catalogTheme ? "claw" : settings.theme;
+  // A pending dynamic (owner/plugin) theme falls back to the Uni default while
+  // its definition loads; the stored preference itself is never rewritten.
+  const effectiveTheme = dynamic && !catalogTheme ? "uni" : settings.theme;
   const mode = catalogTheme?.mode ?? settings.themeMode;
   const resolvedTheme = resolveTheme(effectiveTheme, mode);
   const resolvedMode = resolvedTheme.endsWith("light") ? "light" : "dark";
