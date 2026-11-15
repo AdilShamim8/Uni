@@ -121,7 +121,7 @@ export function main(root = process.cwd(), argv: string[] = process.argv.slice(2
     renameSourceRoots: ["."],
     collectCurrent: collectTestTimeoutRaceCounts,
     countAtRef(ref, filePath) {
-      const source = execFileSync("git", ["show", `${ref}:${filePath}`], {
+      const source = execFileSync("git", ["show", `${ref}:./${filePath}`], {
         cwd: root,
         encoding: "utf8",
         maxBuffer: GIT_MAX_BUFFER,
