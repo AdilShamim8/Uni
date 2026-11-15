@@ -103,13 +103,21 @@
       "reason": "branding \u2014 About strings: Uni product name, tagline, built-on-OpenClaw license line"
     },
     {
+      "path": "ui/src/i18n/locales/en-settings.ts",
+      "reason": "unclassified"
+    },
+    {
+      "path": "ui/src/pages/config/view-appearance.tsx",
+      "reason": "unclassified"
+    },
+    {
       "path": "ui/src/styles/theme-backgrounds.css",
       "reason": "branding \u2014 uni artwork background selectors"
     }
   ],
   "counts": {
     "added": 10,
-    "changed": 16,
+    "changed": 18,
     "deleted": 0
   },
   "deleted": [],

@@ -53,3 +53,21 @@ failures and environment limits are recorded, not hidden.
 - Commit authorship: `Adil Shamim <157037615+AdilShamim8@users.noreply.github.com>`.
 - One-by-one contract: each commit is pushed individually, remote SHA
   compared to local HEAD, and appended to `commit-manifest.md`.
+
+## O07/O08 — Uni theme & identity (2026-11-15, session 1)
+
+- `uni` builtin theme family registered end to end: protocol IDs, catalog
+  descriptor, palette CSS (muted indigo #565a78/#7a86b8 on neutral
+  #121212/#f8f8f6 canvases), artwork pair rasterized with upstream's exact
+  ffmpeg pipeline (byte-identical method, verified against knot-dark),
+  Inter typeface (SIL OFL 1.1, self-hosted, license beside files).
+- Identity: document title, PWA manifest, About strings (with
+  built-on-OpenClaw attribution), favicon set (SVG + 32px/180px PNG + ico,
+  pixel-verified non-blank). Default theme fallback chain now `uni`
+  (preference defaults, selection parsing, boot script, settings restore).
+- Settings appearance surface lists Uni with labels/description; the
+  presented-theme fallback follows the default family.
+- Not yet verified (needs capable hardware): `pnpm ui:build` output, browser
+  visual pass at 390/820/1280 px light/dark, PerformanceObserver
+  layout-stability checks, `test:ui` suites. Statuses in
+  `capability-parity.md` remain `imported`/`configured` accordingly.
