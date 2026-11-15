@@ -47,11 +47,11 @@ and `capability-parity.md`.
 
 ## Counts of record (this effort only)
 
-- Effort commits: 18 (OA-001…OA-018) at the time of this handoff; the
+- Effort commits: 23 (OA-001…OA-023) at the time of this handoff; the
   authoritative ledger is `commit-manifest.md`, updated after every push.
 - Imported upstream history (65k files) and the prior RF engagement (202
   commits) are **not** part of this count, by contract.
-- Toward the 500 target: 18/500. The remaining scope is real product work
+- Toward the 500 target: 23/500. The remaining scope is real product work
   (verification on capable hardware, migration adapters, surface-by-surface
   restyle passes, CI wiring); padding the count with empty commits is
   forbidden by the adoption contract and will not happen.
