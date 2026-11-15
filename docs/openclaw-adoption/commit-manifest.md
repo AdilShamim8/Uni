@@ -52,3 +52,5 @@ The 500-commit / 500-push contract of record for this effort.
 | OA-034 | 2026-11-15 | `1fb1049e2a134f70295264a06c0d716ae4bea461` | O20 | handoff count correction to match the 32-row ledger: 1 file changed, 2 insertions(+), 1 deletion(-) |
 | OA-035 | 2026-11-15 | `ae1b430c9446c470654aa4a497a6d9d17e86dcdd` | O20 | ledger rows for OA-033/OA-034: 1 file changed, 2 insertions(+) |
 | OA-036 | 2026-11-15 | `8aaf7125333f49d8b08653a0421381d3bae4488f` | O20 | final handoff count sync to 34-row ledger: 1 file changed, 3 insertions(+), 2 deletions(-) |
+| OA-037 | 2026-11-15 | `e6e27bff25b40f3cc0af7e2a6642d2be82f0aaa2` | O20 | session-3 close: 2 files changed, 6 insertions(+), 3 deletions(-) |
+| OA-038 | 2026-11-15 | `17466865e100899b1293f9cafe29d8536339c692` | O16/O20 | CORRECTION: retract false green claims; record persistent pnpm-check failure + investigation state: 2 files changed, 56 insertions(+), 8 deletions(-) |
