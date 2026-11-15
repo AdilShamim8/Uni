@@ -19,6 +19,20 @@ through one honest interface that costs **$0** and runs from your browser.
 
 ---
 
+## 🚀 Architecture update (2026-11-15): Uni is now built on OpenClaw
+
+Uni's active runtime is now [OpenClaw](https://github.com/openclaw/openclaw),
+imported as a complete pinned source tree under `engine/openclaw/`
+(MIT, © 2026 OpenClaw Foundation — attribution preserved; see
+`THIRD_PARTY_NOTICES.md`). The Control UI is OpenClaw's UI restyled as Uni
+(`uni` theme family: muted indigo, neutral canvases, Inter). Setup, running,
+checks and the upstream-update process: **[`docs/openclaw-adoption/README.md`](docs/openclaw-adoption/README.md)**.
+The previous Fastify/PostgreSQL stack (`backend/`, `frontend/`,
+`packages/contracts/`) is retained transitionally for data migration and
+rollback. Progress ledger: `docs/openclaw-adoption/commit-manifest.md`.
+
+---
+
 ## 🧭 What is Uni?
 
 Uni is an **independent, open-source AI workspace**. Instead of paying for a

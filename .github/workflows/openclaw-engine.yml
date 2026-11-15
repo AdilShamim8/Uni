@@ -1,0 +1,32 @@
+name: openclaw-engine
+
+# Root CI for the Uni OpenClaw adoption. Calls the imported engine's real
+# checks with the correct working directory. Deliberately NOT copying any
+# upstream publishing/release/token-consuming workflows (adoption contract §9).
+
+on:
+  push:
+    branches: [task/uni-openclaw-adoption]
+  pull_request:
+    branches: [task/uni-openclaw-adoption]
+
+defaults:
+  run:
+    working-directory: engine/openclaw
+
+jobs:
+  engine-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ui:build
+      - run: pnpm check
+      - run: pnpm lint
+      - name: Unit tests (engine shard)
+        run: pnpm vitest run -c test/vitest/vitest.unit.config.ts
