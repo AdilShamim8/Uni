@@ -1,0 +1,129 @@
+/* Uni palette; selected by index.html and app/theme.ts. */
+
+:root[data-theme="uni"] {
+  /*
+   * Accent — muted indigo on deep neutral gray.
+   */
+  --ring: #7a86b8;
+  --accent: #7a86b8;
+  --accent-hover: #8e99c6;
+  --accent-muted: #7a86b8;
+  --accent-subtle: rgba(122, 134, 184, 0.12);
+  --accent-glow: rgba(122, 134, 184, 0.2);
+  --primary: #7a86b8;
+  --primary-hover: #8e99c6;
+  --primary-foreground: #121212;
+  --accent-foreground: #121212;
+
+  --destructive: #d32f2f;
+  --destructive-hover: #bc2a2a;
+
+  --focus: rgba(122, 134, 184, 0.2);
+  --focus-ring: 0 0 0 2px var(--bg), 0 0 0 3px color-mix(in srgb, var(--ring) 70%, transparent);
+  --focus-glow: 0 0 0 2px var(--bg), 0 0 0 3px var(--ring), 0 0 16px var(--accent-glow);
+
+  --bg: #121212;
+  --bg-accent: #161616;
+  --bg-elevated: #1b1b1b;
+  --bg-hover: #232323;
+  --bg-muted: #1f1f1f;
+  --bg-content: #181818;
+
+  --card: #1b1b1b;
+  --card-foreground: #ececec;
+  --card-highlight: rgba(255, 255, 255, 0.03);
+  --popover: #1b1b1b;
+  --popover-foreground: #ececec;
+
+  --panel: #121212;
+  --panel-strong: #1b1b1b;
+  --panel-hover: #232323;
+  --chrome: rgba(18, 18, 18, 0.96);
+  --chrome-strong: rgba(18, 18, 18, 0.98);
+
+  --text: #c7c7c9;
+  --text-strong: #ececec;
+  --chat-text: #c7c7c9;
+  --muted: #8d8d94;
+  --muted-strong: #9a9aa1;
+  --muted-foreground: #8d8d94;
+
+  --secondary-foreground: #ececec;
+  --accent-2: #97a0c1;
+  --accent-2-muted: rgba(151, 160, 193, 0.7);
+  --accent-2-subtle: rgba(151, 160, 193, 0.12);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6);
+
+  --grid-line: rgba(255, 255, 255, 0.03);
+
+  /* Typography — Inter (fonts/inter.css): a quiet, neutral sans keeps the
+     workspace readable without competing with content. */
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-body);
+  --font-chat: var(--font-body);
+  --link: var(--accent);
+  --link-on-tint: var(--link);
+}
+
+:root[data-theme="uni-light"] {
+  /*
+   * Accent — deep indigo on warm paper-white.
+   */
+  --ring: #565a78;
+  --accent: #565a78;
+  --accent-hover: #474b66;
+  --accent-muted: #565a78;
+  --accent-subtle: rgba(86, 90, 120, 0.1);
+  --accent-glow: rgba(86, 90, 120, 0.14);
+  --primary: #565a78;
+  --primary-hover: var(--accent-hover);
+  --primary-foreground: #ffffff;
+  --accent-foreground: #ffffff;
+
+  --destructive: #b33636;
+  --destructive-hover: #9e2e2e;
+
+  --bg: #f8f8f6;
+  --bg-accent: #f2f2ee;
+  --bg-elevated: #ffffff;
+  --bg-hover: #ebebe6;
+  --bg-muted: #ededea;
+  --bg-content: #f2f2ee;
+
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --card-highlight: rgba(23, 23, 23, 0.02);
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+
+  --panel: #f8f8f6;
+  --panel-strong: #f2f2ee;
+  --panel-hover: #e9e9e3;
+  --chrome: rgba(248, 248, 246, 0.96);
+  --chrome-strong: rgba(248, 248, 246, 0.98);
+
+  --text: #40403c;
+  --text-strong: #171717;
+  --chat-text: #40403c;
+  --muted: #6b6b66;
+  --muted-strong: #575752;
+  --muted-foreground: #6b6b66;
+
+  --secondary-foreground: #40403c;
+  --accent-2: #7a83a3;
+  --accent-2-muted: rgba(122, 131, 163, 0.75);
+  --accent-2-subtle: rgba(122, 131, 163, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(23, 23, 19, 0.05);
+  --shadow-lg: 0 12px 28px rgba(23, 23, 19, 0.09);
+
+  --grid-line: rgba(23, 23, 23, 0.04);
+
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-display: var(--font-body);
+  --font-chat: var(--font-body);
+  --link: #4a4e68;
+  --link-on-tint: #40445c;
+}

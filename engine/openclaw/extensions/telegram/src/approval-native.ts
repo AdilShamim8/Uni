@@ -1,0 +1,190 @@
+import { createApproverRestrictedNativeApprovalCapabilityAsync } from "openclaw/plugin-sdk/approval-delivery-runtime";
+import { createLazyChannelApprovalNativeRuntimeAdapterAsync } from "openclaw/plugin-sdk/approval-handler-adapter-runtime";
+import {
+  createChannelApproverDmTargetResolverAsync,
+  createChannelNativeOriginTargetResolverAsync,
+  resolveApprovalRequestChannelAccountIdAsync,
+} from "openclaw/plugin-sdk/approval-native-runtime";
+import type {
+  ExecApprovalRequest,
+  PluginApprovalRequest,
+  SystemAgentApprovalRequest,
+} from "openclaw/plugin-sdk/approval-runtime";
+import type { ChannelApprovalCapability } from "openclaw/plugin-sdk/channel-contract";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "openclaw/plugin-sdk/string-coerce-runtime";
+import { listTelegramAccountIds, resolveDefaultTelegramAccountId } from "./accounts.js";
+import {
+  getTelegramExecApprovalApprovers,
+  isTelegramExecApprovalApprover,
+  isTelegramExecApprovalAuthorizedSender,
+  isTelegramExecApprovalClientEnabled,
+  isTelegramExecApprovalTargetRecipient,
+  resolveTelegramExecApprovalTarget,
+  shouldHandleTelegramExecApprovalRequest,
+} from "./exec-approvals.js";
+import { parseTelegramThreadId } from "./outbound-params.js";
+import { normalizeTelegramChatId, parseTelegramTarget } from "./targets.js";
+
+type ApprovalRequest = ExecApprovalRequest | PluginApprovalRequest | SystemAgentApprovalRequest;
+type TelegramOriginTarget = { to: string; threadId?: number };
+
+// Live turns and stored sessions both carry targets such as `telegram:<chat>:topic:<id>`;
+// normalize them the same way so the origin consistency check compares like with like.
+function toTelegramOriginTarget(
+  rawTo: string | null | undefined,
+  rawThreadId: string | number | null | undefined,
+): TelegramOriginTarget | null {
+  const trimmedTo = normalizeOptionalString(rawTo);
+  if (!trimmedTo) {
+    return null;
+  }
+  const parsed = parseTelegramTarget(trimmedTo);
+  const chatId = normalizeTelegramChatId(parsed.chatId);
+  if (!chatId) {
+    return null;
+  }
+  if (parsed.directMessagesTopicId != null) {
+    return { to: `${chatId}:direct-topic:${parsed.directMessagesTopicId}` };
+  }
+  return { to: chatId, threadId: parseTelegramThreadId(rawThreadId ?? parsed.messageThreadId) };
+}
+
+function resolveTurnSourceTelegramOriginTarget(
+  request: ApprovalRequest,
+): TelegramOriginTarget | null {
+  if (normalizeLowercaseStringOrEmpty(request.request.turnSourceChannel) !== "telegram") {
+    return null;
+  }
+  return toTelegramOriginTarget(request.request.turnSourceTo, request.request.turnSourceThreadId);
+}
+
+const resolveTelegramOriginTarget = createChannelNativeOriginTargetResolverAsync({
+  channel: "telegram",
+  shouldHandleRequest: shouldHandleTelegramExecApprovalRequest,
+  resolveTurnSourceTarget: resolveTurnSourceTelegramOriginTarget,
+  // An unparseable stored target still has to disagree with the live turn, not vanish.
+  resolveSessionTarget: (sessionTarget) =>
+    toTelegramOriginTarget(sessionTarget.to, sessionTarget.threadId) ?? {
+      to: sessionTarget.to,
+      threadId: parseTelegramThreadId(sessionTarget.threadId),
+    },
+});
+
+const resolveConfiguredTelegramApproverDmTargets = createChannelApproverDmTargetResolverAsync({
+  shouldHandleRequest: shouldHandleTelegramExecApprovalRequest,
+  resolveApprovers: getTelegramExecApprovalApprovers,
+  mapApprover: (approver): TelegramOriginTarget => ({ to: approver }),
+});
+
+const resolveTelegramApproverDmTargets = async (
+  params: Parameters<typeof resolveConfiguredTelegramApproverDmTargets>[0],
+) => {
+  const targets = await resolveConfiguredTelegramApproverDmTargets(params);
+  const originAccountId = await resolveApprovalRequestChannelAccountIdAsync({
+    cfg: params.cfg,
+    request: params.request,
+    channel: "telegram",
+  });
+  const accountId =
+    normalizeOptionalString(params.accountId) ?? resolveDefaultTelegramAccountId(params.cfg);
+  if (!originAccountId || originAccountId !== accountId) {
+    return targets;
+  }
+
+  const origin = await resolveTelegramOriginTarget(params);
+  if (!origin) {
+    return targets;
+  }
+  const parsedOrigin = parseTelegramTarget(origin.to);
+  const originChatId = normalizeTelegramChatId(parsedOrigin.chatId);
+  if (
+    parsedOrigin.chatType !== "direct" ||
+    !originChatId ||
+    originChatId.startsWith("-") ||
+    (parsedOrigin.directMessagesTopicId != null && origin.threadId != null)
+  ) {
+    return targets;
+  }
+
+  return targets.map((target) => {
+    const parsedTarget = parseTelegramTarget(target.to);
+    const targetChatId = normalizeTelegramChatId(parsedTarget.chatId);
+    if (
+      parsedTarget.chatType !== "direct" ||
+      targetChatId !== originChatId ||
+      parsedTarget.messageThreadId != null ||
+      parsedTarget.directMessagesTopicId != null ||
+      (target.threadId != null && target.threadId !== origin.threadId)
+    ) {
+      return target;
+    }
+    if (parsedOrigin.directMessagesTopicId != null) {
+      return Object.assign({}, target, {
+        to: `${originChatId}:direct-topic:${parsedOrigin.directMessagesTopicId}`,
+      });
+    }
+    return origin.threadId == null
+      ? target
+      : Object.assign({}, target, { threadId: origin.threadId });
+  });
+};
+
+function describeTelegramApprovalSetup(
+  { accountId }: { accountId?: string | null },
+  approvalKind: "exec" | "plugin",
+) {
+  const prefix =
+    accountId && accountId !== "default"
+      ? `channels.telegram.accounts.${accountId}`
+      : "channels.telegram";
+  const surface = approvalKind === "plugin" ? "Web UI or terminal UI" : "Web UI";
+  return `Approve it from the ${surface} for now. Telegram supports native ${approvalKind} approvals for this account. Configure \`${prefix}.execApprovals.approvers\` or \`commands.ownerAllowFrom\`; leave \`${prefix}.execApprovals.enabled\` unset/\`auto\` or set it to \`true\`.`;
+}
+
+export const telegramApprovalCapability: ChannelApprovalCapability = {
+  ...createApproverRestrictedNativeApprovalCapabilityAsync({
+    channel: "telegram",
+    channelLabel: "Telegram",
+    describeExecApprovalSetup: (params) => describeTelegramApprovalSetup(params, "exec"),
+    describePluginApprovalSetup: (params) => describeTelegramApprovalSetup(params, "plugin"),
+    listAccountIds: listTelegramAccountIds,
+    hasApprovers: ({ cfg, accountId }) =>
+      getTelegramExecApprovalApprovers({ cfg, accountId }).length > 0,
+    isExecAuthorizedSender: isTelegramExecApprovalAuthorizedSender,
+    isPluginAuthorizedSender: isTelegramExecApprovalApprover,
+    isNativeDeliveryEnabled: async (params) => isTelegramExecApprovalClientEnabled(params),
+    resolveNativeDeliveryMode: resolveTelegramExecApprovalTarget,
+    requireMatchingTurnSourceChannel: true,
+    resolveSuppressionAccountId: ({ target, request }) =>
+      normalizeOptionalString(target.accountId) ??
+      normalizeOptionalString(request.request.turnSourceAccountId),
+    resolveOriginTarget: resolveTelegramOriginTarget,
+    resolveApproverDmTargets: resolveTelegramApproverDmTargets,
+    notifyOriginWhenDmOnly: true,
+    nativeRuntimeAsync: createLazyChannelApprovalNativeRuntimeAdapterAsync({
+      capabilityBoundary: true,
+      eventKinds: ["exec", "plugin", "system-agent"],
+      isConfigured: isTelegramExecApprovalClientEnabled,
+      shouldHandle: shouldHandleTelegramExecApprovalRequest,
+      load: async () =>
+        (await import("./approval-handler.runtime.js")).telegramApprovalNativeRuntime,
+    }),
+  }),
+  resolveApproveCommandBehavior: (params) => {
+    if (
+      params.approvalKind !== "exec" ||
+      isTelegramExecApprovalClientEnabled(params) ||
+      isTelegramExecApprovalTargetRecipient(params) ||
+      (isTelegramExecApprovalAuthorizedSender(params) && !isTelegramExecApprovalApprover(params))
+    ) {
+      return undefined;
+    }
+    return {
+      kind: "reply",
+      text: "❌ Telegram exec approvals are not enabled for this bot account.",
+    };
+  },
+};
