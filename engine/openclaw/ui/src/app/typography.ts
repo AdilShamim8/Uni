@@ -29,6 +29,7 @@ const TYPEFACE_METADATA: Record<
   fraunces: { label: "Fraunces", kind: "serif" },
   lora: { label: "Lora", kind: "serif" },
   "jetbrains-mono": { label: "JetBrains Mono", kind: "mono" },
+  inter: { label: "Inter", kind: "sans" },
   system: { label: "System", kind: "sans" },
 };
 
@@ -56,6 +57,7 @@ const THEME_TYPEFACES = {
   manuscript: { ui: "lora", chat: "lora" },
   rose: { ui: "dm-sans", chat: "dm-sans" },
   miami: { ui: "space-grotesk", chat: "space-grotesk" },
+  uni: { ui: "inter", chat: "inter" },
   custom: { ui: "system", chat: "system" },
 } satisfies Record<ThemeName, TypefacePair>;
 
