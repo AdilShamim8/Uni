@@ -35,7 +35,7 @@ jobs:
       # The ratchets default to origin/main, which this branch does not track;
       # compare against the pinned import commit instead (no growth = pass).
       # lint takes the same base for its changed-file selection.
-      - run: pnpm check -- --base bcb7b412ba0bed84146d9a3da43949d0d784aced
-      - run: pnpm lint -- --base bcb7b412ba0bed84146d9a3da43949d0d784aced
+      - run: pnpm check --base bcb7b412ba0bed84146d9a3da43949d0d784aced
+      - run: pnpm lint --base bcb7b412ba0bed84146d9a3da43949d0d784aced
       - name: Unit tests (engine shard)
         run: pnpm vitest run -c test/vitest/vitest.unit.config.ts
