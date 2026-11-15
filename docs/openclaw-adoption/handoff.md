@@ -84,9 +84,17 @@ and `capability-parity.md`.
 
 ## Session 3 addendum (2026-11-15)
 
-- Run #9 (OA-029) **confirmed green** via the Actions REST API: lint, all 31
-  `pnpm check` lanes, `ui:build`, and the unit shard pass on hosted runners;
-  PR #81's `CI` run on `9c33fb093` also succeeded.
+- **CI correction (supersedes earlier reads): runs #8–#11 all FAILED at
+  `pnpm check --base` (step 7).** The session-2 "check fully green in run
+  #8" and the early session-3 "run #9 green" reads were wrong (in-flight
+  statuses misread; the green `CI #397` run is a separate workflow). See
+  verification.md §Session 3 for the full correction and the investigation
+  record: the confirmed failing lanes are the native-TypeScript ratchets
+  (`check:database-worker-ratchet`, `check:database-dialect-ratchet`), which
+  die with `Unexpected EOF while reading from child process`; reproduced
+  locally, bisected to a scale/combination-dependent tsserver child death
+  (no single file). **Unresolved** — next session continues from the
+  investigation record.
 - Perf-budget drift **attributed** (see verification.md §Session 3): the uni
   theme's only bundled-CSS delta is +8 lines in
   `ui/src/styles/theme-backgrounds.css` (≤ 14 B gzip); the +9.9 KiB

@@ -120,11 +120,12 @@ this sandbox lacks):
   object-property:label x1 "Inter"`. **OA-029** added the Inter label to
   `ui/src/i18n/.i18n/raw-copy-baseline.json` following upstream's convention
   (adjacent to the other typeface labels).
-- Run #9 (sha `429945038`) triggered by OA-029: **completed successfully**
-  (2026-11-15, confirmed via the Actions REST API) — the full gate (`pnpm
-  lint`, `pnpm check`, `pnpm ui:build`, unit shard) is green on hosted
-  runners. Runs #10/#11 (OA-030 ledger syncs) were still in flight at the
-  time of this record; PR #81's `CI` workflow run on `9c33fb093` succeeded.
+- Run #9 (sha `429945038`) triggered by OA-029: **failed at `pnpm check`**
+  (final REST-API status, recorded in session 3 below; the session-2 record
+  below was corrected — see the Session 3 correction). Runs #8–#11 all failed
+  at the same step; runs #12–#18 (session-3 pushes) were in flight at the time
+  of this record. PR #81's `CI` workflow run on `9c33fb093` (a separate,
+  pre-existing workflow) succeeded.
 - Also observed (run #6/#8, non-blocking warnings): Control UI perf budgets
   report `document gzip` +43 B, `total CSS` +9.9 KiB gzip over ceiling,
   `chat boot JS requests` 21 > 20. The `ui:build` step itself passed in runs
@@ -134,6 +135,20 @@ this sandbox lacks):
   documented rationale).
 
 ## Session 3 (2026-11-15)
+
+### CORRECTION of the session-2/session-3 early reads
+
+- The earlier claim in this file that run #9 "completed successfully" was
+  **wrong**: that status was read while the run was `in_progress`, and the
+  green `CI #397` run that confirmed it is a *different workflow*
+  (`pull_request` event). Final statuses via the Actions REST API: runs #8,
+  #9, #10, #11 all **failed at step 7 (`pnpm check --base ...`)**; `pnpm
+  lint`, `ui:build`, and the unit shard were not reached (skipped). The
+  session-2 statement "pnpm check fully green (31 lanes, run #8)" is
+  **retracted** — the green observation cannot have been from run #8's final
+  state; it was most plausibly read from an in-flight or partial view. The
+  commit that recorded this (OA-032) carried the wrong claim and is
+  corrected by this section.
 
 ### Perf-budget drift attribution (the open item from session 2)
 
@@ -183,4 +198,29 @@ this sandbox lacks):
   doctor-owned legacy `sessions.json`/transcript-JSONL import path, the
   `mcpServers` config surface, and the SQLite/PostgreSQL database
   families. Adapter code is the pinned next step; no migration has run.
+
+### CI `pnpm check` failure — investigation status (UNRESOLVED, next session)
+
+- Runs #8–#11 fail deterministically at `pnpm check --base bcb7b412…` on
+  hosted runners (step 7); lint/tests are skipped after it. Reproduced
+  locally: `check-database-worker-ratchet.mts` dies with `Unexpected EOF
+  while reading from child process` during the semantic-compat phase, and
+  `inspectDatabaseWorkerBoundaries` fails on the ui/src set with "An error
+  was suppressed during disposal". Bisection: the full 7,099-file ui/src
+  set fails; the suspect `ui/src/types/solid-elements.d.ts` passes alone,
+  with its local import chain, and with the whole `ui/src/types/` directory —
+  the crash is **scale/combination-dependent tsserver child death**, not one
+  file. The ratchet lanes that spawn the native TypeScript session
+  (`check:database-worker-ratchet`, `check:database-dialect-ratchet`) are the
+  confirmed failures; other locally-failed lanes (wildcard re-exports, tool
+  display, duplicate scan, opengrep, npm lock) failed on missing modules in
+  the *scoped* sandbox install and are not trusted evidence. Next session:
+  obtain run #12+ step results once they land; if the same lanes fail there,
+  compare against upstream's own CI expectations for these ratchets at the
+  pinned commit (possible upstream-env mismatch: Node 24 vs upstream's
+  engines, or `typescript@7.1.0-dev` native-preview child stability under the
+  runner), and bisect with a smaller synthetic set on capable hardware.
+- **No fix has been committed for this failure class yet.** The branch
+  remains red on `pnpm check`; treat all "green" claims for check as void
+  until a run completes green.
 
