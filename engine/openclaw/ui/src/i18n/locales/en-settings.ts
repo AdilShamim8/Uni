@@ -1818,6 +1818,10 @@ const enSettings = {
         label: "Miami",
         description: "Magenta & cyan",
       },
+      uni: {
+        label: "Uni",
+        description: "Indigo on paper",
+      },
     },
     textSizes: {
       small: "Small",
