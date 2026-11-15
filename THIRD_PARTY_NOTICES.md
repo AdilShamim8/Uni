@@ -43,6 +43,19 @@ alongside the backend's.
 
 ## Notices
 
+- **OpenClaw engine import (2026-11-15):** the complete upstream source tree
+  of [OpenClaw](https://github.com/openclaw/openclaw) at commit
+  `c5381ef2d215b90a5e5b870543f2c12468f3a66b` (package version `2026.11.3`)
+  is imported under `engine/openclaw/` — MIT License, © 2026 OpenClaw
+  Foundation. Its own `LICENSE`, `THIRD_PARTY_NOTICES.md` and in-tree notices
+  are preserved unmodified inside that tree; byte-exact provenance is recorded
+  in `docs/openclaw-adoption/source-manifest.jsonl`, and every Uni-side change
+  since import in `docs/openclaw-adoption/uni-delta-manifest.json`. Uni is
+  built on OpenClaw and does not claim authorship of the imported source.
+- **Inter typeface:** Inter variable webfonts
+  (`engine/openclaw/ui/public/fonts/inter-variable*.woff2`) — SIL Open Font
+  License 1.1, © The Inter Project Authors (rsms/inter v4.1); license text
+  preserved at `engine/openclaw/ui/public/fonts/inter-OFL.txt`. Unmodified.
 - MIT-licensed components: permission notice preserved above and in each
   `third_party/licenses/<name>/LICENSE` file.
 - Apache-2.0 components (drizzle-orm, typescript, ai,
