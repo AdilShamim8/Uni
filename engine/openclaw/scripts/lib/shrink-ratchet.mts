@@ -178,7 +178,10 @@ export function listRatchetRenames(
   staged: boolean,
   sourceRoots: string[],
 ) {
-  const args = ["diff", "--name-status", "-z", "--find-renames"];
+  // --relative keeps diff output scoped to this checkout's directory with
+  // cwd-relative paths; a nested engine checkout (engine/openclaw in Uni)
+  // would otherwise read repo-root-relative paths that do not exist on disk.
+  const args = ["diff", "--name-status", "--relative", "-z", "--find-renames"];
   if (staged) {
     args.push("--cached");
   }
