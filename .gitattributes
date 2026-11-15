@@ -1,0 +1,5 @@
+
+# Uni import parity: upstream stores this Windows launcher blob with CRLF
+# bytes (predates upstream eol=lf normalization); keep imported bytes
+# byte-exact for source-manifest parity. This is a Uni-side delta.
+apps/android/gradlew.bat -text

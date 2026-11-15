@@ -1,0 +1,90 @@
+// Misc utility tests cover small shared helper behavior.
+import { describe, expect, it } from "vitest";
+import { z } from "zod";
+import { asBoolean, parseBooleanValue } from "./boolean.js";
+import { splitCommandArgs, splitShellArgs } from "./shell-argv.js";
+import { safeParseJsonWithSchema, safeParseWithSchema } from "./zod-parse.js";
+
+describe("asBoolean", () => {
+  it("accepts booleans only", () => {
+    expect(asBoolean(true)).toBe(true);
+    expect(asBoolean(false)).toBe(false);
+    expect(asBoolean("true")).toBeUndefined();
+    expect(asBoolean(1)).toBeUndefined();
+  });
+});
+
+describe("parseBooleanValue", () => {
+  it("handles boolean inputs", () => {
+    expect(parseBooleanValue(true)).toBe(true);
+    expect(parseBooleanValue(false)).toBe(false);
+  });
+
+  it("parses default truthy/falsy strings", () => {
+    expect(parseBooleanValue("true")).toBe(true);
+    expect(parseBooleanValue("1")).toBe(true);
+    expect(parseBooleanValue("yes")).toBe(true);
+    expect(parseBooleanValue("on")).toBe(true);
+    expect(parseBooleanValue("false")).toBe(false);
+    expect(parseBooleanValue("0")).toBe(false);
+    expect(parseBooleanValue("no")).toBe(false);
+    expect(parseBooleanValue("off")).toBe(false);
+  });
+
+  it("returns undefined for unsupported values", () => {
+    expect(parseBooleanValue("")).toBeUndefined();
+    expect(parseBooleanValue("maybe")).toBeUndefined();
+    expect(parseBooleanValue(1)).toBeUndefined();
+  });
+});
+
+describe("splitShellArgs", () => {
+  it("supports backslash escapes inside double quotes", () => {
+    expect(splitShellArgs(String.raw`echo "a\"b"`)).toEqual(["echo", `a"b`]);
+    expect(splitShellArgs(String.raw`echo "\$HOME"`)).toEqual(["echo", "$HOME"]);
+  });
+
+  // Expectations below match `bash 5.2` word splitting for the same inputs.
+  it("removes backslash-newline line continuations without breaking the word", () => {
+    expect(splitShellArgs("ba\\\nsh")).toEqual(["bash"]);
+    expect(splitShellArgs("echo a\\\nb")).toEqual(["echo", "ab"]);
+    expect(splitShellArgs('echo "ba\\\nsh"')).toEqual(["echo", "bash"]);
+    expect(splitShellArgs("echo a\\\n")).toEqual(["echo", "a"]);
+  });
+
+  it("keeps backslash-newline literal inside single quotes", () => {
+    expect(splitShellArgs("echo 'ba\\\nsh'")).toEqual(["echo", "ba\\\nsh"]);
+  });
+
+  it("returns null for unterminated quotes", () => {
+    expect(splitShellArgs(`echo "oops`)).toBeNull();
+    expect(splitShellArgs(`echo 'oops`)).toBeNull();
+  });
+
+  it("stops at unquoted shell comments but keeps quoted hashes literal", () => {
+    expect(splitShellArgs(`echo hi # comment && whoami`)).toEqual(["echo", "hi"]);
+    expect(splitShellArgs(`echo "hi # still-literal"`)).toEqual(["echo", "hi # still-literal"]);
+    expect(splitShellArgs(`echo hi#tail`)).toEqual(["echo", "hi#tail"]);
+  });
+});
+
+describe("splitCommandArgs", () => {
+  it.each(['program "unfinished'])("allows unfinished quotes when requested: %s", (raw) => {
+    expect(splitCommandArgs(raw, { allowUnclosedQuotes: true })).toEqual(["program", "unfinished"]);
+  });
+});
+
+describe("zod parse helpers", () => {
+  const schema = z.object({ name: z.string() });
+
+  it("returns parsed data for schema-valid values", () => {
+    expect(safeParseWithSchema(schema, { name: "Ada" })).toEqual({ name: "Ada" });
+    expect(safeParseJsonWithSchema(schema, `{"name":"Ada"}`)).toEqual({ name: "Ada" });
+  });
+
+  it("returns null for schema failures or invalid JSON", () => {
+    expect(safeParseWithSchema(schema, { name: 1 })).toBeNull();
+    expect(safeParseJsonWithSchema(schema, `{"name":1}`)).toBeNull();
+    expect(safeParseJsonWithSchema(schema, `{`)).toBeNull();
+  });
+});
