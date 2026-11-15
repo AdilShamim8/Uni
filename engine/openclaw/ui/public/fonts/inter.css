@@ -1,0 +1,23 @@
+/*
+ * Self-hosted webfaces for Inter (variable).
+ * SIL Open Font License 1.1; unmodified, with upstream license text beside the files.
+ * Gateway-hosted for font-src 'self', offline/LAN use, and no third-party requests.
+ * Linked on demand at a stable public path. Relative url() sources follow the
+ * configured Control UI mount. The variable file covers all weights, 100–900.
+ */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("inter-variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: italic;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("inter-variable-italic.woff2") format("woff2");
+}
