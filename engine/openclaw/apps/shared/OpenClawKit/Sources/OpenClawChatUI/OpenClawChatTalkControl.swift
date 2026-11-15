@@ -1,0 +1,82 @@
+public struct OpenClawChatAudioInputDevice: Equatable, Identifiable, Sendable {
+    public var id: String
+    public var name: String
+
+    public init(id: String, name: String) {
+        self.id = id
+        self.name = name
+    }
+}
+
+public enum OpenClawCameraFacingSelection: String, Equatable, Sendable {
+    case back
+    case front
+}
+
+public struct OpenClawChatTalkControl {
+    public var isEnabled: Bool
+    public var isListening: Bool
+    public var isSpeaking: Bool
+    public var isGatewayConnected: Bool
+    public var statusText: String
+    public var providerLabel: String
+    public var level: Double
+    public var isMicrophoneMuted: Bool
+    public var toggleMicrophone: (@MainActor () -> Void)?
+    public var partialTranscript: String
+    public var recentTranscript: [String]
+    public var inputDevices: [OpenClawChatAudioInputDevice]
+    public var selectedInputDeviceID: String?
+    public var selectInputDevice: (@MainActor (_ deviceID: String?) -> Void)?
+    public var cameraFacing: OpenClawCameraFacingSelection?
+    public var flipCamera: (@MainActor () -> Void)?
+    public var toggle: @MainActor (_ sessionKey: String) -> Void
+
+    private let levelProvider: (@MainActor () -> Double)?
+
+    /// When supplied, `levelProvider` overrides `level` only for live waveform rendering.
+    public init(
+        isEnabled: Bool,
+        isListening: Bool,
+        isSpeaking: Bool,
+        isGatewayConnected: Bool,
+        statusText: String,
+        providerLabel: String,
+        level: Double = 0,
+        levelProvider: (@MainActor () -> Double)? = nil,
+        isMicrophoneMuted: Bool = false,
+        toggleMicrophone: (@MainActor () -> Void)? = nil,
+        partialTranscript: String = "",
+        recentTranscript: [String] = [],
+        inputDevices: [OpenClawChatAudioInputDevice] = [],
+        selectedInputDeviceID: String? = nil,
+        selectInputDevice: (@MainActor (_ deviceID: String?) -> Void)? = nil,
+        cameraFacing: OpenClawCameraFacingSelection? = nil,
+        flipCamera: (@MainActor () -> Void)? = nil,
+        toggle: @escaping @MainActor (_ sessionKey: String) -> Void)
+    {
+        self.isEnabled = isEnabled
+        self.isListening = isListening
+        self.isSpeaking = isSpeaking
+        self.isGatewayConnected = isGatewayConnected
+        self.statusText = statusText
+        self.providerLabel = providerLabel
+        self.level = level
+        self.levelProvider = levelProvider
+        self.isMicrophoneMuted = isMicrophoneMuted
+        self.toggleMicrophone = toggleMicrophone
+        self.partialTranscript = partialTranscript
+        self.recentTranscript = recentTranscript
+        self.inputDevices = inputDevices
+        self.selectedInputDeviceID = selectedInputDeviceID
+        self.selectInputDevice = selectInputDevice
+        self.cameraFacing = cameraFacing
+        self.flipCamera = flipCamera
+        self.toggle = toggle
+    }
+
+    /// Resolve only in the waveform leaf, never while constructing the enclosing chat view.
+    @MainActor var resolvedLevel: Double {
+        self.levelProvider?() ?? self.level
+    }
+}
