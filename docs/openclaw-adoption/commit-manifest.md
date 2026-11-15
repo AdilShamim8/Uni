@@ -50,3 +50,5 @@ The 500-commit / 500-push contract of record for this effort.
 | OA-032 | 2026-11-15 | `6f1666bb5272239e488575713b909f3635c78afb` | O16/O20 | session-3 records: 3 files changed, 84 insertions(+), 2 deletions(-) |
 | OA-033 | 2026-11-15 | `62df99e30c4491bc80d98d639838ff80ebb4f1d5` | O20 | ledger row for OA-032: 1 file changed, 1 insertion(+) |
 | OA-034 | 2026-11-15 | `1fb1049e2a134f70295264a06c0d716ae4bea461` | O20 | handoff count correction to match the 32-row ledger: 1 file changed, 2 insertions(+), 1 deletion(-) |
+| OA-035 | 2026-11-15 | `ae1b430c9446c470654aa4a497a6d9d17e86dcdd` | O20 | ledger rows for OA-033/OA-034: 1 file changed, 2 insertions(+) |
+| OA-036 | 2026-11-15 | `8aaf7125333f49d8b08653a0421381d3bae4488f` | O20 | final handoff count sync to 34-row ledger: 1 file changed, 3 insertions(+), 2 deletions(-) |
