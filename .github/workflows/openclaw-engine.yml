@@ -20,13 +20,22 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Ratchet scripts compare against the frozen upstream import
+          # (OA-002, the complete-tree commit); a shallow default checkout
+          # cannot resolve that ancestry.
+          fetch-depth: 0
+          fetch-tags: false
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: pnpm ui:build
-      - run: pnpm check
-      - run: pnpm lint
+      # The ratchets default to origin/main, which this branch does not track;
+      # compare against the pinned import commit instead (no growth = pass).
+      # lint takes the same base for its changed-file selection.
+      - run: pnpm check -- --base bcb7b412ba0bed84146d9a3da43949d0d784aced
+      - run: pnpm lint -- --base bcb7b412ba0bed84146d9a3da43949d0d784aced
       - name: Unit tests (engine shard)
         run: pnpm vitest run -c test/vitest/vitest.unit.config.ts
