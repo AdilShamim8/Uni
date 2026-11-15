@@ -5,8 +5,8 @@ const shared = en.aboutPage;
 
 const enAbout = {
   aboutPage: {
-    productName: "OpenClaw",
-    tagline: "Your personal AI agent, running on your own devices.",
+    productName: "Uni",
+    tagline: "Your AI workspace, running on your own devices.",
     waveHello: "Wave hello to Clawd",
     linksLabel: "Community and resources",
     linkWebsite: "Website",
@@ -16,7 +16,7 @@ const enAbout = {
     linkDiscord: "Discord",
     linkX: "X (Twitter)",
     linkChangelog: "Changelog",
-    license: "© 2026 OpenClaw Foundation — MIT License.",
+    license: "Uni is built on OpenClaw — © 2026 OpenClaw Foundation — MIT License.",
     artifactTitle: "Web app",
     artifactDetails: shared.artifactDetails,
     version: "Version",
