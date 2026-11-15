@@ -103,8 +103,9 @@ and `capability-parity.md`.
   target-side map — the `openclaw migrate` plugin-provider contract,
   `plugin-sdk/migration(+runtime)`, `memory/imports/` layout, doctor-owned
   legacy session import, `mcpServers` config, and the database families —
-  plus the `extensions/migrate-uni/` adapter design. Effort count: 32/500
-  (authoritative ledger: `commit-manifest.md`, 32 rows).
+  plus the `extensions/migrate-uni/` adapter design. Effort count: 34/500
+  (authoritative ledger: `commit-manifest.md`, 34 rows including the
+  session-3 ledger-sync commits).
 - Open for next session: write the `extensions/migrate-uni/` provider
   skeleton + tests (needs seeded-data hardware), then the visual acceptance
   pass for the uni theme once a browser environment exists (O07).
