@@ -59,6 +59,26 @@
       "reason": "branding \u2014 uni catalog descriptor with quiet branding flags"
     },
     {
+      "path": "scripts/check-assertion-safety-ratchet.mts",
+      "reason": "unclassified"
+    },
+    {
+      "path": "scripts/check-line-cap-ratchet.mts",
+      "reason": "unclassified"
+    },
+    {
+      "path": "scripts/check-test-timeout-race-ratchet.mts",
+      "reason": "unclassified"
+    },
+    {
+      "path": "scripts/database-worker-inventory.mjs",
+      "reason": "unclassified"
+    },
+    {
+      "path": "scripts/lib/shrink-ratchet.mts",
+      "reason": "unclassified"
+    },
+    {
       "path": "ui/index.html",
       "reason": "branding \u2014 Uni title, boot theme map/first-paint backgrounds, favicon ids unchanged"
     },
@@ -99,6 +119,10 @@
       "reason": "branding \u2014 uni theme maps to Inter typeface"
     },
     {
+      "path": "ui/src/i18n/.i18n/raw-copy-baseline.json",
+      "reason": "unclassified"
+    },
+    {
       "path": "ui/src/i18n/locales/en-about.ts",
       "reason": "branding \u2014 About strings: Uni product name, tagline, built-on-OpenClaw license line"
     },
@@ -117,7 +141,7 @@
   ],
   "counts": {
     "added": 10,
-    "changed": 18,
+    "changed": 24,
     "deleted": 0
   },
   "deleted": [],

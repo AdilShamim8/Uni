@@ -47,11 +47,11 @@ and `capability-parity.md`.
 
 ## Counts of record (this effort only)
 
-- Effort commits: 23 (OA-001…OA-023) at the time of this handoff; the
+- Effort commits: 30 (OA-001…OA-030) at the time of this handoff; the
   authoritative ledger is `commit-manifest.md`, updated after every push.
 - Imported upstream history (65k files) and the prior RF engagement (202
   commits) are **not** part of this count, by contract.
-- Toward the 500 target: 23/500. The remaining scope is real product work
+- Toward the 500 target: 30/500. The remaining scope is real product work
   (verification on capable hardware, migration adapters, surface-by-surface
   restyle passes, CI wiring); padding the count with empty commits is
   forbidden by the adoption contract and will not happen.
@@ -68,3 +68,16 @@ and `capability-parity.md`.
    working directory (O16) — do not enable upstream publishing workflows.
 4. Visual acceptance pass for the uni theme at 390/820/1280 px, light/dark
    (O07 acceptance) once a browser environment exists.
+
+
+## Session 2 addendum (2026-11-15)
+
+- The root CI workflow became the real verification channel: five distinct
+  failure classes were found on GitHub-hosted runners and fixed one by one
+  (OA-025 nested-checkout git blob addressing + ripgrep fallback; OA-026
+  ratchet base ref; OA-027 pnpm arg separator; OA-028 relative diffs;
+  OA-029 raw-copy baseline entry). `pnpm check` is fully green (31 lanes,
+  run #8); `pnpm lint` and the engine unit-test shard passed in run #6.
+- Open for next session: confirm run #9 green; address the Control UI perf
+  budget drift warnings (documented in verification.md); then continue the
+  O10+ migration/adapter work.
