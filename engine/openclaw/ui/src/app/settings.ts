@@ -437,7 +437,9 @@ export function loadUiPreferences(
       sessionKey: scopedSessionSelection.sessionKey,
       lastActiveSessionKey: scopedSessionSelection.lastActiveSessionKey,
       selectedAgentId: scopedSessionSelection.selectedAgentId,
-      theme: theme === "custom" && !customTheme ? "claw" : theme,
+      // A custom theme with no stored definition is unusable; restore the
+      // Uni default family rather than the pre-adoption fallback.
+      theme: theme === "custom" && !customTheme ? "uni" : theme,
       themeMode: mode,
       accent: normalizeAccentColor(parsed.accent),
       fontUi: normalizeTypefaceOverride(parsed.fontUi),
