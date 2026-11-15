@@ -233,7 +233,7 @@ export function AppearanceSection(props: ConfigProps) {
     () =>
       selectedTheme() ?? {
         id: UI_APPEARANCE_DEFAULTS.theme,
-        label: t("configView.themes.claw.label"),
+        label: t(`configView.themes.${UI_APPEARANCE_DEFAULTS.theme}.label`),
       },
   );
   const themeScope = () =>
