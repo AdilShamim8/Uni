@@ -168,9 +168,14 @@ export function main(root = process.cwd(), argv = process.argv.slice(2)) {
     if (!base) {
       throw new Error("Line-cap ratchet requires a Git base commit.");
     }
+    // --relative scopes the diff to this checkout's directory and emits
+    // cwd-relative paths; without it, a nested engine checkout (Uni imports
+    // this tree at engine/openclaw) would read repo-root-relative paths —
+    // and also pick up files changed outside the engine tree.
     const changes = gitPaths(root, [
       "diff",
       "--name-only",
+      "--relative",
       "-z",
       "--diff-filter=ACMR",
       "--no-renames",
