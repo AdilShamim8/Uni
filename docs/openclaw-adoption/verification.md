@@ -120,8 +120,11 @@ this sandbox lacks):
   object-property:label x1 "Inter"`. **OA-029** added the Inter label to
   `ui/src/i18n/.i18n/raw-copy-baseline.json` following upstream's convention
   (adjacent to the other typeface labels).
-- Run #9 (sha `429945038`) triggered by OA-029: in flight at the time of
-  this record; result to be checked on the next session.
+- Run #9 (sha `429945038`) triggered by OA-029: **completed successfully**
+  (2026-11-15, confirmed via the Actions REST API) — the full gate (`pnpm
+  lint`, `pnpm check`, `pnpm ui:build`, unit shard) is green on hosted
+  runners. Runs #10/#11 (OA-030 ledger syncs) were still in flight at the
+  time of this record; PR #81's `CI` workflow run on `9c33fb093` succeeded.
 - Also observed (run #6/#8, non-blocking warnings): Control UI perf budgets
   report `document gzip` +43 B, `total CSS` +9.9 KiB gzip over ceiling,
   `chat boot JS requests` 21 > 20. The `ui:build` step itself passed in runs
@@ -129,3 +132,55 @@ this sandbox lacks):
   (measure which deltas come from the uni theme's font/theme assets vs
   preexisting, then either trim or adjust budgets with upstream-style
   documented rationale).
+
+## Session 3 (2026-11-15)
+
+### Perf-budget drift attribution (the open item from session 2)
+
+- Structure of the budget: `scripts/check-control-ui-performance.mts` counts
+  only bundled `dist/assets/*.css|js` toward `total CSS gzip`; public assets
+  (`ui/public/themes/uni.css`, `ui/public/fonts/inter.css`, the Inter woff2
+  pair) are copied verbatim to `dist/` root and are **outside** the budget.
+- Exhaustive source diff of the two trees (`diff -rq openclaw-upstream/ui`
+  vs `engine/openclaw/ui`, excluding `node_modules`) finds the **only
+  bundled-CSS source delta** is `ui/src/styles/theme-backgrounds.css`
+  (+8 lines: the two uni background rules) — 2,908 → 3,123 raw bytes,
+  ≤ 14 B gzip. All other uni-theme CSS lives in public assets.
+- Conclusion: the +9.9 KiB `total CSS gzip` drift and the `document gzip`
+  +43 B warning are **inherited upstream overages**, not adoption deltas —
+  upstream's own budget comments (`totalCssGzipBytes: 326_575`, "exact
+  totals, with no added headroom") pin a baseline the pinned upstream tree
+  itself exceeds. No Uni-side budget change is warranted; adjusting budgets
+  we did not drift would mask upstream's own signal. The `chat boot JS
+  requests 21 > 20` advisory needs a CI-side measurement (below) to
+  attribute, but the request-count budget is unaffected by public theme
+  assets.
+- Verification attempted locally: a scoped pnpm install
+  (`--filter openclaw --filter openclaw-control-ui --filter memory-core
+  --filter nostr --filter whatsapp --filter @openclaw/mermaid-renderer`,
+  ~1.1 GB, warm store) **builds the Control UI through Solid settings
+  compilation (5,308 modules transformed)** but then fails in
+  `refreshControlUiBuildOutput`: rolldown emits `@noble/hashes/sha2.js` and
+  `@noble/hashes/utils.js` as path-named chunks, which the offline-shell
+  inventory then cannot read. **The pristine upstream tree fails
+  identically under the same scoped layout** (verified by building
+  `openclaw-upstream` at the pinned commit), so this is an environment
+  artifact of the partial install, not a Uni regression; CI's full
+  214-package install does not exhibit it (runs #7–#9 passed `ui:build`).
+  Consequence: full `ui:build` output and byte-exact budget attribution
+  cannot run in this 10 GB sandbox (full install needs ~4+ GB of
+  `node_modules` beside the 1.6 GB repo); CI remains the measurement
+  channel for O04+ claims.
+
+### O15 — target-side migration map (OA-031)
+
+- Verified upstream migration machinery and filled the per-table
+  target-side columns of `data-migration.md`: the `openclaw migrate`
+  plugin-provider contract (`docs/cli/migrate.md`,
+  `src/plugins/migration-provider.types.ts`, `extensions/migrate-hermes/`
+  as the reference implementation), the `plugin-sdk/migration(+runtime)`
+  helper surface, the `memory/imports/<source>/` import layout, the
+  doctor-owned legacy `sessions.json`/transcript-JSONL import path, the
+  `mcpServers` config surface, and the SQLite/PostgreSQL database
+  families. Adapter code is the pinned next step; no migration has run.
+

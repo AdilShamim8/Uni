@@ -81,3 +81,29 @@ and `capability-parity.md`.
 - Open for next session: confirm run #9 green; address the Control UI perf
   budget drift warnings (documented in verification.md); then continue the
   O10+ migration/adapter work.
+
+## Session 3 addendum (2026-11-15)
+
+- Run #9 (OA-029) **confirmed green** via the Actions REST API: lint, all 31
+  `pnpm check` lanes, `ui:build`, and the unit shard pass on hosted runners;
+  PR #81's `CI` run on `9c33fb093` also succeeded.
+- Perf-budget drift **attributed** (see verification.md §Session 3): the uni
+  theme's only bundled-CSS delta is +8 lines in
+  `ui/src/styles/theme-backgrounds.css` (≤ 14 B gzip); the +9.9 KiB
+  `total CSS gzip` and +43 B `document gzip` warnings are inherited
+  upstream overages against budgets pinned "with no added headroom". No
+  Uni-side budget change is warranted.
+- Local `ui:build` verification: a scoped pnpm install builds through Solid
+  settings compilation but fails late on path-named `@noble/hashes` chunks
+  under the partial-install layout; the **pristine upstream tree fails
+  identically**, so it is an environment artifact, not a regression (CI's
+  full install is unaffected). Full local builds remain disk-blocked
+  (10 GB volume; ~4+ GB `node_modules` beside the 1.6 GB repo).
+- O15 advanced (OA-031): `data-migration.md` now carries the verified
+  target-side map — the `openclaw migrate` plugin-provider contract,
+  `plugin-sdk/migration(+runtime)`, `memory/imports/` layout, doctor-owned
+  legacy session import, `mcpServers` config, and the database families —
+  plus the `extensions/migrate-uni/` adapter design. Effort count: 31/500.
+- Open for next session: write the `extensions/migrate-uni/` provider
+  skeleton + tests (needs seeded-data hardware), then the visual acceptance
+  pass for the uni theme once a browser environment exists (O07).
