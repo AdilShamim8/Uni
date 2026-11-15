@@ -48,3 +48,5 @@ The 500-commit / 500-push contract of record for this effort.
 | OA-030 | 2026-11-15 | `11a39b7b0f958a380215ee342e83c59eda983a57` | O16/O20 | record the session-2 CI iteration: 5 real failure classes found on hosted runners, each fixed (OA-025..OA-029); pnpm check fully green in run #8 |
 | OA-031 | 2026-11-15 | `105ee8463bd40a3b041a749de000a0fe1e69bda1` | O15 | data-migration.md target-side map: 1 file changed, 91 insertions(+), 29 deletions(-) |
 | OA-032 | 2026-11-15 | `6f1666bb5272239e488575713b909f3635c78afb` | O16/O20 | session-3 records: 3 files changed, 84 insertions(+), 2 deletions(-) |
+| OA-033 | 2026-11-15 | `62df99e30c4491bc80d98d639838ff80ebb4f1d5` | O20 | ledger row for OA-032: 1 file changed, 1 insertion(+) |
+| OA-034 | 2026-11-15 | `1fb1049e2a134f70295264a06c0d716ae4bea461` | O20 | handoff count correction to match the 32-row ledger: 1 file changed, 2 insertions(+), 1 deletion(-) |
