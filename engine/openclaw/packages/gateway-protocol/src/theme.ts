@@ -215,6 +215,16 @@ export const BUILTIN_THEMES: readonly ThemeDescriptor[] = (
       description:
         "Hot magenta and cyan on violet-black or pale lavender, with Space Grotesk. Bright neon energy and a synthwave character.",
     },
+    {
+      id: "uni",
+      name: "Uni",
+      mascot: "none",
+      brandIcon: "mark",
+      workingIndicator: "dots",
+      lobsterdex: false,
+      description:
+        "Muted indigo on deep neutral gray or warm paper, with Inter throughout. Quiet, refined productivity.",
+    },
   ] satisfies Array<Omit<ThemeDescriptor, "source" | "modes">>
 ).map<ThemeDescriptor>((theme) =>
   Object.assign(theme, {
