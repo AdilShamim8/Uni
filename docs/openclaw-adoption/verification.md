@@ -71,3 +71,61 @@ failures and environment limits are recorded, not hidden.
   visual pass at 390/820/1280 px light/dark, PerformanceObserver
   layout-stability checks, `test:ui` suites. Statuses in
   `capability-parity.md` remain `imported`/`configured` accordingly.
+
+## O16 — root CI, first real runs (2026-11-15, session 2)
+
+- `openclaw-engine.yml` (OA-021) triggered on the four later session-1
+  pushes; GitHub's hosted runners completed install/build and exposed real
+  failures in `pnpm check` (runs #1–#4, all red): ratchet scripts addressing
+  blobs as `<rev>:<path>` and `:<path>` — repo-root-relative forms — fail in
+  Uni's nested `engine/openclaw` checkout, plus one `spawnSync rg ENOENT`
+  (ripgrep absent on the runner).
+- OA-025 fix: all ratchet blob lookups now use the cwd-relative `./` form
+  (`<rev>:./path`, `:./path`, `cat-file` inputs likewise) — verified
+  empirically to work both nested and at a repository root; the database
+  worker inventory's worktree scan falls back to `git ls-files` when
+  ripgrep is missing (mirrors upstream's own dated-todo-scan fallback
+  pattern). Every other git subcommand used by these scripts
+  (`ls-tree -- <path>`, `ls-files`, `grep <rev> -- .`, `merge-base`,
+  `rev-parse`) was verified cwd-safe from the nested directory.
+- Run #5 (sha `417cb235e`) triggered by OA-025: result recorded below.
+
+## O16 — CI iteration record (session 2, 2026-11-15)
+
+Real failures found and fixed on GitHub-hosted runners (disk-capable hardware
+this sandbox lacks):
+
+- Runs #1–#4 (session-1 pushes): `pnpm check` failed on ratchet git
+  invocation — `<rev>:<path>` blob addressing is repo-root-relative and broke
+  in the nested `engine/openclaw` checkout, plus one `spawnSync rg ENOENT`.
+  **OA-025**: cwd-relative `./` forms in shrink-ratchet (3 sites),
+  assertion-safety (2), timeout-race (1); `git ls-files` fallback when
+  ripgrep is absent (mirrors upstream's dated-todo-scan pattern).
+- Run #5: 23/24 preflight lanes pass; remaining: `Could not resolve ratchet
+  base ref: origin/main` (single-branch checkout has no origin/main).
+  **OA-026**: explicit `--base` = pinned import commit OA-002 + full
+  checkout; lint takes the same base.
+- Run #6: `pnpm lint` PASSED and the **unit test shard PASSED** (thousands of
+  upstream tests green on real hardware); `pnpm check` failed only on pnpm's
+  `--` separator being forwarded into check.mts's strict parser.
+  **OA-027** removed the separator.
+- Run #7: `pnpm ui:build` PASSED; check failed only in line-cap ratchet —
+  `git diff` paths arrived repo-root-relative (and included root-level files
+  outside the engine tree), doubled onto the engine cwd.
+  **OA-028**: `--relative` on the line-cap diff and shared
+  `listRatchetRenames` (verified to work at repo root too).
+- Run #8: **`pnpm check` fully green — all 31 lanes** (every ratchet +
+  typecheck prod/scripts/test-root). `pnpm lint` failed on exactly one
+  finding: `control-ui raw-copy baseline drift — ui/src/app/typography.ts
+  object-property:label x1 "Inter"`. **OA-029** added the Inter label to
+  `ui/src/i18n/.i18n/raw-copy-baseline.json` following upstream's convention
+  (adjacent to the other typeface labels).
+- Run #9 (sha `429945038`) triggered by OA-029: in flight at the time of
+  this record; result to be checked on the next session.
+- Also observed (run #6/#8, non-blocking warnings): Control UI perf budgets
+  report `document gzip` +43 B, `total CSS` +9.9 KiB gzip over ceiling,
+  `chat boot JS requests` 21 > 20. The `ui:build` step itself passed in runs
+  #7/#8; the budget drift is recorded as open work for the next session
+  (measure which deltas come from the uni theme's font/theme assets vs
+  preexisting, then either trim or adjust budgets with upstream-style
+  documented rationale).
