@@ -115,13 +115,13 @@ export function createBrowserHost(deps: BrowserHostDeps) {
   // processes. `runs` is read only when a browser call asks, after usedBrowserSessions exists.
   const processRoom = deps.engineMemory?.selfHosted?.() ? processBudget.browserRoom((session) => browserRunning(session, usedBrowserSessions.get(session))) : null;
   // Only a bot waiting for a slot closes a browser a running turn holds; the idle sweep below never does.
-  const browserRoom = new BrowserRoom({
+  const browserRoom: BrowserRoom = new BrowserRoom({
     max: deps.browsersAtOnce ?? (() => defaultBrowserRoomSize()),
     spare: (session) => spareForRoom(agentBrowserRuntime.spare(session), { holds: !turnResources.free(`browser:${session}`), idleMs: idleMs() }),
     close: (session) => agentBrowserRuntime.closeIfIdle(session, 1),
     ...(processRoom ? { admit: (session: string) => processRoom.enter(session) } : {}),
   });
-  const agentBrowserRuntime = new BrowserRuntime({
+  const agentBrowserRuntime: BrowserRuntime = new BrowserRuntime({
     closeBrowser: (session, spec) => closeBrowserSession(spec.command, browserRuntimeEnv({ ...spec.env, AGENT_BROWSER_SESSION: session })),
     applyViewport: (spec, size) => setBrowserViewport(spec.command, spec.env, size),
     // A browser a person's view started counts toward the limit too. It is not refused, so a bot's next new one waits.
