@@ -1,2 +1,0 @@
-# Auth publication must outlive the triggering plugin invocation scope without reviving retired plugins.
-53

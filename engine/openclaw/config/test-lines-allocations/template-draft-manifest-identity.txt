@@ -1,2 +1,0 @@
-33
-# Regression proof that Template review keeps the CLAW.md agent name and description.

@@ -1,2 +1,0 @@
-19
-# Native macOS packaging regression: the real staging owner exposes the crate before SwiftPM resolves it, only when native support is enabled.

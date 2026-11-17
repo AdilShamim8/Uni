@@ -1,8 +1,0 @@
-{
-  "extends": "../../../tsconfig.extensions.json",
-  "compilerOptions": {
-    "rootDir": "../../..",
-    "tsBuildInfoFile": "../../../.artifacts/tsgo-cache/openclaw-id-access-browser.tsbuildinfo"
-  },
-  "include": ["../../../src/**/*.d.ts", "../../../ui/src/**/*.d.ts", "../browser/**/*"]
-}

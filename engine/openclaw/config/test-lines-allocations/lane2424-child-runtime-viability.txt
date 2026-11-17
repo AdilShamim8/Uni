@@ -1,3 +1,0 @@
-# Excess above the 400-line allowance: readiness/health nonblocking observations,
-# delayed-diagnosis custody and native close/error/recovery regressions.
-267

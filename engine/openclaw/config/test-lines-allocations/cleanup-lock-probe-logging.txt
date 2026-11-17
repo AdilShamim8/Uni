@@ -1,3 +1,0 @@
-# Keep real startup-probe logging outside the state cleanup target.
-# Exact +5 fixture LF; lock assertions and the shared scalar are unchanged.
-5

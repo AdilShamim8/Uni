@@ -1,3 +1,0 @@
-# Existing-boundary regressions for marked stdout delivery, exact recovery bytes,
-# Canvas precedence/invalidation, and mounted output-snapshot isolation.
-87

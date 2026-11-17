@@ -1,3 +1,0 @@
-# Existing shared-selection regression: display-only publication preserves people facets
-# while interleaved viewers retain separate visibility answers.
-13

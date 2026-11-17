@@ -1,2 +1,0 @@
-# Prove original tool icons, bounded HTML/native rows, and display-only worker references without losing labels, full identities, diagnostics, or lifecycle behavior.
-198

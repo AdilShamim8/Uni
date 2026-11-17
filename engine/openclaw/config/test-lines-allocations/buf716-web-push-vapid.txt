@@ -1,3 +1,0 @@
-# Web Push transport regression: signature reuse, identity/expiry separation,
-# independent RFC 8291 decryption and ES256 verification with fresh message keys.
-159

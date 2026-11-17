@@ -1,2 +1,0 @@
-# Regression proof that Template Add schedules last-channel automations in the main session without delivery.
-68

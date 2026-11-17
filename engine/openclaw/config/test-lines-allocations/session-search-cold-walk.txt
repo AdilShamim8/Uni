@@ -1,2 +1,0 @@
-# Cold archived multi-agent discovery must share bounded worker admissions without changing row order.
-35

@@ -1,2 +1,0 @@
-# Existing browser coverage detects redundant page scrolling with actual Settings styles.
-3

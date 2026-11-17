@@ -1,3 +1,0 @@
-# Regression proving a Claude CLI turn ends after a confirmed final message-tool reply to the
-# current WebChat conversation, so no second native conclusion follows it. Exact net test growth.
-68

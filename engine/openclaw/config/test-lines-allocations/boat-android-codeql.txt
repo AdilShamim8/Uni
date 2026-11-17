@@ -1,2 +1,0 @@
-# Bound Android CodeQL Boat routing to scheduled canonical-main jobs and retries.
-25
