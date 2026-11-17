@@ -1,3 +1,0 @@
-# Existing projection-owner loading regressions: populated working/subagent/search reuse,
-# and initial empty/hidden/reasoning progress fidelity; exact net test-line growth.
-30

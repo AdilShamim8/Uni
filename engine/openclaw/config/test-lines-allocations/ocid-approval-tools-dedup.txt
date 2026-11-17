@@ -1,2 +1,0 @@
-# Regression: owner approval renders overlapping capability/command labels once.
-24

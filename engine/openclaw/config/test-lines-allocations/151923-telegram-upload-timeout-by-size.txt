@@ -1,2 +1,0 @@
-# Telegram uploads get a timeout scaled to file size: request-timeout, upload-timeout and real-transport upload tests.
-284

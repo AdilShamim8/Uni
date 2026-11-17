@@ -1,3 +1,0 @@
-# Request authority across preparation, allocation, restart, replay, and exact cleanup.
-# Includes SQLite/PostgreSQL upgrade and reader-fence proof and affected service fixtures.
-547

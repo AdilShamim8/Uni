@@ -1,2 +1,0 @@
-# Require disabled buttons to stay non-clickable with rich messages on and off across action, payload, and reply delivery.
-98

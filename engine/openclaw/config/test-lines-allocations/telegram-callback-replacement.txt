@@ -1,2 +1,0 @@
-24
-# Exercise accepted/rejected replacement sends over HTTP before destructive callback cleanup, retaining business/topic payload and router cleanup coverage.

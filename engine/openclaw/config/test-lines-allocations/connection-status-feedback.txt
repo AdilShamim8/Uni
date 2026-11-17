@@ -1,2 +1,0 @@
-# Existing UI and catalog regressions distinguish failure guidance and prevent diagnostic leakage.
-4

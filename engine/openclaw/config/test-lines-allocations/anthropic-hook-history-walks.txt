@@ -1,2 +1,0 @@
-# Single-pass hook-history inspection and accessor fallback coverage.
-36

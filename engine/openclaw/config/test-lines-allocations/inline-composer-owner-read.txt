@@ -1,2 +1,0 @@
-# Prove draft capture avoids unrelated pane getters while preserving account replacement fences.
-35

@@ -1,2 +1,0 @@
-# Transcript co-commit, reset/rollback authority, session-scope and admitted manager-target regressions.
-400

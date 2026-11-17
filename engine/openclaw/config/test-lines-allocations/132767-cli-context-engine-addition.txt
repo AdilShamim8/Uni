@@ -1,3 +1,0 @@
-# CLI runner regression proving a context engine's systemPromptAddition is assembled after
-# bootstrap and sent with the current CLI turn (raw and private transports), not the system prompt.
-29
