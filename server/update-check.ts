@@ -2,9 +2,9 @@
 import { existsSync } from "node:fs";
 import { join, sep } from "node:path";
 
-export const LATEST_RELEASE_URL = "https://api.github.com/repos/milind-soni/OpenMausBot/releases/latest";
+export const LATEST_RELEASE_URL = "https://api.github.com/repos/milind-soni/Uni/releases/latest";
 /** Written by .github/workflows/promote-stable.yml: the released version our own Clouds have run for 48 hours. */
-export const STABLE_CHANNEL_URL = "https://raw.githubusercontent.com/milind-soni/OpenMausBot/channels/stable.json";
+export const STABLE_CHANNEL_URL = "https://raw.githubusercontent.com/milind-soni/Uni/channels/stable.json";
 const CACHE_MS = 60 * 60_000;
 /** How long the last answer stands in when the channel cannot be read: an outage of GitHub is no reason to say nothing. */
 const STALE_MS = 24 * 60 * 60_000;

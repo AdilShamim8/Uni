@@ -127,7 +127,7 @@ export function createCompanionAccountService({
   firstEndpointCheckMs = DEFAULT_FIRST_ENDPOINT_CHECK_MS,
   onDemand = false,
   managedEndpointNeeded = async () => null,
-  /** MausBot Relay: `capable` makes a "no" need hold even right after sign-in; `legacyDevices` counts old phones. */
+  /** Uni Relay: `capable` makes a "no" need hold even right after sign-in; `legacyDevices` counts old phones. */
   relay = { capable: () => false, legacyDevices: async () => null },
   releaseGraceMs = DEFAULT_RELEASE_GRACE_MS,
   releaseJitterMs = DEFAULT_RELEASE_JITTER_MS,

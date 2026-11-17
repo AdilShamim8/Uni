@@ -3017,7 +3017,7 @@
   "native.connect.unreachable": "{host} तक नहीं पहुँच पा रहे। जाँचें कि सर्वर चल रहा है और इस कंप्यूटर से पहुँचा जा सकता है।",
   "native.connect.dns": "{host} अभी मौजूद नहीं है। वर्तनी जाँचें, या DNS रिकॉर्ड का इंतज़ार करें।",
   "native.connect.certificate": "{host} का सर्टिफ़िकेट अभी मान्य नहीं है। नए सर्वर को इसे पाने में एक मिनट लग सकता है।",
-  "native.connect.notMausBot": "यह पता जवाब देता है, लेकिन यह Uni सर्वर नहीं है।",
+  "native.connect.notUni": "यह पता जवाब देता है, लेकिन यह Uni सर्वर नहीं है।",
   "native.connect.loopback": "यह इस कंप्यूटर ({host}) की ओर इशारा करता है, सर्वर की ओर नहीं। सर्वर का अपना पता इस्तेमाल करें।",
   "native.connect.localNetwork": "{host} तक नहीं पहुँच पा रहे। Mac पर System Settings → Privacy & Security → Local Network में Uni चालू करें, फिर दोबारा कोशिश करें। यह भी देखें कि सर्वर इसी नेटवर्क पर चल रहा है।",
   "serverError.pair.tooMany": "बहुत सारे गलत कोड। {time} पर फिर से कोशिश करें।",

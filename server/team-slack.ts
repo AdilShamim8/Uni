@@ -1,4 +1,4 @@
-// Slack for Clouds, the Cloud's side (docs/team-slack.md). One MausBot Slack app is installed per company or person;
+// Slack for Clouds, the Cloud's side (docs/team-slack.md). One Uni Slack app is installed per company or person;
 // Slack's events arrive at the Admin, which hands each message to the Cloud with a session it opened for the member who
 // wrote it (on a personal Cloud, for its owner), so here the message is that person's own request. This module holds
 // the contract's wire shapes, the record of the messages taken (the idempotency key and what the Admin has been told)

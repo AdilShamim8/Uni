@@ -133,7 +133,7 @@ export function createTunnelAccount(options: {
   fetchImpl?: typeof fetch;
   machineName?: string;
   recovery?: TunnelRecovery;
-  /** `login --relay`: sign in without reserving a public address; phones reach this machine through MausBot Relay. */
+  /** `login --relay`: sign in without reserving a public address; phones reach this machine through Uni Relay. */
   relayOnly?: boolean;
   log?: (line: string) => void;
   clock?: {

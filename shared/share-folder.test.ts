@@ -15,7 +15,7 @@ function oneBot(): PackageDocument {
     format: "openmaus.package", version: 2,
     package: {
       id: "helper", release: "1.0.0", name: "Helper", tagline: "Answers questions.", summary: "A helpful bot.", category: "Community",
-      author: { name: "MausBot user" }, license: "Unspecified", outcomes: ["Answers."], setupMinutes: 2,
+      author: { name: "Uni user" }, license: "Unspecified", outcomes: ["Answers."], setupMinutes: 2,
       requirements: { apps: [{ slug: "gmail", label: "Gmail", reason: "Reads mail.", optional: true }], capabilities: [] },
       team: { name: "Helper" },
       agents: [{ key: "helper", name: "Helper", soul: "Be brief.\n---\nNever guess.", appearance: { color: "blue" }, skills: ["triage"], tools: { off: ["images", "warp-drive"] } }],
@@ -93,7 +93,7 @@ describe("template folders", () => {
     const files = writeShareFolder(oneBot(), "bot");
     expect(() => readShareFolder({ ...files, "team.md": files["bot.md"]! })).toThrow(/not both/);
     expect(() => readShareFolder({ "README.md": "# hi" })).toThrow(/no bot.md or team.md/);
-    expect(() => readShareFolder({ "bot.md": String(files["bot.md"]).replace("botmrr: 2", "botmrr: 3") })).toThrow(/newer MausBot/);
+    expect(() => readShareFolder({ "bot.md": String(files["bot.md"]).replace("botmrr: 2", "botmrr: 3") })).toThrow(/newer Uni/);
   });
 
   it("names only skills and pictures for a remote reader to fetch", () => {

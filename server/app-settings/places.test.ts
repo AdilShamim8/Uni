@@ -75,7 +75,7 @@ describe("menu paths in our own text", () => {
   it("tell a stale path from a real one", () => {
     expect(inventedPaths('"Add it in Settings → API keys."')).toEqual(["Settings → API keys.\""]);
     expect(inventedPaths('"Sign in again in Settings → AI to keep using it."')).toEqual([]);
-    expect(inventedPaths('"open Settings → Phone & devices → Your other computers in MausBot"')).toEqual([]);
+    expect(inventedPaths('"open Settings → Phone & devices → Your other computers in Uni"')).toEqual([]);
     expect(inventedPaths('"open Settings → AI → API keys"')).toEqual(["Settings → AI → API keys\""]);
     expect(inventedPaths('"in System Settings → Privacy & Security"')).toEqual([]);
     expect(inventedPaths("// Settings → Computers, a comment only")).toEqual([]);

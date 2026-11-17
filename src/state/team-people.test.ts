@@ -12,7 +12,7 @@ const bots = [
 ];
 
 describe("schedulableBots", () => {
-  it("on a team lists only the bots the person can chat with, their own MausBot and no teammate's", () => {
+  it("on a team lists only the bots the person can chat with, their own Uni and no teammate's", () => {
     expect(schedulableBots(bots, { me: OLIVE }).map((bot) => bot.id)).toEqual(["scout", "olives-mausbot"]);
   });
 
@@ -31,7 +31,7 @@ describe("mayRename", () => {
     expect(mayRename({ yourAccess: undefined }, null)).toBe(true);
   });
 
-  it("on a team: an admin any bot, a member only one they can edit or their own MausBot", () => {
+  it("on a team: an admin any bot, a member only one they can edit or their own Uni", () => {
     expect(mayRename({ yourAccess: "chat" }, { admin: true, me: OLIVE })).toBe(true);
     expect(mayRename({ yourAccess: "chat" }, member)).toBe(false);
     expect(mayRename({ yourAccess: "view" }, member)).toBe(false);

@@ -6408,7 +6408,7 @@
   "native.connect.unreachable": "Impossibile raggiungere {host}. Controlla che il server sia in funzione e raggiungibile da questo computer.",
   "native.connect.dns": "{host} non esiste ancora. Controlla come è scritto, o attendi il record DNS.",
   "native.connect.certificate": "Il certificato di {host} non è ancora valido. Un nuovo server può impiegare un minuto per ottenerlo.",
-  "native.connect.notMausBot": "Quell'indirizzo risponde, ma non è un server Uni.",
+  "native.connect.notUni": "Quell'indirizzo risponde, ma non è un server Uni.",
   "native.connect.loopback": "Questo punta a questo computer ({host}), non al server. Usa l'indirizzo del server stesso.",
   "native.connect.localNetwork": "Impossibile raggiungere {host}. Su un Mac, attiva Uni in Impostazioni di Sistema → Privacy e sicurezza → Rete locale, poi riprova. Controlla anche che il server sia attivo su questa rete.",
   "serverError.pair.tooMany": "Troppi codici errati. Riprova alle {time}.",

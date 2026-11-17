@@ -17,11 +17,11 @@ describe("phoneLinkPrompt", () => {
 
   it("gives the cause, the fix and what won't help, for the phones it is true of", () => {
     const one = phoneLinkPrompt(1);
-    expect(one).toContain("this computer's secure link for older MausBot phone apps has ended, and 1 phone paired with this computer has an older app");
+    expect(one).toContain("this computer's secure link for older Uni phone apps has ended, and 1 phone paired with this computer has an older app");
     expect(one).toContain("connects on the same Wi-Fi only");
     expect(one).toContain("\"No route to your computer\"");
-    expect(one).toContain("\"Anywhere, through MausBot\" doesn't work");
-    expect(one).toContain("update the MausBot app on that phone, then open it once on the same Wi-Fi as this computer;"
+    expect(one).toContain("\"Anywhere, through Uni\" doesn't work");
+    expect(one).toContain("update the Uni app on that phone, then open it once on the same Wi-Fi as this computer;"
       + " if that doesn't reconnect it, they pair it again in Settings → Phone & devices");
     expect(one.indexOf("open it once"), "the easy way first").toBeLessThan(one.indexOf("pair it again"));
     expect(one).toContain("Turning routes off and on, Try reconnecting, force-quitting the app away from that Wi-Fi or checking a VPN won't help");

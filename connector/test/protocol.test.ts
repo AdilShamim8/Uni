@@ -87,7 +87,7 @@ describe("the connector protocol", () => {
     }
   });
 
-  it("keeps an enrolment answer only when every field is the Admin's shape, and a code only as MausBot shows it", () => {
+  it("keeps an enrolment answer only when every field is the Admin's shape, and a code only as Uni shows it", () => {
     const key = generateKeyPair().publicKey;
     const good = { boxId: "box_1a2b3c4d5e6f", teamId: "3f9c2a4e-8b1d-4c6e-9a7f-2d5e8c1b0a93", adminKeys: { k1: key }, state: "pending" };
     expect(checkEnrollResponse(good)).toEqual({ ok: true, value: good });

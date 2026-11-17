@@ -18,7 +18,7 @@ restore   put a copy back, by name or "latest"; the file it replaces is kept,
           so the restore can be undone. Stop the server first if it is
           running, so nothing it holds in memory is written over the copy.
 
---data-dir DIR  the OpenMausBot data folder (default ~/.openmausbot)
+--data-dir DIR  the Uni data folder (default ~/.openmausbot)
 --dry-run        say what a restore would do, and change nothing
 --json           print the result as JSON`;
 

@@ -42,10 +42,10 @@ const PROBLEM: Record<string, string> = {
   empty: "give the server's address or its pairing link",
   codeOnly: "that is a pairing code: give the server's address too, like openmausbot connect http://192.168.1.20:8799 --code CODE",
   emailCode: "that is a sign-in code from an email; pairing needs a 12-character code like 7KQ2-M9XD-H4TP",
-  oldCode: "that is a code from an older MausBot; pairing needs a 12-character code like 7KQ2-M9XD-H4TP",
+  oldCode: "that is a code from an older Uni; pairing needs a 12-character code like 7KQ2-M9XD-H4TP",
   scriptKey: "that is a script key; pass it with --token-file instead of pairing",
   notACode: "that is not a pairing code; pairing needs a 12-character code like 7KQ2-M9XD-H4TP",
-  phoneLink: "that link is for the MausBot phone app; give the server's address or the link the server printed",
+  phoneLink: "that link is for the Uni phone app; give the server's address or the link the server printed",
   notAnAddress: "that is not a server address; give the link the server printed, or its address like http://192.168.1.20:8799",
 };
 
@@ -77,7 +77,7 @@ export async function connectVerb(ctx: VerbContext): Promise<VerbOutcome> {
   let code = secret;
   if (!code && !isLoopback(origin)) throw usageError("a workspace elsewhere needs a pairing code", pairHint);
   if (described?.status !== 200 || typeof described.body.environmentId !== "string") {
-    throw new HeadlessError(`no MausBot server answers at ${origin}`, EXIT.unreachable, "check the address, and that the server is running with a way in (see openmausbot serve --help on the server)");
+    throw new HeadlessError(`no Uni server answers at ${origin}`, EXIT.unreachable, "check the address, and that the server is running with a way in (see openmausbot serve --help on the server)");
   }
   const label = flag(ctx.flags, "label")?.trim() || "openmausbot CLI";
   if (!code) {

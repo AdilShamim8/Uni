@@ -1,4 +1,4 @@
-// How many paired phones have an older MausBot app that lost its way in when the control plane ended this computer's
+// How many paired phones have an older Uni app that lost its way in when the control plane ended this computer's
 // secure link ("retired"); 0 when it was not ended. Told to the local server when it changes and when a server starts.
 import { deviceCounts } from "./companion-e2e.mjs";
 

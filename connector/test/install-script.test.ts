@@ -74,7 +74,7 @@ describe("install.sh", () => {
     for (const bashism of [/\[\[/, /\bfunction\s+\w+/, /\blocal\s/, /<<</, /\$\{[A-Za-z_]+\[/, /\bsource\s/, /&>/]) expect(script, String(bashism)).not.toMatch(bashism);
   });
 
-  it("names the same Docker objects, labels and profiles as the connector, and waits for MausBot to fill in its address and image", () => {
+  it("names the same Docker objects, labels and profiles as the connector, and waits for Uni to fill in its address and image", () => {
     const value = (name: string) => new RegExp(`^${name}=(\\S+)$`, "m").exec(script)?.[1];
     expect(value("CONNECTOR")).toBe(NAMES.connector);
     expect(value("CONNECTOR_NEXT")).toBe(NAMES.connectorNext);
@@ -87,7 +87,7 @@ describe("install.sh", () => {
     expect(value("SECCOMP")).toBe(SECCOMP_FILE);
     expect(script).toContain('ADMIN_URL="${MAUSBOT_ADMIN_URL:-@MAUSBOT_ADMIN_URL@}"');
     expect(script).toContain('CONNECTOR_IMAGE="${MAUSBOT_CONNECTOR_IMAGE:-@MAUSBOT_CONNECTOR_IMAGE@}"');
-    expect(script).toContain(`say "Connected. Your server shows up in MausBot in a minute, for your team's Owner to accept."`);
+    expect(script).toContain(`say "Connected. Your server shows up in Uni in a minute, for your team's Owner to accept."`);
     expect(script).toContain(`com.mausbot.instance=$instance`);
     expect(script).toContain("--restart unless-stopped --network host");
     expect(script).toContain("-v /var/run/docker.sock:/var/run/docker.sock -v \"$STATE_VOLUME:/state\" -v \"$ETC_DIR:/etc/mausbot:ro\" -v \"$AUDIT_DIR:/var/log/mausbot\"");
@@ -119,7 +119,7 @@ describe("install.sh", () => {
       `docker volume rm ${NAMES.dataVolume}`, `docker volume rm ${NAMES.snapshotVolume}`,
       "docker volume rm mausbot-backup-20261028-000000-ab12", "docker volume rm mausbot-backup-20261029-000000-cd34",
     ]));
-    expect(deleted.stdout).toContain("MausBot is removed from this server, and so is its data.");
+    expect(deleted.stdout).toContain("Uni is removed from this server, and so is its data.");
     expect(existsSync(deleted.audit)).toBe(false);
     for (const typo of [["uninstall", "--delete-dat"], ["uninstall", "--delete-data=yes"], ["uninstall", "-f"]]) {
       const refused = run(typo);
@@ -129,19 +129,19 @@ describe("install.sh", () => {
     }
   });
 
-  it.skipIf(!posix)("says in plain words what to run instead: as root, from MausBot's own command, with a code as MausBot shows it", () => {
+  it.skipIf(!posix)("says in plain words what to run instead: as root, from Uni's own command, with a code as Uni shows it", () => {
     const user = run(["MB-1A2B-3C4D"], { uid: 1000 });
     expect(user.status).toBe(1);
     expect(user.stderr).toContain("Please run this as root: put sudo before sh, like this: curl -fsSL https://cloud.example.test/install.sh | sudo sh -s -- MB-1A2B-3C4D");
     expect(run(["uninstall"], { uid: 1000 }).stderr).toContain("Please run this as root");
     const copied = run(["MB-1A2B-3C4D"], { env: { MAUSBOT_ADMIN_URL: "", MAUSBOT_CONNECTOR_IMAGE: "" } });
-    expect(copied.stderr).toContain("This installer was not downloaded from MausBot. Copy the install command from MausBot and run that.");
+    expect(copied.stderr).toContain("This installer was not downloaded from Uni. Copy the install command from Uni and run that.");
     const odd = run(["MB-1A2B;reboot"]);
-    expect(odd.stderr).toContain("That code doesn't look right. Copy the install command from MausBot again.");
+    expect(odd.stderr).toContain("That code doesn't look right. Copy the install command from Uni again.");
     expect(odd.calls).toEqual([]);
   });
 
-  it("starts a customer-run connector with its mode and the updater's folder, and only where MausBot is already installed", () => {
+  it("starts a customer-run connector with its mode and the updater's folder, and only where Uni is already installed", () => {
     expect(script).toContain('set -- "$@" -e MAUSBOT_MODE=customer-run -v "$UPDATE_DIR:/var/lib/mausbot/update"');
     expect(PATHS.update).toBe("/var/lib/mausbot/update");
     expect(script).toContain('INSTALL_DIR="${MAUSBOT_INSTALL_DIR:-/opt/openmausbot}"');
@@ -149,14 +149,14 @@ describe("install.sh", () => {
     expect(script).toContain("ExecStart=$SBIN_DIR/$UPDATE_RUNNER");
   });
 
-  it.skipIf(!posix)("refuses --customer-run where MausBot is not installed, before touching a thing", () => {
+  it.skipIf(!posix)("refuses --customer-run where Uni is not installed, before touching a thing", () => {
     const refused = run(["--customer-run", "MB-1A2B-3C4D"]);
     expect(refused.status).toBe(1);
-    expect(refused.stderr).toContain(`MausBot isn't installed in ${refused.install} yet. Install it first with the server's install command, then run this again to connect it.`);
+    expect(refused.stderr).toContain(`Uni isn't installed in ${refused.install} yet. Install it first with the server's install command, then run this again to connect it.`);
     expect(refused.calls).toEqual([]);
   });
 
-  it.skipIf(!posix)("disconnecting a server its owner installed removes the connector and the updater, and leaves that MausBot and its data alone", () => {
+  it.skipIf(!posix)("disconnecting a server its owner installed removes the connector and the updater, and leaves that Uni and its data alone", () => {
     const result = run(["uninstall", "--delete-data"], { ownServer: true });
     expect(result.status, result.stderr).toBe(0);
     expect(result.calls).toContain(`docker rm -f ${NAMES.connector} ${NAMES.connectorNext}`);
@@ -164,7 +164,7 @@ describe("install.sh", () => {
     expect(readFileSync(join(result.install, "data", "chats.json"), "utf8")).toBe("theirs");
     expect(existsSync(join(result.install, "compose.yaml"))).toBe(true);
     for (const gone of [result.update, join(result.sbin, "mausbot-update-runner"), join(result.systemd, "mausbot-update.path"), join(result.systemd, "mausbot-update.service")]) expect(existsSync(gone), gone).toBe(false);
-    expect(result.stdout).toContain(`Your MausBot in ${result.install} and its data were not touched, and it keeps running.`);
+    expect(result.stdout).toContain(`Your Uni in ${result.install} and its data were not touched, and it keeps running.`);
     expect(existsSync(join(result.apparmor, APPARMOR_PROFILE))).toBe(true);
   });
 });

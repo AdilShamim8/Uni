@@ -303,7 +303,7 @@ export function createShareHost(deps: ShareHostDeps) {
         name: lead ? lead.name : target.scope === "department" ? target.section : undefined,
         tagline: lead ? firstLine(lead.title || lead.description, 160) || undefined : firstLine(brief, 160) || undefined,
         summary: lead ? (lead.description?.trim().slice(0, 2_000) || undefined) : brief?.slice(0, 2_000) || undefined,
-        authorName: "MausBot user",
+        authorName: "Uni user",
         bots,
         groups: target.scope === "bot" ? [] : deps.groups(),
         routines: target.scope === "bot" ? routines.filter((routine) => routine.botId === target.bot.id && routine.target !== "room-goal") : routines,

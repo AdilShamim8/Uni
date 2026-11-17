@@ -53,7 +53,7 @@ export function GrokMoveLines({ paused, files = null, apps, moved, unreadable, f
 const NO_CONNECTOR: Pick<GrokConnector, "available" | "connectorUrl" | "stopped"> = { available: false, stopped: false };
 const POLL_MS = 3_000;
 
-/** The other way over: a link Grok Bot is given once, which the MausBot bot there sends every Bot through. */
+/** The other way over: a link Grok Bot is given once, which the Uni bot there sends every Bot through. */
 function ConnectGrokBot({ url, stopped, names, error, busy, onConnect, onUse }: {
   url: string | undefined; stopped: boolean; names: readonly string[]; error: boolean; busy: boolean; onConnect: () => void; onUse: () => void;
 }) {

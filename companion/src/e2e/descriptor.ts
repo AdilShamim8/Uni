@@ -42,7 +42,7 @@ export function descriptorFor(
   return routes === "local" ? { ...base, routes: "local" } : base;
 }
 
-/** `update` means a newer version: the phone says "Update the MausBot app" and never falls back to plain pairing.
+/** `update` means a newer version: the phone says "Update the Uni app" and never falls back to plain pairing.
  * `reject` refuses the whole invite. */
 export type DescriptorParse =
   | { outcome: "ok"; descriptor: E2EDescriptor; transportKey: Buffer; hostId: Buffer | null }

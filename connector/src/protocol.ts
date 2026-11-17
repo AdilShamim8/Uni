@@ -1,4 +1,4 @@
-// MausBot connector protocol v2: what the connector on an own server (a "box") and the MausBot Cloud Admin say to each
+// Uni connector protocol v2: what the connector on an own server (a "box") and the MausBot Cloud Admin say to each
 // other. The Admin side copies this file as it is: it imports nothing.
 //
 // The connector only ever calls out. It enrols once over HTTPS with a one-time code, sending the public half of an
@@ -14,7 +14,7 @@
 export const PROTOCOL_VERSION = 2;
 
 /**
- * Who runs the server. `operated`: MausBot does (a Team Cloud on a server we manage), and the connector does whatever
+ * Who runs the server. `operated`: Uni does (a Team Cloud on a server we manage), and the connector does whatever
  * the Admin signs. `customer-run`: its owner does; the connector then runs only the jobs, answers only the requests and
  * reports only the fields listed in customer-run.ts, whatever the Admin sends. The mode is chosen on the server when
  * it enrols and kept there; the Admin is told it (`EnrollRequest.mode`, `Heartbeat`) and can never change it.
@@ -94,7 +94,7 @@ export type CheckId = "arch" | "docker" | "rootless" | "apparmor" | "profiles" |
 export interface HostCheck {
   id: CheckId;
   ok: boolean;
-  /** A warning still lets MausBot run. */
+  /** A warning still lets Uni run. */
   warning?: boolean;
   fix?: string;
 }
@@ -552,5 +552,5 @@ export function checkConfig(payload: Record<string, unknown>, box: string): Chec
 export function checkEnrollCode(value: unknown): Checked<string> {
   return typeof value === "string" && /^[A-Za-z0-9][A-Za-z0-9-]{5,127}$/.test(value)
     ? { ok: true, value }
-    : { ok: false, message: "the code is the one-time code MausBot shows next to the install command" };
+    : { ok: false, message: "the code is the one-time code Uni shows next to the install command" };
 }

@@ -118,7 +118,7 @@ beforeAll(async () => {
   expect(created.status, JSON.stringify(created.body)).toBe(201);
   scout = created.body.bot as Bot;
   mausbot = (await bots()).find((bot) => bot.defaultBot)!;
-  expect(mausbot, "a My Cloud has its MausBot").toBeTruthy();
+  expect(mausbot, "a My Cloud has its Uni").toBeTruthy();
 }, hostTimeout(180_000));
 
 afterEach(async () => {
@@ -193,7 +193,7 @@ it("the same id again starts nothing new and answers as the first did", async ()
   expect(statuses(first.id).filter((status) => status === "completed")).toHaveLength(1);
 }, hostTimeout(120_000));
 
-it("a direct message is an ordinary conversation too, with the owner's MausBot by default; either audience continues a conversation", async () => {
+it("a direct message is an ordinary conversation too, with the owner's Uni by default; either audience continues a conversation", async () => {
   const sent = await slack(ownerSlack, { audience: "member", bot: { default: true }, text: "Private notes please" });
   expect(sent.status, JSON.stringify(sent.body)).toBe(202);
   expect(sent.body.bot).toEqual({ id: mausbot.id, name: mausbot.name });

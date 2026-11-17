@@ -1,4 +1,4 @@
-// openmausbot://team/<team id>: the join page's Open in the MausBot app, after someone joined a team in their browser. An
+// openmausbot://team/<team id>: the join page's Open in the Uni app, after someone joined a team in their browser. An
 // action, not a credential: it names a team by its id only, and the team is opened only as the Admin's verified session lists
 // it for whoever is signed in here. Signed out, it starts this app's own browser sign-in (its device code never leaves main);
 // signed in as someone the team isn't listed for, it says so and offers to sign in with another address. Another app that

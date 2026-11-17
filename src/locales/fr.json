@@ -3164,7 +3164,7 @@
   "native.connect.unreachable": "Impossible de joindre {host}. Vérifiez que le serveur tourne et qu'il est joignable depuis cet ordinateur.",
   "native.connect.dns": "{host} n'existe pas encore. Vérifiez l'orthographe, ou attendez l'enregistrement DNS.",
   "native.connect.certificate": "Le certificat de {host} n'est pas encore valide. Un nouveau serveur peut mettre une minute à l'obtenir.",
-  "native.connect.notMausBot": "Cette adresse répond, mais ce n'est pas un serveur Uni.",
+  "native.connect.notUni": "Cette adresse répond, mais ce n'est pas un serveur Uni.",
   "native.connect.loopback": "Ceci pointe vers cet ordinateur ({host}), pas vers le serveur. Utilisez l'adresse du serveur lui-même.",
   "native.connect.localNetwork": "Impossible de joindre {host}. Sur un Mac, activez Uni dans Réglages Système → Confidentialité et sécurité → Réseau local, puis réessayez. Vérifiez aussi que le serveur tourne sur ce réseau.",
   "serverError.pair.tooMany": "Trop de codes erronés. Réessayez à {time}.",

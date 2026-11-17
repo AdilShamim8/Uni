@@ -62,7 +62,7 @@ pair    a new pairing code for the running server, with its link and QR
 devices lists paired devices; "devices revoke ID" signs one out
 status  the running server, the address others reach it at, and whether
         that address answers as this server
-login   signs this machine in to an OpenMausBot account (an emailed code)
+login   signs this machine in to an Uni account (an emailed code)
         and reserves its public address for --tunnel; with --relay it
         reserves none, for serve --relay
 logout  releases that address and signs out
@@ -106,7 +106,7 @@ Ways in (pick one; --lan can join any):
              open ports 80 and 443.
 
 --relay      phones only, and it can join any of the above except --tunnel:
-             the MausBot phone app pairs by QR through MausBot Relay,
+             the Uni phone app pairs by QR through Uni Relay,
              end-to-end encrypted, with no address, open port or VPN. Run
              \`openmausbot login --relay\` once on this machine first. Not on a
              machine with a tunnel address: the relay stays off there.

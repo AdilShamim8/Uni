@@ -138,7 +138,7 @@ beforeAll(async () => {
   expect((await team.as(ada, "PUT", `/api/bots/${payroll.id}/access`, { everyone: "view", people: {} })).status).toBe(200);
   notes = await create(priya, { name: "Notes" });
   priyaOwn = (await bots(priya)).find((bot) => bot.defaultBot?.person === PRIYA.email)!;
-  expect(priyaOwn, "every member has a MausBot of their own").toBeTruthy();
+  expect(priyaOwn, "every member has a Uni of their own").toBeTruthy();
 }, hostTimeout(180_000));
 
 afterEach(async () => {
@@ -329,7 +329,7 @@ it("a channel's conversation never reads the member's private notes or About you
   }
 }, hostTimeout(180_000));
 
-it("an approval is reported as waiting, sits in the member's inbox and conversation, and is answered only in MausBot", async () => {
+it("an approval is reported as waiting, sits in the member's inbox and conversation, and is answered only in Uni", async () => {
   await until(idle);
   writeFileSync(file("hang-mode"), "");
   rmSync(file("release"), { force: true });
@@ -359,7 +359,7 @@ it("an approval is reported as waiting, sits in the member's inbox and conversat
   expect((await rows(priya, thread)).some((row) => row.card?.requestId === requestId)).toBe(true);
   const inbox = async () => ((await team.as(priya, "GET", "/api/inbox")).body.rows ?? []) as { card?: { requestId?: string; answered?: string }; tab?: string }[];
   await until(async () => (await inbox()).some((row) => row.card?.requestId === requestId && row.tab === "needs-you"));
-  // Slack's only other route, Stop, is not an answer; the card stays open until she answers it in MausBot.
+  // Slack's only other route, Stop, is not an answer; the card stays open until she answers it in Uni.
   expect(statuses(sent.id).filter((status) => status === "waiting")).toHaveLength(1);
   const allowed = await team.as(priya, "POST", `/api/threads/${thread}/respond`, { requestId, behavior: "allow" });
   expect(allowed.status, JSON.stringify(allowed.body)).toBe(200);

@@ -30,7 +30,7 @@ function manualClock() {
 const session = (email: string, extra: Partial<SessionRecord> = {}): SessionRecord => ({ id: `s-${email}`, tokenHash: "x".repeat(64), label: "", scopes: ["client"], createdAt: 0, lastSeenAt: 0, expiresAt: Infinity,
   email, membershipAuthority: "team", teamRole: "member", ...extra });
 
-/** A team with a bot's shared chat, Ada's private chat with it, Ada's own MausBot, a group chat with it and one Ben may
+/** A team with a bot's shared chat, Ada's private chat with it, Ada's own Uni, a group chat with it and one Ben may
  * not read. */
 function setup(team = true) {
   const dir = mkdtempSync(join(tmpdir(), "omb-presence-"));

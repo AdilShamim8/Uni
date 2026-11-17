@@ -1,4 +1,4 @@
-// The home on a customer-run server: the MausBot server its owner installed with Docker Compose (deploy/install.sh:
+// The home on a customer-run server: the Uni server its owner installed with Docker Compose (deploy/install.sh:
 // project `openmausbot`, service `omb`, Caddy in front, the data in a folder beside the Compose file). The connector
 // attaches to it and never makes a second one: it starts and stops those containers, copies that folder, and hands an
 // update to the server's own updater. It never writes the owner's settings and never picks the home's image itself.
@@ -45,24 +45,24 @@ export interface Install {
 export async function findInstall(docker: Docker): Promise<{ ok: true; install: Install } | { ok: false; why: string }> {
   const [found] = await docker.listContainers({ [PROJECT_LABEL]: COMPOSE_PROJECT, [SERVICE_LABEL]: SERVICE });
   const container = found ? await docker.containerInspect(found.Id) : null;
-  if (!container) return { ok: false, why: "MausBot is not installed on this server yet. Install it first with the server's install command, then connect it." };
+  if (!container) return { ok: false, why: "Uni is not installed on this server yet. Install it first with the server's install command, then connect it." };
   const image = container.Config.Image;
   if (!image.startsWith(`${HOME_REPOSITORY}:`) && !image.startsWith(`${HOME_REPOSITORY}@`)) {
-    return { ok: false, why: "The MausBot on this server was built here, not downloaded from MausBot's registry, so MausBot cannot update it. Move it to the published image first: ./update.sh --replace-local-build" };
+    return { ok: false, why: "The Uni on this server was built here, not downloaded from Uni's registry, so Uni cannot update it. Move it to the published image first: ./update.sh --replace-local-build" };
   }
   const data = (container.Mounts ?? []).find((mount) => mount.Destination === "/data");
-  if (!data || data.Type !== "bind") return { ok: false, why: "The MausBot on this server does not keep its data in a folder beside its Compose file, so it is not one the server installer made. Install it with the server's install command, then connect it." };
+  if (!data || data.Type !== "bind") return { ok: false, why: "The Uni on this server does not keep its data in a folder beside its Compose file, so it is not one the server installer made. Install it with the server's install command, then connect it." };
   return { ok: true, install: { container, dataDir: data.Source } };
 }
 
-/** True when a MausBot server its owner installed runs here: an `operated` connector must not start a second home beside it. */
+/** True when a Uni server its owner installed runs here: an `operated` connector must not start a second home beside it. */
 export async function standaloneServerPresent(docker: Docker): Promise<boolean> {
   return (await docker.listContainers({ [PROJECT_LABEL]: COMPOSE_PROJECT, [SERVICE_LABEL]: SERVICE })).length > 0;
 }
 
 /**
  * Why this server cannot be enrolled in `mode`, in a sentence for the person at the terminal, or null. An `operated`
- * connector makes its own home, so it is refused where a MausBot its owner installed already runs: that would be two.
+ * connector makes its own home, so it is refused where a Uni its owner installed already runs: that would be two.
  */
 export async function enrolmentRefusal(mode: ServerMode, docker: Docker): Promise<string | null> {
   if (mode === "customer-run") {
@@ -70,7 +70,7 @@ export async function enrolmentRefusal(mode: ServerMode, docker: Docker): Promis
     return found.ok ? null : found.why;
   }
   return (await standaloneServerPresent(docker))
-    ? "MausBot already runs on this server, installed by its owner. Connecting it this way would start a second MausBot beside it. Run the install command again and it connects the one that is here, keeping its data."
+    ? "Uni already runs on this server, installed by its owner. Connecting it this way would start a second Uni beside it. Run the install command again and it connects the one that is here, keeping its data."
     : null;
 }
 
@@ -210,12 +210,12 @@ export class AdoptedHome {
    */
   update(jobId: string, image: string): Promise<JobResults["update"]> {
     return this.exclusive(async () => {
-      if (!CUSTOMER_HOME_IMAGE.test(image)) throw new JobFailure("image_refused", `${image} is not MausBot's server image pinned by digest. Nothing was changed.`);
+      if (!CUSTOMER_HOME_IMAGE.test(image)) throw new JobFailure("image_refused", `${image} is not Uni's server image pinned by digest. Nothing was changed.`);
       const { container } = await this.install();
       const previous = await this.imageOf(container);
       const dir = this.options.updateDir;
       if (!existsSync(join(dir, UPDATE_FILES.runner))) {
-        throw new JobFailure("update_unavailable", "This server has no updater for MausBot to hand an update to. Run the connector's install command again to add it; until then, update with ./update.sh on the server.");
+        throw new JobFailure("update_unavailable", "This server has no updater for Uni to hand an update to. Run the connector's install command again to add it; until then, update with ./update.sh on the server.");
       }
       await this.refuseOlder(image, container);
       const wasRunning = container.State.Running;
@@ -424,7 +424,7 @@ export class AdoptedHome {
 
   private async bringUp(): Promise<void> {
     const home = await this.container(SERVICE);
-    if (!home) throw new JobFailure("no_home", "MausBot's container is gone from this server. Run the server's install command again to repair it.");
+    if (!home) throw new JobFailure("no_home", "Uni's container is gone from this server. Run the server's install command again to repair it.");
     const wasRunning = home.State.Running;
     try {
       await this.docker.startContainer(home.Id);
@@ -524,7 +524,7 @@ function updateFailure(code: number | null, previous: string | null): JobFailure
     case UPDATE_EXIT.busy: return new JobFailure("busy", "Another update is already running on this server.");
     case UPDATE_EXIT.notStarted: return new JobFailure("update_not_started", `The server's updater did not start the update, and nothing was changed. ${log}`);
     case UPDATE_EXIT.older: return new JobFailure("older_version", "The server's updater refused the image: it is older than the version running, or names no version. Nothing was changed.");
-    case UPDATE_EXIT.missing: return new JobFailure("update_unavailable", "This server has no update.sh in its install folder, so MausBot cannot update it. Add deploy/update.sh there, or update by hand.");
+    case UPDATE_EXIT.missing: return new JobFailure("update_unavailable", "This server has no update.sh in its install folder, so Uni cannot update it. Add deploy/update.sh there, or update by hand.");
     case null: return new JobFailure("interrupted", "The server's updater did not answer in time. It finishes or undoes an update by itself; ask for the status to see which version runs.");
     default: return new JobFailure("docker", `The server's updater stopped with code ${code}. ${log}`);
   }

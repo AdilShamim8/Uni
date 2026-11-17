@@ -8,7 +8,7 @@ import type { RequestAuth } from "./request-auth.ts";
 import type { SessionRecord } from "./sessions.ts";
 
 export interface OwnServerFacts {
-  /** A Cloud home, a team's Cloud or a hosted workspace: MausBot or an organization runs it, never one person. */
+  /** A Cloud home, a team's Cloud or a hosted workspace: Uni or an organization runs it, never one person. */
   managed: boolean;
   /** Others sign in here: a team, an organization's members, or members on the sign-in list. */
   shared: boolean;

@@ -58,7 +58,7 @@ describe("createTeamRoutines", () => {
     expect(fixture(false).host.reportsElsewhere(routine({ resultsThreadId: "bob-old-results" }))).toBe(false);
   });
 
-  it("lets a member point results at any chat they read, refuses another person's MausBot, and keeps the Cloud's rule off a team", () => {
+  it("lets a member point results at any chat they read, refuses another person's Uni, and keeps the Cloud's rule off a team", () => {
     const { host } = fixture();
     expect(host.bodyRefusal(session(BOB), { botId: "scout", resultsThreadId: "main" })).toBeNull();
     expect(host.bodyRefusal(session(OLIVE), { botId: "bobs-mausbot", name: "x" })).toEqual({ status: 404, error: "no such bot" });
@@ -89,7 +89,7 @@ describe("createTeamRoutines", () => {
     // A change to an existing routine that names no audience moves nothing.
     const change = { name: "Renamed" };
     expect(host.justMe(session(BOB), change, "r1")).toBe(change);
-    // Their own MausBot's are theirs already; a group chat's goal has the group chat's audience.
+    // Their own Uni's are theirs already; a group chat's goal has the group chat's audience.
     const own = { botId: "bobs-mausbot", name: "Morning note" }, goal = { botId: "scout", groupId: "room", target: "room-goal", name: "Goal" };
     expect(host.justMe(session(BOB), own)).toBe(own);
     expect(host.justMe(session(BOB), goal)).toBe(goal);

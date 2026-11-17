@@ -43,7 +43,7 @@ export const SERVICE_ALLOW: ReadonlyArray<{ methods: readonly string[]; path: Re
   { methods: ["GET"], path: /^\/api\/auth\/session$/ },
   { methods: ["GET"], path: /^\/api\/edition$/ },
   { methods: ["GET"], path: /^\/api\/brand$/ },
-  { methods: ["GET"], path: /^\/api\/seats$/ }, // a number: the MausBot connector on the same server reads it
+  { methods: ["GET"], path: /^\/api\/seats$/ }, // a number: the Uni connector on the same server reads it
   { methods: ["GET"], path: /^\/api\/bots$/ },
   { methods: ["GET"], path: /^\/api\/threads\/[\w-]+\/messages$/ },
   { methods: ["GET"], path: /^\/api\/attachments\/[\w.-]+$/ },
@@ -358,7 +358,7 @@ export const CLIENT_ALLOW: ReadonlyArray<{ methods: readonly string[]; path: Reg
   { methods: ["POST"], path: /^\/api\/bots\/[\w-]+\/active-branch$/ },
   { methods: ["POST"], path: /^\/api\/bots\/[\w-]+\/compact$/ },
   { methods: ["POST"], path: /^\/api\/bots\/[\w-]+\/start-fresh$/ },
-  { methods: ["POST"], path: /^\/api\/bots\/[\w-]+\/helper-followup$/ }, // MausBot's own person only: see mayFollowUp
+  { methods: ["POST"], path: /^\/api\/bots\/[\w-]+\/helper-followup$/ }, // Uni's own person only: see mayFollowUp
   { methods: ["POST"], path: /^\/api\/bots\/[\w-]+\/interrupt$/ },
   { methods: ["POST"], path: /^\/api\/bots\/[\w-]+\/read$/ },
   { methods: ["DELETE"], path: /^\/api\/bots\/[\w-]+\/queue\/[\w-]+$/ },
@@ -516,20 +516,20 @@ const CLIENT_BOT_PATCH_FIELDS = new Set([
 const SHARED_LOOK_FIELDS = new Set([
   "color", "mascotExpression", "mascotBody", "mascotFaceColor", "avatarUrl", "avatarCrop", "avatarZoom", "avatarFocusX", "avatarFocusY",
 ]);
-/** `ownMausBot`: the session's own MausBot on a Team Cloud, which its member may also rename. `teamMember`: a Team Cloud
+/** `ownUni`: the session's own Uni on a Team Cloud, which its member may also rename. `teamMember`: a Team Cloud
  * member's session, which changes no other bot's look. */
-export function clientBotPatchViolation(body: unknown, ownMausBot = false, teamMember = false): string | null {
+export function clientBotPatchViolation(body: unknown, ownUni = false, teamMember = false): string | null {
   if (!body || typeof body !== "object" || Array.isArray(body)) return "body";
   for (const key of Object.keys(body)) {
-    if (ownMausBot && key === "name") continue;
-    if (!CLIENT_BOT_PATCH_FIELDS.has(key) || (teamMember && !ownMausBot && SHARED_LOOK_FIELDS.has(key))) return key;
+    if (ownUni && key === "name") continue;
+    if (!CLIENT_BOT_PATCH_FIELDS.has(key) || (teamMember && !ownUni && SHARED_LOOK_FIELDS.has(key))) return key;
   }
   return null;
 }
 
 /** All a paired device or a Team Cloud move-in may give a bot it makes or brings in: who the bot is, how it looks, its
  * own playbooks, projects and library skills, and which of this place's models it runs on. Everything else (what it may
- * do and reach, where it runs, its department, whom it answers to or directs, whether it is the MausBot or a package's
+ * do and reach, where it runs, its department, whom it answers to or directs, whether it is the Uni or a package's
  * bot) only an admin on the host sets. */
 const BOT_PROFILE_SETTINGS: ReadonlySet<string> = new Set([
   ...CLIENT_BOT_PATCH_FIELDS, ...BOT_PROFILE_PATCH_FIELDS, "hidden",
@@ -554,8 +554,8 @@ const EDITOR_BOT_PATCH_FIELDS: ReadonlySet<string> = new Set([
 /** A member who can only view a bot marks it read, nothing else. */
 const VIEWER_BOT_PATCH_FIELDS: ReadonlySet<string> = new Set(["unread"]);
 
-export function memberBotPatchViolation(body: unknown, level: "view" | "chat" | "edit", ownMausBot = false, teamMember = false): string | null {
-  if (level === "chat") return clientBotPatchViolation(body, ownMausBot, teamMember);
+export function memberBotPatchViolation(body: unknown, level: "view" | "chat" | "edit", ownUni = false, teamMember = false): string | null {
+  if (level === "chat") return clientBotPatchViolation(body, ownUni, teamMember);
   if (!body || typeof body !== "object" || Array.isArray(body)) return "body";
   const allowed = level === "edit" ? EDITOR_BOT_PATCH_FIELDS : VIEWER_BOT_PATCH_FIELDS;
   return Object.keys(body).find((key) => !allowed.has(key)) ?? null;

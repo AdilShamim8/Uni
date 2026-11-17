@@ -11,7 +11,7 @@ import { FilesView } from "./FilesView";
 const GB = 1024 ** 3;
 const folder = (status: SharedFolder["status"], extra: Partial<SharedFolder> = {}): SharedFolder =>
   ({ id: `f-${status}`, name: `Folder ${status}`, pcPath: `/Users/ada/${status}`, status, files: 1200, done: 400, waitingBytes: 0, pendingDeletes: 3, problem: null, ...extra });
-const base: CloudFilesState = { phase: "idle", lastSyncedAt: 1, disk: null, shared: [], outputs: { enabled: false, dir: "/Users/ada/Documents/MausBot", folders: 0, problem: null } };
+const base: CloudFilesState = { phase: "idle", lastSyncedAt: 1, disk: null, shared: [], outputs: { enabled: false, dir: "/Users/ada/Documents/Uni", folders: 0, problem: null } };
 const check = (name: string, extra: Partial<FolderCheck> = {}): FolderCheck =>
   ({ token: `t-${name}`, name, pcPath: `/Users/ada/${name}`, files: 120, bytes: 3 * 1024 ** 2, partial: false, refusal: null, ...extra });
 
@@ -164,7 +164,7 @@ describe("Add a folder", () => {
 
   it.each([
     ["too-broad", "That folder is too big to share. Choose a folder inside it, like one in Documents."],
-    ["app-data", "That's MausBot's own folder. Choose another one."],
+    ["app-data", "That's Uni's own folder. Choose another one."],
     ["already-shared", "This folder is already shared."],
     ["not-a-folder", "Choose a folder."],
     ["private", "That folder holds private keys or settings, so it isn't shared. Choose another one."],
@@ -224,7 +224,7 @@ describe("Your bots' work", () => {
     bridge.setOutputs.mockResolvedValue({ ...base, outputs: { ...base.outputs, enabled: true } });
     await mount();
     expect(page()).toContain("Save what Cloud bots make to this computer");
-    expect(page()).toContain("In Documents › MausBot, one folder for each bot.");
+    expect(page()).toContain("In Documents › Uni, one folder for each bot.");
     expect(button("Open folder")).toBeUndefined();
     const toggle = document.querySelector<HTMLButtonElement>('[role="switch"]')!;
     expect(toggle.getAttribute("aria-checked")).toBe("false");
@@ -233,8 +233,8 @@ describe("Your bots' work", () => {
     expect(document.querySelector('[role="switch"]')!.getAttribute("aria-checked")).toBe("true");
     await click("Open folder");
     expect(bridge.open).toHaveBeenCalledWith({ outputs: true });
-    await act(async () => emit({ ...base, outputs: { ...base.outputs, enabled: true, problem: "Documents › MausBot is full." } }));
-    expect(page()).toContain("Documents › MausBot is full.");
+    await act(async () => emit({ ...base, outputs: { ...base.outputs, enabled: true, problem: "Documents › Uni is full." } }));
+    expect(page()).toContain("Documents › Uni is full.");
   });
 });
 

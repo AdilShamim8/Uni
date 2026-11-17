@@ -223,10 +223,10 @@ it("a member's routine for the shared chat lands where everyone reads it, run by
     expect((await routinesOf(token)).routines.map((routine) => routine.id)).not.toContain(justMe);
     expect((await team.as(token, "GET", `/api/threads/${ran.threadId}/messages`)).status).toBe(404);
   }
-  // A teammate's own MausBot takes no routine from anyone else, and one Bob sets up for his is his alone.
-  const bobsMausBot = (await botsOf(bob)).find((bot) => bot.name === "MausBot")!;
-  expect((await team.as(owner, "POST", "/api/routines", { name: "Peek", prompt: "x", botId: bobsMausBot.id, schedule: LATER })).status).toBe(404);
-  const own = await team.as(bob, "POST", "/api/routines", { name: "Bee check", prompt: "Check the bees", botId: bobsMausBot.id, schedule: LATER });
+  // A teammate's own Uni takes no routine from anyone else, and one Bob sets up for his is his alone.
+  const bobsUni = (await botsOf(bob)).find((bot) => bot.name === "Uni")!;
+  expect((await team.as(owner, "POST", "/api/routines", { name: "Peek", prompt: "x", botId: bobsUni.id, schedule: LATER })).status).toBe(404);
+  const own = await team.as(bob, "POST", "/api/routines", { name: "Bee check", prompt: "Check the bees", botId: bobsUni.id, schedule: LATER });
   expect(own.status, JSON.stringify(own.body)).toBe(201);
   mausbotRoutine = own.body.routine.id;
   for (const token of [admin, owner]) expect((await routinesOf(token)).routines.map((routine) => routine.id)).not.toContain(mausbotRoutine);

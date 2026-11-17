@@ -19,9 +19,9 @@ test("a team link names a team by its id and nothing else; anything more is no l
 });
 
 test("a launch's team link is taken out of the command line, so a relaunch doesn't open it again", () => {
-  const argv = ["/Applications/MausBot", "--flag", LINK, "openmausbot://cloud"];
+  const argv = ["/Applications/Uni", "--flag", LINK, "openmausbot://cloud"];
   assert.equal(takeTeamLink(argv), ACME);
-  assert.deepEqual(argv, ["/Applications/MausBot", "--flag", "openmausbot://cloud"]);
+  assert.deepEqual(argv, ["/Applications/Uni", "--flag", "openmausbot://cloud"]);
   assert.equal(takeTeamLink(argv), null);
 });
 

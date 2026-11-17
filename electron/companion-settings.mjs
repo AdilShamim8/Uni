@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 /** `companion-settings.json` in the app's user data: each way into this computer and whether the person turned it on.
- * `wifi` is Same Wi-Fi (the device port on the LAN, and Bonjour), `relay` is Anywhere, through MausBot, `tailscale`
+ * `wifi` is Same Wi-Fi (the device port on the LAN, and Bonjour), `relay` is Anywhere, through Uni, `tailscale`
  * the tailnet address (with `computers` when the person's other computers may open this one's server over it, and
  * `forShare` when turning that share on is what turned this route on, so turning the share off turns it off again), `https`
  * the HTTPS address (the managed tunnel). `notices` lists routes kept on by the update that the person has not seen yet. */

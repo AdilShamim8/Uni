@@ -247,7 +247,7 @@ describe("scopes", () => {
     expect(clientBotPatchViolation({ xResearch: true })).toBe("xResearch");
     expect(clientBotPatchViolation({ recordBrowserSteps: true })).toBe("recordBrowserSteps");
     expect(clientBotPatchViolation([])).toBe("body");
-    // A Team Cloud member changes no team bot's look, which everyone sees; their own MausBot's they do.
+    // A Team Cloud member changes no team bot's look, which everyone sees; their own Uni's they do.
     expect(clientBotPatchViolation({ color: "blue" }, false, true)).toBe("color");
     expect(clientBotPatchViolation({ avatarUrl: null }, false, true)).toBe("avatarUrl");
     expect(clientBotPatchViolation({ mascotBody: "cursor" }, false, true)).toBe("mascotBody");

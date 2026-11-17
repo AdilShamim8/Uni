@@ -16,7 +16,7 @@ import { useStore, type Bot } from "@/state/store";
 import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile";
 import { BotAvatar } from "./Avatar";
 import { useAvatarImage } from "./avatar-editing";
-import { MausBotCustomize } from "./MausBotCustomize";
+import { UniCustomize } from "./UniCustomize";
 import { usePrefersReducedMotion } from "./mascot-clock";
 
 const LOOK = ["name", "color", "mascotBody", "avatarUrl", "avatarCrop", "avatarZoom", "avatarFocusX", "avatarFocusY"] as const;
@@ -32,7 +32,7 @@ export function draftOf(bot: Bot): WelcomeDraft {
 }
 
 /** What either choice saves, as the bot's own edit screen would: what the person changed, and that they chose. Add puts
- * MausBot at the top of the sidebar; Not now turns "Show MausBot in the sidebar" off. */
+ * Uni at the top of the sidebar; Not now turns "Show Uni in the sidebar" off. */
 export function welcomePatch(bot: Bot, draft: WelcomeDraft, add: boolean): Partial<Bot> {
   const was = draftOf(bot);
   const now: WelcomeDraft = { ...draft, name: welcomeName(draft.name) };
@@ -54,10 +54,10 @@ export function teamQuiet(state: { config?: { team?: unknown } | null; bots: Rea
   return viewer?.canSave === false || welcomeFirst || teamWelcomeShownThisLaunch() || state.bots.some((candidate) => candidate.busy);
 }
 
-/** MausBot's first-launch card is due now (mausBotWelcomeDue), and, like the Cloud Pro popup and the product-updates
+/** Uni's first-launch card is due now (mausBotWelcomeDue), and, like the Cloud Pro popup and the product-updates
  * question, waits for the first reply (unknown until the bots load), for a launch after the one whose welcome finished, and
  * for a launch the notices queue has not already used. The notices queue asks this too, so the card goes first. */
-export function useMausBotWelcomeDue(viewer: WelcomeViewer | null): { bot: Bot | undefined; due: boolean } {
+export function useUniWelcomeDue(viewer: WelcomeViewer | null): { bot: Bot | undefined; due: boolean } {
   const { state } = useStore();
   const bot = myDefaultBot(state.bots, useViewerEmail());
   const teamId = state.config?.team?.id ?? null;
@@ -73,9 +73,9 @@ export function useMausBotWelcomeDue(viewer: WelcomeViewer | null): { bot: Bot |
   return { bot, due };
 }
 
-export function MausBotWelcome({ viewer }: { viewer: WelcomeViewer | null }) {
+export function UniWelcome({ viewer }: { viewer: WelcomeViewer | null }) {
   const { state } = useStore();
-  const { bot, due: ready } = useMausBotWelcomeDue(viewer);
+  const { bot, due: ready } = useUniWelcomeDue(viewer);
   const [shownFor, setShownFor] = useState<string | null>(null);
   const [closed, setClosed] = useState(false);
   const due = !closed && ready;
@@ -91,12 +91,12 @@ export function MausBotWelcome({ viewer }: { viewer: WelcomeViewer | null }) {
   }, [shownFor, closed]);
   const shown = shownFor && !closed ? state.bots.find((candidate) => candidate.id === shownFor) : undefined;
   if (!shown) return null;
-  return createPortal(<MausBotWelcomeCard bot={shown} onClose={() => setClosed(true)} />, document.body);
+  return createPortal(<UniWelcomeCard bot={shown} onClose={() => setClosed(true)} />, document.body);
 }
 
 const LINES = [[Sparkles, "mausbotWelcome.line.helper"], [BookOpen, "mausbotWelcome.line.knows"], [Wand2, "mausbotWelcome.line.setup"], [Crown, "mausbotWelcome.line.powers"]] as const;
 
-export function MausBotWelcomeCard({ bot, onClose }: { bot: Bot; onClose: () => void }) {
+export function UniWelcomeCard({ bot, onClose }: { bot: Bot; onClose: () => void }) {
   const { state, dispatch } = useStore();
   const lines = state.config?.team ? LINES.filter(([, key]) => key !== "mausbotWelcome.line.powers") : LINES;
   const advanced = useAdvancedMode();
@@ -207,7 +207,7 @@ export function MausBotWelcomeCard({ bot, onClose }: { bot: Bot; onClose: () => 
         >
           <div className="min-h-0 overflow-hidden">
             <div className="pt-4">
-              <MausBotCustomize preview={preview} name={draft.name} nameRef={nameRef} image={image} onName={(next) => edit({ name: next })} onPatch={edit} />
+              <UniCustomize preview={preview} name={draft.name} nameRef={nameRef} image={image} onName={(next) => edit({ name: next })} onPatch={edit} />
             </div>
           </div>
         </div>

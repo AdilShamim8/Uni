@@ -1,7 +1,7 @@
 // Apps on the hosting the Cloud plan includes, on the Published apps page of the real renderer against a launched
 // server. A loopback stand-in is the Admin's relay and serves what is published; a second one is Netlify, for a site on
 // the person's own account beside them. The bot publishes folders of its own through its tool's route; the page shows
-// the plan's count, each card's source, the preview beside the chat, an app MausBot took down, and Delete through the
+// the plan's count, each card's source, the preview beside the chat, an app Uni took down, and Delete through the
 // relay. Nothing here reaches the real Admin or Netlify. Needs the pinned agent-browser binary: runs when one resolves
 // (tools directory, OMB_AGENT_BROWSER_PATH or PATH) or OMB_UI_E2E=1 asks for the verified download; otherwise skipped.
 import { spawn } from "node:child_process";
@@ -160,7 +160,7 @@ async function until<T>(probe: () => Promise<T> | T, what: string, timeoutMs = 3
     await shot("preview-desktop");
     await press('aside[data-app-preview] button[aria-label="Close preview"]');
 
-    // MausBot takes one down: it stays on the page, marked, with nothing to open, and still counts until it is deleted.
+    // Uni takes one down: it stays on the page, marked, with nothing to open, and still counts until it is deleted.
     hosting.takeDown(saleKey);
     await new Promise((done) => setTimeout(done, 2_100));
     await openPage();

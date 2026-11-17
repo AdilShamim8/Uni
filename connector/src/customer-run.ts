@@ -1,4 +1,4 @@
-// A customer-run server: everything MausBot's control plane (the Admin) may run on it, ask of it and learn from it.
+// A customer-run server: everything Uni's control plane (the Admin) may run on it, ask of it and learn from it.
 // This one file is the whole list, for a security reviewer to read. The connector enforces it on the server itself,
 // whatever the Admin sends: a job, a request or a reported field that is not written here does not exist in this mode.
 //
@@ -9,7 +9,7 @@ import {
   type Job, type JobError, type JobErrorCode, type JobReply, type JobType,
 } from "./protocol.ts";
 
-// 1. JOBS. The only kinds the Admin may run. Not here, so refused: `export-disk` (uploads the data to MausBot) and
+// 1. JOBS. The only kinds the Admin may run. Not here, so refused: `export-disk` (uploads the data to Uni) and
 // `import-disk` (replaces the data with an archive from elsewhere).
 
 export const CUSTOMER_RUN_JOBS = ["start", "stop", "restart", "update", "status", "host-health", "backup"] as const satisfies readonly JobType[];
@@ -26,7 +26,7 @@ export const CUSTOMER_RUN_LOCAL_JOBS = ["self-update", "restore"] as const satis
  * What each job may carry.
  * - `start`, `stop`, `restart`: nothing. They start and stop the server its owner installed, with the owner's settings;
  *   a `start` that names an image or settings is refused.
- * - `update`: the image to move to, MausBot's own server image pinned by digest, and never an older version than the
+ * - `update`: the image to move to, Uni's own server image pinned by digest, and never an older version than the
  *   one running (below). The server's own updater does it.
  * - `backup`: nothing. Copies the data to a Docker volume on this server; it never removes a copy the owner made.
  * - `status`, `host-health`: nothing. They read.
@@ -93,7 +93,7 @@ export function checkCustomerRunJob(message: unknown, by: JobSource): CheckedJob
   if (type === "start") {
     return keys.length === 0
       ? { ok: true, job: { id: shape.job.id, type, args: {} } as unknown as Job }
-      : { ok: false, id: shape.job.id, code: "refused_by_mode", message: "This server is run by its owner: MausBot may start it, but not choose its image or its settings." };
+      : { ok: false, id: shape.job.id, code: "refused_by_mode", message: "This server is run by its owner: Uni may start it, but not choose its image or its settings." };
   }
   const image = (args as Record<string, unknown>).image;
   if (keys.length !== 1 || typeof image !== "string" || !CUSTOMER_HOME_IMAGE.test(image)) {
@@ -144,7 +144,7 @@ export function answerCustomerRunRequest(request: CustomerRunRequest, facts: Ser
 }
 
 // 3. WHAT THE CONNECTOR READS FROM THE HOME. Three GETs on the home's own loopback, with no body, and from them four
-// fields: that it answers as MausBot and whether its bot box is on or off, its version, and its seat count. Every other field of those answers (the
+// fields: that it answers as Uni and whether its bot box is on or off, its version, and its seat count. Every other field of those answers (the
 // server's name among them) is dropped here and never kept.
 
 export const HOME_READS = ["/api/health", "/.well-known/openmausbot/environment", "/api/seats"] as const;
@@ -252,16 +252,16 @@ const FAILURES: Record<JobErrorCode, string> = {
   interrupted: "The job was interrupted and finished safely.",
   audit_unavailable: "The audit log on the server cannot be written, so nothing was done.",
   refused_by_policy: "The server's policy file does not allow this job.",
-  refused_by_mode: "This server is run by its owner, and this is not a job MausBot may run on it.",
+  refused_by_mode: "This server is run by its owner, and this is not a job Uni may run on it.",
   paused: "The server's admin has paused remote management.",
   image_refused: "The image was refused. Nothing was changed.",
-  no_home: "MausBot is not installed on this server.",
+  no_home: "Uni is not installed on this server.",
   docker: "Docker on the server could not do this.",
   pull_failed: "The image could not be downloaded. Nothing was changed.",
   unhealthy: "The server did not become healthy.",
   update_rolled_back: "The new version did not become healthy. The previous version and its data are back.",
   rollback_failed: "The update failed and the previous version did not come back healthy either.",
-  update_unavailable: "The server's own updater is not installed, so MausBot cannot update it.",
+  update_unavailable: "The server's own updater is not installed, so Uni cannot update it.",
   update_not_started: "The server's own updater did not start the update. Nothing was changed.",
   older_version: "The image is older than the version the server runs, or names no version. Nothing was changed.",
   not_found: "There is no such backup on this server.",
@@ -270,10 +270,10 @@ const FAILURES: Record<JobErrorCode, string> = {
   box_unavailable: "The bot box's security profiles are not installed on this server.",
   transfer_failed: "A transfer failed.",
   self_update_failed: "The connector could not replace itself and was not changed.",
-  unsigned_job: "The job was not signed by MausBot.",
+  unsigned_job: "The job was not signed by Uni.",
   wrong_box: "The job was signed for another server.",
   expired_job: "The job's signature was too old.",
-  pending_box: "The team's Owner has not accepted this server in MausBot yet.",
+  pending_box: "The team's Owner has not accepted this server in Uni yet.",
 };
 const AUDIT_HINT = " The server's admin can read the reason with: mausbot-connector audit";
 

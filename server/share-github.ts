@@ -38,9 +38,9 @@ export function githubTemplateSource(input: string): GithubTemplateSource {
   try {
     parts = url.pathname.split("/").filter(Boolean).map((part) => decodeURIComponent(part));
   } catch {
-    throw new GithubTemplateError("That GitHub link isn't one MausBot can read.");
+    throw new GithubTemplateError("That GitHub link isn't one Uni can read.");
   }
-  if (!parts.every(safeSegment)) throw new GithubTemplateError("That GitHub link isn't one MausBot can read.");
+  if (!parts.every(safeSegment)) throw new GithubTemplateError("That GitHub link isn't one Uni can read.");
   const fileSource = (owner: string, repo: string, ref: string, path: string[]): GithubTemplateSource => {
     const name = path.at(-1)!;
     const folder = path.slice(0, -1);

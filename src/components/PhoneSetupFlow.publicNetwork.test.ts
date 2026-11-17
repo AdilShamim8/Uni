@@ -88,8 +88,8 @@ describe("the pairing code", () => {
     for (const over of [{}, { state: e2e }]) {
       const html = render(over);
       expect(qrCodes(html)).toBe(1);
-      expect(html).toContain("Install MausBot on your phone from the App Store or Google Play, then scan this code in the app.");
-      expect(html).toContain("Scan it from inside the MausBot app, not the camera.");
+      expect(html).toContain("Install Uni on your phone from the App Store or Google Play, then scan this code in the app.");
+      expect(html).toContain("Scan it from inside the Uni app, not the camera.");
     }
   });
 

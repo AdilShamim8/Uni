@@ -114,7 +114,7 @@ async function run(): Promise<void> {
   const state = new StateStore(PATHS.state);
   const docker = new SocketDocker(PATHS.docker);
   const instance = process.env.MAUSBOT_INSTANCE || "unknown";
-  log(`MausBot connector ${CONNECTOR_VERSION} starting`);
+  log(`Uni connector ${CONNECTOR_VERSION} starting`);
   const audit = auditLog();
   const note = (event: Parameters<AuditLog["append"]>[0]) => {
     try { audit.append(event); } catch (error) { log(`could not write the audit log ${audit.file}: ${errorText(error)}`); }
@@ -128,7 +128,7 @@ async function run(): Promise<void> {
     await sleep(10 * 60_000);
   }
   let record: AgentRecord | null = state.agent();
-  if (!record) log("waiting for this server to be connected: run the install command with the code MausBot shows");
+  if (!record) log("waiting for this server to be connected: run the install command with the code Uni shows");
   const enrolledNow = !record;
   while (!record) {
     await sleep(2_000);
@@ -138,9 +138,9 @@ async function run(): Promise<void> {
   let current: AgentRecord = record;
   const mode = serverMode(record);
   if (enrolledNow) note({ event: "connector", what: "enrolled", version: CONNECTOR_VERSION, image: identity().image, boxId: record.boxId, mode });
-  if (mode === "customer-run") log("this server is run by its owner: MausBot may only do what connector/src/customer-run.ts lists");
+  if (mode === "customer-run") log("this server is run by its owner: Uni may only do what connector/src/customer-run.ts lists");
   const kept = savedConfig(state.adminConfig(), current);
-  if (kept) log(`going by MausBot's schedule and policy kept on this server (version ${kept.version}) until MausBot answers`);
+  if (kept) log(`going by Uni's schedule and policy kept on this server (version ${kept.version}) until Uni answers`);
   const host = hostReporter(docker, () => current.admin, mode);
   const adopted = mode === "customer-run" ? new AdoptedHome({
     docker, state, log, diskFree: () => reader.disk().free, updateDir: PATHS.update,
@@ -180,10 +180,10 @@ async function run(): Promise<void> {
     saveAdminKeys: (keys) => {
       current = { ...current, adminKeys: keys };
       state.saveAgent(current);
-      log(`MausBot's signing keys are now ${Object.keys(keys).join(", ")}`);
+      log(`Uni's signing keys are now ${Object.keys(keys).join(", ")}`);
     },
     config: { saved: () => state.adminConfig(), save: (config) => state.saveAdminConfig(config) },
-    onConfig: (config) => log(`MausBot's schedule and policy (version ${config.version}) are kept on this server`),
+    onConfig: (config) => log(`Uni's schedule and policy (version ${config.version}) are kept on this server`),
     stream: (stream, accept) => (adopted
       ? serveCustomerRunRequest(stream, accept, {
         paused: () => state.paused(), record: note,
@@ -275,7 +275,7 @@ async function enrollCommand(): Promise<void> {
   state.saveAgent(record);
   // Connected again only once the service has connected with this token.
   state.saveStatus({ connected: false, unauthorized: false, lastError: null });
-  console.log(`This server is connected to MausBot (server ${record.boxId}).`);
+  console.log(`This server is connected to Uni (server ${record.boxId}).`);
 }
 
 function statusCommand(): void {
@@ -350,19 +350,19 @@ function auditCommand(): void {
   for (const line of audit.tail(Number.isInteger(count) && count > 0 ? count : 50)) console.log(line);
 }
 
-/** `pause` and `resume`: the server's admin stops and allows MausBot's jobs and requests. The running connector reads it before each one. */
+/** `pause` and `resume`: the server's admin stops and allows Uni's jobs and requests. The running connector reads it before each one. */
 function pauseCommand(paused: boolean): void {
   const state = new StateStore(PATHS.state);
   if (serverMode(state.agent()) !== "customer-run") {
-    throw new Error("MausBot runs this server, so there is no remote management to pause here. To cut the connection: docker stop mausbot-connector");
+    throw new Error("Uni runs this server, so there is no remote management to pause here. To cut the connection: docker stop mausbot-connector");
   }
   if (state.paused() !== paused) {
     state.savePause(paused);
     auditLog().append({ event: "management", what: paused ? "paused" : "resumed", by: "local" });
   }
   console.log(paused
-    ? "Remote management is paused: this server refuses every job and request from MausBot, and logs each one. It still reports its health. To allow them again: mausbot-connector resume"
-    : "Remote management is on again: MausBot may run the jobs this server allows.");
+    ? "Remote management is paused: this server refuses every job and request from Uni, and logs each one. It still reports its health. To allow them again: mausbot-connector resume"
+    : "Remote management is on again: Uni may run the jobs this server allows.");
 }
 
 const commands: Record<string, () => Promise<void> | void> = {

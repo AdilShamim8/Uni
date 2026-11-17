@@ -57,7 +57,7 @@ async function read(response: { headers: { get(name: string): string | null }; t
 const agentsHeaders = (settings: Record<string, string>) => ({ authorization: "Bearer turn-capability",
   [AGENTS_ENV_HEADER]: Buffer.from(JSON.stringify(settings)).toString("base64url") });
 
-describe("OpenMausBot's own MCP servers over HTTP", () => {
+describe("Uni's own MCP servers over HTTP", () => {
   it("answers a browser session the way its stdio proxy does, with the turn's capability on every call", async () => {
     const init = await post("browser", { jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {} } });
     expect(init.status).toBe(200);

@@ -5,15 +5,15 @@ import fs from "node:fs";
 import path from "node:path";
 
 export const HIDDEN_ARG = "--omb-hidden";
-const MARK = "X-OpenMausBot-Lending=true";
+const MARK = "X-Uni-Lending=true";
 /** Windows keeps one Run entry per name, so the person's own entry has a name apart from lending's (the app's). */
-const CHOSEN_NAME = "OpenMausBot at login";
+const CHOSEN_NAME = "Uni at login";
 
 /** Desktop Entry Exec quoting: the path in double quotes, with ", `, $ and \ escaped. */
 const quoted = (value) => `"${value.replace(/["`$\\]/g, (match) => `\\${match}`)}"`;
 
 export function autostartEntry(exec, { lending = true } = {}) {
-  return ["[Desktop Entry]", "Type=Application", "Name=OpenMausBot", `Exec=${quoted(exec)}${lending ? ` ${HIDDEN_ARG}` : ""}`, "NoDisplay=true",
+  return ["[Desktop Entry]", "Type=Application", "Name=Uni", `Exec=${quoted(exec)}${lending ? ` ${HIDDEN_ARG}` : ""}`, "NoDisplay=true",
     "X-GNOME-Autostart-enabled=true", ...(lending ? [MARK] : []), ""].join("\n");
 }
 

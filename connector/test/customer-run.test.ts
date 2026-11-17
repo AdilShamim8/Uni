@@ -108,15 +108,15 @@ function desk(fixture: Awaited<ReturnType<typeof server>>, options: { mode?: "cu
   return { desk: made, ran, lines };
 }
 
-describe("a customer-run server: the jobs MausBot may run", () => {
-  it("lists seven kinds for MausBot and two more for the server's own root, and for neither the two that move the data", () => {
+describe("a customer-run server: the jobs Uni may run", () => {
+  it("lists seven kinds for Uni and two more for the server's own root, and for neither the two that move the data", () => {
     expect([...CUSTOMER_RUN_JOBS].sort()).toEqual(["backup", "host-health", "restart", "start", "status", "stop", "update"]);
     expect([...CUSTOMER_RUN_LOCAL_JOBS].sort()).toEqual(["restore", "self-update"]);
     expect(JOB_TYPES.filter((type) => customerRunRefusal(type, "admin") !== null)).toEqual(["restore", "export-disk", "import-disk", "self-update"]);
     expect(JOB_TYPES.filter((type) => customerRunRefusal(type, "local") !== null)).toEqual(["export-disk", "import-disk"]);
   });
 
-  it("refuses MausBot replacing the connector or putting old data back, at each of the three checks, and lets the server's own root do both", async () => {
+  it("refuses Uni replacing the connector or putting old data back, at each of the three checks, and lets the server's own root do both", async () => {
     const jobs = [{ id: "c1", type: "self-update", args: { image: CONNECTOR } }, { id: "r1", type: "restore", args: { backupId: "20261028-104512-3fa9" } }] as Job[];
     const fixture = await server();
     await fixture.install();
@@ -153,7 +153,7 @@ describe("a customer-run server: the jobs MausBot may run", () => {
     expect(checkCustomerRunJob({ id: "j2", type: "shell", args: { command: "cat /data" } }, "admin")).toMatchObject({ ok: false, code: "refused_by_mode" });
   });
 
-  it("refuses a start that names an image or settings, and an update to anything but MausBot's server image by digest", () => {
+  it("refuses a start that names an image or settings, and an update to anything but Uni's server image by digest", () => {
     const env = { OMB_CLOUD_ROLE: "team", OMB_CLOUD_MACHINE_ID: "m", OMB_CLOUD_ADMIN_URL: "https://cloud.example.test", OMB_PUBLIC_URL: "https://acme.example.test", OMB_CLOUD_BOOTSTRAP_SECRET: "s".repeat(40) };
     expect(checkJob({ id: "s1", type: "start", args: { image: CLOUD_HOME, env } })).toMatchObject({ ok: true });
     expect(checkCustomerRunJob({ id: "s1", type: "start", args: { image: CLOUD_HOME, env } }, "admin")).toMatchObject({ ok: false, id: "s1", code: "refused_by_mode" });
@@ -203,7 +203,7 @@ describe("a customer-run server: the jobs MausBot may run", () => {
 });
 
 describe("a customer-run server: pausing remote management", () => {
-  it("refuses every job from MausBot while paused, logs each, and still runs the admin's own", async () => {
+  it("refuses every job from Uni while paused, logs each, and still runs the admin's own", async () => {
     const fixture = await server();
     await fixture.install();
     let paused = true;
@@ -306,7 +306,7 @@ describe("a customer-run server: the home its owner installed", () => {
   it("attaches to the Compose install, and says in plain words why it cannot when there is none or it was built here", async () => {
     const fixture = await server();
     expect(await standaloneServerPresent(fixture.docker)).toBe(false);
-    expect(await findInstall(fixture.docker)).toEqual({ ok: false, why: "MausBot is not installed on this server yet. Install it first with the server's install command, then connect it." });
+    expect(await findInstall(fixture.docker)).toEqual({ ok: false, why: "Uni is not installed on this server yet. Install it first with the server's install command, then connect it." });
     await fixture.install();
     expect(await standaloneServerPresent(fixture.docker)).toBe(true);
     expect(await findInstall(fixture.docker)).toMatchObject({ ok: true, install: { dataDir: fixture.dataDir } });
@@ -315,13 +315,13 @@ describe("a customer-run server: the home its owner installed", () => {
     expect(await findInstall(built.docker)).toMatchObject({ ok: false, why: expect.stringContaining("was built here") });
   });
 
-  it("will not be enrolled as a server MausBot runs where its owner's MausBot is already installed: that would start a second one", async () => {
+  it("will not be enrolled as a server Uni runs where its owner's Uni is already installed: that would start a second one", async () => {
     const fixture = await server();
     expect(await enrolmentRefusal("operated", fixture.docker)).toBeNull();
-    expect(await enrolmentRefusal("customer-run", fixture.docker)).toContain("MausBot is not installed on this server yet.");
+    expect(await enrolmentRefusal("customer-run", fixture.docker)).toContain("Uni is not installed on this server yet.");
     await fixture.install();
     expect(await enrolmentRefusal("operated", fixture.docker)).toBe(
-      "MausBot already runs on this server, installed by its owner. Connecting it this way would start a second MausBot beside it. Run the install command again and it connects the one that is here, keeping its data.",
+      "Uni already runs on this server, installed by its owner. Connecting it this way would start a second Uni beside it. Run the install command again and it connects the one that is here, keeping its data.",
     );
     expect(await enrolmentRefusal("customer-run", fixture.docker)).toBeNull();
   });
@@ -366,7 +366,7 @@ describe("a customer-run server: the home its owner installed", () => {
     await expect(fixture.adopted.restore("r2", "20200101-000000-aaaa")).rejects.toMatchObject({ code: "not_found" });
   });
 
-  it("keeps three backups for each sender, so MausBot's backups never push out one the owner made", async () => {
+  it("keeps three backups for each sender, so Uni's backups never push out one the owner made", async () => {
     const fixture = await server();
     await fixture.install();
     const mine = (await fixture.adopted.backup("mine", "local")).backup.id;
@@ -462,7 +462,7 @@ describe("a customer-run server: updates go to the server's own updater", () => 
     expect(fixture.docker.calls.filter((call) => !call.startsWith("pull "))).toEqual([]);
   });
 
-  it("maps each way the updater ends to a code, and refuses when the server has no updater or the image is not MausBot's", async () => {
+  it("maps each way the updater ends to a code, and refuses when the server has no updater or the image is not Uni's", async () => {
     for (const [code, expected] of [[1, "update_rolled_back"], [2, "rollback_failed"], [3, "busy"], [4, "update_not_started"], [5, "older_version"], [127, "update_unavailable"], [9, "docker"]] as const) {
       const fixture = await server();
       await fixture.install();
@@ -488,7 +488,7 @@ describe("a customer-run server: updates go to the server's own updater", () => 
   });
 });
 
-describe("a customer-run server: MausBot's requests", () => {
+describe("a customer-run server: Uni's requests", () => {
   async function connected(options: { paused?: () => boolean } = {}) {
     const admin = new FakeAdmin();
     await admin.listen();
@@ -519,7 +519,7 @@ describe("a customer-run server: MausBot's requests", () => {
   }
   const bodyOf = (answer: { body: string }) => JSON.parse(answer.body) as unknown;
 
-  it("tells MausBot its mode when it enrols and in every heartbeat, and an operated server's enrolment is unchanged", async () => {
+  it("tells Uni its mode when it enrols and in every heartbeat, and an operated server's enrolment is unchanged", async () => {
     const { admin, record } = await connected();
     expect(admin.boxes.get(record.boxId)!.enroll.mode).toBe("customer-run");
     expect(record.mode).toBe("customer-run");
@@ -576,7 +576,7 @@ describe("a customer-run server: MausBot's requests", () => {
 
   it("refuses a pairing, the team summary, the home's own routes and anything with a body, and logs each refusal", async () => {
     const { admin, audits } = await connected();
-    const pairing = JSON.stringify({ label: "MausBot dashboard", member: { email: EMAIL, role: "admin" } });
+    const pairing = JSON.stringify({ label: "Uni dashboard", member: { email: EMAIL, role: "admin" } });
     const refused: [string, string, string?][] = [
       ["POST", "/api/cloud/pairing", pairing], ["GET", "/api/cloud/team/admin"], ["GET", "/api/cloud/health"], ["GET", "/api/health"], ["GET", "/api/seats"],
       ["GET", "/api/bots"], ["GET", "/v1/seats?who=1"], ["POST", "/v1/seats", "{}"], ["GET", "/v1/seats", "{}"], ["DELETE", "/v1/health"], ["GET", "/"],
@@ -603,7 +603,7 @@ describe("a customer-run server: MausBot's requests", () => {
     const { admin, record, refusals, handled } = await connected();
     admin.send({ job: admin.signJob(record.boxId, { id: "x1", type: "export-disk", args: {} }) });
     expect(await admin.replyTo("x1", 5_000)).toEqual({
-      id: "x1", ok: false, error: { code: "refused_by_mode", message: "This server is run by its owner, and this is not a job MausBot may run on it. The server's admin can read the reason with: mausbot-connector audit" },
+      id: "x1", ok: false, error: { code: "refused_by_mode", message: "This server is run by its owner, and this is not a job Uni may run on it. The server's admin can read the reason with: mausbot-connector audit" },
     });
     admin.send({ job: admin.signJob(record.boxId, { id: "x2", type: "import-disk", args: { url: "https://storage.example.test/d.tar.gz" } }) });
     expect(await admin.replyTo("x2", 5_000)).toMatchObject({ ok: false, error: { code: "refused_by_mode" } });
@@ -623,7 +623,7 @@ describe("a customer-run server: MausBot's requests", () => {
     expect(handled.map((job) => job.type)).toEqual(["stop"]);
   });
 
-  it("leaves a server MausBot runs as it was: export-disk reaches the desk, and replies and heartbeats pass as made", async () => {
+  it("leaves a server Uni runs as it was: export-disk reaches the desk, and replies and heartbeats pass as made", async () => {
     const admin = new FakeAdmin();
     await admin.listen();
     cleanups.push(() => admin.close());
@@ -637,7 +637,7 @@ describe("a customer-run server: MausBot's requests", () => {
       identity: () => record, log: () => {}, heartbeatMs: 100, random: () => 0, nextCount: () => ++count, heartbeat: async () => beat,
       handle: async (job) => {
         handled.push(job);
-        return { id: job.id, ok: false, error: { code: "transfer_failed", message: `The data could not be sent to MausBot (${WRITTEN}).` } };
+        return { id: job.id, ok: false, error: { code: "transfer_failed", message: `The data could not be sent to Uni (${WRITTEN}).` } };
       },
       refused: (refusal) => refusals.push(refusal),
     });
@@ -645,7 +645,7 @@ describe("a customer-run server: MausBot's requests", () => {
     agent.start();
     await until(() => agent.connected);
     admin.send({ job: admin.signJob(record.boxId, { id: "x1", type: "export-disk", args: {} }) });
-    expect(await admin.replyTo("x1", 5_000)).toEqual({ id: "x1", ok: false, error: { code: "transfer_failed", message: `The data could not be sent to MausBot (${WRITTEN}).` } });
+    expect(await admin.replyTo("x1", 5_000)).toEqual({ id: "x1", ok: false, error: { code: "transfer_failed", message: `The data could not be sent to Uni (${WRITTEN}).` } });
     expect(handled.map((job) => job.type)).toEqual(["export-disk"]);
     expect(refusals).toEqual([]);
     await until(() => admin.heartbeats.length >= 1);
