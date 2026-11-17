@@ -66,11 +66,11 @@ it("names the verified tier; no tier is today's Pro, and a tier newer than the a
 const confirmDialog = () => render().nodes.find(node => node.type === SignOutConfirm) as ReactElement<{ onConfirm: () => Promise<unknown>; onClose: () => void }> | undefined;
 it("sign-out asks first, says what keeps running, and Cancel keeps you signed in", async () => {
   await ready(free); click("Sign out"); expect(bridge.signOut).not.toHaveBeenCalled();
-  expect(render().html).toContain("Sign out of MausBot?");
+  expect(render().html).toContain("Sign out of Uni?");
   expect(render().html).toContain("Your bots keep running on this computer.");
   confirmDialog()!.props.onClose(); expect(confirmDialog()).toBeUndefined(); expect(bridge.signOut).not.toHaveBeenCalled();
   click("Sign out"); void confirmDialog()!.props.onConfirm(); await flush(); expect(bridge.signOut).toHaveBeenCalledExactlyOnceWith();
-  expect(render().html).toContain("Sign in to MausBot"); expect(fetch).not.toHaveBeenCalled();
+  expect(render().html).toContain("Sign in to Uni"); expect(fetch).not.toHaveBeenCalled();
 });
 it("never accesses account bridge from remote companion pages", async () => {
   vi.stubGlobal("window", { ogb: { cloudAccount: bridge, remoteClient: { active: true } } }); render(); f.effects[0](); await flush();
@@ -167,7 +167,7 @@ it("a free account may add a Cloud, and is told what to do if it bought with ano
   all(render({ onAddCloud: vi.fn() }).html, ["No plan yet", ">Add a Cloud<", "Bought a plan with a different email?"]);
   none(render({ onAddCloud: vi.fn() }).html, ["Choose a Cloud plan", "Free account", "a checkout return alone"]);
   button("Sign out and use that email")!.props.onClick!();
-  expect(render().html).toContain("Sign out of MausBot?"); expect(bridge.signOut).not.toHaveBeenCalled();
+  expect(render().html).toContain("Sign out of Uni?"); expect(bridge.signOut).not.toHaveBeenCalled();
 });
 it("shows the sign-in code plainly, with how long it works", async () => {
   await ready({ status: "connecting", enrollment: { userCode: "ABCDE-FGHJK", expiresAt: Date.UTC(2026, 9, 2, 12, 15) } });
@@ -237,7 +237,7 @@ it("on the person's own Cloud, Settings shows the plan read only, with Manage, a
   await flush(); expect(plan.signIn).toHaveBeenCalledExactlyOnceWith();
   plan.state.mockRejectedValueOnce(new Error("cloud-plan:state is only available in this app's window")); f.values = []; view(); f.effects[0](); await flush();
   const refused = view();
-  expect(refused.html).toContain("Your plan is managed in the MausBot app on your computer.");
+  expect(refused.html).toContain("Your plan is managed in the Uni app on your computer.");
   expect(refused.nodes.some(node => node.type === "button")).toBe(false);
   none(refused.html, ["Could not complete", 'role="alert"', "Loading"]);
 });
@@ -248,11 +248,11 @@ it("on My Cloud once it is home, Settings is that app's own: the plan is managed
     return { html: renderToStaticMarkup(createElement(Capture)), nodes: nodes(tree) }; };
   view(); f.effects[0](); await flush();
   all(view().html, ["Your plan is managed on your Plan page.", "Your plan is managed on your Plan page.", "Manage subscription"]);
-  none(view().html, ["MausBot app", "on your computer"]);
+  none(view().html, ["Uni app", "on your computer"]);
   plan.state.mockResolvedValueOnce({ status: "paid", tier: "pro", home: true }); f.values = []; view(); f.effects[0](); await flush();
   all(view().html, [">Pro<", "Manage subscription"]); none(view().html, ["on your computer"]);
   plan.state.mockResolvedValueOnce({ status: "none" }); f.values = []; view(); f.effects[0](); await flush();
-  all(view().html, ["Your plan is managed in the MausBot app on your computer."]);
+  all(view().html, ["Your plan is managed in the Uni app on your computer."]);
 });
 
 const pro: CloudAccountState = { ...free, entitlement: { plan: "pro", status: "active", expiresAt: 1_900_000_000_000, version: 2 } };
@@ -387,7 +387,7 @@ it("only shows the status of a Cloud that is not Ready, and a later sign-out sta
     expect(render().html).toContain(`data-cloud-home="${machine.status}"`);
   }
   push({ status: "signed-out" }); linked(); await flush();
-  expect(render().html).toContain("Sign in to MausBot");
+  expect(render().html).toContain("Sign in to Uni");
   expect(bridge.connectHome).not.toHaveBeenCalled();
   expect(bridge.begin).not.toHaveBeenCalled();
 });
@@ -463,7 +463,7 @@ it("on a Team Cloud, sends its admins to the invite box on the team's People pag
   const html = renderToStaticMarkup(createElement(TeamPeopleCard, { team, admin: true }));
   all(html, ["People and plan", "Invite or remove people in Acme and change their roles on its People page on MausBot Cloud.",
     'href="https://cloud.example.com/cloud/team/team-acme/people?do=invite"', "Invite people"]);
-  none(html, ["managed in the MausBot app on your computer", "Plan page", "seats"]);
+  none(html, ["managed in the Uni app on your computer", "Plan page", "seats"]);
   const owner = renderToStaticMarkup(createElement(TeamPeopleCard, { team, admin: true, owner: true }));
   all(owner, ["Invite or remove people in Acme, add seats and change roles", 'href="https://cloud.example.com/cloud/team/team-acme/people?do=invite"',
     'href="https://cloud.example.com/cloud/team/team-acme/people?do=seats"', "Add seats"]);

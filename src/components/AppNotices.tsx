@@ -40,7 +40,7 @@ import { LinkButton, NoticeCard, NoticeToast, NotNowButton } from "./NoticeCard"
 import { useDesktopNotices, useOtherDialogOpen } from "./notice-dialogs";
 import { localDesktopPage } from "./onboarding/WelcomeGate";
 import { UpdatesConsentDialog, updatesConsentBridge, useUpdatesConsent } from "./UpdatesConsent";
-import { useMausBotWelcomeDue } from "./MausBotWelcome";
+import { useUniWelcomeDue } from "./UniWelcome";
 import { NewLookNotice, reportNewLook } from "./NewLookNotice";
 import { PhoneUpdateCard, phonesToTell, useRetiredLinkPhones } from "./PhoneUpdateNotice";
 import { reportSimpleModePrompt, SimpleModePrompt } from "./SimpleModePrompt";
@@ -104,7 +104,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   const updater = useUpdaterState();
   const intent = useCloudIntent();
   const moving = useMoveQuiet(now);
-  const mausBot = useMausBotWelcomeDue(viewer);
+  const mausBot = useUniWelcomeDue(viewer);
   // Bots in two places: this computer's page only, where main knows what lives here.
   const two = useTwoPlaces();
   const twoFact = !local || two.suggest === null ? false : two.suggest === undefined ? null : true;
@@ -190,7 +190,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   // also for a launch after the one whose welcome just finished. Account and billing notices keep their own rules.
   // Unknown (null) until the bots have loaded, so nothing lower in the queue flashes up before them.
   const firstChat = firstReplyPending(state);
-  // MausBot's first-launch card goes first: the popup and the question wait while it is due. The popup skips a launch the
+  // Uni's first-launch card goes first: the popup and the question wait while it is due. The popup skips a launch the
   // card used; the question may follow the card once it closes, as it follows the popup.
   const afterWelcome = welcomeFinishedThisLaunch() || launchDialogShown() === "mausbot" || firstChat;
   const consentWaits = welcomeFinishedThisLaunch() || firstChat;
@@ -210,7 +210,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   const grokNow = !grokDue ? false
     : !viewer || (desktop && !desktopState) || organization === null || firstChat === null || mausBotFirst || moving === null || grokLanding || grokBlocked ? null : true;
   // Everyone, whether or not a bot has answered yet (so not `afterWelcome`, which holds until one has), but never in the launch
-  // the welcome or MausBot's card took, or during a live call.
+  // the welcome or Uni's card took, or during a live call.
   const modelgoNow = !modelgoHere || moving || welcomeFinishedThisLaunch() || launchDialogShown() === "mausbot" || desktopState?.seen.includes(MODELGO_OFFER_NOTICE) ? false
     : organization === null || moving === null || firstChat === null || mausBotFirst || (state.liveCall && state.liveCall.status !== "ended") || (desktop && !desktopState) ? null : true;
   // A card from the project's announcements file: the built-in sponsor card's exclusions, and src/lib/announcements.ts's rules for
@@ -241,7 +241,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
     : cards || whatsNewHere || consentHere || simpleDue || boatHere || modelgoHere || announcementNow !== false || twoFact !== false || grokNow !== false || phoneNow !== false ? nextNotice({
     [GROK_MOVE_NOTICE]: grokNow,
     [PHONE_UPDATE_NOTICE]: phoneNow,
-    // As the What's new popup: never in the launch whose welcome just finished, nor over MausBot's first-launch card.
+    // As the What's new popup: never in the launch whose welcome just finished, nor over Uni's first-launch card.
     [SIMPLE_MODE_NOTICE]: !simpleDue || afterWelcome === true ? false : afterWelcome === null || mausBotFirst || simpleBlocked ? null : true,
     [WHATS_NEW_NOTICE]: whatsNewDue === false || whatsNewState === "none" || moving || afterWelcome === true ? false
       : whatsNewDue === null || whatsNewState === "loading" || !viewer || afterWelcome === null || mausBotFirst || moving === null || whatsNewBlocked ? null : true,
@@ -265,7 +265,7 @@ export function AppNotices({ quiet = false, viewer = null, now = Date.now }: { q
   useEffect(() => {
     if (!shownKey || !notice) return;
     markLaunchNotice(notice);
-    // The popups and the question own this launch: MausBot's first-launch card waits for a later one.
+    // The popups and the question own this launch: Uni's first-launch card waits for a later one.
     if (shownKey === GROK_MOVE_NOTICE || shownKey === SIMPLE_MODE_NOTICE || shownKey === WHATS_NEW_NOTICE || shownKey === UPDATES_CONSENT_NOTICE) markLaunchDialog("notices");
     if (shownKey === CLOUD_INTRO) {
       setIntroOpen(true);

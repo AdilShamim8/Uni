@@ -1,7 +1,7 @@
-// A person's own MausBot hands work to the team's shared bots, on a Team Cloud with the synthetic Claude CLI. Mira (a
-// User) asks her MausBot; the work runs in Sales' own private chat with her, at her level, and its result comes back whole
+// A person's own Uni hands work to the team's shared bots, on a Team Cloud with the synthetic Claude CLI. Mira (a
+// User) asks her Uni; the work runs in Sales' own private chat with her, at her level, and its result comes back whole
 // to her private chat. Ben (a User) and Ada (an Admin) see none of it: not by id, not in lists, counts, search,
-// notifications, streams, Sales' shared chat or its notes. A bot Mira cannot see is never named to her MausBot, a bot she
+// notifications, streams, Sales' shared chat or its notes. A bot Mira cannot see is never named to her Uni, a bot she
 // can only view refuses work, and a turn her own request isn't behind hands nothing on. The engine plays a script through
 // the real agents tools, so this proves the routes and what each person can see, not a model's judgement.
 import { randomBytes } from "node:crypto";
@@ -95,7 +95,7 @@ beforeAll(async () => {
   await share(archive, { everyone: "view", people: {} });
   await share(payroll, { everyone: "none", people: { [BEN.email]: "chat" } });
   mausbot = (await botsOf(mira)).find((bot) => bot.defaultBot?.person === MIRA.email)!;
-  expect(mausbot, "every member has their own MausBot").toBeDefined();
+  expect(mausbot, "every member has their own Uni").toBeDefined();
   const chat = await team.as(mira, "POST", `/api/bots/${mausbot.id}/tasks`, { title: "Mine" });
   expect(chat.status, JSON.stringify(chat.body)).toBe(201);
   mine = chat.body.task.threadId as string;
@@ -160,7 +160,7 @@ it("hands work to Sales privately: the result comes back to Mira whole, and Ben 
   await expect.poll(settled, { timeout: 30_000 }).toBe(true);
 
   const work = turn("S-WORK");
-  expect(sent(work)).toMatch(/\[From @MausBot \(bot\) · assignment \S+ for Mira · on their behalf at your level\]/);
+  expect(sent(work)).toMatch(/\[From @Uni \(bot\) · assignment \S+ for Mira · on their behalf at your level\]/);
   expect(sent(turn("M-RESUMED")), "her result comes back whole: this is her own chat").toContain("Q3 was 120k");
   const seen = (await botsOf(mira)).find((bot) => bot.id === sales.id)!.tasks!.find((task) => task.threadId === work.threadId)!;
   expect(seen, "Sales' chat with Mira is listed for her").toBeDefined();
@@ -232,7 +232,7 @@ it("never into a room, nor into Sales' shared chat", async () => {
   expect(JSON.stringify(await lines(ada, sales.threadId))).not.toContain("pull the numbers for Mira");
 }, hostTimeout(120_000));
 
-it("works from her MausBot's main chat too, which is hers alone", async () => {
+it("works from her Uni's main chat too, which is hers alone", async () => {
   const main = (await botsOf(mira)).find((bot) => bot.id === mausbot.id)!.mainThreadId;
   expect(main).toBeTruthy();
   await say("FROM-MY-MAIN-CHAT", main);

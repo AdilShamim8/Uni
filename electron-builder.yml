@@ -1,9 +1,9 @@
-appId: com.openmausbot.app
-productName: OpenMausBot
-artifactName: OpenMausBot-${version}-${arch}.${ext}
+appId: com.uni.app
+productName: Uni
+artifactName: Uni-${version}-${arch}.${ext}
 
 protocols:
-  - name: OpenMausBot package install
+  - name: Uni package install
     schemes: [openmausbot]
 
 # In-app auto-update reads latest-mac.yml + the .zip (macOS) or latest.yml +

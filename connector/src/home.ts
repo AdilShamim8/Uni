@@ -391,7 +391,7 @@ export class Home {
         const sent = await this.options.transfer.upload(`${admin.origin}${EXPORT_PATH}/${jobId}`, { authorization: admin.authorization(jobId) }, this.state.path(archive));
         return { bytes: sent.bytes, sha256: sent.sha256 };
       } catch (error) {
-        throw new JobFailure("transfer_failed", `The data could not be sent to MausBot (${errorText(error)}).`);
+        throw new JobFailure("transfer_failed", `The data could not be sent to Uni (${errorText(error)}).`);
       } finally {
         rmSync(this.state.path(archive), { force: true });
         this.finish({});
@@ -589,7 +589,7 @@ export class Home {
       const message = errorText(error);
       if (/port is already allocated|address already in use/i.test(message)) {
         const port = /:(\d+) failed/.exec(message)?.[1] ?? String(HOME_PORT);
-        throw new JobFailure("port_in_use", `Port ${port} on this server is used by another program, and MausBot's home needs it.`);
+        throw new JobFailure("port_in_use", `Port ${port} on this server is used by another program, and Uni's home needs it.`);
       }
       if (error instanceof DockerError && /apparmor|seccomp/i.test(message)) {
         throw new JobFailure("box_unavailable", "The bot box's security profiles are not installed on this server. Run the install command again to repair it.");

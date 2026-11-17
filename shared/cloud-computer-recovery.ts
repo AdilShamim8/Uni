@@ -1,4 +1,4 @@
-/** What MausBot is doing about a cloud computer that stopped answering, as `GET /api/bots/:id/computer/recovery` reports it.
+/** What Uni is doing about a cloud computer that stopped answering, as `GET /api/bots/:id/computer/recovery` reports it.
  * `not-responding`, `restoring`, `restarting` and `replacing` are under way; the others are how it ended. `restoring`: the
  * provider says the computer's disk is still being put back after a wake, so it is waited for before any restart. */
 export const CLOUD_COMPUTER_RECOVERY_STATES = [
@@ -38,12 +38,12 @@ export interface CloudComputerDisk {
 
 /** What the bot is told, in place of a computer call, while its computer is being restarted or replaced. */
 export const CLOUD_COMPUTER_NOT_RESPONDING =
-  "This bot's cloud computer isn't responding; MausBot is replacing it. Try again in a minute. Do not retry now.";
+  "This bot's cloud computer isn't responding; Uni is replacing it. Try again in a minute. Do not retry now.";
 /** While it is being stopped and started again, which keeps its files. */
 export const CLOUD_COMPUTER_RESTARTING =
-  "This bot's cloud computer stopped responding and MausBot is restarting it; its files are kept. This call was not performed. Try again in a minute.";
+  "This bot's cloud computer stopped responding and Uni is restarting it; its files are kept. This call was not performed. Try again in a minute.";
 export const CLOUD_COMPUTER_RESTARTING_UNANSWERED =
-  "This bot's cloud computer stopped responding and MausBot is restarting it; its files are kept. This call got no answer and most likely did not run. Try again in a minute.";
+  "This bot's cloud computer stopped responding and Uni is restarting it; its files are kept. This call got no answer and most likely did not run. Try again in a minute.";
 /** While the provider is still putting its disk back after a wake. */
 export const CLOUD_COMPUTER_RESTORING =
   "This bot's cloud computer is awake but still restoring its disk, so it is not answering yet. This call was not performed. Try again in a minute.";
@@ -57,7 +57,7 @@ export const CLOUD_COMPUTER_RESTARTED =
 export const CLOUD_COMPUTER_UNREACHABLE =
   "Cloud computers can't be reached right now. This call may not have run. Try again in a few minutes.";
 export const CLOUD_COMPUTER_CAPPED =
-  "This bot's cloud computer isn't responding, and it was already replaced once in the last hour, so MausBot stopped replacing it. Do not retry computer work in this turn; tell the person.";
+  "This bot's cloud computer isn't responding, and it was already replaced once in the last hour, so Uni stopped replacing it. Do not retry computer work in this turn; tell the person.";
 /** Automatic replacement is off: the person decides, from the computer panel. */
 export const CLOUD_COMPUTER_NEEDS_PERSON =
   "This bot's cloud computer isn't responding. The person can replace it from the computer panel. Do not retry computer work in this turn; tell the person.";
@@ -66,7 +66,7 @@ export const CLOUD_COMPUTER_TEAM_NOT_RESPONDING =
   "This team's shared cloud computer isn't responding. A team admin can delete it in Settings → Desktops & browser → Desktops and create it again from the Team map. Do not retry computer work in this turn; tell the person.";
 /** The provider says the machine is gone, but not yet for long enough to delete it by itself. */
 export const CLOUD_COMPUTER_DEAD_WAITING =
-  "This bot's cloud computer isn't responding. MausBot replaces it if it is still down in half an hour; the person can replace it now from the computer panel. Do not retry computer work in this turn; tell the person.";
+  "This bot's cloud computer isn't responding. Uni replaces it if it is still down in half an hour; the person can replace it now from the computer panel. Do not retry computer work in this turn; tell the person.";
 /** One command got no answer; the computer is not judged on one. */
 export const CLOUD_COMPUTER_NO_ANSWER =
   "The cloud computer did not answer this call, so it may not have run. Take a fresh screenshot in a moment before repeating it.";
@@ -92,7 +92,7 @@ export const RUN_COMPUTER_LINES = {
   personBusy: "The cloud computer is not answering, and it was not restarted because someone is using it, so this run did not start. The next scheduled run tries again.",
   restartLimited: "The cloud computer is not answering, and it was already restarted within the last hour, so this run did not start. The next scheduled run tries again.",
   shared: "The team's shared cloud computer is not answering, so this run did not start. A team admin can look at it in the Team map.",
-  diskStillFull: "This run started with its cloud computer's disk still almost full, after MausBot removed what it safely could. Check that what the run did is complete, and free space on the computer.",
+  diskStillFull: "This run started with its cloud computer's disk still almost full, after Uni removed what it safely could. Check that what the run did is complete, and free space on the computer.",
   lastCallUnanswered: "This run finished, but its last cloud computer call got no answer, so check that what it did on the computer is complete. It was not run again.",
 } as const;
 

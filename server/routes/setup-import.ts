@@ -25,7 +25,7 @@ export interface SetupImportRouteDeps {
 export const SETUP_IMPORT_PATH = "/api/setup-import";
 export const GROK_LOOK_PATH = "/api/setup-import/grok";
 export const GROK_CONNECTOR_PATH = "/api/setup-import/grok/connector";
-const LOCAL_ONLY = "Only the desktop app on the computer running OpenMausBot can bring in that computer's skills and tools.";
+const LOCAL_ONLY = "Only the desktop app on the computer running Uni can bring in that computer's skills and tools.";
 const requestSchema = z.object({ skills: z.boolean().optional(), tools: z.boolean().optional() }).strict();
 
 /** GET finds what is new here; POST brings in the chosen kinds. The Grok Bot connector: POST opens the link (a quick

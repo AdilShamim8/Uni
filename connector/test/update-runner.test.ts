@@ -63,7 +63,7 @@ describe.skipIf(!posix)("mausbot-update-runner.sh", () => {
     expect(run(`id=u3\nimage=${IMAGE}\n`, { exit: 2 }).answer).toBe("id=u3\ncode=2\n");
   });
 
-  it("runs nothing for an image that is not MausBot's server image by digest, whatever the request says", () => {
+  it("runs nothing for an image that is not Uni's server image by digest, whatever the request says", () => {
     for (const image of ["ghcr.io/milind-soni/openmausbot:latest", "ghcr.io/someone/openmausbot@sha256:" + "b".repeat(64), `${IMAGE} --replace-local-build`, `${IMAGE};reboot`, ""]) {
       const refused = run(`id=u1\nimage=${image}\n`);
       expect(refused.calls, image).toEqual([]);

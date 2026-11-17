@@ -37,7 +37,7 @@ export function systemdUnit(spec: ServiceSpec): string {
   const lines = [
     "# Written by `openmausbot service install`. Re-run it to change the options.",
     "[Unit]",
-    `Description=OpenMausBot${spec.label ? ` (${spec.label})` : ""}`,
+    `Description=Uni${spec.label ? ` (${spec.label})` : ""}`,
     "After=network-online.target",
     "Wants=network-online.target",
     "",
@@ -152,10 +152,10 @@ export function shippedSentinelCli(
   platform: NodeJS.Platform, home: string, exists: (path: string) => boolean, hasSentinel: (script: string) => boolean = () => true,
 ): { node: string; script: string } | null {
   const candidates = platform === "darwin"
-    ? ["/Applications/OpenMausBot.app", join(home, "Applications", "OpenMausBot.app")].map((app) => ({
-      node: join(app, "Contents", "MacOS", "OpenMausBot"), script: join(app, "Contents", "Resources", "server", "openmausbot.js"),
+    ? ["/Applications/Uni.app", join(home, "Applications", "Uni.app")].map((app) => ({
+      node: join(app, "Contents", "MacOS", "Uni"), script: join(app, "Contents", "Resources", "server", "openmausbot.js"),
     }))
-    : platform === "linux" ? [{ node: "/opt/OpenMausBot/openmausbot", script: "/opt/OpenMausBot/resources/server/openmausbot.js" }] : [];
+    : platform === "linux" ? [{ node: "/opt/Uni/openmausbot", script: "/opt/Uni/resources/server/openmausbot.js" }] : [];
   return candidates.find((cli) => exists(cli.node) && exists(cli.script) && hasSentinel(cli.script)) ?? null;
 }
 
@@ -222,7 +222,7 @@ export function sentinelSystemdService(spec: SentinelServiceSpec): string {
   return [
     "# Written by `openmausbot service install --sentinel`. Started by its timer.",
     "[Unit]",
-    "Description=OpenMausBot Sentinel health scan",
+    "Description=Uni Sentinel health scan",
     "",
     "[Service]",
     "Type=oneshot",
@@ -239,7 +239,7 @@ export function sentinelSystemdTimer(): string {
   return [
     "# Written by `openmausbot service install --sentinel`.",
     "[Unit]",
-    "Description=Run the OpenMausBot Sentinel health scan every two minutes",
+    "Description=Run the Uni Sentinel health scan every two minutes",
     "",
     "[Timer]",
     `OnBootSec=${SENTINEL_INTERVAL_SECONDS}s`,

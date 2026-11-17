@@ -33,7 +33,7 @@ beforeEach(() => { vi.stubGlobal("localStorage", localStorage); stored.clear(); 
 afterEach(() => { setTeamChats(null); vi.unstubAllGlobals(); });
 
 describe("the side of a conversation is the server's answer", () => {
-  it("is Just me only for a conversation the server marked private, one this page made through the private route, or the person's own MausBot", () => {
+  it("is Just me only for a conversation the server marked private, one this page made through the private route, or the person's own Uni", () => {
     setTeamChats(ADA);
     const bot = scout([{ threadId: "ada-own", private: true, createdAt: 2 }, { threadId: "report", createdAt: 3 }]);
     expect(sideOfThread(bot, "ada-own")).toBe("me");
@@ -49,7 +49,7 @@ describe("the side of a conversation is the server's answer", () => {
     setTeamChats({ ...ADA, opened: ["scout-main"] });
     expect(sideOfThread(scout(), "scout-main")).toBe("team");
     expect(teamThreadOf({ tasks: [{ threadId: "t1", sharedChat: true, private: true }] }), "a private chat is never the team thread").toBeNull();
-    expect(teamThreadOf(mausbot()), "a person's own MausBot has none").toBeNull();
+    expect(teamThreadOf(mausbot()), "a person's own Uni has none").toBeNull();
   });
 
   it("moves a conversation its person shared to Team at once, even on a page whose session still lists it as theirs", () => {
@@ -99,7 +99,7 @@ describe("what each side of the sidebar lists", () => {
     expect(view.switchable).toBe(true);
     expect(ids(view.bots)).toEqual(["scout", "mine"]);
     expect(view.bots[0]!.tasks.map((task) => task.threadId)).toEqual(["ada-own"]);
-    expect(view.bots[1]!.tasks.length, "their own MausBot keeps all its chats").toBe(2);
+    expect(view.bots[1]!.tasks.length, "their own Uni keeps all its chats").toBe(2);
     expect(view.groups).toEqual([]);
   });
 
@@ -204,7 +204,7 @@ describe("each side's own unread mark", () => {
     expect(unread([{ threadId: "run", unread: true, routineRunId: "r1" }, { threadId: "old", private: true, unread: true, archivedAt: 5 }])).toEqual({ me: false, team: false });
   });
 
-  it("counts the shared chat and a group chat for Team, the person's own MausBot for Just me", () => {
+  it("counts the shared chat and a group chat for Team, the person's own Uni for Just me", () => {
     expect(teamSideView([{ ...scout(), tasks: [{ ...MAIN, unread: true }] }, mausbot()], [], ADA, "me").unread).toEqual({ me: false, team: true });
     expect(unread([], [room({ unread: true })])).toEqual({ me: false, team: true });
     expect(teamSideView([scout(), mausbot({ tasks: [{ threadId: "mine-main", unread: true }] })], [], ADA, "team").unread).toEqual({ me: true, team: false });
@@ -283,7 +283,7 @@ describe("opening a bot on the side the sidebar shows", () => {
     expect(sideOfThread(scout(), "ada-new"), "and it is Just me from the moment it exists").toBe("me");
   });
 
-  it("opens the person's own MausBot, which has no shared chat, as their own even under Team", async () => {
+  it("opens the person's own Uni, which has no shared chat, as their own even under Team", async () => {
     setTeamChats(ADA);
     setTeamSide("team");
     const dispatch = vi.fn();

@@ -1,4 +1,4 @@
-/** Keeps this computer's MausBot Relay token fresh while the relay is needed: fetched at once, again after the control
+/** Keeps this computer's Uni Relay token fresh while the relay is needed: fetched at once, again after the control
  * plane's `refreshAfter` (an hour), and sooner when the relay refuses it. A token that is still valid survives a
  * failed refresh; the relay keeps spliced sessions through an expired control socket anyway. */
 const MINUTE_MS = 60_000;

@@ -1,7 +1,7 @@
 // Published apps on a real Team Cloud (OMB_CLOUD_ROLE=team) with the synthetic Claude CLI, tried as the people the
 // rule must hold against: two members, an Admin and the Owner. A shared bot's Netlify site is listed for whoever can
 // read the conversation it was published in (the conversation's own folder holds its record, or the bot's own message
-// carries its link), a member's own MausBot's site for that member alone, and nobody's private project for anyone
+// carries its link), a member's own Uni's site for that member alone, and nobody's private project for anyone
 // else, by list or by id. Delete uses the team's saved Netlify token against a loopback stand-in for Netlify.
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
@@ -80,7 +80,7 @@ beforeAll(async () => {
   ben = (await team.pair(BEN)).token!;
   mira = (await team.as(owner, "POST", "/api/bots", { name: "Mira", visibility: "everyone" })).body.bot;
   adaMaus = (await botsOf(ada)).find((bot) => bot.defaultBot?.person === ADA.email)!;
-  expect(adaMaus, "Ada has a MausBot of her own").toBeTruthy();
+  expect(adaMaus, "Ada has a Uni of her own").toBeTruthy();
   mainThread = mira.mainThreadId ?? mira.threadId;
   adaThread = (await team.as(ada, "POST", `/api/bots/${mira.id}/tasks`, { title: "Ada's shop" })).body.task.threadId;
   benThread = (await team.as(ben, "POST", `/api/bots/${mira.id}/tasks`, { title: "Ben's plan" })).body.task.threadId;

@@ -166,10 +166,10 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
   });
 
   it("says why in the server's own last words when the new version stops as it starts", () => {
-    const box = install({ behaviour: "crashes", lastWords: "This data was written by a newer MausBot." });
+    const box = install({ behaviour: "crashes", lastWords: "This data was written by a newer Uni." });
     const failed = box.run();
     expect(failed.status).toBe(1);
-    expect(failed.stdout).toContain("The update to 0.1.151 did not work: it kept stopping as it started (This data was written by a newer MausBot.).");
+    expect(failed.stdout).toContain("The update to 0.1.151 did not work: it kept stopping as it started (This data was written by a newer Uni.).");
     expect(failed.said.at(-1)).toBe("Your server runs 0.1.150 again, with its data as it was before the update.");
     expect(tree(box.data)["started-by.txt"]).toBe("0.1.150\n0.1.150\n");
   });
@@ -390,7 +390,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
 
   it("moves an install the installer made with Caddy in the server's network to the current files, and back on rollback", () => {
     const box = install();
-    const oldCompose = `# Written by MausBot's installer (deploy/install.sh), and written again each time it runs.
+    const oldCompose = `# Written by Uni's installer (deploy/install.sh), and written again each time it runs.
 name: openmausbot
 services:
   omb:

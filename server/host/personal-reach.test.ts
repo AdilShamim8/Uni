@@ -6,8 +6,8 @@ import { createPersonalReach } from "./personal-reach.ts";
 
 const MIRA = "mira@acme.test";
 const key = (email: string) => `p_${email.replace(/\W/g, "").padEnd(22, "x").slice(0, 22)}`;
-const mausbot: RosterMember = { id: "maus", name: "MausBot", defaultBot: { person: MIRA }, visibility: { people: [MIRA] } };
-const bensMausbot: RosterMember = { id: "ben-maus", name: "MausBot", defaultBot: { person: "ben@acme.test" }, visibility: { people: ["ben@acme.test"] } };
+const mausbot: RosterMember = { id: "maus", name: "Uni", defaultBot: { person: MIRA }, visibility: { people: [MIRA] } };
+const bensMausbot: RosterMember = { id: "ben-maus", name: "Uni", defaultBot: { person: "ben@acme.test" }, visibility: { people: ["ben@acme.test"] } };
 const sales: RosterMember = { id: "sales", name: "Sales" };
 const archive: RosterMember = { id: "archive", name: "Archive" };
 const payroll: RosterMember = { id: "payroll", name: "Payroll", visibility: { people: ["ben@acme.test"] } };
@@ -26,7 +26,7 @@ function world(acting: string | null = key(MIRA), behind = true) {
   });
 }
 
-describe("a person's own MausBot reaching the team's bots", () => {
+describe("a person's own Uni reaching the team's bots", () => {
   it("reaches only the bots its person may chat with, from a chat private to them", () => {
     expect(world().peers(bots, mausbot, "mine").map((bot) => bot.id)).toEqual(["sales"]);
     expect(world().reaches(mausbot, sales, "shared")).toBe(false);
@@ -40,7 +40,7 @@ describe("a person's own MausBot reaching the team's bots", () => {
     expect(world().handOnProblem(mausbot, sales, "mine", "turn")).toBeUndefined();
   });
 
-  it("never names a bot its person cannot see, nor another person's MausBot", () => {
+  it("never names a bot its person cannot see, nor another person's Uni", () => {
     for (const hidden of [payroll, bensMausbot]) {
       expect(world().hides(mausbot, hidden)).toBe(true);
       expect(world().refusal(mausbot, hidden, "mine")).toBe(`No bot with id "${hidden.id}" — call list_bots and copy the exact id from the result`);

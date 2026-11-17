@@ -1,4 +1,4 @@
-// MausBot Relay host tokens: `POST /v1/installations/self/relay-token`. The relay checks them offline with the public
+// Uni Relay host tokens: `POST /v1/installations/self/relay-token`. The relay checks them offline with the public
 // key only, so this Worker's secret is the one thing that can let a computer onto the relay. Wire format: the
 // companion's e2e README, section 9 ("Relay token" and "Control plane endpoint").
 import { z } from "zod";

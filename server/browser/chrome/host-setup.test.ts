@@ -11,8 +11,8 @@ afterAll(async () => { for (const folder of folders) await removeTempDir(folder)
 
 describe("host setup", () => {
   it("pins the AppArmor exemption to one root-owned executable", () => {
-    const profile = appArmorProfile("/opt/OpenMausBot/resources/chrome/chrome");
-    expect(profile).toContain("profile openmausbot-chrome /opt/OpenMausBot/resources/chrome/chrome flags=(unconfined)");
+    const profile = appArmorProfile("/opt/Uni/resources/chrome/chrome");
+    expect(profile).toContain("profile openmausbot-chrome /opt/Uni/resources/chrome/chrome flags=(unconfined)");
     expect(profile).toContain("userns,");
     for (const path of ["/opt/**/chrome", "/home/a/chrome", "relative/chrome", "/opt/a b/chrome"]) expect(() => appArmorProfile(path)).toThrow();
   });
@@ -47,7 +47,7 @@ describe("host setup", () => {
     for (const output of outputs) {
       const diagnosis = await diagnoseLaunchFailure({ executable: "/opt/chrome", output, platform: "darwin", exists: inContainer });
       expect(diagnosis?.kind).toBe("container");
-      expect(diagnosis?.message).toBe("Chrome's sandbox can't start in this container. The operator can set OMB_BROWSER_SANDBOX=0 to run the browser without it and rely on the container's isolation, then restart OpenMausBot.");
+      expect(diagnosis?.message).toBe("Chrome's sandbox can't start in this container. The operator can set OMB_BROWSER_SANDBOX=0 to run the browser without it and rely on the container's isolation, then restart Uni.");
     }
     // Root needs no container marker; a sandbox the host blocks elsewhere keeps the AppArmor steps.
     expect((await diagnoseLaunchFailure({ executable: "/opt/chrome", output: outputs[0]!, platform: "darwin", exists: () => false }))?.kind).toBe("container");

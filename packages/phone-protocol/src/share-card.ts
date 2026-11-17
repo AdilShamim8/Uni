@@ -31,7 +31,7 @@ export interface TemplateCard {
   prUrl?: string;
   /** The last publish's one-line error. */
   error?: string;
-  /** Publishing can't happen from here: no MausBot account is signed in, or the community service isn't offered. The card
+  /** Publishing can't happen from here: no Uni account is signed in, or the community service isn't offered. The card
    * offers Save folder… and the community repository's upload page instead of Publish. */
   fallback?: "sign_in" | "unavailable";
 }

@@ -18,7 +18,7 @@ import { isAbsolute } from "node:path";
 /** Installs the Linux libraries Chrome needs (as root, once). */
 export const LIBRARIES_COMMAND = "sudo openmausbot browser install --with-deps";
 /** There is no command for the sandbox: an administrator allows one root-owned Chrome by hand. */
-export const SANDBOX_STEPS_URL = "https://github.com/milind-soni/OpenMausBot/blob/main/docs/deploy-vps.md#ubuntu-2404-browser-sandbox";
+export const SANDBOX_STEPS_URL = "https://github.com/milind-soni/Uni/blob/main/docs/deploy-vps.md#ubuntu-2404-browser-sandbox";
 
 /** What Chrome prints before aborting when it cannot sandbox itself. */
 export const NO_SANDBOX_SIGNATURE = "No usable sandbox";
@@ -47,7 +47,7 @@ export function appArmorProfile(executable: string): string {
   if (!isAbsolute(executable) || /[\s*?[\]{}"'\\^]/.test(executable) || !executable.startsWith("/opt/")) {
     throw new Error(`The browser's AppArmor exemption is only for a root-owned path under /opt, not ${executable}.`);
   }
-  return `# Written for OpenMausBot: lets its Chrome use its sandbox.
+  return `# Written for Uni: lets its Chrome use its sandbox.
 abi <abi/4.0>,
 include <tunables/global>
 
@@ -97,7 +97,7 @@ export class BrowserHostError extends Error {
     super(kind === "sandbox"
       ? `This host blocks the sandbox the browser runs in (AppArmor on Ubuntu 23.10+). An administrator can allow it for one root-owned copy of Chrome, following ${SANDBOX_STEPS_URL}, then try again.`
       : kind === "container"
-      ? "Chrome's sandbox can't start in this container. The operator can set OMB_BROWSER_SANDBOX=0 to run the browser without it and rely on the container's isolation, then restart OpenMausBot."
+      ? "Chrome's sandbox can't start in this container. The operator can set OMB_BROWSER_SANDBOX=0 to run the browser without it and rely on the container's isolation, then restart Uni."
       : `This host is missing libraries the browser needs (${libraries.join(", ")}). Run \`${LIBRARIES_COMMAND}\` on the host to install them, then try again.`);
     this.name = "BrowserHostError";
     this.kind = kind;

@@ -14,7 +14,7 @@ const CHANGES: ReadonlySet<JobType> = new Set(["start", "stop", "restart", "upda
 const MAX_WAITING = 8;
 
 export interface RunnerDeps {
-  /** On a server MausBot operates: the home the connector makes and keeps running. */
+  /** On a server Uni operates: the home the connector makes and keeps running. */
   home?: Home;
   /** On a customer-run server: the home its owner installed. Every job goes to it, and `home` is never used. */
   adopted?: AdoptedHome;
@@ -124,9 +124,9 @@ export interface DeskDeps {
   audit: AuditLog;
   log: Log;
   policyFile?: string;
-  /** Absent: `operated`. On a customer-run server a job outside that mode's lists is refused: one list for MausBot, a longer one for root on the server. */
+  /** Absent: `operated`. On a customer-run server a job outside that mode's lists is refused: one list for Uni, a longer one for root on the server. */
   mode?: ServerMode;
-  /** The server's admin has paused remote management: every job from MausBot is refused until they resume it. */
+  /** The server's admin has paused remote management: every job from Uni is refused until they resume it. */
   paused?: () => boolean;
 }
 

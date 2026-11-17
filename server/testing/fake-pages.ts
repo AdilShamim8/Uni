@@ -1,4 +1,4 @@
-// A stand-in for MausBot's pages: the Admin's token route and the pages Worker, as one fetch. Pages, quotas and tokens
+// A stand-in for Uni's pages: the Admin's token route and the pages Worker, as one fetch. Pages, quotas and tokens
 // are kept in memory; nothing reaches the network.
 import { pagesHomeSignature } from "../pages/access.ts";
 
@@ -32,7 +32,7 @@ export function fakePagesService(options: { quota?: number; plan?: string; admin
     if (state.down) throw new TypeError("fetch failed");
     if (url.href === tokenUrl) {
       const body = await request.text(), who = caller(request, body);
-      if (!who) return Response.json({ error: "invalid_token", message: "Sign in to MausBot again to publish pages." }, { status: 401 });
+      if (!who) return Response.json({ error: "invalid_token", message: "Sign in to Uni again to publish pages." }, { status: 401 });
       const { action, pageId } = JSON.parse(body) as { action: string; pageId?: string };
       minted.push({ action, ...(pageId ? { pageId } : {}), caller: who });
       if (action === "create" && pages.size >= state.quota) {

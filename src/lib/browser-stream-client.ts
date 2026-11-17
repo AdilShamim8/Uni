@@ -1,7 +1,7 @@
 // Adapted from pingdotgg/t3code@00cdceb1 packages/client-runtime/src/preview/serverBrowserStream.ts, MIT License,
-// Copyright (c) 2026 T3 Tools Inc. (full text in third_party/t3-code/LICENSE); modified: OpenMausBot's routes and
+// Copyright (c) 2026 T3 Tools Inc. (full text in third_party/t3-code/LICENSE); modified: Uni's routes and
 // access, a viewer that may operate sizes the page while it only watches, a larger frame cap is sent in place and a
-// reconnect opens with the newest size and cap, and OpenMausBot's own messages are passed on.
+// reconnect opens with the newest size and cap, and Uni's own messages are passed on.
 
 import { t } from "./i18n";
 
@@ -19,7 +19,7 @@ export const PREVIEW_STREAM_LIBRARIES_COMMAND = "sudo openmausbot browser instal
 /** What a container's operator sets to run its browser without Chrome's own sandbox. */
 export const PREVIEW_STREAM_SANDBOX_OFF = "OMB_BROWSER_SANDBOX=0";
 export const PREVIEW_STREAM_SANDBOX_STEPS_URL =
-  "https://github.com/milind-soni/OpenMausBot/blob/main/docs/deploy-vps.md#ubuntu-2404-browser-sandbox";
+  "https://github.com/milind-soni/Uni/blob/main/docs/deploy-vps.md#ubuntu-2404-browser-sandbox";
 
 export type PreviewViewportSetting =
   | { readonly mode: "fill" }
@@ -259,7 +259,7 @@ export interface PreviewStreamEvents {
   readonly onPopup?: (tabId: string) => void;
   /** The page opened a file picker (`null` once answered or replaced). */
   readonly onFileChooser?: (chooser: PreviewStreamFileChooser | null) => void;
-  /** OpenMausBot's own messages: tabs, nav, selectPopup, cursor, authPrompt, starting, notice, asleep, awake. */
+  /** Uni's own messages: tabs, nav, selectPopup, cursor, authPrompt, starting, notice, asleep, awake. */
   readonly onMessage?: (message: Readonly<Record<string, unknown>>) => void;
   /** Input sent while disconnected is dropped. */
   readonly onConnectedChange: (connected: boolean) => void;
@@ -560,5 +560,5 @@ export const previewStreamHostSetupMessage = (setup: PreviewStreamHostSetup) =>
   setup.need === "sandbox"
     ? "This server's host blocks the sandbox its browser runs in. An administrator can allow it for one copy of Chrome with these steps, then try again:"
     : setup.need === "container"
-    ? "Chrome's sandbox can't start in this server's container. Its operator can set this to run the browser without it and rely on the container's isolation, then restart OpenMausBot:"
+    ? "Chrome's sandbox can't start in this server's container. Its operator can set this to run the browser without it and rely on the container's isolation, then restart Uni:"
     : "This server's host is missing libraries its browser needs. Run this once on the host, then try again:";

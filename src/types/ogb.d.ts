@@ -146,7 +146,7 @@ const __APP_VERSION__: string;
       desktopProfile?: { systemName(): Promise<string | null> };
       desktopAnalytics?: import("../../electron/desktop-prefs.mjs").DesktopAnalyticsBridge;
       desktopLanguage?: import("../../electron/desktop-prefs.mjs").DesktopLanguageBridge;
-      /** This computer's page and My Cloud's own page: the one-time "Get MausBot updates?" answer. */
+      /** This computer's page and My Cloud's own page: the one-time "Get Uni updates?" answer. */
       updatesConsent?: import("../../electron/updates-consent.mjs").UpdatesConsentBridge;
       companyBackups?: {
         state(): Promise<CompanyBackupState>;
@@ -183,7 +183,7 @@ const __APP_VERSION__: string;
          * address, `code` the pairing code typed apart; without `link`, the clipboard's), or type its address. With `code`
          * (even empty) it resolves with the outcome; without, false when the person cancels Connect. */
         add?: (choice: "cloud" | "link" | "address", link?: string, code?: string) => Promise<import("../../electron/server-probe.mjs").ConnectOutcome | boolean | void>;
-        /** Finds the MausBot server at what the Connect sheet holds, without connecting. Absent on an older app. */
+        /** Finds the Uni server at what the Connect sheet holds, without connecting. Absent on an older app. */
         probe?: (address: string, code?: string) => Promise<import("../../electron/server-probe.mjs").ServerProbe>;
         /** The colour of the place this page is (This computer's too), and whether it can be changed here. Absent on an
          * older app. */
@@ -403,7 +403,7 @@ const __APP_VERSION__: string;
       onOpenAppSettings?(cb: (section?: "organization" | "cloud" | "cloud-settings" | "cloud-add" | "cloud-add-howto" | import("../state/store").SettingsPageId) => void): () => void;
       /** Updates the native Dock/taskbar unread indicator. */
       setUnreadCount?(count: number): void;
-      /** Opens a live desktop as a sandboxed window owned by OpenMausBot. */
+      /** Opens a live desktop as a sandboxed window owned by Uni. */
       desktopViewer?: {
         open(url: string, title: string, contextId: string): Promise<boolean>;
         /** Closes the live-desktop window, but only when it belongs to this bot. */

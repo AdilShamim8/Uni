@@ -180,7 +180,7 @@ describe("My Cloud sets a bot's move-only fields", () => {
     expect((await take(d, "bot:nobody", { pinned: true })).status).toBe(409);
   });
 
-  it("this computer answers a bot's record with its own name, which a MausBot that moves is named for when the place it goes keeps its own (email 1a1c22b6)", async () => {
+  it("this computer answers a bot's record with its own name, which a Uni that moves is named for when the place it goes keeps its own (email 1a1c22b6)", async () => {
     const before = process.env.OMB_ENVIRONMENT_LABEL;
     process.env.OMB_ENVIRONMENT_LABEL = "Amits-MacBook-Pro.local";
     try {

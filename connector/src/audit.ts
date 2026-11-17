@@ -1,4 +1,4 @@
-// The audit log on the server: one JSON line for each job and for each request MausBot's Admin makes to the home, written
+// The audit log on the server: one JSON line for each job and for each request Uni's Admin makes to the home, written
 // by the connector to /var/log/mausbot/audit.jsonl on the host, root's, for the server's owner to read. It is only ever
 // appended to. Each line carries the SHA-256 of the line before it, so a line taken out or changed breaks the chain
 // (verifyAudit). It never holds a secret, an environment value or a pairing code.

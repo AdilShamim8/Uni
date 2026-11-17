@@ -1,4 +1,4 @@
-// The server's side of MausBot Relay against the fake relay, driven by the reference phone: the server's own sessions
+// The server's side of Uni Relay against the fake relay, driven by the reference phone: the server's own sessions
 // are the phones, and every relayed request reaches the handler as a remote one.
 import { generateKeyPairSync, randomBytes } from "node:crypto";
 import { mkdtempSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -139,7 +139,7 @@ async function pairPhone(server: Server): Promise<{ token: string; id: string; k
   return { token: reply.token, id: reply.device.id, k, session };
 }
 
-describe("phones through MausBot Relay on a server", () => {
+describe("phones through Uni Relay on a server", () => {
   it("stays off unless asked for, and never runs where the desktop's companion or a Cloud carries phones", () => {
     const dir = mkdtempSync(join(tmpdir(), "omb-phone-relay-off-"));
     cleanup.push(() => removeTempDir(dir));

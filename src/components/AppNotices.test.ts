@@ -29,9 +29,9 @@ vi.mock("@/lib/analytics", () => ({ emailGateDone: () => false, track: vi.fn() }
 vi.mock("@/lib/updater", () => ({ useUpdaterState: () => f.updater }));
 vi.mock("./cloud-buy/NightCard", () => ({ NightCard: ({ children }: { children: unknown }) => children }));
 vi.mock("./whats-new/TeamPicture", () => ({ TeamPicture: () => null }));
-// Who MausBot belongs to: unknown (as before the session answers) unless a test says otherwise.
+// Who Uni belongs to: unknown (as before the session answers) unless a test says otherwise.
 vi.mock("@/lib/default-bot", async original => ({ ...await original<typeof import("@/lib/default-bot")>(), useViewerEmail: () => f.viewerEmail }));
-vi.mock("@/lib/brand", () => ({ brandStatus: () => ({ brand: { name: "OpenMausBot" }, source: f.brand, file: "" }), productName: () => "MausBot" }));
+vi.mock("@/lib/brand", () => ({ brandStatus: () => ({ brand: { name: "Uni" }, source: f.brand, file: "" }), productName: () => "Uni" }));
 vi.mock("./Avatar", async original => ({ ...await original<typeof import("./Avatar")>(), MausAvatar: () => null }));
 vi.mock("./lazy-screens", async original => ({ ...await original<typeof import("./lazy-screens")>(), GrokMoveDialog: () => "THE MOVE DIALOG" }));
 vi.mock("@/components/EngineLibrary", () => ({ engineReady: (instance: { snapshot: { state: string; authenticated?: boolean } }) =>
@@ -56,7 +56,7 @@ const plans = [
 const TRIAL_OFFER: CloudOffer = { plans, recommended: "pro", creditUsd: 5, refundDays: 14 };
 const PLAIN_OFFER: CloudOffer = { plans: plans.map(({ trialDays: _days, ...plan }) => plan), recommended: "pro", refundDays: 14 };
 const INTRO = "Keep your bots working when this computer is off";
-const STAR = "Enjoying MausBot?";
+const STAR = "Enjoying Uni?";
 const signedOut: CloudAccountState = { status: "signed-out" };
 const free: CloudAccountState = { status: "connected", account: { id: "a", email: "person@example.test" }, entitlement: { plan: "free", status: "inactive", expiresAt: null, version: 1 } };
 const paid = (extra: Partial<CloudAccountState> = {}): CloudAccountState => ({ ...free, entitlement: { plan: "pro", tier: "pro", status: "active", expiresAt: NOW + 30 * DAY, version: 2 }, ...extra });
@@ -438,7 +438,7 @@ describe("the Product Hunt launch card", () => {
 
 describe("Boat's credit offer", () => {
   const TITLE = "$50 of Boat credit for you";
-  const BODY = "Boat runs the cloud computers behind MausBot. Buy Boat's $100 plan or bigger, then tell Boat that MausBot sent you, and they'll add $50 in credits to your Boat account.";
+  const BODY = "Boat runs the cloud computers behind Uni. Buy Boat's $100 plan or bigger, then tell Boat that Uni sent you, and they'll add $50 in credits to your Boat account.";
   const YOURSELF = "You claim it yourself: it isn't automatic.";
   const CLAIM = "I bought it: claim my $50";
   const html = (text: string) => text.replace(/'/g, "&#x27;");
@@ -473,7 +473,7 @@ describe("Boat's credit offer", () => {
     expect(boatEvents()).toEqual([{ action: "shown", place: "card" }]);
   });
 
-  it("never on a first launch: not before the bots load, on a new install's first chat, in the launch its welcome or MausBot's card took", async () => {
+  it("never on a first launch: not before the bots load, on a new install's first chat, in the launch its welcome or Uni's card took", async () => {
     fresh(); storage.delete(STAR_NOTICE);
     f.state.bots = [];
     expect(await launch(), "nothing said yet").not.toContain(html(TITLE));
@@ -484,7 +484,7 @@ describe("Boat's credit offer", () => {
     f.state.hydrated = true; markWelcomeFinished();
     expect(await launch(), "the launch its welcome finished in").not.toContain(html(TITLE));
     session.clear(); markLaunchDialog("mausbot");
-    expect(await launch(), "the launch MausBot's first card took").not.toContain(html(TITLE));
+    expect(await launch(), "the launch Uni's first card took").not.toContain(html(TITLE));
     session.clear();
     expect(await launch()).toContain(html(TITLE));
   });
@@ -526,8 +526,8 @@ describe("Boat's credit offer", () => {
     expect(window.ogb?.openExternal).toHaveBeenCalledWith(boatClaimMailto());
     const draft = new URL(vi.mocked(window.ogb!.openExternal!).mock.calls[0]![0]);
     expect(`${draft.protocol}${draft.pathname}`).toBe("mailto:support@ascii.dev");
-    expect(draft.searchParams.get("subject")).toBe("MausBot introduced me: $50 Boat credit");
-    expect(draft.searchParams.get("body")!.replace(/\r\n/g, "\n")).toBe("Hi Boat team,\n\nMausBot introduced me to Boat. I'm on the $___ plan.\nMy Boat account email: ___\n\nThanks!");
+    expect(draft.searchParams.get("subject")).toBe("Uni introduced me: $50 Boat credit");
+    expect(draft.searchParams.get("body")!.replace(/\r\n/g, "\n")).toBe("Hi Boat team,\n\nUni introduced me to Boat. I'm on the $___ plan.\nMy Boat account email: ___\n\nThanks!");
     expect(vi.mocked(api).mock.calls.map(([path]) => path), "only the dismissal is saved").toEqual(["/api/config"]);
     expect(boatEvents()).toContainEqual({ action: "claim", place: "card" });
     await endedForGood();
@@ -740,7 +740,7 @@ describe("What's new after the update", () => {
     expect(steps().map(props => props.action)).toEqual(["seen", "not_now"]);
   });
 
-  it("a new install sees it once onboarding is done and a bot has answered, in a later launch than the welcome's, after MausBot's card", async () => {
+  it("a new install sees it once onboarding is done and a bot has answered, in a later launch than the welcome's, after Uni's card", async () => {
     f.state.config.onboarding = { ...EMPTY_ONBOARDING };
     expect(on(await launch()), "onboarding not done").toBeNull();
     f.state.config.onboarding = { ...EMPTY_ONBOARDING, completedAt: "2026-10-16", version: 1, hintsSeen: [] };
@@ -753,11 +753,11 @@ describe("What's new after the update", () => {
     f.state.bots = structuredClone(FIRST_REPLY); markWelcomeFinished();
     expect(on(await launch()), "the launch the welcome finished in").toBeNull();
     session.clear(); markLaunchDialog("mausbot");
-    expect(on(await launch()), "the launch MausBot's first card took").toBeNull();
+    expect(on(await launch()), "the launch Uni's first card took").toBeNull();
     expect(on(await relaunch())).toBe("pro");
   });
 
-  it("claims the launch for the popups, so MausBot's card waits for a later one", async () => {
+  it("claims the launch for the popups, so Uni's card waits for a later one", async () => {
     await launch();
     expect(launchDialogShown()).toBe("notices");
   });
@@ -843,7 +843,7 @@ describe("What's new after the update", () => {
 });
 
 describe("the product-updates question after the update", () => {
-  const QUESTION = "Get MausBot updates?", POPUP = "Meet the new MausBot Cloud";
+  const QUESTION = "Get Uni updates?", POPUP = "Meet the new MausBot Cloud";
   const RECEIPT = "R".repeat(43);
   let saved: unknown;
   let accountAnswer: { status: string; textVersion: string } | null;
@@ -902,7 +902,7 @@ describe("the product-updates question after the update", () => {
     expect(render(), "right after the popup closes, as #3379 orders it").toContain(QUESTION);
   });
 
-  it("waits while MausBot's first-launch card is due, then follows it in the same launch once it closes", async () => {
+  it("waits while Uni's first-launch card is due, then follows it in the same launch once it closes", async () => {
     f.viewerEmail = null;
     f.state.bots = [{ ...structuredClone(FIRST_REPLY[0]), id: "maus", defaultBot: {} }];
     expect(await launch(), "the card is due: the question waits for it").not.toContain(QUESTION);
@@ -1000,7 +1000,7 @@ describe("the Move from Grok Bot popup", () => {
     for (const part of ['role="dialog"', 'aria-modal="true"', "data-grok-move-popup"]) expect(html).toContain(part);
     expect(events()).toEqual(["shown"]);
     expect(launchNotice()).toBe(GROK_MOVE_NOTICE);
-    expect(launchDialogShown(), "MausBot's card waits for a later launch").toBe("notices");
+    expect(launchDialogShown(), "Uni's card waits for a later launch").toBe("notices");
     expect(await settle()).toContain(TITLE);
     expect(events(), "shown is counted once").toHaveLength(1);
     expect(reads(), "showing it looks at neither Downloads nor the Grok Bot app").toEqual([]);
@@ -1361,7 +1361,7 @@ describe("bots in two places", () => {
 });
 
 describe("ModelGo's sponsor card", () => {
-  const TITLE = "ModelGo is now in MausBot", LINE = "One API key, every model.";
+  const TITLE = "ModelGo is now in Uni", LINE = "One API key, every model.";
   const URL_EXACT = "https://modelgo.ai/?utm_source=openmausbot&utm_medium=sponsorship&utm_content=app&campaign_id=openmausbot&ad_group_id=app";
   const due = () => { storage.delete(MODELGO_OFFER_NOTICE); };
   const events = () => vi.mocked(track).mock.calls.filter(([name]) => name === "modelgo_offer").map(([, props]) => props);
@@ -1500,7 +1500,7 @@ describe("ModelGo's sponsor card", () => {
       consent: createUpdatesConsent({ prefs, account: () => client as never, available: async () => true, now: () => now }) });
     await launch(); press("Not now"); await flush();
     const question = await settle();
-    expect(question).toContain("Get MausBot updates?"); expect(question).not.toContain(TITLE);
+    expect(question).toContain("Get Uni updates?"); expect(question).not.toContain(TITLE);
     press("No thanks"); await flush();
     expect(await settle(), "then the card, in the same launch").toContain(TITLE);
   });
@@ -1525,7 +1525,7 @@ describe("ModelGo's sponsor card", () => {
 
   it("a card left up keeps the corner: the card waits for it to close", async () => {
     returning(); storage.delete(STAR_NOTICE); storage.set(CLOUD_INTRO, "1"); storage.set(MODELGO_OFFER_NOTICE, "1");
-    expect(await launch()).toContain("Enjoying MausBot?");
+    expect(await launch()).toContain("Enjoying Uni?");
     due();
     expect(await settle(), "the star took the launch and is still up").not.toContain(TITLE);
     press("Not now"); await flush();
@@ -1639,10 +1639,10 @@ describe("cards from the announcements file", () => {
 
   it("a card left up keeps the corner: a card that arrives meanwhile waits for it to close", async () => {
     returning(); storage.delete(STAR_NOTICE); storage.set(CLOUD_INTRO, "1"); feed = [];
-    expect(await launch()).toContain("Enjoying MausBot?");
+    expect(await launch()).toContain("Enjoying Uni?");
     feed = [card("phone-app")]; forgetAnnouncementCards();
     const still = await settle();
-    expect(still, "the star took the launch and is still up").toContain("Enjoying MausBot?"); expect(still).not.toContain("Title of phone-app");
+    expect(still, "the star took the launch and is still up").toContain("Enjoying Uni?"); expect(still).not.toContain("Title of phone-app");
     press("Not now"); await flush();
     expect(await settle()).toContain("Title of phone-app");
   });
@@ -1711,8 +1711,8 @@ describe("cards from the announcements file", () => {
   });
 });
 
-describe("Update MausBot on your phone", () => {
-  const TITLE = "Update MausBot on your phone", MODELGO = "ModelGo is now in MausBot";
+describe("Update Uni on your phone", () => {
+  const TITLE = "Update Uni on your phone", MODELGO = "ModelGo is now in Uni";
   const OLD = { id: "0f8c2a41-1111-4222-8333-444455556666", name: "Ada's iPhone", createdAt: 1, lastSeenAt: 1, cloudDesktopAccess: false };
   const NEW = { id: "5b5b5b5b-1111-4222-8333-444455556666", name: "Work phone", createdAt: 1, lastSeenAt: 1, cloudDesktopAccess: false, e2eAt: 2 };
   const OTHER = { ...OLD, id: "7c7c7c7c-1111-4222-8333-444455556666", name: "Old Android" };
@@ -1729,7 +1729,7 @@ describe("Update MausBot on your phone", () => {
   it("shows once this computer's link ended and a paired phone has an older app: the phone, what to do, Open Phone & devices and Not now", async () => {
     const shown = await launch();
     expect(shown).toContain(TITLE); expect(shown).toContain('data-notice="phone-update"');
-    for (const text of ["Ada&#x27;s iPhone has an older version of the MausBot app, which can no longer connect to this computer away from your Wi-Fi.",
+    for (const text of ["Ada&#x27;s iPhone has an older version of the Uni app, which can no longer connect to this computer away from your Wi-Fi.",
       "Update the app on that phone, then open it once on the same Wi-Fi as this computer. If that doesn&#x27;t reconnect it, pair it again.",
       "Open Phone &amp; devices", "Not now"]) expect(shown).toContain(text);
     expect(shown).not.toContain("Work phone");
@@ -1756,7 +1756,7 @@ describe("Update MausBot on your phone", () => {
 
   it("names how many phones when more than one has an older app", async () => {
     devices = [OLD, OTHER]; bridgesOn();
-    expect(await launch()).toContain("2 of your phones have an older version of the MausBot app");
+    expect(await launch()).toContain("2 of your phones have an older version of the Uni app");
   });
 
   it("never when no paired phone has an older app, nor when this computer's link was not ended", async () => {

@@ -1,4 +1,4 @@
-// The one-time "Get MausBot updates?" question: this computer's answer, kept in desktop-prefs.json before anything is
+// The one-time "Get Uni updates?" question: this computer's answer, kept in desktop-prefs.json before anything is
 // sent, and the MausBot Cloud Admin's consent record (account or email-only), kept in step with it.
 import { cleanEmail } from "./cloud-signin.mjs";
 
