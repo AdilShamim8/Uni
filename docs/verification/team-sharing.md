@@ -1,0 +1,33 @@
+# Sharing a bot or a department as a template
+
+A template is a folder (`bot.md` or `team.md`, `skills/<name>/SKILL.md`, `avatars/<key>.<ext>`) that holds no chats,
+memory, keys or connection addresses. A bot makes one of itself when asked in chat (the header Share sends the ask); a
+department's "…" → Share makes one at once. Publish sends it to the community repository through the MausBot Admin;
+without a MausBot sign-in the card offers Save folder… and GitHub's upload page instead. Import (+ → Import…) adds one
+from a GitHub link or a folder.
+
+## Automated checks
+
+```sh
+pnpm exec vitest run shared/share-folder.test.ts server/share.test.ts server/share-github.test.ts src/components/TemplateCard.test.ts src/components/ImportDialog.test.ts src/lib/template-share.test.ts
+pnpm exec vitest run server/share.e2e.test.ts --silent=false
+OMB_UI_E2E=1 pnpm exec vitest run scripts/testing/team-share-ui.e2e.test.ts scripts/testing/team-template-ui.e2e.test.ts --maxWorkers=1
+```
+
+`server/share.e2e.test.ts` launches an isolated fixture. Its fake engine calls the `share` tool when the bot is asked to
+share itself; the test checks the card in the chat, saves the folder, finds no key, memory, chat line or connection
+address in it, adds it back as an equivalent bot with its routine paused and skill off, refuses a chat import whose path
+the person didn't write, and round-trips a department with its group chat, brief and Chief.
+
+## By hand in a fixture
+
+```sh
+node --experimental-strip-types scripts/control-omb.ts launch
+```
+
+1. Create a bot, give it a skill and a routine, then send it: "Create a public template of yourself that I can share with somebody else".
+2. Expected with a Claude engine: the bot calls `share` with action export, and one card appears with Draft, the counts and
+   "Chats, memory and keys are never shared". Details lists Instructions, Skills, Routines, Apps.
+3. On a server not signed in to MausBot the card shows "Sign in to MausBot to publish" (desktop) or "Publishing isn't
+   available here" (self-hosted), with Save folder… and Upload on GitHub.
+4. `POST /api/share/import` with `{ "path": "<saved folder>" }` adds a new bot; its routine is off and nothing private came along.
