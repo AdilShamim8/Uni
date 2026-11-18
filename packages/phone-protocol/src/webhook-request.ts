@@ -7,7 +7,7 @@ export interface WebhookRequestDefinition {
   name: string;
   /** Instructions for every call; empty means each call's own task is used. */
   instructions: string;
-  runOn: "maus" | "cloud";
+  runOn: "computer" | "cloud" | "maus"; // "maus" is the pre-v0.1 name for "computer"
   eventTypes?: string[];
   /** Field path -> text it must have; all must match before a run starts. Empty removes it on an update. */
   payloadFilter?: Record<string, string>;

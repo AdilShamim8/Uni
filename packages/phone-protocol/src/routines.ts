@@ -42,7 +42,7 @@ export type RoutineScheduleInput =
     endsAt?: number | null;
   };
 
-export type RoutineRunOn = "maus" | "cloud";
+export type RoutineRunOn = "computer" | "cloud" | "maus"; // "maus" is the pre-v0.1 name for "computer"
 
 export type RoutineTarget = "bot" | "room-goal";
 export type RoutineGoalStatus =

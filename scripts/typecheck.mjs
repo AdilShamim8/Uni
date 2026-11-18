@@ -70,8 +70,14 @@ function chunked() {
     readdirSync(dir, { withFileTypes: true }).some(
       (e) => (e.isFile() && /\.(ts|tsx)$/.test(e.name)) || (e.isDirectory() && hasTsInputs(join(dir, e.name))),
     );
-  const appChunksFor = (dir) => {
+  const appChunksFor = (dir, inheritedAmbient = []) => {
     const files = readdirSync(join(root, dir)).filter((name) => /\.(ts|tsx)$/.test(name)).sort();
+    // Ambient declarations (e.g. src/novnc.d.ts's module mapping) must ride along
+    // with every chunk that imports what they declare — a chunk that includes only
+    // its own files never loads the parent's .d.ts, the import falls through to
+    // @types, and resolution fails (TS2306). They are small; every chunk carries
+    // the ambient files of every directory above it.
+    const ambient = [...new Set([...inheritedAmbient, ...readdirSync(join(root, dir)).filter((name) => name.endsWith(".d.ts")).map((f) => `../../${dir}/${f}`)])];
     const subdirs = readdirSync(join(root, dir), { withFileTypes: true })
       .filter((e) => e.isDirectory() && hasTsInputs(join(root, dir, e.name)))
       .map((e) => {
@@ -79,7 +85,7 @@ function chunked() {
         const innerFiles = readdirSync(inner).filter((n) => /\.(ts|tsx)$/.test(n)).length;
         // A directory with hundreds of root files (src/components has ~990) still OOMs a small
         // host as one program; recurse so its root files typecheck as halves, like the server quarters.
-        return innerFiles > 450 ? appChunksFor(`${dir}/${e.name}`) : [{ name: `${dir}/${e.name}`, dir: `${dir}/${e.name}`, app: true }];
+        return innerFiles > 450 ? appChunksFor(`${dir}/${e.name}`, ambient) : [{ name: `${dir}/${e.name}`, include: [...srcAmbient, `../../${dir}/${e.name}`], app: true }];
       })
       .flat()
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -89,11 +95,19 @@ function chunked() {
       ...subdirs,
       ...Array.from({ length: halves }, (_, i) => ({
         name: name(i),
-        include: files.slice(i * Math.ceil(files.length / halves), (i + 1) * Math.ceil(files.length / halves)).map((f) => `../../${dir}/${f}`),
+        include: [...srcAmbient, ...files.slice(i * Math.ceil(files.length / halves), (i + 1) * Math.ceil(files.length / halves)).map((f) => `../../${dir}/${f}`)],
         app: true,
       })).filter((chunk) => chunk.include.length > 0),
     ];
   };
+  // Direct mode's include: ["src"] loads every ambient declaration under src/
+  // (src/novnc.d.ts, src/types/ogb.d.ts). A chunk that includes only its own
+  // files would resolve @novnc/novnc against @types (TS2306) and miss
+  // Window.ogb (TS2339), so every app chunk carries all of them.
+  const srcAmbient = (function collect(dir) {
+    const out = readdirSync(join(root, dir), { withFileTypes: true }).flatMap((e) => e.isDirectory() ? collect(`${dir}/${e.name}`) : e.name.endsWith(".d.ts") ? [`../../${dir}/${e.name}`] : []);
+    return readdirSync(join(root, dir)).filter((n) => n.endsWith(".d.ts")).map((f) => `../../${dir}/${f}`).concat(out);
+  })("src");
   const chunks = [
     { name: "phone-protocol", config: "packages/phone-protocol/tsconfig.json" },
     { name: "companion", dir: "companion" },

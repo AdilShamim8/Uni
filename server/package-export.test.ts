@@ -13,7 +13,7 @@ describe("package export", () => {
       name: "Monthly team", authorName: "Tester", groups: [],
       bots: [{ id: "b1", threadId: "t1", name: "Lead", color: "green", createdAt: 1 } as BotRecord],
       routines: [{ id: "r1", name: "Close the month", prompt: "Prepare a report", target: "bot", botId: "b1",
-        runOn: "maus", enabled: true, schedule, durationMinutes: 30, nextRunAt: 1, createdAt: 1, updatedAt: 1,
+        runOn: "computer", enabled: true, schedule, durationMinutes: 30, nextRunAt: 1, createdAt: 1, updatedAt: 1,
         overlap: "queue", skippedRuns: 4, lastSkippedAt: 1, failureStreak: 2 }],
     });
     expect(exported.package.routines?.[0]).toMatchObject({ schedule, enabledAfterInstall: false });
@@ -76,7 +76,7 @@ describe("package export", () => {
           prompt: "Verify release readiness.",
           target: "bot",
           botId: "private-id",
-          runOn: "maus",
+          runOn: "computer",
           enabled: true,
           schedule: { type: "daily", time: "09:00", weekdays: [1] },
           durationMinutes: 30,
@@ -98,7 +98,7 @@ describe("package export", () => {
           target: "room-goal",
           groupId: "private-room-id",
           botId: "private-id",
-          runOn: "maus",
+          runOn: "computer",
           enabled: true,
           schedule: { type: "daily", time: "10:00", weekdays: [1] },
           durationMinutes: 30,
@@ -112,7 +112,7 @@ describe("package export", () => {
           prompt: "Watch release readiness.",
           target: "bot",
           botId: "private-id",
-          runOn: "maus",
+          runOn: "computer",
           enabled: true,
           schedule: {
             type: "interval",
@@ -250,7 +250,7 @@ describe("whole-team export (package v2)", () => {
     unread: false, createdAt: 1, section: "Sales desk", ...extra,
   });
   const routine = (id: string, name: string, botId: string, extra: Partial<Routine> = {}): Routine => ({
-    id, name, prompt: `${name} prompt`, target: "bot", botId, runOn: "maus", enabled: true,
+    id, name, prompt: `${name} prompt`, target: "bot", botId, runOn: "computer", enabled: true,
     schedule: { type: "daily", time: "09:00", weekdays: [1] }, durationMinutes: 30, nextRunAt: 5, createdAt: 1, updatedAt: 1, ...extra,
   });
   const skill = (name: string) => ({
@@ -302,7 +302,7 @@ describe("whole-team export (package v2)", () => {
       defaultResponder: { kind: "agent", agent: "morgan" } }]);
     expect(pkg.routines).toEqual([
       expect.objectContaining({ key: "daily-digest", agent: "scout", continuity: true, runOnStartup: true, enabledAfterInstall: true }),
-      expect.objectContaining({ key: "weekly-review", agent: "morgan", room: "deal-desk", runOn: "maus", enabledAfterInstall: false }),
+      expect.objectContaining({ key: "weekly-review", agent: "morgan", room: "deal-desk", runOn: "computer", enabledAfterInstall: false }),
     ]);
     expect(pkg.connections).toEqual([{ key: "crm", label: "crm", reason: "Used by Morgan, Scout",
       mcp: { transport: "http", url: "https://mcp.example.com/crm", valueNames: ["Authorization"] } }]);

@@ -24,6 +24,7 @@ import { writeFileAtomic } from "./atomic.ts";
 import { instructionsUpdateRefusal } from "./automation-instructions.ts";
 import { DATA_DIR } from "./config.ts";
 import type { RoutineRunOn } from "./routines.ts";
+import type { RoutineRunOn as WireRunOn } from "../packages/phone-protocol/src/routines.ts";
 
 export const DEFAULT_MAX_PENDING_RUNS = 3;
 const MAX_ATTEMPTS = 2_000;
@@ -84,7 +85,7 @@ const storedSchema = z.object({
   name: z.string(),
   prompt: z.string(),
   botId: z.string().min(1),
-  runOn: z.enum(["maus", "cloud"]),
+  runOn: z.enum(["computer", "cloud", "maus"]), // "maus" is the pre-v0.1 name for "computer"
   enabled: z.boolean(),
   app: z.string().min(1),
   appName: z.string(),
@@ -141,7 +142,7 @@ export interface AppTriggerInput {
   account?: string;
   filter?: AppTriggerFilter;
   config?: Record<string, unknown>;
-  runOn?: RoutineRunOn;
+  runOn?: WireRunOn;
   enabled?: boolean;
   sourceThreadId?: string;
   sameConversation?: boolean;
@@ -152,7 +153,7 @@ export interface AppTriggerInput {
 export interface AppTriggerPatch {
   name?: string;
   prompt?: string;
-  runOn?: RoutineRunOn;
+  runOn?: WireRunOn;
   filter?: AppTriggerFilter | null;
   config?: Record<string, unknown>;
   enabled?: boolean;
@@ -276,7 +277,7 @@ export class AppTriggerManager {
     const config = triggerConfig(type, input.config ?? {}, filter);
     const now = this.now();
     const trigger: StoredTrigger = {
-      id: input.id ?? randomUUID(), name, prompt, botId: input.botId, runOn: input.runOn ?? "maus", enabled: input.enabled ?? true,
+      id: input.id ?? randomUUID(), name, prompt, botId: input.botId, runOn: (input.runOn === "maus" ? "computer" : input.runOn) ?? "computer", enabled: input.enabled ?? true,
       app, appName: appLabel(app), event: type.slug, eventName: type.name || type.slug, delivery: type.type === "poll" ? "poll" : "instant",
       accountId: account.id, ...(account.alias ? { accountLabel: account.alias } : {}), config, ...(filter ? { filter } : {}),
       remote: { state: "pending" }, ...(input.sourceThreadId ? { sourceThreadId: input.sourceThreadId } : {}),
@@ -308,11 +309,11 @@ export class AppTriggerManager {
   async adopt(record: AppTrigger): Promise<AppTrigger> {
     const config = Object.fromEntries(Object.entries(record.config).filter(([key, value]) => value !== undefined && !(record.app === GMAIL_APP && key === "query")));
     if (this.triggers.some((candidate) => candidate.id === record.id)) {
-      return (await this.update(record.id, { name: record.name, prompt: record.prompt, runOn: record.runOn, filter: record.filter ?? null, config,
+      return (await this.update(record.id, { name: record.name, prompt: record.prompt, runOn: record.runOn === "maus" ? "computer" : record.runOn, filter: record.filter ?? null, config,
         sameConversation: record.sameConversation === true }))!;
     }
     return this.create({ id: record.id, botId: record.botId, name: record.name, prompt: record.prompt, app: record.app, event: record.event, account: record.accountId,
-      ...(record.filter ? { filter: record.filter } : {}), config, runOn: record.runOn, enabled: false, ...(record.sourceThreadId ? { sourceThreadId: record.sourceThreadId } : {}),
+      ...(record.filter ? { filter: record.filter } : {}), config, runOn: record.runOn === "maus" ? "computer" : record.runOn, enabled: false, ...(record.sourceThreadId ? { sourceThreadId: record.sourceThreadId } : {}),
       ...(record.sameConversation ? { sameConversation: true } : {}) });
   }
 
@@ -343,7 +344,7 @@ export class AppTriggerManager {
       Object.assign(trigger, {
         name,
         prompt: patch.prompt === undefined ? trigger.prompt : patch.prompt.trim(),
-        runOn: patch.runOn ?? trigger.runOn,
+        runOn: (patch.runOn === "maus" ? "computer" : patch.runOn) ?? trigger.runOn,
         enabled: patch.enabled ?? trigger.enabled,
         config,
         updatedAt: this.now(),
@@ -427,7 +428,7 @@ export class AppTriggerManager {
     }
     const eventId = `test_${randomUUID()}`;
     const run = this.options.runs.enqueue({
-      webhookId: trigger.id, webhookName: trigger.name, botId: trigger.botId, runOn: trigger.runOn, deliveryId: eventId, receivedAt: this.now(),
+      webhookId: trigger.id, webhookName: trigger.name, botId: trigger.botId, runOn: trigger.runOn === "maus" ? "computer" : trigger.runOn, deliveryId: eventId, receivedAt: this.now(),
       eventSource: "app", sameConversation: trigger.sameConversation, prompt: eventPrompt(trigger.prompt, eventBlock(trigger, { id: eventId, receivedAt: this.now(), test: true, data })),
     });
     return { via: "here", runId: run.id };
@@ -528,7 +529,7 @@ export class AppTriggerManager {
         }
         runId = this.options.runs.enqueue({
           webhookId: trigger.id, webhookName: trigger.name, prompt: eventPrompt(trigger.prompt, block), botId: trigger.botId,
-          runOn: trigger.runOn, deliveryId: event.id, receivedAt: event.receivedAt, eventSource: "app",
+          runOn: trigger.runOn === "maus" ? "computer" : trigger.runOn, deliveryId: event.id, receivedAt: event.receivedAt, eventSource: "app",
           sameConversation: trigger.sameConversation,
         }).id;
       }

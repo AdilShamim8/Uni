@@ -140,8 +140,8 @@ describe("a routine whose runs fail", () => {
 });
 
 describe("routines an earlier version turned off after three cloud-computer start failures", () => {
-  const saved = (id: string, more: Record<string, unknown> = {}) => ({ id, ...every(60), target: "bot", runOn: "maus", durationMinutes: 30, enabled: false, nextRunAt: null, createdAt: START, updatedAt: START + 3 * HOUR + 50, ...more });
-  const failures = (routineId: string) => [1, 2, 3].map((hour): RoutineRun => ({ id: `${routineId}-${hour}`, routineId, routineName: "Fix new bugs", target: "bot", botId: "maus-1", runOn: "maus",
+  const saved = (id: string, more: Record<string, unknown> = {}) => ({ id, ...every(60), target: "bot", runOn: "computer", durationMinutes: 30, enabled: false, nextRunAt: null, createdAt: START, updatedAt: START + 3 * HOUR + 50, ...more });
+  const failures = (routineId: string) => [1, 2, 3].map((hour): RoutineRun => ({ id: `${routineId}-${hour}`, routineId, routineName: "Fix new bugs", target: "bot", botId: "maus-1", runOn: "computer",
     scheduledFor: START + hour * HOUR, status: "failed", manual: false, error: NO_START, createdAt: START + hour * HOUR, startedAt: START + hour * HOUR, finishedAt: START + hour * HOUR + 50 }));
 
   it("come back on at the next start, and only those: one a person paused, one changed since and one held stay as they are", () => {
@@ -393,7 +393,7 @@ describe("a run queued behind a busy bot", () => {
   it("keeps an event's run and a run started by hand waiting as long as it takes: nothing comes after them", async () => {
     const h = harness(); h.bot("busy");
     const routine = h.manager.create(every(24 * 60));
-    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "maus", deliveryId: "d1", receivedAt: START });
+    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "computer", deliveryId: "d1", receivedAt: START });
     h.manager.runNow(routine.id);
     await h.tickAt(START + MINUTE);
     await h.passTo(START + 3 * HOUR);
@@ -612,7 +612,7 @@ describe("the default run limit", () => {
     const h = harness();
     const own = h.manager.create(every(24 * 60, { name: "Long build", timeoutMinutes: 1_440 }));
     expect(() => h.manager.update(own.id, { timeoutMinutes: 1_441 })).toThrow("from 5 to 1440 minutes");
-    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-2", runOn: "maus", deliveryId: "d1", receivedAt: START });
+    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-2", runOn: "computer", deliveryId: "d1", receivedAt: START });
     await h.tickAt(START + MINUTE);
     h.manager.runNow(own.id);
     await h.tickAt(START + 2 * MINUTE);
