@@ -46,7 +46,7 @@ const definitionSchema = z.object({
   account: z.string().trim().max(128).optional(),
   filter: filterSchema.optional(),
   config: z.record(z.string(), z.unknown()).optional(),
-  runOn: z.enum(["maus", "cloud"]).optional(),
+  runOn: z.enum(["computer", "cloud", "maus"]).optional(),
   sameConversation: z.boolean().optional(),
 }).strict();
 const changesSchema = definitionSchema.pick({ name: true, instructions: true, filter: true, config: true, runOn: true, sameConversation: true }).partial()

@@ -1175,7 +1175,7 @@ describe("persistent routine results destinations", () => {
 
   it("does not route webhook or room-goal executions through bot results tasks", async () => {
     const h = resultsHarness();
-    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "Hook", prompt: "Incoming", botId: "maus-1", runOn: "maus", deliveryId: "delivery", receivedAt: Date.now() });
+    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "Hook", prompt: "Incoming", botId: "maus-1", runOn: "computer", deliveryId: "delivery", receivedAt: Date.now() });
     const goal = h.manager.create({ ...input(), target: "room-goal", groupId: "room" });
     h.manager.runNow(goal.id);
     await h.manager.tick();
@@ -1301,7 +1301,7 @@ describe("RoutineManager", () => {
       webhookName: "Lead",
       prompt: "Qualify it",
       botId: "maus-1",
-      runOn: "maus",
+      runOn: "computer",
       deliveryId: "evt-1",
       receivedAt: Date.now(),
     })).toThrow(expect.objectContaining({ status: 503 }));
@@ -2301,7 +2301,7 @@ describe("RoutineManager", () => {
       webhookName: "Incoming delivery",
       prompt: "Handle the delivery",
       botId: "maus-webhook",
-      runOn: "maus",
+      runOn: "computer",
       deliveryId: "delivery-exact",
       receivedAt: start,
     });
@@ -2354,7 +2354,7 @@ describe("RoutineManager", () => {
       webhookName: "Capacity check",
       prompt: "Keep active receipts",
       botId: "maus-capacity",
-      runOn: "maus",
+      runOn: "computer",
       deliveryId: "delivery-capacity",
       receivedAt: 2_001,
     });
@@ -2796,12 +2796,12 @@ describe("RoutineManager", () => {
       name: "Local review",
       prompt: "Review this",
       botId: "maus-local",
-      runOn: "maus",
+      runOn: "computer",
       schedule: { type: "daily", time: "09:00", weekdays: [1] },
       attachments: [attachment],
     });
     expect(() => h.manager.update(local.id, { runOn: "cloud" })).toThrow(/cloud file staging/i);
-    expect(h.manager.listRoutines()[0]).toMatchObject({ runOn: "maus", attachments: [attachment] });
+    expect(h.manager.listRoutines()[0]).toMatchObject({ runOn: "computer", attachments: [attachment] });
   });
 
   it("keeps room goals local and attachment-free", () => {
@@ -2865,14 +2865,14 @@ describe("RoutineManager", () => {
     });
     h.setNow(routine.nextRunAt!);
     await h.manager.tick();
-    h.manager.update(routine.id, { runOn: "maus" });
+    h.manager.update(routine.id, { runOn: "computer" });
 
     h.setBot("ready");
     await h.manager.tick();
 
     expect(h.runOns).toEqual(["cloud"]);
     expect(h.manager.listRuns()[0]).toMatchObject({ runOn: "cloud" });
-    expect(h.manager.listRoutines()[0]).toMatchObject({ runOn: "maus" });
+    expect(h.manager.listRoutines()[0]).toMatchObject({ runOn: "computer" });
   });
 
   it("opens webhook jobs in the assigned bot's live chat", async () => {
@@ -2911,7 +2911,7 @@ describe("RoutineManager", () => {
       webhookName: "Busy gate",
       prompt: "Handle after the turn",
       botId: "maus-1",
-      runOn: "maus",
+      runOn: "computer",
       deliveryId: "delivery-busy",
       receivedAt: new Date(2026, 7, 17, 8, 2).getTime(),
     });
@@ -4095,7 +4095,7 @@ describe("turning a schedule back on, and a deleted bot's schedules", () => {
     expect(h.manager.nextDueAt()).toBeNull();
     h.setNow(start + 60_000);
     await h.manager.tick();
-    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "maus", deliveryId: "d1", receivedAt: start });
+    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "computer", deliveryId: "d1", receivedAt: start });
     await h.manager.tick();
     expect([h.taskTitles, h.started]).toEqual([[], []]);
     expect(h.manager.listRuns().map((run) => [run.status, run.error])).toEqual([["failed", "Paused: Starter keeps 5 bots awake."], ["failed", "Paused: Starter keeps 5 bots awake."]]);
@@ -4113,7 +4113,7 @@ describe("turning a schedule back on, and a deleted bot's schedules", () => {
     const routine = h.manager.create(once(start + 60_000));
     h.setNow(start + 60_000);
     await h.manager.tick();
-    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "maus", deliveryId: "d1", receivedAt: start });
+    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "computer", deliveryId: "d1", receivedAt: start });
     await h.manager.tick();
     expect(h.manager.listRuns().map((run) => [run.status, run.error])).toEqual([["cancelled", paused], ["cancelled", paused]]);
     expect([h.taskTitles, h.started, h.failed]).toEqual([[], [], []]);
@@ -4148,7 +4148,7 @@ describe("a reached usage cap", () => {
     expect([h.started, h.failed, h.taskTitles]).toEqual([[], [], []]);
 
     // A webhook's run that was already queued is let go with the line, quietly; one started by hand runs.
-    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "maus", deliveryId: "d1", receivedAt: start + 3 * HOUR });
+    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "computer", deliveryId: "d1", receivedAt: start + 3 * HOUR });
     await h.manager.tick();
     expect(h.manager.listRuns().find((run) => run.webhookId === "hook")).toMatchObject({ status: "cancelled", error: "Not started: the cap is reached" });
     expect([h.started, h.failed]).toEqual([[], []]);
@@ -4230,8 +4230,8 @@ describe("a reached usage cap", () => {
   it("lets a person's own Run now of a webhook start while capped, and lets an outside delivery go", async () => {
     const h = await cappedHarness();
     h.at(start + HOUR);
-    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "maus", deliveryId: "test-1", receivedAt: start + HOUR, byPerson: true });
-    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "maus", deliveryId: "outside-1", receivedAt: start + HOUR });
+    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "computer", deliveryId: "test-1", receivedAt: start + HOUR, byPerson: true });
+    h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "computer", deliveryId: "outside-1", receivedAt: start + HOUR });
     await h.manager.tick();
     const runs = h.manager.listRuns();
     expect(runs.find((run) => run.deliveryId === "test-1")).toMatchObject({ status: "running", byPerson: true });
@@ -4267,7 +4267,7 @@ describe("runs that report into a chat", () => {
   it("sends an outside event's run to report where the bot's chat is, in a fresh conversation of its own", async () => {
     const h = harness();
     h.options.eventResultsThread = ({ botId, webhookId }) => `${botId}:${webhookId}:main`;
-    const queued = h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "maus", deliveryId: "d1", receivedAt: Date.now() });
+    const queued = h.manager.enqueueWebhook({ webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "computer", deliveryId: "d1", receivedAt: Date.now() });
     await h.manager.tick();
     expect(h.manager.listRuns().find((run) => run.id === queued.id)).toMatchObject({ resultsThreadId: "maus-1:hook:main", threadId: "thread-1", status: "running" });
     expect(h.taskTitles).toHaveLength(1);
@@ -4278,7 +4278,7 @@ describe("runs that report into a chat", () => {
     h.options.eventResultsThread = () => "main";
     h.options.joinConversation = (run) => run.eventSource === "wait" ? run.resultsThreadId ?? null : null;
     const queued = h.manager.enqueueWebhook({ webhookId: "wait:w1", webhookName: "the build", prompt: "[Wait finished: the build] Deploy.", botId: "maus-1",
-      runOn: "maus", deliveryId: "w1", receivedAt: Date.now(), eventSource: "wait", resultsThreadId: "chat-1" });
+      runOn: "computer", deliveryId: "w1", receivedAt: Date.now(), eventSource: "wait", resultsThreadId: "chat-1" });
     await h.manager.tick();
     expect(h.manager.listRuns().find((run) => run.id === queued.id)).toMatchObject({ eventSource: "wait", resultsThreadId: "chat-1", threadId: "chat-1", status: "running" });
     expect(h.taskTitles).toHaveLength(0);
@@ -4348,7 +4348,7 @@ describe("the scheduler wakes only when work is due", () => {
 
 describe("event automations that keep one conversation", () => {
   const event = (h: ReturnType<typeof harness>, deliveryId: string, sameConversation = true) => h.manager.enqueueWebhook({
-    webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "maus", deliveryId, receivedAt: Date.now(),
+    webhookId: "hook", webhookName: "New lead", prompt: "Handle it", botId: "maus-1", runOn: "computer", deliveryId, receivedAt: Date.now(),
     ...(sameConversation ? { sameConversation } : {}),
   });
   const done = (h: ReturnType<typeof harness>, threadId: string) => h.manager.handleRuntimeEvent({

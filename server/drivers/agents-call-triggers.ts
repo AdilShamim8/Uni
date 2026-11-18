@@ -222,7 +222,7 @@ function routineAction(value: unknown): RoutineAction | null {
 
 function routineFields(args: Json): { fields: Json; error?: string } {
   const fields: Json = {};
-  const destination = (value: unknown) => value === "box" ? "cloud" : value;
+  const destination = (value: unknown) => value === "box" ? "cloud" : value === "maus" ? "computer" : value;
   if (args.run_on != null && args.runOn != null && destination(args.run_on) !== destination(args.runOn)) {
     return { fields, error: "Choose one run_on destination; run_on and runOn disagree." };
   }
@@ -231,8 +231,8 @@ function routineFields(args: Json): { fields: Json; error?: string } {
   }
   const runOn = destination(args.run_on ?? args.runOn);
   const timeoutMinutes = args.timeout_minutes ?? args.timeoutMinutes;
-  if (runOn != null && runOn !== "maus" && runOn !== "cloud") {
-    return { fields, error: 'Use run_on="maus" for the bot’s current model and configured computer (including VPS), or run_on="box" only for the bot’s cloud computer. Legacy "cloud" also means box.' };
+  if (runOn != null && runOn !== "computer" && runOn !== "cloud") {
+    return { fields, error: 'Use run_on="computer" for the bot’s current model and configured computer (including VPS), or run_on="box" only for the bot’s cloud computer. Legacy "maus" and "cloud" also mean those.' };
   }
   if (timeoutMinutes != null && (
     typeof timeoutMinutes !== "number" || !Number.isInteger(timeoutMinutes) || timeoutMinutes < 5 || timeoutMinutes > 240
