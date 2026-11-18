@@ -8,7 +8,7 @@ import { checkIndex, checkRelease, SOAK_MS, stableRecord, stableVersion } from "
 const NOW = Date.parse("2026-11-12T12:00:00Z");
 const release = (patch: Record<string, unknown> = {}) => ({
   tagName: "v0.1.151", isDraft: false, isPrerelease: false, publishedAt: "2026-11-09T22:56:49Z",
-  url: "https://github.com/milind-soni/Uni/releases/tag/v0.1.151", ...patch,
+  url: "https://github.com/AdilShamim8/Uni/releases/tag/v0.1.151", ...patch,
 });
 const pinned = (name: string, letter: string) => `ghcr.io/milind-soni/${name}@sha256:${letter.repeat(64)}`;
 const IMAGE = pinned("openmausbot", "a");

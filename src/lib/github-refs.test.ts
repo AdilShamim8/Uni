@@ -8,17 +8,17 @@ const render = (text: string) => renderToStaticMarkup(createElement(ChatMarkdown
 
 describe("parseGithubUrl", () => {
   it("reads pull requests, issues and commits", () => {
-    expect(parseGithubUrl("https://github.com/milind-soni/Uni/pull/2547")).toMatchObject({ kind: "pull", owner: "milind-soni", repo: "Uni", number: 2547 });
-    expect(parseGithubUrl("https://github.com/milind-soni/Uni/issues/12#issuecomment-1")).toMatchObject({ kind: "issue", number: 12 });
-    expect(parseGithubUrl("https://github.com/milind-soni/Uni/pull/2547/files")).toMatchObject({ kind: "pull", number: 2547 });
+    expect(parseGithubUrl("https://github.com/AdilShamim8/Uni/pull/2547")).toMatchObject({ kind: "pull", owner: "AdilShamim8", repo: "Uni", number: 2547 });
+    expect(parseGithubUrl("https://github.com/AdilShamim8/Uni/issues/12#issuecomment-1")).toMatchObject({ kind: "issue", number: 12 });
+    expect(parseGithubUrl("https://github.com/AdilShamim8/Uni/pull/2547/files")).toMatchObject({ kind: "pull", number: 2547 });
     expect(parseGithubUrl("https://github.com/octo-org/sample-app/commit/68189CF0a1")).toMatchObject({ kind: "commit", sha: "68189cf0a1" });
   });
 
   it("leaves everything else alone", () => {
     for (const url of [
-      "https://github.com/milind-soni/Uni",
-      "https://github.com/milind-soni/Uni/pull/0",
-      "https://github.com/milind-soni/Uni/pull/abc",
+      "https://github.com/AdilShamim8/Uni",
+      "https://github.com/AdilShamim8/Uni/pull/0",
+      "https://github.com/AdilShamim8/Uni/pull/abc",
       "https://gist.github.com/a/b/pull/1",
       "https://github.com.evil.example/a/b/pull/1",
       "https://example.com/a/b/pull/1",
@@ -29,9 +29,9 @@ describe("parseGithubUrl", () => {
 
 describe("owner/repo#N in text", () => {
   it("finds a reference in running text", () => {
-    const spans = splitShortRefs("fixed in milind-soni/Uni#2547, see there.");
-    expect(spans.map((span) => span.text)).toEqual(["fixed in ", "milind-soni/Uni#2547", ", see there."]);
-    expect(spans[1]!.ref).toMatchObject({ kind: "ref", url: "https://github.com/milind-soni/Uni/issues/2547" });
+    const spans = splitShortRefs("fixed in AdilShamim8/Uni#2547, see there.");
+    expect(spans.map((span) => span.text)).toEqual(["fixed in ", "AdilShamim8/Uni#2547", ", see there."]);
+    expect(spans[1]!.ref).toMatchObject({ kind: "ref", url: "https://github.com/AdilShamim8/Uni/issues/2547" });
   });
 
   it("ignores paths, URLs and plain #N", () => {
@@ -52,8 +52,8 @@ describe("owner/repo#N in text", () => {
 
 describe("rendered references", () => {
   it("draws a bare pull request URL as a left-to-right pill with the address as its tooltip", () => {
-    const html = render("- سحب النافذة https://github.com/milind-soni/Uni/pull/2547");
-    expect(html).toContain('dir="ltr" title="https://github.com/milind-soni/Uni/pull/2547" data-github-ref="pull"');
+    const html = render("- سحب النافذة https://github.com/AdilShamim8/Uni/pull/2547");
+    expect(html).toContain('dir="ltr" title="https://github.com/AdilShamim8/Uni/pull/2547" data-github-ref="pull"');
     expect(html).toContain("<span>#2547</span>");
     expect(html).toContain("unicode-bidi:isolate");
   });
