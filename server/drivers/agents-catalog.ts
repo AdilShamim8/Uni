@@ -96,7 +96,7 @@ const TRIGGER_FIELDS_SCHEMA = {
   run_on: {
     type: "string",
     // "box" is Boat's historical run_on destination id (agents wire contract).
-    enum: ["maus", "box"],
+    enum: ["computer", "maus", "box"],
     description: "Omit normally: maus (default) = the bot's configured computer, INCLUDING a self-hosted VPS; box = its cloud computer.",
   },
   timeout_minutes: { type: "integer", minimum: 5, maximum: 240, description: "Schedules: optional limit on a run, 5 to 240." },
