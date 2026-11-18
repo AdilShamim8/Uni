@@ -1,22 +1,49 @@
 #!/usr/bin/env node
-// Chunked typecheck for memory-constrained hosts.
+// Typecheck every project, on any host.
 //
-// tsconfig.server.json's one program (server + companion + enterprise +
-// connector, ~12k files) needs more RAM than a 4 GB host can give a single
-// compiler process. The chunks below cover the same files with the same
-// compiler options (every chunk extends the same base config); each chunk is
-// a separate compiler process. `server/` itself is still too large as one
-// chunk, so it is covered by its subdirectories plus the root-level files.
+// Two paths, same compiler rules (strict, noEmit, stop at the first failing
+// project):
 //
-// Same rules as the root config: strict, noEmit, stop at the first failing
-// chunk. Larger hosts can still run the single-process command
-// (`tsc -p tsconfig.server.json`) for an exact-equivalence check.
+// - UNI_TYPECHECK=direct (or a roomy host, >= 8 GB): the original chained
+//   command — `tsc -p` for phone-protocol and the server program, `tsc -b`
+//   for the app — in one process each. This is what CI runs.
+// - UNI_TYPECHECK=chunked (or a small host): the server program (~12k files)
+//   is split into per-subdirectory and root-file chunks, each its own
+//   compiler process, because a 4 GB host without swap OOMs the single
+//   process before diagnostics.
+//
+// The open-source edition deletes enterprise/ before typechecking
+// (LICENSING.md promises a working OSS edition without it), so a chunk whose
+// directory is absent is skipped; tsconfig.server.json names enterprise/
+// only through its include list, so the base config itself stays valid.
 import { spawnSync } from "node:child_process";
-import { readdirSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { totalmem } from "node:os";
 
 const root = join(import.meta.dirname, "..");
 const chunksDir = join(import.meta.dirname, "typecheck-chunks");
+const heapMb = Math.min(Math.max(Math.floor(totalmem() / 2 / 1024 / 1024), 2048), 6144);
+
+function run(command, args, label) {
+  process.stdout.write(`typecheck: ${label} ... `);
+  const result = spawnSync(command, args, {
+    cwd: root,
+    env: { ...process.env, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --max-old-space-size=${heapMb}`.trim() },
+    stdio: ["ignore", "inherit", "inherit"],
+  });
+  const ok = result.status === 0;
+  console.log(ok ? "ok" : `FAILED (${result.status ?? "signal"})`);
+  return ok;
+}
+
+function direct() {
+  return (
+    run("node_modules/.bin/tsc", ["-p", "packages/phone-protocol/tsconfig.json", "--noEmit"], "phone-protocol") &&
+    run("node_modules/.bin/tsc", ["-p", "tsconfig.server.json", "--noEmit"], "server") &&
+    run("node_modules/.bin/tsc", ["-b", "tsconfig.json"], "app")
+  );
+}
 
 function serverSubdirs() {
   const dir = join(root, "server");
@@ -25,10 +52,8 @@ function serverSubdirs() {
     .sort();
 }
 
-/** The 1,783 root-level server files are still too many for one compiler
- * process on this host, so they typecheck as four explicit quarters;
- * TypeScript's include globs support neither character classes nor a brace
- * list this long. */
+/** The root-level server files typecheck as explicit quarters; TypeScript's
+ * include globs support neither character classes nor a brace list this long. */
 function rootQuarters() {
   const dir = join(root, "server");
   const files = readdirSync(dir).filter((name) => name.endsWith(".ts")).sort();
@@ -39,38 +64,37 @@ function rootQuarters() {
     .map((group, i) => ({ name: `${i + 1}-of-4`, files: group.map((f) => `../../server/${f}`) }));
 }
 
-const chunks = [
-  { name: "phone-protocol", config: "packages/phone-protocol/tsconfig.json" },
-  { name: "companion", include: ["../../companion"] },
-  { name: "connector", include: ["../../connector"] },
-  { name: "enterprise", include: ["../../enterprise"] },
-  ...serverSubdirs().map((name) => ({ name: `server-${name}`, include: [`../../server/${name}`] })),
-  ...rootQuarters().map((quarter) => ({ name: `server-root-${quarter.name}`, include: quarter.files })),
-  { name: "app", config: "tsconfig.json" },
-];
-
-let failed = 0;
-for (const chunk of chunks) {
-  let config = chunk.config && join(root, chunk.config);
-  if (!config) {
-    const file = join(chunksDir, `tsconfig.${chunk.name}.json`);
-    writeFileSync(file, `${JSON.stringify({ extends: "../../tsconfig.server.json", include: chunk.include }, null, 2)}\n`);
-    config = file;
+function chunked() {
+  const chunks = [
+    { name: "phone-protocol", config: "packages/phone-protocol/tsconfig.json" },
+    { name: "companion", dir: "companion" },
+    { name: "connector", dir: "connector" },
+    { name: "enterprise", dir: "enterprise" },
+    ...serverSubdirs().map((name) => ({ name: `server-${name}`, dir: `server/${name}` })),
+    ...rootQuarters().map((quarter) => ({ name: `server-root-${quarter.name}`, include: quarter.files })),
+    { name: "app", build: true },
+  ];
+  let ok = true;
+  for (const chunk of chunks) {
+    if (chunk.dir && !existsSync(join(root, chunk.dir))) {
+      console.log(`typecheck: ${chunk.name} ... absent (skipped)`);
+      continue;
+    }
+    if (chunk.config) {
+      ok = run("node_modules/.bin/tsc6", ["-p", join(root, chunk.config), "--noEmit"], chunk.name);
+    } else if (chunk.build) {
+      ok = run("node_modules/.bin/tsc6", ["-b", join(root, "tsconfig.json")], chunk.name);
+    } else {
+      const file = join(chunksDir, `tsconfig.${chunk.name}.json`);
+      writeFileSync(file, `${JSON.stringify({ extends: "../../tsconfig.server.json", include: chunk.include ?? [`../../${chunk.dir}`] }, null, 2)}\n`);
+      ok = run("node_modules/.bin/tsc6", ["-p", file, "--noEmit"], chunk.name);
+    }
+    if (!ok) break;
   }
-  process.stdout.write(`typecheck: ${chunk.name} ... `);
-  const run = spawnSync("node_modules/.bin/tsc6", ["-p", config, "--noEmit"], {
-    cwd: root,
-    env: { ...process.env, NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --max-old-space-size=2800`.trim() },
-    encoding: "utf8",
-  });
-  if (run.status === 0) {
-    console.log("ok");
-  } else {
-    failed = run.status ?? 1;
-    console.log(`FAILED (${failed})`);
-    if (run.stdout) process.stdout.write(run.stdout);
-    if (run.stderr) process.stdout.write(run.stderr);
-    break;
-  }
+  rmSync(chunksDir, { recursive: true, force: true });
+  return ok;
 }
-process.exit(failed);
+
+const mode = process.env.UNI_TYPECHECK ?? (totalmem() >= 8 * 1024 ** 3 ? "direct" : "chunked");
+const ok = mode === "direct" ? direct() : chunked();
+if (!ok) process.exit(1);
