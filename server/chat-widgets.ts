@@ -4,7 +4,7 @@ import {
   parseWidgetInput, resolveWidgetAction, widgetActions, widgetFieldOptions, widgetFields, widgetToText, WIDGET_LIMITS,
   type WidgetAction, type WidgetNode, type WidgetPayload, type WidgetRoot, type WidgetSettled,
 } from "../shared/widget.ts";
-import type { MausColor } from "../shared/wire.ts";
+import type { BotColor } from "../shared/wire.ts";
 import type { ChatApps } from "./chat-apps.ts";
 import type { BotFolders } from "./pages/bundle.ts";
 import { createOptionsCard } from "./options-card.ts";
@@ -33,7 +33,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** A room's row names the bot that wrote it. A direct thread's never does: there a bot-authored row carrying `from` is
  * replayed as another bot's line. */
-export function speakerIn(store: Pick<AgentCardStore, "groupByThread">, threadId: string, bot: { id: string; name: string; color: MausColor }): Pick<Message, "from"> {
+export function speakerIn(store: Pick<AgentCardStore, "groupByThread">, threadId: string, bot: { id: string; name: string; color: BotColor }): Pick<Message, "from"> {
   return store.groupByThread(threadId) ? { from: { botId: bot.id, name: bot.name, color: bot.color } } : {};
 }
 
@@ -114,7 +114,7 @@ function canonicalWidget(input: Record<string, unknown>): CanonicalWidget {
 /** The route has already checked that the conversation is the calling bot's own. */
 export interface AgentCardArgs {
   store: AgentCardStore;
-  bot: { id: string; name: string; color: MausColor };
+  bot: { id: string; name: string; color: BotColor };
   threadId: string;
   input: unknown;
   /** The row a widget call wrote: the calling session made it, so it is never offered back to it as unseen. */

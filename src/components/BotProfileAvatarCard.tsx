@@ -6,7 +6,7 @@ import {
   PICKABLE_STATES,
   MAUS_COLOR_LABEL,
   colorSwatch,
-  MAUS_COLOR_NAMES,
+  BOT_COLOR_NAMES,
   type MausMotion,
   type MausState,
 } from "@/lib/mascot";
@@ -146,7 +146,7 @@ export function BotProfileAvatarCard({
               {t("botIdentity.color")}
             </div>
             <div className="flex flex-wrap gap-2.5">
-              {MAUS_COLOR_NAMES.map((color) => (
+              {BOT_COLOR_NAMES.map((color) => (
                 <button
                   key={color}
                   type="button"

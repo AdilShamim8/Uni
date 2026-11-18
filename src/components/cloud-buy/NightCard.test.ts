@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { MAUS_COLOR_NAMES } from "@/lib/mascot";
+import { BOT_COLOR_NAMES } from "@/lib/mascot";
 
 type Seen = { color: string; state: string; animated: boolean; trackPointer?: boolean; size: number };
 vi.mock("@/components/Avatar", () => ({
@@ -41,7 +41,7 @@ it("three of the app's own mascots ride the cloud in three colours, each in a ca
   const colors = mascots().map(node => node.dataset.maus!);
   expect(colors).toHaveLength(3);
   expect(new Set(colors).size).toBe(3);
-  for (const color of colors) expect(MAUS_COLOR_NAMES).toContain(color);
+  for (const color of colors) expect(BOT_COLOR_NAMES).toContain(color);
   expect(mascots().map(node => node.dataset.state)).toEqual(["working", "idle", "thinking"]);
   expect(mascots().map(node => node.dataset.extra), "no faces, gazes or motions laid on top").toEqual(["", "", ""]);
   expect(mascots().map(node => node.dataset.pointer)).toEqual(["false", "false", "false"]);

@@ -1,10 +1,10 @@
 import { CURSOR_STATES, type CursorState } from "@/components/CursorAvatar";
 import { botShowsUnread } from "./bot-unread";
 import { lastNonReceipt } from "./receipts";
-import type { MausColor } from "../../shared/wire";
+import type { BotColor } from "../../shared/wire";
 import type { LocaleKey } from "@/locales";
 
-export { MAUS_COLOR_NAMES, type MausColor } from "../../shared/wire";
+export { BOT_COLOR_NAMES, type BotColor } from "../../shared/wire";
 
 export type MausState = CursorState;
 export const MAUS_STATES = CURSOR_STATES;
@@ -61,19 +61,19 @@ export const MAUS_COLORS = {
   coral: "#E5634E",
   silver: "#A8ADB4",
   chrome: "#B3BAC4",
-} satisfies Record<MausColor, string>;
+} satisfies Record<BotColor, string>;
 
 export const MAUS_COLOR_LABEL = {
   green: "mascotColor.green", blue: "mascotColor.blue", red: "mascotColor.red", orange: "mascotColor.orange",
   purple: "mascotColor.purple", cyan: "mascotColor.cyan", pink: "mascotColor.pink", yellow: "mascotColor.yellow",
   teal: "mascotColor.teal", coral: "mascotColor.coral", silver: "mascotColor.silver",
   chrome: "mascotColor.chrome",
-} as const satisfies Record<MausColor, LocaleKey>;
+} as const satisfies Record<BotColor, LocaleKey>;
 
 export const CHROME_GRADIENT: [string, string, string] = ["#F1F4F7", "#AEB8C3", "#66717E"];
 export const CHROME_EYES = "#1E2833";
 
-export function colorSwatch(color: MausColor): string {
+export function colorSwatch(color: BotColor): string {
   if (color !== "chrome") return MAUS_COLORS[color];
   const [light, mid, edge] = CHROME_GRADIENT;
   return `radial-gradient(circle at 34% 26%, #ffffff 0%, ${light} 20%, ${mid} 55%, ${edge} 100%)`;

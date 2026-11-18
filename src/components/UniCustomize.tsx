@@ -3,7 +3,7 @@ import { ImagePlus, Loader2, Sparkles, Trash2 } from "lucide-react";
 
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
-import { colorSwatch, MAUS_COLOR_LABEL, MAUS_COLOR_NAMES } from "@/lib/mascot";
+import { colorSwatch, MAUS_COLOR_LABEL, BOT_COLOR_NAMES } from "@/lib/mascot";
 import { bodyName } from "@/lib/mascot-names";
 import type { Bot } from "@/state/store";
 import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile";
@@ -44,7 +44,7 @@ export function UniCustomize({ preview, name, nameRef, image, onName, onPatch }:
       <div>
         <span className={LABEL}>{t("onboarding.bot.color")}</span>
         <div role="radiogroup" aria-label={t("onboarding.bot.color")} className="mt-1.5 flex flex-wrap gap-1.5">
-          {MAUS_COLOR_NAMES.map((color) => (
+          {BOT_COLOR_NAMES.map((color) => (
             <button
               key={color}
               type="button"

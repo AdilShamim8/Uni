@@ -5,7 +5,7 @@ import { z } from "zod";
 import { approvalModeFor, type ApprovalMode } from "../../shared/approval-mode.ts";
 import { BOT_PROFILE_LIMITS } from "../../shared/bot-profile.ts";
 import { TOOL_GROUP_LABELS, TOOL_GROUPS, type ToolGroup } from "../../shared/tool-groups.ts";
-import { EFFORT_LEVELS, MAUS_COLOR_NAMES } from "../../shared/wire.ts";
+import { EFFORT_LEVELS, BOT_COLOR_NAMES } from "../../shared/wire.ts";
 import type { BotRecord } from "../store.ts";
 import { withoutKeys, type RegistryDeps, type SettingEntry, type WritableSpec } from "./registry.ts";
 
@@ -93,7 +93,7 @@ export function botEntries(deps: Pick<RegistryDeps, "bots" | "engines" | "patchB
     }),
     perBot({
       id: "bots.color", label: "Bot colour", help: "A bot's colour in the sidebar and its chat.", where: "bot-settings", synonyms: ["color", "colour", "tint", "bot color"],
-      value: forBot({ color: z.enum(MAUS_COLOR_NAMES) }), allowed: `{"botId","color"} with color one of ${MAUS_COLOR_NAMES.join(", ")}`, read: everyBot((one) => one.color),
+      value: forBot({ color: z.enum(BOT_COLOR_NAMES) }), allowed: `{"botId","color"} with color one of ${BOT_COLOR_NAMES.join(", ")}`, read: everyBot((one) => one.color),
       effect: (one, { color }) => ({ change: `Make ${one.name} ${color}` }), was: (one, { botId }) => ({ botId, color: one.color }), patch: (_one, { color }) => ({ color }),
     }),
     perBot({

@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import { bodyName, colorName, festivalName } from "@/lib/mascot-names";
 import type { LocaleKey } from "@/locales";
-import { colorSwatch, MAUS_COLOR_LABEL, MAUS_COLOR_NAMES, PICKABLE_STATES, type MausState } from "@/lib/mascot";
+import { colorSwatch, MAUS_COLOR_LABEL, BOT_COLOR_NAMES, PICKABLE_STATES, type MausState } from "@/lib/mascot";
 import { useStore, type Bot } from "@/state/store";
 import { mayRename, useTeamPeople } from "@/state/team-people";
 import { MASCOT_BODY_IDS } from "../../../shared/mascot-bodies";
@@ -156,7 +156,7 @@ export function AvatarEditorCard({ bot, activeState, onPatch, onClose }: {
               </button>
             )}
             <div className="flex flex-wrap justify-center gap-2 px-1 pb-1 pt-3.5">
-              {MAUS_COLOR_NAMES.map((color) => (
+              {BOT_COLOR_NAMES.map((color) => (
                 <button
                   key={color}
                   type="button"

@@ -7,12 +7,12 @@ import {
   type MausAvatarHandle,
 } from "@/components/Avatar";
 import {
-  MAUS_COLOR_NAMES,
+  BOT_COLOR_NAMES,
   MAUS_COLORS,
   MAUS_MOTIONS,
   PICKABLE_STATES,
   STATE_GROUPS,
-  type MausColor,
+  type BotColor,
   type MausMotion,
   type MausState,
 } from "@/lib/mascot";
@@ -50,7 +50,7 @@ const MOTION_SCENARIOS = {
   failure: "Action failed",
 } satisfies Record<Exclude<MausMotion, "none">, string>;
 
-const MOTION_COLORS: MausColor[] = [
+const MOTION_COLORS: BotColor[] = [
   "green", "blue", "purple", "red", "cyan", "orange",
   "teal", "green", "pink", "yellow", "coral", "red",
 ];
@@ -100,8 +100,8 @@ function Tuner({
   setState: (s: MausState) => void;
   expression: number | undefined;
   setExpression: (e: number | undefined) => void;
-  color: MausColor;
-  setColor: (c: MausColor) => void;
+  color: BotColor;
+  setColor: (c: BotColor) => void;
   forward: boolean;
   setForward: (v: boolean) => void;
 }) {
@@ -177,7 +177,7 @@ function Tuner({
 
           <h3>Colour</h3>
           <div className="chips">
-            {MAUS_COLOR_NAMES.map((c) => (
+            {BOT_COLOR_NAMES.map((c) => (
               <button
                 key={c}
                 type="button"
@@ -246,7 +246,7 @@ function MotionCard({
   motion: Exclude<MausMotion, "none">;
   index: number;
   replayAll: number;
-  color: MausColor;
+  color: BotColor;
 }) {
   const [replayOne, setReplayOne] = useState(0);
 
@@ -281,7 +281,7 @@ function Preview() {
   const [tuning, setTuning] = useState<Tuning>(DEFAULTS);
   const [state, setState] = useState<MausState>("idle");
   const [expression, setExpression] = useState<number | undefined>(undefined);
-  const [color, setColor] = useState<MausColor>("green");
+  const [color, setColor] = useState<BotColor>("green");
   const [forward, setForward] = useState(true);
 
   useEffect(() => {
@@ -351,7 +351,7 @@ function Preview() {
               </div>
             ))}
 
-            {MAUS_COLOR_NAMES.map((c) => (
+            {BOT_COLOR_NAMES.map((c) => (
               <div className="matrix-row" key={c}>
                 <div className="row-label">
                   <span className="swatch" style={{ background: MAUS_COLORS[c] }} />

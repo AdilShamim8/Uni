@@ -1,10 +1,10 @@
 import { z } from "zod";
 
 import { schemaIssue, type JsonValue } from "./schema.ts";
-import type { MausColor } from "./store.ts";
+import type { BotColor } from "./store.ts";
 import { botBodyId, type BotBodyId } from "../shared/bot-body.ts";
 import { takeImportName } from "../shared/import-name.ts";
-import { MAUS_COLOR_NAMES } from "../shared/wire.ts";
+import { BOT_COLOR_NAMES } from "../shared/wire.ts";
 import { BOT_PROFILE_LIMITS } from "../shared/bot-profile.ts";
 import { optionalText, requiredText } from "../shared/package-format.ts";
 
@@ -39,7 +39,7 @@ const memberSchema = z.object({
     error: "standing instructions must be at most 24000 bytes",
   }).optional(),
   appearance: z.object({
-    color: z.enum(MAUS_COLOR_NAMES, { error: "is not supported" }),
+    color: z.enum(BOT_COLOR_NAMES, { error: "is not supported" }),
     mascotExpression: optionalText(80),
     mascotBody: optionalText(40),
   }),
@@ -83,7 +83,7 @@ export interface TeamManifestMember {
   description: string;
   soul?: string;
   appearance: {
-    color: MausColor;
+    color: BotColor;
     mascotExpression?: string;
     mascotBody?: string;
   };
@@ -130,7 +130,7 @@ interface ExportableBot {
   title: string;
   description: string;
   soul?: string;
-  color: MausColor;
+  color: BotColor;
   mascotExpression?: string | null;
   mascotBody?: string | null;
 }
@@ -200,7 +200,7 @@ export interface ImportedMemberProfile {
   title: string;
   description: string;
   soul?: string;
-  color: MausColor;
+  color: BotColor;
   mascotExpression?: string;
   mascotBody?: BotBodyId;
 }
