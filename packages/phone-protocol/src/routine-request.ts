@@ -7,7 +7,7 @@
 import type { LimitResetRepeat } from "./limit-reset.ts";
 import type { RoutineCronSchedule } from "./routine-schedule.ts";
 
-export type RoutineRequestRunOn = "maus" | "cloud";
+export type RoutineRequestRunOn = "computer" | "cloud" | "maus"; // "maus" is the pre-v0.1 name for "computer"
 
 export interface RoutineRequestIntervalWindow {
   start: string;
