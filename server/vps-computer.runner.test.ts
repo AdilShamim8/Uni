@@ -119,6 +119,8 @@ describe("default VPS command runner", () => {
     const masterClosed = new Promise<void>((resolve) => master.once("close", () => resolve()));
     let helper = 0;
     const alive = (pid: number) => { try { process.kill(pid, 0); return true; } catch { return false; } };
+    /** A kill racing the event loop under load: wait for the reap instead of asserting the instant the runner resolves. */
+    const gone = async (pid: number) => { for (let i = 0; i < 100 && alive(pid); i++) await new Promise((r) => setTimeout(r, 50)); return !alive(pid); };
     const result = defaultRunner(["info"], { timeoutMs: failure === "timeout" ? 1_000 : 20_000 });
     const rejected = expect(result).rejects.toThrow(failure === "timeout" ? "command timed out" : "stdin failed");
     try {
@@ -126,7 +128,7 @@ describe("default VPS command runner", () => {
       expect(alive(helper)).toBe(true);
       if (failure === "stdin") docker.stdin!.emit("error", new Error("write EPIPE"));
       await rejected;
-      expect(alive(helper)).toBe(false);
+      expect(await gone(helper)).toBe(true);
       expect(docker.exitCode !== null || docker.signalCode !== null).toBe(true);
       expect(docker.stdin!.destroyed && docker.stdout!.destroyed && docker.stderr!.destroyed).toBe(true);
       expect(alive(master.pid!)).toBe(true);
