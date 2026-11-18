@@ -176,12 +176,12 @@
      light skins that leaves little room below the secondary ink, so there
      size carries the hierarchy. Measured by pnpm check:contrast. */
   --color-ink-tertiary: #f5f5f591;
-  --color-accent: #1084fe;
-  --color-accent-border: #459ffe;
+  --color-accent: #8778f2;
+  --color-accent-border: #9c8ef5;
   /* the ring a keyboard user follows; sits on the accent so focus reads as
      "the app is talking to you", not as a browser default */
-  --color-focus: #459ffe;
-  --color-accent-text: #7fc0ff;
+  --color-focus: #9c8ef5;
+  --color-accent-text: #bcb0ff;
   --color-bubble-user: #5a5a5a;
   --color-success: #38d591;
   --color-danger: #ff5667;
@@ -233,8 +233,9 @@
 :root {
   --code-color-scheme: dark;
   /* ink carried by a filled accent / danger surface (see the rule at the
-     bottom of this file, which is what makes them take effect) */
-  --color-accent-ink: #ffffff;
+     bottom of this file, which is what makes them take effect). The violet
+     accent fill is light, so its ink is dark (5.3:1); danger stays as it was. */
+  --color-accent-ink: #141218;
   --color-danger-ink: #ffffff;
   /* ink carried by the user's own bubble. A hex rather than the ink token so
      the contrast check can measure it; every dark skin repeats its ink here. */
@@ -274,10 +275,12 @@
   --color-ink: #f5f5f5;
   --color-ink-secondary: #f5f5f5a8;
   --color-ink-tertiary: #f5f5f591;
-  --color-accent: #1084fe;
-  --color-accent-border: #459ffe;
-  --color-accent-text: #7fc0ff;
-  --color-accent-ink: #ffffff;
+  --color-accent: #8778f2;
+  --color-accent-border: #9c8ef5;
+  --color-accent-text: #bcb0ff;
+  /* the violet fill is light: dark ink clears 5.3:1 where the old blue
+     carried white at 3.65:1 */
+  --color-accent-ink: #141218;
   --color-bubble-user: #5a5a5a;
   --color-bubble-user-ink: #f5f5f5;   /* = ink: unchanged */
   --color-success: #38d591;
@@ -350,10 +353,10 @@
   --color-ink-tertiary: #6d685c;
 
   /* Two accent tones: the fill carries white, the text stands on white. */
-  --color-accent: #a05f25;        /* #b06a2c darkened → 5.05:1 */
-  --color-accent-border: #b06a2c; /* the original tone lives on as the border */
-  --color-accent-text: #96551f;   /* for links on a light ground — 5.81:1 */
-  --color-focus: #96551f;         /* the ring rides the accent, not Grok blue */
+  --color-accent: #5b4bc4;        /* Uni violet darkened for the light ground → 6.46:1 */
+  --color-accent-border: #6c5ad2; /* the original tone lives on as the border */
+  --color-accent-text: #5346b8;   /* for links on a light ground — 7.15:1 */
+  --color-focus: #5346b8;         /* the ring rides the accent, not a default blue */
   --color-accent-ink: #ffffff;
   --color-bubble-user: #f2e9dc;   /* your own messages in the badge beige */
   --color-bubble-user-ink: #1a1a18;   /* = ink: unchanged */
