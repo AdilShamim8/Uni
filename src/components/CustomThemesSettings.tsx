@@ -55,7 +55,7 @@ function ThemeEditor({ id, act, onClose, onDelete }: { id: string; act: Act; onC
       <div className="flex flex-wrap gap-4">
         {(["canvas", "accent"] as const).map((key) => (
           <label key={key} className="flex items-center gap-2 text-[13px] text-ink">
-            <input type="color" className="size-7 cursor-pointer rounded-md bg-transparent" value={file[key] ?? (key === "canvas" ? "#121212" : "#1084fe")}
+            <input type="color" className="size-7 cursor-pointer rounded-md bg-transparent" value={file[key] ?? (key === "canvas" ? "#121212" : "#8778f2")}
               onChange={(event) => setFile({ ...file, [key]: event.target.value })} />
             {t(key === "canvas" ? "settings.customThemes.canvas" : "settings.customThemes.accent")}
             {file[key] && <button type="button" className="text-[12px] text-accent-text hover:underline" onClick={() => setFile({ ...file, [key]: undefined })}>{t("settings.customThemes.clear")}</button>}
