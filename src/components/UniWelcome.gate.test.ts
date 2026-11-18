@@ -27,7 +27,7 @@ const maus = (turns: number) => ({ id: "maus", threadId: "t1", name: "Uni", titl
 let host: HTMLDivElement, root: Root;
 const showAs = async (viewer: WelcomeViewer) => { await act(async () => { root.render(createElement(UniWelcome, { viewer })); }); };
 const show = () => showAs(LOCAL_VIEWER);
-const opened = () => f.welcoming.mock.calls.some(([id]) => id === "computer");
+const opened = () => f.welcoming.mock.calls.some(([id]) => id === "maus");
 beforeEach(() => {
   setLocale("en");
   f.welcoming.mockReset();

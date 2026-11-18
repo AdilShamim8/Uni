@@ -70,7 +70,7 @@ repair_executable() {
 repair_chromium_sandbox() {
   target=$1
   if [ -L "$target" ] || [ ! -f "$target" ]; then
-    echo "OpenMausBot Chromium sandbox is missing or unsafe: $target" >&2
+    echo "Uni Chromium sandbox is missing or unsafe: $target" >&2
     exit 1
   fi
   if [ "$TEST_MODE" -eq 0 ]; then chown root:root -- "$target"; fi
@@ -87,12 +87,12 @@ secure_browser_tree() {
   # outside this exact resource. Preserve executable bits on Chrome sidecars.
   unsafe=$(find "$BROWSER_ROOT" ! -type d ! -type f -print -quit)
   if [ -n "$unsafe" ]; then
-    echo "OpenMausBot browser resource is missing or unsafe: $unsafe" >&2
+    echo "Uni browser resource is missing or unsafe: $unsafe" >&2
     exit 1
   fi
   unsafe=$(find "$BROWSER_ROOT" -type f -links +1 -print -quit)
   if [ -n "$unsafe" ]; then
-    echo "OpenMausBot browser resource has an unsafe hard link: $unsafe" >&2
+    echo "Uni browser resource has an unsafe hard link: $unsafe" >&2
     exit 1
   fi
   if [ "$TEST_MODE" -eq 0 ]; then
@@ -121,7 +121,7 @@ in_container() {
 install_browser_apparmor_profile() {
   profile=$APP_ROOT/resources/openmausbot-browser.apparmor
   if [ -L "$profile" ] || [ ! -f "$profile" ] || [ "$(stat -c '%h' -- "$profile")" != 1 ]; then
-    echo "OpenMausBot browser AppArmor profile is missing or unsafe: $profile" >&2
+    echo "Uni browser AppArmor profile is missing or unsafe: $profile" >&2
     exit 1
   fi
   if [ "$TEST_MODE" -eq 0 ]; then chown root:root -- "$profile"; fi

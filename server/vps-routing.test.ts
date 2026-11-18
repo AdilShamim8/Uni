@@ -81,7 +81,7 @@ function containerInspectTemplate(): string {
         Memory: 4 * 1024 * 1024 * 1024,
         MemorySwap: 4 * 1024 * 1024 * 1024,
         NanoCpus: 2_000_000_000,
-        PidsLimit: 512,
+        PidsLimit: 4096,
         CapDrop: ["ALL"],
         CapAdd: ["CAP_SETUID", "CAP_SETGID"],
         Privileged: false,
@@ -571,7 +571,7 @@ createServer(socket => socket.end()).listen(port, '127.0.0.1');
       expect(invocations.length).toBeGreaterThan(0);
       for (const line of invocations) {
         const command = line.split(" ")[2];
-        expect(["image", "inspect", "exec", "version"], line).toContain(command);
+        expect(["image", "inspect", "exec", "version", "update"], line).toContain(command);
       }
 
       const status = await api("GET", `/api/bots/${bot.id}/computer`);
@@ -594,7 +594,7 @@ createServer(socket => socket.end()).listen(port, '127.0.0.1');
         schedule: { type: "interval", everyMinutes: 60, anchorAt: Date.now() + 3_600_000 },
       });
       expect(created.status, JSON.stringify(created.body)).toBe(201);
-      expect(created.body.routine.runOn).toBe("maus");
+      expect(created.body.routine.runOn).toBe("computer");
       rmSync(`${acpDump}.mcp.json`, { force: true });
       const started = await api("POST", `/api/routines/${created.body.routine.id}/run`);
       expect(started.status, JSON.stringify(started.body)).toBe(201);

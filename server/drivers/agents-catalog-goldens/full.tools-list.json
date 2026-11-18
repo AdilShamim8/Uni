@@ -1718,6 +1718,7 @@
           "run_on": {
             "type": "string",
             "enum": [
+              "computer",
               "maus",
               "box"
             ],
