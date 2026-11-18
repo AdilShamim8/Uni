@@ -14,28 +14,45 @@ Talk to them like contacts. Watch them work. Approve what matters.
 ![Agents](https://img.shields.io/badge/agents-Claude%20·%20Codex%20·%20Grok-d97757)
 ![PRs](https://img.shields.io/badge/PRs-welcome-38d591)
 
+<a href="https://github.com/AdilShamim8/Uni/releases/latest/download/Uni.dmg">
+  <img src="https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20for%20Mac%20(Apple%20silicon)-Uni.dmg-1084fe?style=for-the-badge&labelColor=070707" alt="Download Uni for Mac with Apple silicon" height="38">
+</a>
+&nbsp;
+<a href="https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-setup.exe">
+  <img src="https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20for%20Windows-Uni--setup.exe-4cc2ff?style=for-the-badge&labelColor=070707" alt="Download Uni for Windows" height="38">
+</a>
+&nbsp;
+<a href="https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-amd64.deb">
+  <img src="https://img.shields.io/badge/%E2%AC%87%EF%B8%8F%20Download%20for%20Ubuntu-Uni--amd64.deb-e95420?style=for-the-badge&labelColor=070707" alt="Download Uni for Ubuntu 24.04" height="38">
+</a>
+
+<sub>[All releases](https://github.com/AdilShamim8/Uni/releases) · macOS: Apple silicon & Intel · Windows: x64 installer · Ubuntu 24.04 x64: .deb or AppImage</sub>
+
+<br>
+
 <img src="docs/screenshots/hero.png" alt="Uni — a Telegram-style chat app where every chat is a real AI agent" width="900">
 
 </div>
 
 ---
 
-## About this repository
+## About Uni
 
-Uni is a fork of [OpenMausBot](https://github.com/milind-soni/OpenMausBot) by Milind Soni, rebranded and
-maintained by [Adil Shamim](https://github.com/AdilShamim8). All credit for the architecture, the agent
-harness, and the feature set below belongs to the upstream project and its contributors; this repository
-carries the fork's fixes, branding, and release engineering under the name **Uni**.
+Uni is an independent, open-source project by [Adil Shamim](https://github.com/AdilShamim8) — a
+university-built personal AI platform: your own team of agents in a chat app, running on your
+machine, on the models you already have. The name is short and universal, like the idea: one
+place for every agent you work with.
 
-The application keeps its upstream command-line identity: the `openmausbot` CLI command, the
-`openmausbot:` protocol prefixes, and the `~/.openmausbot` data directory are unchanged, so setups,
-scripts, and muscle memory built on either project keep working.
+The `openmausbot` CLI command, the `openmausbot:` link protocol, and the `~/.openmausbot` data
+directory are the app's stable technical identifiers: they are documented, scripted, and
+battle-tested, and Uni keeps them so every existing setup, integration, and muscle memory keeps
+working unchanged.
 
 ## Why
 
-One assistant in one box is the wrong shape for agents. Uni keeps the idea that made Grok Bot interesting
-(AI as a *messaging app*: a roster of bots you chat with, each with its own personality, memory of its
-thread, model, computer, and apps) and rebuilds it open, local-first, and on the agents you already have:
+One assistant in one box is the wrong shape for agents. Uni takes a different shape — AI as a
+*messaging app*: a roster of bots you chat with, each with its own personality, memory of its
+thread, model, computer, and apps — open, local-first, and on the agents you already have:
 
 - **Bring your own agents.** Bots run on the `claude`, `codex`, and `grok` CLIs installed on your own machine
   — your existing logins and subscriptions, no new accounts, no proxy in the middle. Point any engine at a
@@ -139,9 +156,9 @@ the same `.md` file from disk or paste its public GitHub URL in **Teams → Impo
 The format stays portable: Uni reads the structured YAML frontmatter for a reliable one-click install,
 while Grok, Claude, ChatGPT, and people can follow the ordinary Markdown playbook. Connections remain off
 until you approve them, routines arrive paused, and packages never carry credentials, conversations,
-permissions, memory, or computer access. Browse the upstream
-[open-source playbook repository](https://github.com/milind-soni/openmausbot-teams) or read its
-[portable format](https://github.com/milind-soni/openmausbot-teams/blob/main/FORMAT.md).
+permissions, memory, or computer access. Read the
+[playbook format](https://github.com/milind-soni/openmausbot-teams/blob/main/FORMAT.md) to write
+your own, and share teams you build with **Teams → Share**.
 
 ### 🤝 Share a bot or a department
 
@@ -260,7 +277,27 @@ See [Run Uni from scripts and CI](docs/headless-cli.md).
 
 ## Quick start
 
-**From source** (this fork publishes no signed installers; build it yourself):
+**Install the desktop app** — grab the build for your machine from the
+[latest release](https://github.com/AdilShamim8/Uni/releases/latest):
+
+| | Download | Install |
+|---|---|---|
+| **macOS** (Apple silicon) | [Uni.dmg](https://github.com/AdilShamim8/Uni/releases/latest/download/Uni.dmg) | Drag it to Applications, open it. |
+| **macOS** (Intel) | [Uni-intel.dmg](https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-intel.dmg) | Same app, built for Intel Macs. |
+| **Windows** (x64) | [Uni-setup.exe](https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-setup.exe) | Run it — one-click, per-user, no admin rights. If SmartScreen says "unknown publisher", choose **More info → Run anyway**. |
+| **Ubuntu 24.04** (x64) | [Uni-amd64.deb](https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-amd64.deb) · [Uni.AppImage](https://github.com/AdilShamim8/Uni/releases/latest/download/Uni.AppImage) | Install the `.deb` with APT, or make the AppImage executable and run it. |
+
+The harness server is embedded in the desktop app — no separate server setup. First launch walks
+you through choosing an AI engine (a local `claude`, `codex`, or `grok` CLI login, or an API key).
+
+**Run it from a terminal or a server:**
+
+```sh
+npx openmausbot          # one command, guided setup; Ctrl-C stops the server, not your work
+npx openmausbot serve    # always-on: --public-url, --domain, --tailscale, --lan or --tunnel
+```
+
+**From source:**
 
 ```sh
 git clone https://github.com/AdilShamim8/Uni.git && cd Uni
@@ -275,16 +312,13 @@ Requirements: **macOS, Windows, or Ubuntu 24.04 x64**, **Node 24+**, **pnpm**, a
 [`codex`](https://github.com/openai/codex), or [`grok`](https://x.ai/cli) — installed and logged in. They appear
 in the model picker automatically.
 
-Package the desktop application:
+Package the desktop application yourself:
 
 ```sh
 pnpm package:mac      # macOS: DMG + ZIP; requires Swift/Xcode tools
 pnpm package:win      # Windows: installer + ZIP
 pnpm package:linux    # Ubuntu x64: .deb + AppImage + verified CUA runtime
 ```
-
-For signed, notarized, ready-to-run installers use the upstream project's
-[releases](https://github.com/milind-soni/OpenMausBot/releases/latest).
 
 **Optional credentials** — local chat works without them. Paste a key once in **App Settings** (gear
 in the sidebar footer) when you want to enable its integration:
@@ -384,22 +418,20 @@ Usage analytics are optional and anonymous: product events and a once-a-day coun
 names, addresses or conversations. Turn them off in Settings → General → Usage analytics;
 [`docs/analytics.md`](docs/analytics.md) lists every event and property.
 
-## Acknowledgements
+## Credits
 
-Uni stands on the work of the [OpenMausBot](https://github.com/milind-soni/OpenMausBot) project and its
-contributors — an independent, open-source project inspired by Grok Bot, not affiliated with, endorsed by, or
-associated with xAI; "Grok" is a trademark of its respective owner. The upstream project's sponsors
-([Boat](https://boat.dev), [ModelGo](https://modelgo.ai), Composio, ElevenLabs, Fish Audio) and its
-contributors built the platform this fork builds on.
+Uni is built with open source throughout — Claude, Codex and Grok CLIs as engines, Electron, React,
+Vite, Tailwind CSS, Composio for connected apps, and the Cua driver for computer use. The
+[NOTICE](NOTICE) file and [`third_party/`](third_party/) list every component and its license.
 
 ## License
 
-[Apache License 2.0](LICENSE) © 2026 Milind Soni and OpenMausBot contributors,
+[Apache License 2.0](LICENSE) © 2026 Uni contributors,
 except `enterprise/`, which is source-available under its
 [own license](enterprise/LICENSE); delete that folder and what remains is the
 open-source edition. Details, including how contributions are signed off, are
 in [LICENSING.md](LICENSING.md).
 
-Packaged Cua Driver components retain their upstream MIT, SIL OFL 1.1, MPL-2.0, and other dependency terms;
+Packaged Cua Driver components retain their own MIT, SIL OFL 1.1, MPL-2.0, and other dependency terms;
 the corresponding notices, license texts, source locations, and SBOM are in
 [`third_party/cua-driver/`](third_party/cua-driver/) and ship beside the native runtime.
