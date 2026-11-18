@@ -1,6 +1,6 @@
 # Sharing a bot or a department
 
-A bot or a whole department can be shared as a **template**: a small folder anyone can add to their own MausBot.
+A bot or a whole department can be shared as a **template**: a small folder anyone can add to their own Uni.
 
 - **A bot.** Ask it in chat ("publish yourself to GitHub", "export yourself"), or use **Share → Share as template**.
   The app sends the bot "Create a public template of yourself that I can share with somebody else"; the bot makes the
@@ -29,9 +29,9 @@ says how many. Routines always arrive paused, and each app is connected with the
 
 ## Publishing
 
-**Publish** sends the folder to the MausBot Admin, which opens a pull request on the community repository
+**Publish** sends the folder to the Uni Admin, which opens a pull request on the community repository
 (`milind-soni/openmausbot-teams`); nobody needs a GitHub account. The card then has **Copy link**, a GitHub folder link
-that **Import…** accepts, and **View on GitHub**. Publishing needs a MausBot sign-in; without one, the card offers
+that **Import…** accepts, and **View on GitHub**. Publishing needs a Uni sign-in; without one, the card offers
 **Save folder…** and **Upload on GitHub**, the repository's own upload page.
 
 Backups are separate: Settings → Backup saves everything, chats included.

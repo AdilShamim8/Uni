@@ -1,4 +1,4 @@
-# Run OpenMausBot from scripts and CI
+# Run Uni from scripts and CI
 
 The `openmausbot` command can drive a running workspace without a screen: set
 up a team from a file, give a bot a job, wait until it and every teammate it
@@ -105,7 +105,7 @@ one of its conversations.
 | `connect [URL]` | Gets a token for a workspace elsewhere. |
 | `token create NAME`, `token list`, `token revoke ID` | Access tokens for CI that end on their date (above). |
 | `new-bot`, `new-channel`, `set-model`, `edit` | Make a bot or a room, change a bot's model, rewrite an earlier message. |
-| `mcp` | The OpenMausBot MCP server on stdin and stdout ([docs/mcp-server.md](mcp-server.md)). |
+| `mcp` | The Uni MCP server on stdin and stdout ([docs/mcp-server.md](mcp-server.md)). |
 
 The message for `send` and `run` can be the next word, `--text TEXT`,
 `--message-file FILE`, or `-` to read it from stdin.
@@ -143,7 +143,7 @@ and 100 GB for a Team server), disk encryption, CPUs and memory (a Team needs
 (required with `--domain HOST`, else only a warning), and the clock against
 network time (signed requests allow 300 seconds). It changes nothing.
 
-On a server that runs MausBot's own connector (a team on its own server), it
+On a server that runs Uni's own connector (a team on its own server), it
 also asks the connector for its checks (`mausbot-connector probe --json`,
 which starts the bots' box once under the home's own security settings) and
 lists any that fail. There the home runs under its own AppArmor profile, so

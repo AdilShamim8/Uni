@@ -1,12 +1,12 @@
 # Ubuntu Desktop
 
-OpenMausBot has an Ubuntu 24.04 LTS x86_64 desktop beta. The Electron package embeds the harness server, so
+Uni has an Ubuntu 24.04 LTS x86_64 desktop beta. The Electron package embeds the harness server, so
 installed builds do not require Node, pnpm, Swift, or a terminal at runtime. For giving a bot the same kind
 of Linux desktop on your own server instead of this machine, see [byo-vps.md](byo-vps.md).
 
 ## What works
 
-- The native Electron window and embedded OpenMausBot server on GNOME Xorg and GNOME Wayland.
+- The native Electron window and embedded Uni server on GNOME Xorg and GNOME Wayland.
 - Local Claude, Codex, Grok, Gemini, and other configured agent CLIs.
 - Chat, streaming turns, approvals, bot-to-bot communication, and local data storage.
 - Composio connected apps and Boat cloud computers.
@@ -32,8 +32,8 @@ CUA supply-chain work is tracked in [issue #113](https://github.com/milind-soni/
 
 Choose one Ubuntu 24.04 x86_64 package from the latest release:
 
-- [Debian package (`OpenMausBot-amd64.deb`)](https://github.com/milind-soni/OpenMausBot/releases/latest/download/OpenMausBot-amd64.deb) — recommended; APT installs its desktop dependencies and configures the bundled bot browser's sandbox.
-- [Portable AppImage (`OpenMausBot.AppImage`)](https://github.com/milind-soni/OpenMausBot/releases/latest/download/OpenMausBot.AppImage) — does not install system files.
+- [Debian package (`Uni-amd64.deb`)](https://github.com/milind-soni/OpenMausBot/releases/latest/download/Uni-amd64.deb) — recommended; APT installs its desktop dependencies and configures the bundled bot browser's sandbox.
+- [Portable AppImage (`Uni.AppImage`)](https://github.com/milind-soni/OpenMausBot/releases/latest/download/Uni.AppImage) — does not install system files.
 - [SHA-256 checksums](https://github.com/milind-soni/OpenMausBot/releases/latest/download/SHA256SUMS-ubuntu-x64.txt)
 
 Versioned packages and previous releases remain available on the
@@ -49,7 +49,7 @@ Requirements for building from source:
 
 ```sh
 git clone https://github.com/milind-soni/OpenMausBot.git
-cd OpenMausBot
+cd Uni
 corepack enable
 pnpm install --frozen-lockfile
 pnpm package:linux
@@ -57,8 +57,8 @@ pnpm package:linux
 
 The build creates:
 
-- `release/OpenMausBot-<version>-amd64.deb`
-- `release/OpenMausBot-<version>-x86_64.AppImage`
+- `release/Uni-<version>-amd64.deb`
+- `release/Uni-<version>-x86_64.AppImage`
 
 The AppImage uses a static runtime and does not require the legacy `libfuse2` package.
 
@@ -67,10 +67,10 @@ The AppImage uses a static runtime and does not require the legacy `libfuse2` pa
 Install a downloaded Debian package with APT so its desktop dependencies are resolved:
 
 ```sh
-sudo apt install ./OpenMausBot-amd64.deb
+sudo apt install ./Uni-amd64.deb
 ```
 
-Then open **OpenMausBot** from the GNOME application launcher. To remove it:
+Then open **Uni** from the GNOME application launcher. To remove it:
 
 ```sh
 sudo apt remove openmausbot
@@ -79,11 +79,11 @@ sudo apt remove openmausbot
 The portable AppImage does not install system files:
 
 ```sh
-chmod +x release/OpenMausBot-*-x86_64.AppImage
-./release/OpenMausBot-*-x86_64.AppImage
+chmod +x release/Uni-*-x86_64.AppImage
+./release/Uni-*-x86_64.AppImage
 ```
 
-For a downloaded release AppImage, use `OpenMausBot.AppImage` in place of the versioned path above.
+For a downloaded release AppImage, use `Uni.AppImage` in place of the versioned path above.
 
 ### Arch Linux and EndeavourOS
 
@@ -96,7 +96,7 @@ profile; whether a pacman upgrade re-applies the install steps has not been veri
 
 ```sh
 pnpm package:arch
-sudo pacman -U release/OpenMausBot-<version>-x64.pacman
+sudo pacman -U release/Uni-<version>-x64.pacman
 ```
 
 Replace `<version>` with the built version (for example, `0.1.149`). Then launch `openmausbot` from the application launcher or command line.
@@ -106,8 +106,8 @@ A minimal Arch install lacks the FUSE helper and some desktop libraries the AppI
 
 ```sh
 sudo pacman -S --needed fuse3 gtk3 nss alsa-lib libcups mesa
-chmod +x OpenMausBot.AppImage
-./OpenMausBot.AppImage
+chmod +x Uni.AppImage
+./Uni.AppImage
 ```
 
 A full desktop install (for example EndeavourOS with KDE or GNOME) usually has all of these already, and
@@ -120,7 +120,7 @@ The app checks for updates in the background and downloads them by itself. Nothi
 **Restart to update**.
 
 - **Debian package.** The click asks for your password once, in the system's own prompt, installs the update with
-  `apt-get` (so new dependencies are resolved) and reopens OpenMausBot. The downloaded file is copied to a
+  `apt-get` (so new dependencies are resolved) and reopens Uni. The downloaded file is copied to a
   root-only folder and checked against the checksum in the update feed first; a file that does not match is
   refused and nothing is installed. Closing the prompt leaves the update ready to try again. If the session cannot
   show a prompt (SSH, no desktop, no `pkexec`), the app falls back to copying the `sudo apt-get install` command
@@ -163,7 +163,7 @@ pnpm package:linux:dir
 
 ## Agent CLI discovery
 
-Applications launched from GNOME do not inherit the same interactive shell `PATH` as a terminal. OpenMausBot
+Applications launched from GNOME do not inherit the same interactive shell `PATH` as a terminal. Uni
 keeps the inherited path and adds existing common locations such as:
 
 - `~/.local/bin`
@@ -179,16 +179,16 @@ It also probes the login shell in the background. If a CLI still is not detected
 path before launching the app from a terminal and verify it there:
 
 ```sh
-OMB_EXTRA_PATH=/your/custom/bin ./release/OpenMausBot-*-x86_64.AppImage
+OMB_EXTRA_PATH=/your/custom/bin ./release/Uni-*-x86_64.AppImage
 ```
 
-Restart OpenMausBot after installing or signing in to a CLI.
+Restart Uni after installing or signing in to a CLI.
 
 ## Xorg and Wayland
 
 The shell, chat, cloud computers, connected apps, and preview-only capture work in both GNOME session types.
 The Wayland chooser/select/persistent-stream/cancel/end/retry lifecycle has been validated in a real Ubuntu
-24.04 GNOME Wayland session. OpenMausBot detects Wayland before XWayland when both `WAYLAND_DISPLAY` and
+24.04 GNOME Wayland session. Uni detects Wayland before XWayland when both `WAYLAND_DISPLAY` and
 `DISPLAY` exist, so capture cannot accidentally bypass portal-mediated behavior.
 
 Open the Computer panel and use the separate **Preview this computer** card. Capture never starts when the app
@@ -199,7 +199,7 @@ or panel opens.
   you press **Stop preview**, close the panel, end sharing from GNOME, or quit the app.
 
 Cancelling or ending Wayland sharing returns to a calm **Try again** state and never reopens the chooser
-automatically. OpenMausBot does not capture screen audio, remember the selected monitor after restart, or
+automatically. Uni does not capture screen audio, remember the selected monitor after restart, or
 offer an **Open Settings** action on Linux.
 
 Local computer control is independent from preview. It is available after explicit opt-in on Xorg and remains
@@ -210,7 +210,7 @@ fail-closed on Wayland. XWayland's `DISPLAY` never bypasses the Wayland safety g
 Installed `.deb` and AppImage builds include the certified **Cua Driver 0.41.3** CLI and cursor-theme sidecar.
 On GNOME Xorg, open Settings, choose **Enable local control (Beta)**, wait for **Ready**, then explicitly assign a bot
 to **This computer**. No driver download, terminal command, `chmod`, or daemon setup is required. The owned daemon
-starts with `--no-overlay`, so Cua's decorative full-screen X11 cursor surface is never created. OpenMausBot also
+starts with `--no-overlay`, so Cua's decorative full-screen X11 cursor surface is never created. Uni also
 uses Electron software rendering when the NVIDIA driver is loaded, to avoid the reproduced NVIDIA/libGLES
 GPU-process failure that could leave an invisible focused app window receiving input. Other GPUs keep hardware
 acceleration, because software rendering costs about a CPU core while the window animates. Set `OMB_LINUX_GPU=off`
@@ -251,7 +251,7 @@ The packaged runtime remains outside ASAR for deterministic provenance and valid
 The one exception is Omarchy's package-owned `/usr/bin/cua-driver`, described in
 [Omarchy (Hyprland, experimental)](#omarchy-hyprland-experimental).
 
-The Xorg runtime uses private sockets, standard permission mode, per-action OpenMausBot approvals,
+The Xorg runtime uses private sockets, standard permission mode, per-action Uni approvals,
 telemetry/update-check suppression, strict driver identity, overlay-free startup, and lifecycle cleanup tests. Those
 defenses remain necessary, but none substitutes for the real-seat acceptance evidence required to enable Wayland. Linux
 **Auto** never routes to the user's desktop, and no Cloud or Local VM approval can authorize it.
@@ -271,10 +271,10 @@ Support is experimental, like the plugin itself, which Omarchy leaves off by def
    `hyprctl reload`.
 3. Check it: `hyprctl -j cua:status` should report `"state":"input_v3_candidate"`, `"configured":true`, and an input
    transport that is ready.
-4. In OpenMausBot, open **Local control**, choose **Enable local control (Beta)**, wait for **Ready**, then assign a bot
+4. In Uni, open **Local control**, choose **Enable local control (Beta)**, wait for **Ready**, then assign a bot
    to **This computer**. Until the plugin is on, the card says how to turn it on, and **Try again** checks again.
 
-How OpenMausBot decides:
+How Uni decides:
 
 - It treats the session as Hyprland only when `HYPRLAND_INSTANCE_SIGNATURE` is set and `XDG_CURRENT_DESKTOP` (or
   `XDG_SESSION_DESKTOP`) names Hyprland.
@@ -283,7 +283,7 @@ How OpenMausBot decides:
   matching Hyprland ABI as off. It checks again every time local control starts, so a plugin left stale by a Hyprland
   update turns local control off instead of failing halfway.
 - It prefers Omarchy's own driver. The plugin is built against the exact system Hyprland and ships beside the
-  `cua-driver-bin` package, so that pair matches. OpenMausBot never bundles the plugin, because plugins break on
+  `cua-driver-bin` package, so that pair matches. Uni never bundles the plugin, because plugins break on
   Hyprland updates. This is the one exception to "only the bundled driver runs", and it is narrow:
   - the driver must be the fixed path `/usr/bin/cua-driver`, owned by root and not writable by anyone else;
   - `pacman -Qo` must say `cua-driver-bin` owns it (and owns its target, if it is a symlink);
@@ -291,7 +291,7 @@ How OpenMausBot decides:
     the bundled patch release (0.41.3 or a later 0.41.x).
 
   That is the same root-owned package trust you already give the compositor. A user-installed copy or a `PATH`
-  lookup never qualifies. If any check fails, OpenMausBot uses its bundled driver instead, started with
+  lookup never qualifies. If any check fails, Uni uses its bundled driver instead, started with
   `CUA_DRIVER_RS_ENABLE_WAYLAND=1`.
 
 What works, and what doesn't:
@@ -303,7 +303,7 @@ What works, and what doesn't:
 - XWayland windows, Unicode and IME input, multiple keyboard layouts, and modified pointer gestures are outside
   the plugin's input contract.
 - A foreground action you approve moves your keyboard focus and pointer, and does not put them back.
-- Every action still goes through OpenMausBot's approval flow, the same as on Xorg.
+- Every action still goes through Uni's approval flow, the same as on Xorg.
 
 ## Validate a package change
 
@@ -321,7 +321,7 @@ pnpm smoke:linux-package
 The verifier checks `.deb` metadata, desktop identity, the exact dormant Cua resource tree and provenance,
 SquashFS/DEB directory modes, runtime path policy, and matching binary hashes across all artifacts. The local smoke
 launches the unpacked app and AppImage without `--no-sandbox`; CI first reproduces a `0.1.7` in-place DEB upgrade and
-then runs the same smoke against `/opt/OpenMausBot/openmausbot`. These lanes prove the embedded server and UI are
+then runs the same smoke against `/opt/Uni/openmausbot`. These lanes prove the embedded server and UI are
 usable while an optional Composio broker stalls, verify that an old local-control opt-in is cleared, and assert that
 no Cua executable starts on Xorg or simulated Wayland. Low-level runtime tests retain the future private-daemon
 contract without activating it in a packaged app. Only a real-seat acceptance matrix can authorize re-enablement.
@@ -330,7 +330,7 @@ contract without activating it in a packaged app. Only a real-seat acceptance ma
 
 ### An agent CLI is missing
 
-Run the CLI directly in a terminal, finish its sign-in flow, then restart OpenMausBot. If it lives outside the
+Run the CLI directly in a terminal, finish its sign-in flow, then restart Uni. If it lives outside the
 common directories above, use `OMB_EXTRA_PATH` while testing and report the install location so it can be
 considered for automatic discovery.
 
@@ -356,8 +356,8 @@ open a new chooser. Cancelling or stopping sharing never causes an automatic sec
 Confirm the executable bit and architecture:
 
 ```sh
-chmod +x OpenMausBot-*-x86_64.AppImage
-file OpenMausBot-*-x86_64.AppImage
+chmod +x Uni-*-x86_64.AppImage
+file Uni-*-x86_64.AppImage
 ```
 
 Run it from a terminal once to collect the startup output. Do not install `libfuse2` just for this AppImage; the

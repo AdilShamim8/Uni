@@ -44,7 +44,7 @@ holds it awake while a way in is on, and that includes **Your other computers**.
 
 | It says | Do this |
 |---|---|
-| "…is a MausBot desktop app. To open it from here, turn on Tailscale and Your other computers…" | The address reached the host's phone link or an app that is not shared. Share the host as above and use its link. |
+| "…is a Uni desktop app. To open it from here, turn on Tailscale and Your other computers…" | The address reached the host's phone link or an app that is not shared. Share the host as above and use its link. |
 | "That code is for the phone app…" | A six-digit code was typed. Use **Pair a computer** on the host. |
 | "Tailscale isn't connected on this computer." | Open Tailscale on the client and sign in. |
 | "…isn't on this computer's tailnet." | The two computers are signed in to different Tailscale accounts. |

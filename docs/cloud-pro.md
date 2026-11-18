@@ -1,7 +1,7 @@
 # OMB Cloud: the home machine
 
 OMB Cloud (the Starter, Pro and Max plans) gives one person an always-on
-OpenMausBot server of their own (a plan may instead sleep when idle: see
+Uni server of their own (a plan may instead sleep when idle: see
 [Sleeping homes](#sleeping-homes-the-power-read-and-the-sleep-handshake)). The plans differ in machine size, disk and
 included allowances; everything on this page applies to all of them. Each
 customer gets one Fly app with one `home` machine that is always on, a volume
@@ -9,16 +9,16 @@ at `/data`, and TLS at `https://<app>.fly.dev`. The desktop app, the phone and
 the web are windows onto it. Local use of the app is unchanged and free.
 Customers read its name as **MausBot Cloud** wherever they meet it (the
 app, the Admin's pages, emails); "OMB Cloud" is this page's shorthand, and
-the app itself is still OpenMausBot.
+the app itself is still Uni.
 
 OMB Cloud includes no AI usage. The person signs in on their machine with their
 own Claude or ChatGPT subscription, or an API key, through the same sign-in
-flows as any OpenMausBot server. Nothing on a Cloud home is routed to a
+flows as any Uni server. Nothing on a Cloud home is routed to a
 platform model gateway. The one exception is a free trial's Claude credit, a
 small one-time amount the Admin meters on its own relay, used only until the
 person connects their own AI ([Trial Claude credit](#trial-claude-credit)).
 
-This page is the OpenMausBot half of a contract with three parties:
+This page is the Uni half of a contract with three parties:
 
 - **the home machine**: this repository's `cloud-home` image (`Dockerfile`, `deploy/fly/`);
 - **the Admin** (openmaus-cloud, `docs/consumer-cloud.md` there): provisions
@@ -65,7 +65,7 @@ Contract version: `1` (`cloudContractVersion` on the wire).
       credit lasts and nothing of the person's own can run, a line says so
       (with the amount where the desktop app knows it), and **Use my credit for
       now** moves on.
-   3. **Files and apps**, optional: **Share folders** opens Settings → MausBot
+   3. **Files and apps**, optional: **Share folders** opens Settings → Uni
       Cloud in this computer's window, one click from Files (a browser is told
       to use the desktop app), and **Connect apps** opens Connected apps on the
       Cloud.
@@ -139,7 +139,7 @@ sign-in instead of the welcome flow, which describes the person's own computer
 
 ### Use My Cloud on your phone
 
-1. Install MausBot on your phone from the App Store or Google Play.
+1. Install Uni on your phone from the App Store or Google Play.
 2. The menu under your name → **Connect your phone · to your Cloud (always on)**, or
    **Settings → MausBot Cloud → Use My Cloud on your phone**. The Cloud opens in
    the app window at its phone pairing.
@@ -392,10 +392,10 @@ shared-computer tools.
   Auto never lands on either.
 - A bot still set to either (an older or imported setting) has each task
   refused with a sentence saying so, suggesting Auto, Cloud or Browser and,
-  for This computer, the person's own computer while OpenMausBot is open on it.
+  for This computer, the person's own computer while Uni is open on it.
 - Every turn's system prompt says the bot runs in the cloud. Asked about the
   person's own computer, a bot with the shared-computer tools checks for a lent
-  Mac and, finding none, says so and asks them to open OpenMausBot on it; a bot
+  Mac and, finding none, says so and asks them to open Uni on it; a bot
   without them says it cannot reach it. Either offers the browser and cloud computers, never a
   place that cannot exist.
 - The built-in browser is on unless the person switches it off in Settings.
@@ -620,7 +620,7 @@ The grant (`automaticGrant`) is the same for every Cloud of the person's own:
   a drive) stay lent as they were, by the same ids, so Files keeps their copies
   (`docs/files.md`); one deleted since is left out.
 - **Apps and screen**, once computer control works here: on macOS once the
-  person allowed OpenMausBot Accessibility and Screen Recording. macOS asks
+  person allowed Uni Accessibility and Screen Recording. macOS asks
   through the app's own permission flow: at start-up, from Settings' Retry, and
   the first time a Cloud's bot needs apps and screen, when main starts computer
   control again (at most every 10 minutes), which asks macOS for what it never
@@ -788,7 +788,7 @@ Cloud every profile stays built-in.
   connection is dropped, and each of its calls gets "Someone else wrote in this
   conversation, so it can't use your Chrome. Start a new conversation to use it."
 - **When it can't**, the call says why in one line the bot can pass on: the
-  computer is offline, no computer lends Chrome (open OpenMausBot there), Chrome
+  computer is offline, no computer lends Chrome (open Uni there), Chrome
   isn't open with remote debugging on, or Chrome did not accept the connection
   (it may be waiting for Allow). It never falls back to the built-in browser,
   whose sign-ins differ. A connection no bot has used for the desktop's browser
@@ -913,7 +913,7 @@ On the Cloud home (`server/shared-computers.ts`, `server/index.ts`):
   named) is never the owner's, whoever writes in it. Whenever a computer is lent but a turn can't use it,
   `list_shared_computers` answers why in `unavailable` and `say` (`cloudLendingRefusalText` in
   `server/cloud-lending.ts`), and a refused `shared_computer` call answers the same, so the bot says the reason instead
-  of asking the person to open OpenMausBot: lines from before My Cloud carried the owner's name, someone else's words ("Someone else
+  of asking the person to open Uni: lines from before My Cloud carried the owner's name, someone else's words ("Someone else
   wrote in this conversation, so it can't use your Mac. Start a new conversation to use it."; in a room, "Start a new
   thread in this group chat to use it."), a webhook's or another's routine's post where no other person wrote, a changed memory, a room turn no line of the owner's started, or any other
   turn that isn't provably the owner's. A move marks the lines and answers the owner wrote in a room as theirs, as in
@@ -1152,7 +1152,7 @@ refuses to start if Node, itself, the server's entry point, Caddy or its
 config (or any folder above them) is not root's, is writable by others, or
 is on the volume. Only the `/data` volume is `maus`'s.
 
-`HOME=/data`, so `~/.claude`, `~/.codex`, `~/.grok` and OpenMausBot's own
+`HOME=/data`, so `~/.claude`, `~/.codex`, `~/.grok` and Uni's own
 data (`/data/.openmausbot`) persist on the volume.
 
 ### Memory
@@ -1181,7 +1181,7 @@ provider outage. So on a Cloud home (`server/engine-memory.ts`):
   home it never told has no such limit. What a bot's own turn starts always goes through,
   and a teammate's hand-off never takes that one thread from the person.
 - **How many bots a Starter Cloud makes and keeps awake.** Any number; five of them,
-  beside its MausBot and its Chief of Staff, take turns (`STARTER_AWAKE_LIMIT` in
+  beside its Uni and its Chief of Staff, take turns (`STARTER_AWAKE_LIMIT` in
   `server/host/starter-awake.ts`), from the same signed plan, and the rest are paused with
   everything they know kept. An archived bot or one that moved away isn't counted. The awake
   set is written down (`starter-awake.json`) while every bot still fits, so a bot made past
@@ -1241,7 +1241,7 @@ provider outage. So on a Cloud home (`server/engine-memory.ts`):
   server is -800 and Caddy -900, so the health check is the last to go, and
   the root supervisor that restarts them is -1000, never picked. When memory
   runs out the kernel takes a bot's process, never the workspace.
-- **OpenCode reaches OpenMausBot's own tools over HTTP.** The agents,
+- **OpenCode reaches Uni's own tools over HTTP.** The agents,
   browser, computer, Data, Email and phone servers are endpoints of this server
   (`/api/internal/mcp-http/<name>`, `server/routes/own-mcp-http.ts`) with the
   turn's capability in the Authorization header, instead of a Node proxy
@@ -1542,7 +1542,7 @@ computers belong to this machine on every request.
 ### Included connected apps
 
 Connected apps (Gmail, Outlook, Slack, LinkedIn, Calendly and the rest of the
-catalog) come with the plan through OpenMausBot's managed connection service,
+catalog) come with the plan through Uni's managed connection service,
 the same one the packaged desktop app uses. The Admin sets nothing for it: at
 every start the server registers the Cloud's own installation if it has none,
 keeps the token owner-only in `/data/.openmausbot/connected-apps-installation.json`
@@ -1572,7 +1572,7 @@ credit, the Admin also sets:
 | `OMB_CLOUD_AI_URL` | env | `https://cloud.openmausbot.com/api/cloud/services/ai/v1`, an OpenAI-compatible base URL with its `/v1` (as the Admin sends it): `POST {url}/chat/completions` and `GET {url}/models` only. Nothing Anthropic-shaped (no `/v1/messages`) answers a credit token. |
 | `OMB_CLOUD_AI_TOKEN` | secret | This machine's credit token (`omb_ai_…`), sent as `Authorization: Bearer`. It works only through the relay, only for this account's credit, and not at all once it is spent or the Cloud is deleted. |
 
-- **OpenMausBot's own chat engine, nothing else.** `server/cloud-credit-provider.ts`
+- **Uni's own chat engine, nothing else.** `server/cloud-credit-provider.ts`
   adds one read-only **Trial credit · Claude** engine: the OpenAI-compatible
   driver (`openai-compat`, the same chat engine and tools as any API key) with
   the relay as its address and the token as its own key, on the models the
@@ -1644,7 +1644,7 @@ x-omb-cloud-timestamp: 1790000000
 x-omb-cloud-nonce: <base64url, 16–128 characters>
 x-omb-cloud-signature: v1=<base64url HMAC-SHA256(OMB_CLOUD_BOOTSTRAP_SECRET, canonical)>
 
-{"label":"OpenMausBot app (Cloud)","ttlSeconds":300}
+{"label":"Uni app (Cloud)","ttlSeconds":300}
 ```
 
 where `canonical` is
@@ -2112,7 +2112,7 @@ for.
 Its sheet asks "Before you go: what's the main reason?" with one-tap chips
 (Missing a feature, Too expensive, Hard to set up, Didn't work as I expected,
 Not using it right now, Something else; tap again to let one go), two optional
-boxes ("What did you expect MausBot to do?", "What could we have done
+boxes ("What did you expect Uni to do?", "What could we have done
 better?"), "Rather talk it through? Book 30 minutes with Milind", and **Keep my
 plan** and **Cancel my trial** / **Cancel my plan**. Cancelling never needs an
 answer. The page sends only the survey's words: `cloudAccount.cancelPlan` on
@@ -2161,7 +2161,7 @@ launch: What's new comes first, and the Boat card waits for a later one.
    or a desktop signed in with an organization), never during setup (the welcome,
    the tour), a call, another dialog, busy work or an update being offered,
    never in the launch whose welcome finished or before a new install's first
-   reply, and after MausBot's first-launch card. `lib/whats-new.ts` decides the
+   reply, and after Uni's first-launch card. `lib/whats-new.ts` decides the
    slides from the account the app already holds (its plan, its trial, its
    teams and its Clouds list):
    - **No Cloud plan** (signed out, or signed in with none): **Meet the new
@@ -2463,7 +2463,7 @@ itself, and from then on opens the Cloud as its only home
 thing by id over one owner session (`electron/cloud-send.mjs`), checks that it
 all arrived, and freezes this computer's copy so nothing runs in two places
 (`server/move-freeze.ts`). An older desktop's Copy this computer here gets
-`410` with "Update OpenMausBot to bring your bots here by itself."
+`410` with "Update Uni to bring your bots here by itself."
 (`server/cloud-move-http.ts`); a backup file still restores from Settings →
 Import & export. [docs/verification/cloud-send.md](verification/cloud-send.md) has the
 tests.

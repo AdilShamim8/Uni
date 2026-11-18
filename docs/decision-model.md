@@ -1,6 +1,6 @@
 # Decision model
 
-OpenMausBot can use a fast decision model to pick things for your bots. It
+Uni can use a fast decision model to pick things for your bots. It
 answers in a few hundred milliseconds for a fraction of a cent. It never does
 the work: the chosen bot still runs its own turn on its own engine. Four
 providers are supported: Cloudflare's Clef on
@@ -256,7 +256,7 @@ Cloudflare, or the server `workersAiBaseUrl` points to, which also receives the
 token. With OpenRouter that is OpenRouter and the host it routes the model to,
 under OpenRouter's privacy settings and your account's data policy, or the
 server `openrouterBaseUrl` points to, which also receives the key;
-OpenMausBot does not set a data-collection preference. With a custom endpoint
+Uni does not set a data-collection preference. With a custom endpoint
 it is the server at its base URL, which also receives its key.
 
 Inbox triage first has each new email read, when a reading provider is set:
