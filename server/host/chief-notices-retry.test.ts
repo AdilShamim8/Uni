@@ -167,6 +167,9 @@ describe("a run stopped to free memory", () => {
     const told: unknown[] = [];
     const f = fixture({
       later: (run, ms) => { waiting.push({ run, ms }); },
+      // The Cloud context these fixtures mean; without it the live engine-memory probe decides,
+      // and the same suite says "this server" on a self-hosted CI runner and "this Cloud" on a dev box.
+      selfHosted: () => false,
       continueRequest: async (botId, threadId, text) => { continued.push({ botId, threadId, text }); },
       notify: (notification) => { told.push(notification); },
       ...over,
@@ -282,6 +285,9 @@ describe("a run the server had no room to start", () => {
     const told: unknown[] = [];
     const f = fixture({
       later: (run, ms) => { waiting.push({ run, ms }); },
+      // The Cloud context these fixtures mean; without it the live engine-memory probe decides,
+      // and the same suite says "this server" on a self-hosted CI runner and "this Cloud" on a dev box.
+      selfHosted: () => false,
       continueRequest: async (botId, threadId, text) => { continued.push({ botId, threadId, text }); },
       notify: (notification) => { told.push(notification); },
       ...over,
