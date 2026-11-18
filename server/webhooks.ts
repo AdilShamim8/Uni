@@ -461,7 +461,7 @@ export class WebhookManager {
   create(input: JsonValue): CreatedWebhook {
     this.assertWritable();
     const clean = cleanInput(parseTriggerInput(input));
-    if (this.options.botState(clean.botId) === "missing") fail(400, "That MAUS no longer exists");
+    if (this.options.botState(clean.botId) === "missing") fail(400, "That bot no longer exists");
     if (clean.groupId) this.assertRoomMember(clean.botId, clean.groupId);
     const now = this.now();
     const secret = newSecret();
@@ -527,7 +527,7 @@ export class WebhookManager {
       maxPendingRuns: patch.maxPendingRuns === undefined ? trigger.maxPendingRuns : patch.maxPendingRuns,
       sameConversation: patch.sameConversation ?? trigger.sameConversation,
     });
-    if (this.options.botState(clean.botId) === "missing") fail(400, "That MAUS no longer exists");
+    if (this.options.botState(clean.botId) === "missing") fail(400, "That bot no longer exists");
     if (clean.groupId) this.assertRoomMember(clean.botId, clean.groupId);
     Object.assign(trigger, clean, { updatedAt: this.now() });
     if (!clean.eventTypes?.length) delete trigger.eventTypes;
@@ -611,7 +611,7 @@ export class WebhookManager {
     this.deliveries = this.deliveries.filter((delivery) => !endpoints.some((prefix) => delivery.key.startsWith(prefix)));
     for (const trigger of gone) {
       this.rate.delete(trigger.endpointId);
-      this.options.cancelQueued?.(trigger.id, "The assigned MAUS was deleted");
+      this.options.cancelQueued?.(trigger.id, "The assigned bot was deleted");
     }
     this.save();
     for (const trigger of gone) this.options.emit?.({ kind: "webhook.deleted", webhookId: trigger.id });
@@ -676,7 +676,7 @@ export class WebhookManager {
    *  An ignored or duplicate event comes back as its finished receipt. */
   private admit(trigger: StoredWebhookTrigger, event: WebhookEvent, byPerson: boolean, now: number): { deliveryId: string } | { receipt: WebhookReceiveResult } {
     if (!trigger.enabled && !byPerson) fail(409, "This webhook is paused");
-    if (this.options.botState(trigger.botId) === "missing") fail(410, "The assigned MAUS no longer exists");
+    if (this.options.botState(trigger.botId) === "missing") fail(410, "The assigned bot no longer exists");
 
     const ignore = (reason: string) => {
       const deliveryId = String(event.deliveryId ?? "").trim().slice(0, 200) || randomUUID();
@@ -867,7 +867,7 @@ export class WebhookManager {
       outcome: "captured",
       statusCode: 202,
       deliveryId,
-      reason: "Test event captured; enable the webhook to start MAUS tasks",
+      reason: "Test event captured; enable the webhook to start bot tasks",
     });
     this.save();
     this.emit(trigger);
