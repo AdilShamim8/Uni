@@ -43,3 +43,4 @@ deploy/podman/.env.*
 !deploy/podman/.env.example
 /.env
 core*
+scripts/typecheck-chunks/
