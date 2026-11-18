@@ -1,27 +1,27 @@
 ---
-title: Self-hosting MausBot
+title: Self-hosting Uni
 description: Run the harness and desktop app on infrastructure you control.
 icon: Server
 ---
 
-MausBot is local-first by default: the harness listens on loopback, agent CLIs run on your machine, and application state lives under `~/.openmausbot`.
+Uni is local-first by default: the harness listens on loopback, agent CLIs run on your machine, and application state lives under `~/.openmausbot`.
 
-If you only want to use a remote Docker desktop while MausBot and its agents stay on your current computer, follow [Your own VPS (BYO)](/docs/computers/byo-vps) instead.
+If you only want to use a remote Docker desktop while Uni and its agents stay on your current computer, follow [Your own VPS (BYO)](/docs/computers/byo-vps) instead.
 
 ## On a server, with one command
 
-On a fresh Ubuntu 22.04 or 24.04 server (x86-64) with a domain name pointing at it, the installer checks the server, installs MausBot with Docker under `/opt/openmausbot` and ends with HTTPS on your domain:
+On a fresh Ubuntu 22.04 or 24.04 server (x86-64) with a domain name pointing at it, the installer checks the server, installs Uni with Docker under `/opt/openmausbot` and ends with HTTPS on your domain:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/milind-soni/OpenMausBot/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com
+curl -fsSL https://raw.githubusercontent.com/milind-soni/Uni/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com
 ```
 
 Add `--check` to only check the server; it changes nothing. Run the command again to update or repair, and `--uninstall` to stop the server while keeping your data. [Deploy on a VPS](/docs/self-hosting/deploy-vps#quick-start-one-command-on-your-own-domain) lists every check, the files it writes and how the first admin signs in.
 
 ## On your own computer, or by hand
 
-1. Run MausBot on your personal macOS, Windows, or Ubuntu computer.
-2. Install and authenticate the agent CLIs you want to use separately; the npm OpenMausBot package does not include them. Use the same operating-system account for setup and the running server.
+1. Run Uni on your personal macOS, Windows, or Ubuntu computer.
+2. Install and authenticate the agent CLIs you want to use separately; the npm Uni package does not include them. Use the same operating-system account for setup and the running server.
 3. Add optional third-party keys only for the services you need.
 4. Keep the harness on loopback.
 5. Use it from other devices by pairing them. `openmausbot serve` prints one pairing link for the way in you choose; paste it into the desktop app under **＋ → Connect to a server**, open it in a browser, or scan its QR with a phone.
@@ -42,7 +42,7 @@ Stop the server before a filesystem backup. Application state under `.openmausbo
 
 ## What is still third party
 
-Self-hosting MausBot does not self-host every optional provider:
+Self-hosting Uni does not self-host every optional provider:
 
 - Agent providers authenticate and bill through their own CLI or API.
 - Composio owns connected-app OAuth grants unless you replace that integration.
