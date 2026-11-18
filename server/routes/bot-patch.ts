@@ -7,7 +7,7 @@ import { normalizeOutboundPolicy } from "../../shared/outbound.ts";
 import { normalizePhoneApps } from "../../shared/phone-apps.ts";
 import { parseToolScope, toolScopeWidens } from "../../shared/tool-scope.ts";
 import { parseToolsOff, TOOL_GROUPS } from "../../shared/tool-groups.ts";
-import { isMausColor, MAUS_COLOR_NAMES, type BotUpdateResponse, type WireBot, type WireGroup } from "../../shared/wire.ts";
+import { isBotColor, BOT_COLOR_NAMES, type BotUpdateResponse, type WireBot, type WireGroup } from "../../shared/wire.ts";
 import { dropRemovedGrants, MAX_ALWAYS_ALLOW } from "../always-allow.ts";
 import { checkBrowserProfileChange, settleBrowserChange } from "../bot-browser-profile.ts";
 import { validateBotCwd } from "../bot-cwd.ts";
@@ -126,8 +126,8 @@ export function createBotPatchRoutes(deps: BotPatchRouteDeps): RouteHandler {
           });
         }
       }
-      if (body.color !== undefined && !isMausColor(body.color)) {
-        return json(res, 400, { error: `color must be ${MAUS_COLOR_NAMES.slice(0, -1).join(", ")}, or ${MAUS_COLOR_NAMES.at(-1)}` });
+      if (body.color !== undefined && !isBotColor(body.color)) {
+        return json(res, 400, { error: `color must be ${BOT_COLOR_NAMES.slice(0, -1).join(", ")}, or ${BOT_COLOR_NAMES.at(-1)}` });
       }
       if (body.mascotExpression !== undefined && body.mascotExpression !== null &&
         (typeof body.mascotExpression !== "string" || body.mascotExpression.length > 80)) {

@@ -68,15 +68,20 @@ export type CloudBackend = "box" | "vps";
 /** A place a bot can act. `cloud` covers both cloud backends. */
 export type Surface = "cloud" | "vm" | "local" | "browser";
 
-export const MAUS_COLOR_NAMES = [
+export const BOT_COLOR_NAMES = [
   "green", "blue", "red", "orange", "purple", "cyan", "pink",
   "yellow", "teal", "coral", "silver", "chrome",
 ] as const;
-export type MausColor = (typeof MAUS_COLOR_NAMES)[number];
+export type BotColor = (typeof BOT_COLOR_NAMES)[number];
 
-export function isMausColor(value: unknown): value is MausColor {
-  return typeof value === "string" && (MAUS_COLOR_NAMES as readonly string[]).includes(value);
+export function isBotColor(value: unknown): value is BotColor {
+  return typeof value === "string" && (BOT_COLOR_NAMES as readonly string[]).includes(value);
 }
+
+/** The pre-v0.1 names, kept so older imports keep compiling. */
+export const MAUS_COLOR_NAMES = BOT_COLOR_NAMES;
+export type MausColor = BotColor;
+export const isMausColor = isBotColor;
 
 /** The face a bot rests on, as one of the engine's state names. */
 export type MausExpression = string;
@@ -281,7 +286,7 @@ export interface WireBot extends DefaultBotFields, BotAccessFields {
   /** The SOUL.md mirror differed from soul at the last turn dispatch. */
   soulDrift?: boolean;
   notifications: boolean;
-  color: MausColor;
+  color: BotColor;
   mascotExpression?: MausExpression | null;
   mascotBody?: BotBodyId | null;
   /** Overrides both eyes and mouth. Absent or null preserves the body's default inks. */

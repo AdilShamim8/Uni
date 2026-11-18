@@ -1,12 +1,12 @@
 import { t } from "./i18n";
-import { MAUS_COLORS, type MausColor } from "./mascot";
+import { MAUS_COLORS, type BotColor } from "./mascot";
 import { isMentionBoundary, isMentionNameContinuation } from "../../shared/mention-boundary";
 import { personTagAt, personTagNames } from "../../shared/person-mention";
 import { devsTagAt } from "../../shared/devs-mention";
 import { blankCode } from "../../shared/skill-command";
 
 /** A name the @ list offers: a bot's, or (`person`) a teammate's on a Team Cloud. */
-export type MentionPeer = { name: string; hidden?: boolean; color?: MausColor; person?: true };
+export type MentionPeer = { name: string; hidden?: boolean; color?: BotColor; person?: true };
 export type MentionRange = { start: number; end: number; color?: string; you?: true; person?: true };
 export type MentionPerson = { profileName?: string | null };
 

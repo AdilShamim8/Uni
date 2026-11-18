@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { Window } from "happy-dom";
 import { describe, expect, it } from "vitest";
 import { contrastRatio, mixSrgb, toneForSurface } from "./color-contrast";
-import { MAUS_COLORS, MAUS_COLOR_NAMES } from "./mascot";
+import { MAUS_COLORS, BOT_COLOR_NAMES } from "./mascot";
 import { SKIN_IDS } from "./skins";
 
 const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "../styles.css"), "utf8");
@@ -25,7 +25,7 @@ describe("room speaker colors", () => {
   });
 
   it("names each bot with a class that reads the skin token", () => {
-    for (const color of MAUS_COLOR_NAMES) {
+    for (const color of BOT_COLOR_NAMES) {
       expect(css).toContain(`.bot-identity[data-bot-color="${color}"] { color: var(--identity-${color}); }`);
     }
   });
@@ -43,7 +43,7 @@ describe("room speaker colors", () => {
     }
   });
 
-  it.each(SKIN_IDS.flatMap((id) => MAUS_COLOR_NAMES.map((color) => [id, color] as const)))(
+  it.each(SKIN_IDS.flatMap((id) => BOT_COLOR_NAMES.map((color) => [id, color] as const)))(
     "gives %s × %s a name color that clears 4.5:1 on the thread",
     (id, color) => {
       const tokens = skin(id);

@@ -3,7 +3,7 @@
 import { memo, useRef, type ReactNode } from "react";
 import { MausAvatar } from "@/components/Avatar";
 import { cn } from "@/lib/cn";
-import type { MausColor, MausState } from "@/lib/mascot";
+import type { BotColor, MausState } from "@/lib/mascot";
 import { useLiveMotion } from "./live-motion";
 
 /** [x, y, radius, seconds per twinkle (0: steady), delay] in the card's 900×120 sky; the scene keeps to x ≥ 600. */
@@ -12,7 +12,7 @@ const STARS = [
   [598, 92, 0.7, 0, 0], [742, 10, 0.8, 0, 0], [652, 106, 0.6, 0, 0], [884, 74, 0.8, 0, 0],
 ] as const;
 const SPARKLES = [[640, 20, 4.2], [712, 40, 3], [868, 62, 3.2]] as const;
-const CREW: readonly { color: MausColor; state: MausState; spot: readonly [x: number, y: number, size: number] }[] = [
+const CREW: readonly { color: BotColor; state: MausState; spot: readonly [x: number, y: number, size: number] }[] = [
   { color: "orange", state: "working", spot: [636, 52, 28] },
   { color: "pink", state: "idle", spot: [668, 46, 30] },
   { color: "green", state: "thinking", spot: [702, 52, 28] },

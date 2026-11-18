@@ -3,10 +3,10 @@
 import { memo, useId, useRef } from "react";
 import { MausAvatar } from "@/components/Avatar";
 import { t } from "@/lib/i18n";
-import type { MausColor, MausState } from "@/lib/mascot";
+import type { BotColor, MausState } from "@/lib/mascot";
 import { useLiveMotion } from "../cloud-buy/live-motion";
 
-type Person = { name: string; color: MausColor; chief: MausColor; x: number; y: number; right: boolean; path: string };
+type Person = { name: string; color: BotColor; chief: BotColor; x: number; y: number; right: boolean; path: string };
 const CHIP = { width: 126, height: 44 };
 /** Made-up teammates, clear of the popup's close button at the top right; each path runs from the person's card into the
  * shared Cloud. */
@@ -16,7 +16,7 @@ const PEOPLE: readonly Person[] = [
   { name: "Cleo", color: "coral", chief: "yellow", x: 384, y: 50, right: true, path: "M384 72C360 72 350 92 328 106" },
   { name: "Dara", color: "blue", chief: "cyan", x: 384, y: 204, right: true, path: "M384 226C358 226 348 210 326 198" },
 ];
-type Bot = { color: MausColor; state: MausState; x: number; y: number; size: number };
+type Bot = { color: BotColor; state: MausState; x: number; y: number; size: number };
 /** The shared bots by department: each department's main bot, and a helper beside it. */
 const DEPARTMENTS: readonly { label: "whatsNew.team.support" | "whatsNew.team.sales"; x: number; bots: readonly Bot[] }[] = [
   { label: "whatsNew.team.support", x: 224, bots: [{ color: "cyan", state: "idle", x: 236, y: 142, size: 24 }, { color: "blue", state: "working", x: 200, y: 130, size: 46 }] },
@@ -24,7 +24,7 @@ const DEPARTMENTS: readonly { label: "whatsNew.team.support" | "whatsNew.team.sa
 ];
 const CROWN = "M0 5.5 1.2 0 4 3 6 0 8 3 10.8 0 12 5.5Z";
 const ink = (percent: number) => `color-mix(in srgb, var(--color-ink) ${percent}%, transparent)`;
-const tint = (color: MausColor, percent: number) => `color-mix(in srgb, var(--identity-${color}) ${percent}%, var(--color-card))`;
+const tint = (color: BotColor, percent: number) => `color-mix(in srgb, var(--identity-${color}) ${percent}%, var(--color-card))`;
 
 /** The Cloud: its pieces drawn once with a line around them and once filled over it, so only its outline shows. */
 function CloudShape({ fill, line }: { fill: string; line: string }) {

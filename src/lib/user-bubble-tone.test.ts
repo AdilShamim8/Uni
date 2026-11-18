@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { contrastRatio, relativeLuminance, toOklch } from "./color-contrast";
-import { MAUS_COLORS, MAUS_COLOR_NAMES } from "./mascot";
+import { MAUS_COLORS, BOT_COLOR_NAMES } from "./mascot";
 import { SKIN_IDS } from "./skins";
 import {
   BUBBLE_TEXT_MIN,
@@ -32,7 +32,7 @@ function hueDistance(a: number, b: number): number {
 }
 
 describe("user bubble tone", () => {
-  it.each(MAUS_COLOR_NAMES)("fills %s with a gradient that stays on the bot's hue", (color) => {
+  it.each(BOT_COLOR_NAMES)("fills %s with a gradient that stays on the bot's hue", (color) => {
     const tone = userBubbleTone(color);
     expect(tone.ink).toBe(color === "yellow" ? "#101410" : "#ffffff");
     expect(tone.gradient).toBe(`linear-gradient(to bottom left, ${tone.background}, ${tone.deep})`);
@@ -45,7 +45,7 @@ describe("user bubble tone", () => {
     }
   });
 
-  it.each(MAUS_COLOR_NAMES)("gives %s a flat fill whose ink reads at 4.5:1, for the Simple bubble and the composer's round button", (color) => {
+  it.each(BOT_COLOR_NAMES)("gives %s a flat fill whose ink reads at 4.5:1, for the Simple bubble and the composer's round button", (color) => {
     const tone = userBubbleTone(color);
     expect(contrastRatio(tone.ink, tone.background)).toBeGreaterThanOrEqual(4.5);
     const flat = userBubbleStyle(color, { flat: true }) as Record<string, unknown>;
@@ -60,7 +60,7 @@ describe("user bubble tone", () => {
     expect(contrastRatio(tone.ink, tone.deep)).toBeGreaterThanOrEqual(BUBBLE_TEXT_MIN);
   });
 
-  it.each(SKIN_IDS.flatMap((id) => MAUS_COLOR_NAMES.map((color) => [id, color] as const)))(
+  it.each(SKIN_IDS.flatMap((id) => BOT_COLOR_NAMES.map((color) => [id, color] as const)))(
     "clears AA for %s × %s, including the pieces inside the bubble",
     (id, color) => {
       const tone = userBubbleTone(color);
@@ -90,7 +90,7 @@ describe("user bubble tone", () => {
       expect(contrastRatio(tone.successInk, tone.success), "success fill").toBeGreaterThanOrEqual(BUBBLE_TEXT_MIN);
       expect(contrastRatio(tone.selectionInk, tone.selection), "selection").toBeGreaterThanOrEqual(BUBBLE_TEXT_MIN);
       if (tone.ink === "#ffffff") expect(tone.selection).toBe(selectionBackground(tone.background));
-      for (const mention of MAUS_COLOR_NAMES) {
+      for (const mention of BOT_COLOR_NAMES) {
         const chip = mentionChipBackground(MAUS_COLORS[mention], tone.inset);
         expect(contrastRatio(tone.ink, chip), `mention ${mention}`).toBeGreaterThanOrEqual(BUBBLE_TEXT_MIN);
       }

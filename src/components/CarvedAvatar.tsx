@@ -8,7 +8,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { MAUS_COLORS, type MausColor, type MausMotion, type MausState } from "@/lib/mascot";
+import { MAUS_COLORS, type BotColor, type MausMotion, type MausState } from "@/lib/mascot";
 import { avatarMarks, type AvatarKind } from "@/lib/avatar-marks";
 import { CARVED_BODIES, type CarvedBody, type CarvedBodyId } from "../../shared/carved-bodies";
 import type { CursorAvatarHandle } from "./CursorAvatar";
@@ -136,7 +136,7 @@ export function vivid(hex: string): string {
   return `#${[ch(h + 1 / 3), ch(h), ch(h - 1 / 3)].map((v) => Math.round(v * 255).toString(16).padStart(2, "0")).join("")}`;
 }
 
-export function carvedFills(body: CarvedBody, color: MausColor): { body: string; accent: string } {
+export function carvedFills(body: CarvedBody, color: BotColor): { body: string; accent: string } {
   const accent = vivid(MAUS_COLORS[color] ?? MAUS_COLORS.green);
   if (body.paint === "bone") return { body: body.bone ?? "#f1ede6", accent };
   if (body.paint === "pale") return { body: mix(MAUS_COLORS[color] ?? MAUS_COLORS.green, "#ffffff", 0.86), accent };
@@ -145,7 +145,7 @@ export function carvedFills(body: CarvedBody, color: MausColor): { body: string;
 
 export type CarvedAvatarProps = {
   body: CarvedBodyId;
-  color: MausColor;
+  color: BotColor;
   faceColor?: MascotFaceColor | null;
   size?: number;
   state?: MausState;

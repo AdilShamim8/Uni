@@ -6,7 +6,7 @@ import { ArrowUpRight, Check, ChevronDown, Copy, FolderDown, Github, Loader2, Mo
 
 import { COMMUNITY_UPLOAD_URL, TEMPLATE_UPDATE_MESSAGE, type TemplateAvatar, type TemplateCard, type TemplateDetails } from "../../shared/share-card";
 import { botBodyId } from "../../shared/bot-body";
-import { MAUS_COLOR_NAMES, type MausColor } from "../../shared/wire";
+import { BOT_COLOR_NAMES, type BotColor } from "../../shared/wire";
 import { openExternalLink } from "@/lib/app-links";
 import { cn } from "@/lib/cn";
 import { useCopyFeedback } from "@/lib/copy-text";
@@ -27,7 +27,7 @@ const STATUS_KEY = {
   gone: "template.status.gone",
 } as const;
 
-const colorOf = (value: string): MausColor => (MAUS_COLOR_NAMES as readonly string[]).includes(value) ? value as MausColor : "cyan";
+const colorOf = (value: string): BotColor => (BOT_COLOR_NAMES as readonly string[]).includes(value) ? value as BotColor : "cyan";
 
 function Face({ avatar, size }: { avatar: TemplateAvatar; size: number }) {
   return <BotAvatar size={size} bot={{ name: avatar.name, color: colorOf(avatar.color), avatarUrl: avatar.picture ?? null,

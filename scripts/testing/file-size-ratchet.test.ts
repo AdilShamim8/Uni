@@ -16,6 +16,7 @@ const HARD_CAP = 2000;
 const LISTED_FROM = 1000;
 
 const LINES: Record<string, number> = {
+  "packages/phone-protocol/src/wire.ts": 1005,  // the protocol wire: one enum home plus the pre-v0.1 MausColor aliases
   "server/index.ts": 15436,
   "src/state/store.tsx": 3288,
   "electron/main.mjs": 3160,
