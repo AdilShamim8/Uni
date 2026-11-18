@@ -17,7 +17,7 @@ const TOKEN = "t0ken-of-the-registry";
 const CODE = "ABCD-1234-EFGH";
 const BOX_PASSED = '{"box":"bwrap","total":31,"passed":31,"failed":[],"results":[{"id":"config-hidden","ok":true},{"id":"messages-db-hidden","ok":true}]}';
 const BOX_FAILED = '{"box":"bwrap","total":31,"passed":30,"failed":["config-hidden"],"results":[{"id":"config-hidden","ok":false}]}';
-const FILES = "https://raw.githubusercontent.com/milind-soni/Uni";
+const FILES = "https://raw.githubusercontent.com/AdilShamim8/Uni";
 const SOURCE = `${FILES}/v0.1.151`;
 const REAL_TOOLS = ["sed", "awk", "grep", "cat", "head", "tail", "tr", "sort", "cut", "mkdir", "mktemp", "chmod", "chown", "mv", "rm", "dirname", "sh", "stat", "install", "find"];
 
@@ -284,7 +284,7 @@ describe.skipIf(!posix)("deploy/install.sh", () => {
 
   it("installs only as root, and only once every check passes", () => {
     const user = run(["--domain", "maus.example.com"], { env: { FAKE_UID: "1000" } });
-    expect(user.stderr).toContain("Please run this as root: put sudo before sh, like this: curl -fsSL https://raw.githubusercontent.com/milind-soni/Uni/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com");
+    expect(user.stderr).toContain("Please run this as root: put sudo before sh, like this: curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com");
     expect(user.calls).toEqual([]);
     const small = run(["--domain", "maus.example.com"], { env: { FAKE_CPUS: "1" } });
     expect(small.status).toBe(1);

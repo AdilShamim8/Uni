@@ -1,5 +1,5 @@
 export const APP_NAME = "Uni";
-export const APP_REPOSITORY = "https://github.com/milind-soni/Uni";
+export const APP_REPOSITORY = "https://github.com/AdilShamim8/Uni";
 export const DOCS_URL = `${APP_REPOSITORY}/tree/main/docs`;
 export const HELP_CENTER_URL = DOCS_URL;
 export const APPROVAL_LEVELS_URL = `${APP_REPOSITORY}/blob/main/docs/approval-levels.md`;

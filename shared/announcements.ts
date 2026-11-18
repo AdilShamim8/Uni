@@ -12,9 +12,9 @@ import { z } from "zod";
 
 export const ANNOUNCEMENTS_FILE = "announcements/announcements.json";
 export const ANNOUNCEMENTS_SCHEMA_FILE = "announcements/announcements.schema.json";
-export const ANNOUNCEMENTS_URL = `https://raw.githubusercontent.com/milind-soni/Uni/main/${ANNOUNCEMENTS_FILE}`;
+export const ANNOUNCEMENTS_URL = `https://raw.githubusercontent.com/AdilShamim8/Uni/main/${ANNOUNCEMENTS_FILE}`;
 /** Pictures: files in the repository's announcements/ folder on main, as raw.githubusercontent.com serves them. */
-export const ANNOUNCEMENT_IMAGE_PREFIX = "https://raw.githubusercontent.com/milind-soni/Uni/main/announcements/";
+export const ANNOUNCEMENT_IMAGE_PREFIX = "https://raw.githubusercontent.com/AdilShamim8/Uni/main/announcements/";
 
 /** An install reads at most this many cards, in file order; CI refuses a longer list. */
 export const MAX_CARDS = 20;

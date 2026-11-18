@@ -73,7 +73,7 @@ function requireUpdaterTarget(resources, label) {
   requireFile(updateFile);
   const update = readFileSync(updateFile, "utf8");
   if (!/^owner: milind-soni$/m.test(update) || !/^repo: Uni$/m.test(update)) {
-    fail(`${label} app-update.yml does not point at milind-soni/Uni`);
+    fail(`${label} app-update.yml does not point at AdilShamim8/Uni`);
   }
 }
 
