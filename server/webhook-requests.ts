@@ -45,7 +45,7 @@ const INSTRUCTIONS_MAX = 20_000;
 const definitionSchema = z.object({
   name: z.string().trim().min(1, "A webhook trigger needs a name").max(NAME_MAX),
   instructions: z.string().trim().max(INSTRUCTIONS_MAX).default(""),
-  runOn: z.enum(["maus", "cloud"]).default("maus"),
+  runOn: z.enum(["computer", "cloud", "maus"]).default("computer"),
   eventTypes: z.array(z.string().trim().min(1).max(200)).max(20).optional(),
   payloadFilter: z.record(z.string().trim().min(1).max(200), z.string().trim().max(200)).optional(),
   sameConversation: z.boolean().optional(),
@@ -84,7 +84,7 @@ function snapshot(webhook: WebhookTrigger): WebhookRequestSnapshot {
   return {
     name: webhook.name,
     instructions: webhook.prompt,
-    runOn: webhook.runOn,
+    runOn: webhook.runOn === "maus" ? "computer" : webhook.runOn,
     enabled: webhook.enabled,
     ...(webhook.eventTypes?.length ? { eventTypes: [...webhook.eventTypes] } : {}),
     ...(webhook.payloadFilter ? { payloadFilter: { ...webhook.payloadFilter } } : {}),

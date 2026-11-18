@@ -201,8 +201,8 @@ function text(value: string, field: string, max: number): string {
   return redacted;
 }
 
-function runOn(value: RoutineRequestRunOn | undefined): RoutineRequestRunOn {
-  return value ?? "maus";
+function runOn(value: RoutineRequestRunOn | undefined): RoutineRunOn {
+  return value === "cloud" ? "cloud" : value === "maus" ? "computer" : (value ?? "computer");
 }
 
 function duration(value: number | undefined): number {

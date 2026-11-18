@@ -254,7 +254,7 @@ export function importTeamBackup(store: Store, routines: RoutineManager, input: 
       }
     }
     for (const source of backup.routines) {
-      createdRoutines.push(routines.create({ ...source, botId: botIds.get(source.botId)!,
+      createdRoutines.push(routines.create({ ...source, runOn: source.runOn === "maus" ? "computer" : source.runOn, botId: botIds.get(source.botId)!,
         groupId: source.target === "room-goal" && source.groupId ? groupIds.get(source.groupId) : undefined, enabled: false }));
     }
     return { name: backup.name, bots, groups, routines: createdRoutines };
