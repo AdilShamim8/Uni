@@ -1,12 +1,12 @@
 # Licensing
 
-OpenMausBot is open source under the [Apache License 2.0](LICENSE), with one
+Uni is open source under the [Apache License 2.0](LICENSE), with one
 carve-out and a few notes.
 
 ## The carve-out: `enterprise/`
 
 Everything under `enterprise/` is source-available under the
-[OpenMausBot Enterprise License](enterprise/LICENSE), not Apache 2.0. You may
+[Uni Enterprise License](enterprise/LICENSE), not Apache 2.0. You may
 read, build, and evaluate it, and run it freely in development and test.
 Running its features in production needs a license key issued for your
 organisation. Hosting it for third parties or white-labelling the product needs
@@ -45,5 +45,5 @@ source locations and the SBOM are listed in [NOTICE](NOTICE) and
 [`third_party/`](third_party/). The OpenMausBot and MausBot names and the
 mascot are trademarks of Supamaus Software Private Limited; the Apache License
 does not grant trademark rights (section 6),
-so a product built on OpenMausBot needs its own name unless a partner agreement
-says otherwise.
+so a product built on that code needs its own name unless a partner agreement
+says otherwise — which is why this project is named Uni.
