@@ -17,12 +17,13 @@
 // directory is absent is skipped; tsconfig.server.json names enterprise/
 // only through its include list, so the base config itself stays valid.
 import { spawnSync } from "node:child_process";
-import { existsSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { totalmem } from "node:os";
 
 const root = join(import.meta.dirname, "..");
 const chunksDir = join(import.meta.dirname, "typecheck-chunks");
+mkdirSync(chunksDir, { recursive: true });
 const heapMb = Math.min(Math.max(Math.floor(totalmem() / 2 / 1024 / 1024), 2048), 6144);
 
 function run(command, args, label) {
