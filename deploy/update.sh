@@ -39,8 +39,8 @@ trap '' HUP PIPE
 
 REPO="ghcr.io/milind-soni/openmausbot"
 PINNED="^ghcr\.io/milind-soni/openmausbot@sha256:[0-9a-f]{64}$"
-STABLE_URL=${OMB_STABLE_URL:-https://raw.githubusercontent.com/milind-soni/Uni/channels/stable.json}
-NEWEST_URL=${OMB_NEWEST_URL:-https://api.github.com/repos/milind-soni/Uni/releases/latest}
+STABLE_URL=${OMB_STABLE_URL:-https://raw.githubusercontent.com/AdilShamim8/Uni/channels/stable.json}
+NEWEST_URL=${OMB_NEWEST_URL:-https://api.github.com/repos/AdilShamim8/Uni/releases/latest}
 SERVICE=${OMB_UPDATE_SERVICE:-omb}
 # A healthy server answers within seconds of starting; two minutes leaves room for a slow first start after an update,
 # and is how long the server is down before a version that never answers is rolled back. OMB_UPDATE_WAIT_S for more.

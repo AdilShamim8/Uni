@@ -6,7 +6,7 @@ description: Build and verify the Windows desktop build (NSIS installer + latest
 # Windows release
 
 Ships `Uni-<version>-setup.exe` and its update feed to
-[milind-soni/Uni](https://github.com/milind-soni/Uni/releases).
+[AdilShamim8/Uni](https://github.com/AdilShamim8/Uni/releases).
 The unified release workflow mirrors the same bytes to the legacy releases
 repository for apps installed before the updater migration.
 
@@ -61,7 +61,7 @@ Get-Content release\win-unpacked\resources\app-update.yml  # feed config
 - Missing `server/index.js` → `utilityProcess.fork` fails → the 🐭 "Couldn't start
   the bot server" page.
 - Missing `ui/index.html` → server has nothing to serve → black window.
-- `app-update.yml` must point at `milind-soni/Uni` and, while the
+- `app-update.yml` must point at `AdilShamim8/Uni` and, while the
   build is unsigned, **must not contain `publisherName`** — electron-updater would
   reject every update as untrusted.
 
@@ -82,7 +82,7 @@ carries both platforms.
 
 ```powershell
 Copy-Item release/Uni-<version>-setup.exe release/Uni-setup.exe
-gh release upload v<version> --repo milind-soni/Uni `
+gh release upload v<version> --repo AdilShamim8/Uni `
   release/Uni-<version>-setup.exe `
   release/Uni-setup.exe `
   release/Uni-<version>-setup.exe.blockmap `

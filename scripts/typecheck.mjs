@@ -66,6 +66,11 @@ function rootQuarters() {
 }
 
 function chunked() {
+  const appSubdirs = () =>
+    readdirSync(join(root, "src"))
+      .filter((name) => statSync(join(root, "src", name)).isDirectory())
+      .sort();
+  const appRootFiles = readdirSync(join(root, "src")).filter((name) => name.endsWith(".ts") || name.endsWith(".tsx"));
   const chunks = [
     { name: "phone-protocol", config: "packages/phone-protocol/tsconfig.json" },
     { name: "companion", dir: "companion" },
@@ -73,7 +78,13 @@ function chunked() {
     { name: "enterprise", dir: "enterprise" },
     ...serverSubdirs().map((name) => ({ name: `server-${name}`, dir: `server/${name}` })),
     ...rootQuarters().map((quarter) => ({ name: `server-root-${quarter.name}`, include: quarter.files })),
-    { name: "app", build: true },
+    { name: "app-vite-config", include: ["../../vite.config.ts"], app: true },
+    ...appSubdirs().map((name) => ({ name: `app-${name}`, dir: `src/${name}`, app: true })),
+    {
+      name: "app-root",
+      include: appRootFiles.map((f) => `../../src/${f}`),
+      app: true,
+    },
   ];
   let ok = true;
   for (const chunk of chunks) {
@@ -83,11 +94,10 @@ function chunked() {
     }
     if (chunk.config) {
       ok = run("node_modules/.bin/tsc6", ["-p", join(root, chunk.config), "--noEmit"], chunk.name);
-    } else if (chunk.build) {
-      ok = run("node_modules/.bin/tsc6", ["-b", join(root, "tsconfig.json")], chunk.name);
     } else {
       const file = join(chunksDir, `tsconfig.${chunk.name}.json`);
-      writeFileSync(file, `${JSON.stringify({ extends: "../../tsconfig.server.json", include: chunk.include ?? [`../../${chunk.dir}`] }, null, 2)}\n`);
+      const base = chunk.app ? "../../tsconfig.json" : "../../tsconfig.server.json";
+      writeFileSync(file, `${JSON.stringify({ extends: base, include: chunk.include ?? [`../../${chunk.dir}`] }, null, 2)}\n`);
       ok = run("node_modules/.bin/tsc6", ["-p", file, "--noEmit"], chunk.name);
     }
     if (!ok) break;
