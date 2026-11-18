@@ -243,7 +243,7 @@
   --color-success-ink: #072114;
   --color-scrollbar: #3d3d3d;
   /* second speed line of the mascot — contrasts against the app ground */
-  --color-maus-line: #f5f5f5;
+  --color-mascot-line: #f5f5f5;
   --shadow-float: 0 0 #0000;
 }
 
@@ -289,7 +289,7 @@
   --color-success-ink: #072114;
   --color-warning: #ff9800;
   --color-scrollbar: #3d3d3d;
-  --color-maus-line: #f5f5f5;
+  --color-mascot-line: #f5f5f5;
 
   --color-edge: #f5f5f50f;
 
@@ -367,7 +367,7 @@
   --color-success-ink: #ffffff;
   --color-warning: #7a5f31;       /* darkened → 4.98:1 */
   --color-scrollbar: #c9c0ae;
-  --color-maus-line: #6b6559;
+  --color-mascot-line: #6b6559;
 
   /* System faces rather than Geist: paper reads as the platform's own. */
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -443,7 +443,7 @@
   --color-success-ink: #1c150c;
   --color-warning: #dfa441;
   --color-scrollbar: #3d3529;
-  --color-maus-line: #b0a696;
+  --color-mascot-line: #b0a696;
 
   --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
@@ -525,7 +525,7 @@
   --color-success-ink: #ffffff;
   --color-warning: #7a5a2a;
   --color-scrollbar: #a6b8b6;
-  --color-maus-line: #4d5c5b;
+  --color-mascot-line: #4d5c5b;
 
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, sans-serif;
@@ -587,7 +587,7 @@
   --color-success-ink: #101a14;
   --color-warning: #d3a150;
   --color-scrollbar: #464b54;
-  --color-maus-line: #b3b8c2;
+  --color-mascot-line: #b3b8c2;
 
   --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
@@ -649,7 +649,7 @@
   --color-success-ink: #ffffff;
   --color-warning: #765b2b;
   --color-scrollbar: #aeb6c0;
-  --color-maus-line: #59616c;
+  --color-mascot-line: #59616c;
 
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, sans-serif;
@@ -710,7 +710,7 @@
   --color-success-ink: #101812;
   --color-warning: #d0a35d;
   --color-scrollbar: #4a414f;
-  --color-maus-line: #b9afbd;
+  --color-mascot-line: #b9afbd;
 
   --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
@@ -786,7 +786,7 @@
   --color-success-ink: #ffffff;
   --color-warning: #9c5b00;
   --color-scrollbar: #c4c4c4;
-  --color-maus-line: #5f5f5f;
+  --color-mascot-line: #5f5f5f;
 
   --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
@@ -853,7 +853,7 @@
   --color-success-ink: #ffffff;
   --color-warning: #8a5a00;
   --color-scrollbar: #c3cdc6;
-  --color-maus-line: #5a675f;
+  --color-mascot-line: #5a675f;
 
   --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
@@ -917,7 +917,7 @@
   --color-success-ink: #ffffff;
   --color-warning: #8a5a00;
   --color-scrollbar: #d0bfa6;
-  --color-maus-line: #6b625b;
+  --color-mascot-line: #6b625b;
 
   --font-sans: "Plus Jakarta Sans", ui-rounded, "SF Pro Rounded", "Geist Variable",
     -apple-system, system-ui, "Segoe UI", sans-serif;
@@ -974,7 +974,7 @@
   --color-success-ink: #0d1a10;
   --color-warning: #f2b45a;
   --color-scrollbar: #3b3048;
-  --color-maus-line: #c2b3cc;
+  --color-mascot-line: #c2b3cc;
 
   --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
@@ -1031,7 +1031,7 @@
   --color-success-ink: #0d1a10;
   --color-warning: #f2b45a;
   --color-scrollbar: #392f5a;
-  --color-maus-line: #cdbfdc;
+  --color-mascot-line: #cdbfdc;
 
   --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
@@ -1089,7 +1089,7 @@
   --color-success-ink: #052e16;
   --color-warning: #f5a524;
   --color-scrollbar: #343834;
-  --color-maus-line: #f2f5f2;
+  --color-mascot-line: #f2f5f2;
 
   --color-edge: #f2f5f20f;
 
@@ -2527,7 +2527,7 @@ html[data-cloud-intent-morph] [data-tour="composer"] { view-transition-name: clo
 .maus-speed-line--two {
   /* the mascot's own --maus-color is set per motion; this line reads against
      the app ground instead, so it follows the skin */
-  stroke: var(--color-maus-line);
+  stroke: var(--color-mascot-line);
   stroke-width: 2.5px;
 }
 
