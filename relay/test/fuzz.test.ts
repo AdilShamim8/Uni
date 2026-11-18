@@ -231,7 +231,7 @@ function closeCodeOf(socket: Socket, timeoutMs = 9_000): Promise<number> {
       resolve(code);
     };
     socket.on("data", (chunk) => {
-      bytes = Buffer.concat([bytes, chunk]);
+      bytes = Buffer.concat([bytes, Buffer.from(chunk)]);
       if (bytes.length >= 4 && bytes[0] === 0x88) finish(bytes.readUInt16BE(2));
     });
     socket.on("close", () => finish(0));
