@@ -66,11 +66,34 @@ function rootQuarters() {
 }
 
 function chunked() {
-  const appSubdirs = () =>
-    readdirSync(join(root, "src"))
-      .filter((name) => statSync(join(root, "src", name)).isDirectory())
-      .sort();
-  const appRootFiles = readdirSync(join(root, "src")).filter((name) => name.endsWith(".ts") || name.endsWith(".tsx"));
+  const hasTsInputs = (dir) =>
+    readdirSync(dir, { withFileTypes: true }).some(
+      (e) => (e.isFile() && /\.(ts|tsx)$/.test(e.name)) || (e.isDirectory() && hasTsInputs(join(dir, e.name))),
+    );
+  const appChunksFor = (dir) => {
+    const files = readdirSync(join(root, dir)).filter((name) => /\.(ts|tsx)$/.test(name)).sort();
+    const subdirs = readdirSync(join(root, dir), { withFileTypes: true })
+      .filter((e) => e.isDirectory() && hasTsInputs(join(root, dir, e.name)))
+      .map((e) => {
+        const inner = join(root, dir, e.name);
+        const innerFiles = readdirSync(inner).filter((n) => /\.(ts|tsx)$/.test(n)).length;
+        // A directory with hundreds of root files (src/components has ~990) still OOMs a small
+        // host as one program; recurse so its root files typecheck as halves, like the server quarters.
+        return innerFiles > 450 ? appChunksFor(`${dir}/${e.name}`) : [{ name: `${dir}/${e.name}`, dir: `${dir}/${e.name}`, app: true }];
+      })
+      .flat()
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const halves = Math.max(1, Math.ceil(files.length / 450));
+    const name = (i) => `${dir}-root-${i + 1}-of-${halves}`;
+    return [
+      ...subdirs,
+      ...Array.from({ length: halves }, (_, i) => ({
+        name: name(i),
+        include: files.slice(i * Math.ceil(files.length / halves), (i + 1) * Math.ceil(files.length / halves)).map((f) => `../../${dir}/${f}`),
+        app: true,
+      })).filter((chunk) => chunk.include.length > 0),
+    ];
+  };
   const chunks = [
     { name: "phone-protocol", config: "packages/phone-protocol/tsconfig.json" },
     { name: "companion", dir: "companion" },
@@ -79,12 +102,7 @@ function chunked() {
     ...serverSubdirs().map((name) => ({ name: `server-${name}`, dir: `server/${name}` })),
     ...rootQuarters().map((quarter) => ({ name: `server-root-${quarter.name}`, include: quarter.files })),
     { name: "app-vite-config", include: ["../../vite.config.ts"], app: true },
-    ...appSubdirs().map((name) => ({ name: `app-${name}`, dir: `src/${name}`, app: true })),
-    {
-      name: "app-root",
-      include: appRootFiles.map((f) => `../../src/${f}`),
-      app: true,
-    },
+    ...appChunksFor("src"),
   ];
   let ok = true;
   for (const chunk of chunks) {
@@ -95,7 +113,7 @@ function chunked() {
     if (chunk.config) {
       ok = run("node_modules/.bin/tsc6", ["-p", join(root, chunk.config), "--noEmit"], chunk.name);
     } else {
-      const file = join(chunksDir, `tsconfig.${chunk.name}.json`);
+      const file = join(chunksDir, `tsconfig.${chunk.name.replaceAll("/", "__")}.json`);
       const base = chunk.app ? "../../tsconfig.json" : "../../tsconfig.server.json";
       writeFileSync(file, `${JSON.stringify({ extends: base, include: chunk.include ?? [`../../${chunk.dir}`] }, null, 2)}\n`);
       ok = run("node_modules/.bin/tsc6", ["-p", file, "--noEmit"], chunk.name);
