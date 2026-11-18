@@ -122,7 +122,7 @@ Give the call an 8-minute `timeout`: a new site's first deploy can take Netlify 
 
 - The first run creates a site on the person's account and writes `.netlify-site.json` in the project folder (the
   site's id, name, addresses, title, your name and when it was published; never the token). Keep that file and
-  don't edit it by hand: with it, every later run updates the same link, and MausBot lists what you published from
+  don't edit it by hand: with it, every later run updates the same link, and Uni lists what you published from
   it. If it is gone, a new run makes a second site with a new link.
 - `--name my-site` asks for that address (`my-site.netlify.app`) on the first run; names are shared by all of
   Netlify, so it may be taken. Without it Netlify picks a name.
