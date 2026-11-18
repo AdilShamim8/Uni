@@ -19,7 +19,7 @@ const trigger = {
   name: "Ops brief",
   prompt: "",
   botId: "maus-1",
-  runOn: "maus",
+  runOn: "computer",
   delivery: "post",
   groupId: "room-1",
   enabled: true,

@@ -26,7 +26,7 @@ describe("a move of some bots", () => {
   });
 
   it("takes a room only when every bot in it goes, the helper every place has aside", () => {
-    const helper = (id: string) => (id === "maus" ? { defaultBot: { v: 1 } } : {});
+    const helper = (id: string) => (id === "computer" ? { defaultBot: { v: 1 } } : {});
     expect(roomGoes({ memberIds: ["a", "b"] }, new Set(["a", "b"]), helper)).toBe(true);
     expect(roomGoes({ memberIds: ["a", "maus"] }, new Set(["a"]), helper)).toBe(true);
     expect(roomGoes({ memberIds: ["a", "b"] }, new Set(["a"]), helper), "b stays, and works in it here").toBe(false);

@@ -609,7 +609,7 @@ describe("retries that run out", () => {
 
 describe("the files", () => {
   const rows = (count: number, routineId: string): RoutineRun[] => Array.from({ length: count }, (_, index) => ({
-    id: `run-${index}`, routineId, routineName: "Fix new bugs", target: "bot" as const, botId: "maus-1", runOn: "maus" as const, scheduledFor: START - (count - index) * 5 * MINUTE,
+    id: `run-${index}`, routineId, routineName: "Fix new bugs", target: "bot" as const, botId: "maus-1", runOn: "computer" as const, scheduledFor: START - (count - index) * 5 * MINUTE,
     status: index % 50 === 7 ? "failed" as const : index % 50 === 9 ? "missed" as const : "completed" as const, manual: index % 100 === 3, triggerSource: index % 100 === 3 ? "manual" as const : "schedule" as const,
     createdAt: START - (count - index) * 5 * MINUTE, ...(index % 50 === 9 ? {} : { startedAt: START - (count - index) * 5 * MINUTE + 1_000 }),
     finishedAt: START - (count - index) * 5 * MINUTE + 60_000, ...(index % 50 === 7 ? { error: "Provider crashed", retried: "failed" as const } : {}),

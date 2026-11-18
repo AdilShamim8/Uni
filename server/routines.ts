@@ -185,7 +185,7 @@ export interface RoutineInput {
   target?: RoutineTarget;
   botId: string;
   groupId?: string | null;
-  runOn?: RoutineRunOn;
+  runOn?: RoutineRunOn | "maus"; // "maus" is the pre-v0.1 name for "computer", accepted on input everywhere
   enabled?: boolean;
   schedule: RoutineScheduleInput;
   durationMinutes?: number;

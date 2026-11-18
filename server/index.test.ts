@@ -811,7 +811,7 @@ beforeAll(async () => {
         goalStatus: "completed",
         groupId: "test-goal-restart-room",
         botId: "test-bot-a",
-        runOn: "maus",
+        runOn: "computer",
         scheduledFor: 5,
         status: "completed",
         manual: false,
@@ -1941,7 +1941,7 @@ describe("harness HTTP API", () => {
       target: "room-goal",
       groupId: room.id,
       botId: lead.id,
-      runOn: "maus",
+      runOn: "computer",
       enabled: true,
       schedule: { type: "daily", time: "10:00", weekdays: [1, 2, 3, 4, 5] },
     });
@@ -6130,7 +6130,7 @@ describe("harness HTTP API", () => {
           name: "Morning signals",
           agent: "scout",
           prompt: "Prepare the approved morning signal brief.",
-          runOn: "maus",
+          runOn: "computer",
           schedule: { type: "daily", time: "09:00", weekdays: [1, 2, 3, 4, 5] },
           durationMinutes: 30,
           enabledAfterInstall: false,
@@ -7271,7 +7271,7 @@ describe("harness HTTP API", () => {
         prompt: "look at the cloud desktop",
         target: "bot",
         botId: bot.id,
-        runOn: "maus",
+        runOn: "computer",
         enabled: true,
         schedule: { type: "daily", time: "10:00", weekdays: [1, 2, 3, 4, 5] },
       });
@@ -10111,7 +10111,7 @@ describe("harness HTTP API", () => {
       name: "Deletion safety routine",
       prompt: "Keep running until interrupted.",
       botId: bot.id,
-      runOn: "maus",
+      runOn: "computer",
       enabled: false,
       schedule: { type: "daily", time: "10:00", weekdays: [1] },
     })).body.routine;
@@ -10171,7 +10171,7 @@ describe("harness HTTP API", () => {
         name: "Emergency stop routine",
         prompt: "Keep running until interrupted.",
         botId: bot.id,
-        runOn: "maus",
+        runOn: "computer",
         enabled: false,
         schedule: { type: "daily", time: "10:00", weekdays: [1] },
       });
@@ -11439,7 +11439,7 @@ describe("harness HTTP API", () => {
               time: "09:00",
               weekdays: ["monday", "tuesday", "wednesday", "thursday", "friday"],
             },
-            runOn: "maus",
+            runOn: "computer",
             durationMinutes: 30,
           },
         }),
@@ -11493,7 +11493,7 @@ describe("harness HTTP API", () => {
             name: "Nowhere brief",
             instructions: "Should never be scheduled.",
             schedule: { type: "weekly", time: "09:00", weekdays: ["monday"] },
-            runOn: "maus",
+            runOn: "computer",
           },
         }),
       });
@@ -11514,7 +11514,7 @@ describe("harness HTTP API", () => {
             name: "Teammate brief",
             instructions: "Summarize for the teammate every weekday.",
             schedule: { type: "weekly", time: "08:30", weekdays: ["monday"] },
-            runOn: "maus",
+            runOn: "computer",
             durationMinutes: 30,
           },
         }),
@@ -11680,7 +11680,7 @@ describe("harness HTTP API", () => {
             name: "Orphan-safe brief",
             instructions: "Summarize without recreating the deleted source.",
             schedule: { type: "weekly", time: "09:00", weekdays: ["monday"] },
-            runOn: "maus",
+            runOn: "computer",
           },
         }),
       });
@@ -11707,7 +11707,7 @@ describe("harness HTTP API", () => {
         runOnStartup: true,
         prompt: `${fakeSecret}\n${"Review the archive. ".repeat(180)}`,
         botId: bot.id,
-        runOn: "maus",
+        runOn: "computer",
         enabled: false,
         schedule: {
           type: "interval",
@@ -11786,7 +11786,7 @@ describe("harness HTTP API", () => {
         name: "Teammate digest",
         prompt: "Summarize the teammate's queue.",
         botId: teammate.id,
-        runOn: "maus",
+        runOn: "computer",
         enabled: true,
         schedule: { type: "daily", time: "07:30", weekdays: [1, 2, 3, 4, 5] },
       })).body.routine;
@@ -11794,7 +11794,7 @@ describe("harness HTTP API", () => {
         name: "Chief digest",
         prompt: "Summarize the chief's queue.",
         botId: chief.id,
-        runOn: "maus",
+        runOn: "computer",
         enabled: true,
         schedule: { type: "daily", time: "08:00", weekdays: [1] },
       })).body.routine;
@@ -11886,7 +11886,7 @@ describe("harness HTTP API", () => {
         headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
         body: JSON.stringify({ fromBotId: bot.id, fromThreadId: bot.threadId, ...body }),
       });
-      const routine = (name: string) => ({ name, instructions: `Run ${name}.`, schedule: { type: "weekly", time: "09:00", weekdays: ["monday"] }, runOn: "maus" });
+      const routine = (name: string) => ({ name, instructions: `Run ${name}.`, schedule: { type: "weekly", time: "09:00", weekdays: ["monday"] }, runOn: "computer" });
       for (let index = 0; index < 9; index += 1) {
         const teammates = await post({ action: "create", kind: "schedule", forBotId: teammate.id, routine: routine(`Teammate ${index}`) });
         expect(teammates.status).toBe(201);
@@ -13015,7 +13015,7 @@ describe("harness HTTP API", () => {
       name: "Incoming build",
       prompt: "Review the incoming build event",
       botId: bots.body.bots[0].id,
-      runOn: "maus",
+      runOn: "computer",
     });
     expect(created.status).toBe(201);
     expect(created.body.ingress).toMatchObject({ available: true, baseUrl: WEBHOOK_BASE });

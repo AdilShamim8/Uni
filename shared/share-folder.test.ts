@@ -19,7 +19,7 @@ function oneBot(): PackageDocument {
       requirements: { apps: [{ slug: "gmail", label: "Gmail", reason: "Reads mail.", optional: true }], capabilities: [] },
       team: { name: "Helper" },
       agents: [{ key: "helper", name: "Helper", soul: "Be brief.\n---\nNever guess.", appearance: { color: "blue" }, skills: ["triage"], tools: { off: ["images", "warp-drive"] } }],
-      routines: [{ key: "daily", name: "Daily", agent: "helper", prompt: "Check.", runOn: "maus", schedule: { type: "daily", time: "09:00", weekdays: [1, 2, 3, 4, 5] }, durationMinutes: 30, enabledAfterInstall: false }],
+      routines: [{ key: "daily", name: "Daily", agent: "helper", prompt: "Check.", runOn: "computer", schedule: { type: "daily", time: "09:00", weekdays: [1, 2, 3, 4, 5] }, durationMinutes: 30, enabledAfterInstall: false }],
       skills: { version: 1, entries: [{ name: "triage", description: "triage steps.", instructions: skill("triage") }] },
     },
   });

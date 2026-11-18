@@ -1,3 +1,4 @@
+import type { RoutineRunOn } from "./routines.ts";
 import { instructionsUpdateRefusal } from "./automation-instructions.ts";
 import { createHash } from "node:crypto";
 import { isDeepStrictEqual } from "node:util";

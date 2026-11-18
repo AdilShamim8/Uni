@@ -824,7 +824,7 @@ export class WebhookManager {
       webhookName: trigger.name,
       prompt: eventPrompt(trigger, event, now, deliveryId),
       botId: trigger.botId,
-      runOn: trigger.runOn,
+      runOn: trigger.runOn === "maus" ? "computer" : trigger.runOn,
       deliveryId,
       receivedAt: now,
       sameConversation: trigger.sameConversation,
