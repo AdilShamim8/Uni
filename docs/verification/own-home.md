@@ -45,7 +45,7 @@ only and never signs it out; lending to that server stops once it has other
 people on it or another server answers at its address; while a server of the
 person's own is chosen no move to My Cloud starts; the frozen screen names the
 server and never asks for a MausBot Cloud sign-in; and connected apps through
-MausBot's service stay on this computer (a final, plain reason) when the server
+Uni's service stay on this computer (a final, plain reason) when the server
 has no such service, so the move's check still passes.
 
 ## Bots in two places, noticed

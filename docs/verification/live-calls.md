@@ -154,7 +154,7 @@ Audio key from Settings → API keys (`tts.fishKey`, `OMB_FISH_AUDIO_API_KEY`),
 the same key Fish voices use; nothing else is asked. On the first call the
 harness sets up an agent on that key's account (`server/live-fish.ts`
 `setUpFishAgent`): a client tool `delegate` (`POST /v1/agent/tools`), an agent
-named "<product> Live calls" (`productName` in `server/brand.ts`: MausBot, or a
+named "<product> Live calls" (`productName` in `server/brand.ts`: Uni, or a
 white-label brand's name) on the `live3` engine in English with that tool (`POST /v1/agent/agents`),
 `overrides_allowed: ["system_prompt"]` (`PATCH /v1/agent/agents/{id}`), and a
 publish. It saves the agent as `live.fishAgentId` with `live.fishAgentFor`, a
@@ -185,7 +185,7 @@ same route for the bot's answers. `FishRelay` (`server/live-fish.ts`) turns the
 reports into the GPT-Live sideband events `LiveCallController` already reads
 and the controller's appends into commands the client hands the agent: the
 answer to a pending `delegate` call as its tool result, anything later as a
-user message prefixed `[OpenMausBot]`. Every report is a strict, bounded zod
+user message prefixed `[Uni]`. Every report is a strict, bounded zod
 shape; a wrong token or session answers `404`; the route needs the admin scope.
 The `delegate` tool's arguments are ignored: the request is what the client
 heard, as on GPT-Live.
