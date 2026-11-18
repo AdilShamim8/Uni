@@ -35,7 +35,7 @@ QUIET_S=${OMB_RUNNER_QUIET_S:-30}
 IDLE_S=${OMB_RUNNER_IDLE_S:-300}
 UNIT=openmausbot-update
 RUNNER=openmausbot-update-runner
-INSTALLER_MARK="# Written by MausBot's installer (deploy/install.sh)"
+INSTALLER_MARK="# Written by Uni's installer (deploy/install.sh)"
 OVERRIDE_MARK="# Written by update-runner.sh --install"
 # Where the server's container finds the two folders (SERVER_UPDATE_DIR in server/server-update.ts).
 IN_CONTAINER=/run/omb-update
@@ -345,7 +345,7 @@ install_button() {
   done
   place "$SYSTEMD_DIR/$UNIT.path" 644 <<UNIT
 [Unit]
-Description=Runs MausBot's update.sh when the server asks (Settings, Update server)
+Description=Runs Uni's update.sh when the server asks (Settings, Update server)
 
 [Path]
 PathExists=$REQUESTS/request
@@ -357,7 +357,7 @@ WantedBy=multi-user.target
 UNIT
   place "$SYSTEMD_DIR/$UNIT.service" 644 <<UNIT
 [Unit]
-Description=MausBot's update.sh for $DIR, asked for from the app
+Description=Uni's update.sh for $DIR, asked for from the app
 
 [Service]
 Type=oneshot

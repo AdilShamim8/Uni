@@ -9,7 +9,7 @@
 #   ./update.sh --dir PATH       the install's folder, when it is not this one (the installer's: /opt/openmausbot)
 #
 # It runs on the server itself, beside docker-compose.yml, because a server cannot replace its own container. The steps
-# are the ones the MausBot connector runs for a connected server (connector/src/home.ts `update`): download the new
+# are the ones the Uni connector runs for a connected server (connector/src/home.ts `update`): download the new
 # image by digest, stop the server and check that it stopped, copy its data into a new Docker volume and check the copy
 # file by file, start the new image, and wait until it answers and can still start bots. When it does not, the old image
 # and the copy are put back. The copy from the update before is removed only once the new copy has been checked.
@@ -39,8 +39,8 @@ trap '' HUP PIPE
 
 REPO="ghcr.io/milind-soni/openmausbot"
 PINNED="^ghcr\.io/milind-soni/openmausbot@sha256:[0-9a-f]{64}$"
-STABLE_URL=${OMB_STABLE_URL:-https://raw.githubusercontent.com/milind-soni/OpenMausBot/channels/stable.json}
-NEWEST_URL=${OMB_NEWEST_URL:-https://api.github.com/repos/milind-soni/OpenMausBot/releases/latest}
+STABLE_URL=${OMB_STABLE_URL:-https://raw.githubusercontent.com/milind-soni/Uni/channels/stable.json}
+NEWEST_URL=${OMB_NEWEST_URL:-https://api.github.com/repos/milind-soni/Uni/releases/latest}
 SERVICE=${OMB_UPDATE_SERVICE:-omb}
 # A healthy server answers within seconds of starting; two minutes leaves room for a slow first start after an update,
 # and is how long the server is down before a version that never answers is rolled back. OMB_UPDATE_WAIT_S for more.
@@ -359,7 +359,7 @@ restore_env() {
 # network then, and stayed in the old, dead one whenever the server restarted without it: HTTPS refused while both
 # containers looked healthy. The installer rewrites its own two files at every run; an update does the same, with the
 # copies below, which are the installer's own (scripts/server-installer.test.ts keeps them equal).
-INSTALLER_MARK="# Written by MausBot's installer (deploy/install.sh)"
+INSTALLER_MARK="# Written by Uni's installer (deploy/install.sh)"
 old_installer_layout() { [ -f compose.yaml ] && grep -qF "$INSTALLER_MARK" compose.yaml && grep -q '^ *network_mode: "service:omb"' compose.yaml; }
 # A Compose file of this repository's (path B) with Caddy in the server's network: `git pull` brings the current one.
 old_repository_layout() { [ -f docker-compose.yml ] && grep -q '^ *network_mode: "service:omb"' docker-compose.yml; }
@@ -370,7 +370,7 @@ move_installer_layout() {
 }
 installer_compose() {
   cat <<'COMPOSE'
-# Written by MausBot's installer (deploy/install.sh), and written again each time it runs: put your own settings in
+# Written by Uni's installer (deploy/install.sh), and written again each time it runs: put your own settings in
 # .env beside this file, which the installer keeps. The server only listens on loopback inside its container, and on
 # two Unix sockets in the `edge` volume, which Caddy, in its own container, reaches it through. A request on a socket is
 # always a remote one to the server. Caddy does not share the server's network: a server that restarted on its own came
@@ -402,7 +402,7 @@ services:
       OMB_SIGNIN_MEMBER_EMAILS:
       OMB_SIGNIN_SMTP_URL:
       OMB_SIGNIN_SMTP_FROM:
-      # "1": phones pair by QR through MausBot Relay. Sign in once: docker compose exec omb openmausbot login --relay
+      # "1": phones pair by QR through Uni Relay. Sign in once: docker compose exec omb openmausbot login --relay
       OMB_PHONE_RELAY:
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8799/api/health | grep -q openmausbot"]
