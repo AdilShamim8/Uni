@@ -45,21 +45,21 @@ jobs:
           # npm attaches its lowercase tarball independently after publishing.
           # The legacy updater bridge mirrors only the desktop/feed assets.
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir assets \
-            --pattern '*.yml' --pattern 'OpenMausBot*' --pattern 'SHA256SUMS-ubuntu-x64.txt'
+            --pattern '*.yml' --pattern 'Uni*' --pattern 'SHA256SUMS-ubuntu-x64.txt'
           required=(
             latest-linux.yml latest-mac.yml latest.yml
-            "OpenMausBot-$version-amd64.deb"
-            "OpenMausBot-$version-arm64.dmg"
-            "OpenMausBot-$version-arm64.dmg.blockmap"
-            "OpenMausBot-$version-arm64.zip"
-            "OpenMausBot-$version-arm64.zip.blockmap"
-            "OpenMausBot-$version-setup.exe"
-            "OpenMausBot-$version-setup.exe.blockmap"
-            "OpenMausBot-$version-x64.dmg"
-            "OpenMausBot-$version-x64.dmg.blockmap"
-            "OpenMausBot-$version-x64.zip"
-            "OpenMausBot-$version-x64.zip.blockmap"
-            "OpenMausBot-$version-x86_64.AppImage"
+            "Uni-$version-amd64.deb"
+            "Uni-$version-arm64.dmg"
+            "Uni-$version-arm64.dmg.blockmap"
+            "Uni-$version-arm64.zip"
+            "Uni-$version-arm64.zip.blockmap"
+            "Uni-$version-setup.exe"
+            "Uni-$version-setup.exe.blockmap"
+            "Uni-$version-x64.dmg"
+            "Uni-$version-x64.dmg.blockmap"
+            "Uni-$version-x64.zip"
+            "Uni-$version-x64.zip.blockmap"
+            "Uni-$version-x86_64.AppImage"
             OpenMausBot-amd64.deb OpenMausBot-intel.dmg OpenMausBot-setup.exe
             OpenMausBot.AppImage OpenMausBot.dmg SHA256SUMS-ubuntu-x64.txt
           )
