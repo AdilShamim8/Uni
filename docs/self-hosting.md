@@ -1,13 +1,13 @@
-# Self-hosting the MausBot server
+# Self-hosting the Uni server
 
-To keep MausBot and its agents on your current computer and use a VPS only as a
+To keep Uni and its agents on your current computer and use a VPS only as a
 bot’s remote desktop, see [Bring Your Own VPS](byo-vps.md) and the
 [published setup guide](https://docs.openmausbot.com/docs/computers/byo-vps).
 
 Run the server on a machine you control (a VPS, a home server, a Mac mini in a
 closet). Then connect the desktop app, browsers and phones to it. Every path
 below ends the same way: the server prints **one link**, and you paste it into
-MausBot under **＋ → Connect to a server**.
+Uni under **＋ → Connect to a server**.
 
 > **Security first:** the server listens on `127.0.0.1:8799`, and a program on
 > that machine counts as its owner. Never forward that port yourself. Let one
@@ -28,7 +28,7 @@ For server feature switches, defaults and configuration-file instructions, see
 | Tailscale on the server and your devices | `npx openmausbot serve --tailscale` | `https://<machine>.<tailnet>.ts.net/pair#code=…` |
 | Only this network (home or office) | `npx openmausbot serve --lan` | `http://192.168.1.20:8799/pair#code=…` |
 | Nothing at all | `npx openmausbot login`, then `npx openmausbot serve --tunnel` | `https://c-….openmausbot.com/pair#code=…` |
-| Only the phone app, from anywhere (a machine with no tunnel address, for now) | `npx openmausbot login --relay`, then `npx openmausbot serve --relay` | a QR for the MausBot app ([MausBot Relay](phone-relay-server.md)) |
+| Only the phone app, from anywhere (a machine with no tunnel address, for now) | `npx openmausbot login --relay`, then `npx openmausbot serve --relay` | a QR for the Uni app ([Uni Relay](phone-relay-server.md)) |
 
 `--lan` can be added to any of the others. Plain `http://` is only for a
 private network: the desktop app accepts it on LAN addresses, Tailscale
@@ -49,7 +49,7 @@ npx openmausbot serve --public-url https://maus.example.com  # or --domain, --ta
 In a terminal, `serve` checks the address and prints one pairing block:
 
 ```
-MausBot 0.1.147 · server "hetzner-1"
+Uni 0.1.147 · server "hetzner-1"
 data: /home/maus/.openmausbot
 Reach    https://maus.example.com   ✓ answers as this server (11:04)
 
@@ -57,7 +57,7 @@ Pairing code   7KQ2-M9XD-H4TP   works once, until 11:14 · everything
 Link           https://maus.example.com/pair#code=7KQ2-M9XD-H4TP
 
   Desktop app   ＋ → Connect to a server, paste the link
-  Phone         scan with your camera or the MausBot app
+  Phone         scan with your camera or the Uni app
 
   ▄▄▄▄▄▄▄ ▄ ▄▄ ▄▄▄▄▄▄▄   (QR of the link)
 For a phone (chat and approvals only)   npx openmausbot pair --phone
@@ -69,10 +69,10 @@ Each way in has its own Reach line:
 
 - `--lan`: `http://192.168.1.20:8799   this network only, not encrypted`
 - `--tailscale`: `… · your tailnet`
-- `--tunnel`: `… · MausBot web address`
+- `--tunnel`: `… · Uni web address`
 
-Paste the link into MausBot: **＋ → Connect to a server**. The sheet names the
-server it found ("✓ hetzner-1 · MausBot 0.1.147 · HTTPS"), and **Connect to
+Paste the link into Uni: **＋ → Connect to a server**. The sheet names the
+server it found ("✓ hetzner-1 · Uni 0.1.147 · HTTPS"), and **Connect to
 hetzner-1** finishes. You can also type the address (`maus.example.com`,
 `192.168.1.20:8799`) and the pairing code in their own fields.
 
@@ -121,7 +121,7 @@ would answer the whole internet over plain http. More options are in
 ### Docker with your own domain
 
 On a fresh Ubuntu 22.04 or 24.04 server (x86-64), one command checks the
-server, installs MausBot under `/opt/openmausbot` and ends with HTTPS on your
+server, installs Uni under `/opt/openmausbot` and ends with HTTPS on your
 domain:
 
 ```sh
@@ -138,7 +138,7 @@ writes and what it contacts are in
 By hand, on any system with Docker:
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot && cd OpenMausBot/deploy
+git clone https://github.com/milind-soni/OpenMausBot && cd Uni/deploy
 cp .env.example .env                          # set DOMAIN (and ENGINES)
 docker compose pull omb && docker compose up -d
 docker compose exec omb openmausbot pair      # Link https://<DOMAIN>/pair#code=…
@@ -170,15 +170,15 @@ npx openmausbot pair
 | "This points at this computer (127.0.0.1), not at the server." | A link to `127.0.0.1` or `localhost`, which is the computer you're on. | Use the address other devices reach the server at: run `openmausbot pair` on the server, or choose a way in. |
 | "Can't reach 192.168.1.20:8799. Check the server is running and reachable from this computer." | Nothing answers there. | Start it with a way in (`serve --lan` for this network), and check a firewall allows the port. |
 | "maus.example.com doesn't exist yet." / "…certificate isn't valid yet." | DNS or the certificate isn't ready. | Wait for the DNS record, or give a new server a minute. |
-| "That address answers, but it isn't a MausBot server." | Something else answers there, often a proxy pointing at the wrong port. | Point it at `http://127.0.0.1:8799`. |
+| "That address answers, but it isn't a Uni server." | Something else answers there, often a proxy pointing at the wrong port. | Point it at `http://127.0.0.1:8799`. |
 | "That's a sign-in code from an email…" / "That code is for the phone app…" / "That's a script key…" | The wrong kind of code. | On the server, run `openmausbot pair` for a 12-character pairing code. |
 | "Too many wrong codes. Try again at 11:19." | Five wrong codes in five minutes from one address. | Wait until then, or make a new code. |
 | `Reach    ✗ https://… doesn't reach this server (connection refused).` | Your tunnel or proxy doesn't reach port 8799. | Point it at `http://127.0.0.1:8799`, then run `openmausbot status`. |
-| `Reach    ✗ https://… answers as a different server.` | The address leads to another MausBot server. | Point the tunnel at this machine's port. |
+| `Reach    ✗ https://… answers as a different server.` | The address leads to another Uni server. | Point the tunnel at this machine's port. |
 | `Reach    … https://… doesn't answer yet` (`--domain`) | DNS isn't pointing here yet, or ports 80 and 443 are closed. | Fix the A record and open the ports; the certificate follows. |
 | `--lan: this machine has no private network address…` | A VPS with only a public address. | Use `--public-url`, `--domain` or `--tailscale`. |
 | `tailscale: HTTPS certificates are off for this tailnet, so this server listens on http://…` | Tailscale can't serve HTTPS yet, so the server listens on its own tailnet address. It works, and only your tailnet reaches it. | For an `https://` address, turn on HTTPS certificates at https://login.tailscale.com/admin/dns, then run `serve --tailscale` again. |
-| `No MausBot server is running here. Start it: … serve` | `pair` found no server on this port. | Start it, or pass the server's `--port` and `--data-dir`. |
+| `No Uni server is running here. Start it: … serve` | `pair` found no server on this port. | Start it, or pass the server's `--port` and `--data-dir`. |
 | `Get a pairing code: openmausbot pair` and no code | The server runs as a service or under `docker compose logs`, where codes stay out of logs. | Run that command in a terminal. |
 | "This shared server takes no pairing commands from this machine." | The server runs with `OMB_LOOPBACK_TRUST=service`. | Let people sign in with their email (`openmausbot access add you@example.com`), or pair from a signed-in admin's Settings. |
 
@@ -243,7 +243,7 @@ too.
   this user, the server listens on this machine's own tailnet addresses at
   `http://<name>:<port>` and answers only tailnet peers that use that exact
   name. Otherwise `serve` checks that
-  no other MausBot server already answers on this machine's name. Then it
+  no other Uni server already answers on this machine's name. Then it
   runs `tailscale serve --https=443 http://127.0.0.1:8799` in the foreground,
   so the share ends when `serve` stops. A marker file in the data dir lets the
   next start turn off a share that a crashed run left behind. It never
@@ -367,7 +367,7 @@ Requirements: Docker with Compose, a DNS name pointing at the machine, and
 ports 80/443 open.
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot && cd OpenMausBot/deploy
+git clone https://github.com/milind-soni/OpenMausBot && cd Uni/deploy
 cp .env.example .env            # set DOMAIN
 docker compose pull omb && docker compose up -d
 ```
@@ -389,7 +389,7 @@ docker compose exec omb claude                       # each CLI you listed in EN
 docker compose exec omb openmausbot pair             # prints a code, a link and a QR
 ```
 
-Paste the link (`https://<DOMAIN>/pair#code=…`) into MausBot under **＋ →
+Paste the link (`https://<DOMAIN>/pair#code=…`) into Uni under **＋ →
 Connect to a server**, or open it in a browser, and it is paired; see "Using it from your computer" for what a session is. Webhook
 URLs (`https://<DOMAIN>/hooks/wh_…`) work without a session, and that is the
 base the app prints on new hooks because the stack sets
@@ -454,7 +454,7 @@ hold. The server image (`ghcr.io/milind-soni/openmausbot`) is built for that:
   nothing to set. `/tmp` is slower, and where it is itself in memory (Cloud
   Run) it counts against the container's memory limit; a 512 MB `/dev/shm`,
   where your platform lets you set one, avoids both.
-- **Mount a volume at `/data`.** Engine sign-ins and all of OpenMausBot's
+- **Mount a volume at `/data`.** Engine sign-ins and all of Uni's
   state live there.
 - **Give the platform a way in.** The server listens on `127.0.0.1` inside
   the container, which a proxy outside the container cannot reach. Any one
@@ -590,7 +590,7 @@ Requirements: Node 24+, pnpm, and at least one agent CLI installed and
 signed in on the server.
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot && cd OpenMausBot
+git clone https://github.com/milind-soni/OpenMausBot && cd Uni
 pnpm install
 
 # choose where data lives and start the server
@@ -753,7 +753,7 @@ From the **desktop app**, choose **＋ → Connect to a server** and paste the
 link. You can also type the address (`maus.example.com`,
 `192.168.1.20:8799`, a `*.ts.net` name) and the pairing code in its own
 field. The sheet looks the address up and names what it found, for example
-"✓ hetzner-1 · MausBot 0.1.147 · HTTPS". A bare address tries https first,
+"✓ hetzner-1 · Uni 0.1.147 · HTTPS". A bare address tries https first,
 then plain http when the address is private. Plain http works only on a
 private network (LAN addresses, Tailscale's 100.64/10 and `*.ts.net`,
 `*.local`); a public http address is refused with what to do instead.
@@ -775,7 +775,7 @@ use the apps on this computer's screen, and run the MCP servers you keep for
 it, while the app is open. Folders and the terminal are added in **Settings →
 Servers**, where each server of yours has a **Share this computer** switch and
 **Choose what it can use**; the switch turns it off at once, and the menu bar's
-OpenMausBot item pauses it with your Clouds. The server needs nothing turned on:
+Uni item pauses it with your Clouds. The server needs nothing turned on:
 it takes a computer from its owner's pairings only, and a phone code or another
 person's pairing is never asked. Set `features.sharedComputers` to `false` in the
 server's config to turn this off, or to `true` to let every paired session lend
@@ -817,7 +817,7 @@ To move by hand instead, export a backup from this computer in **Settings →
 Import & export → Export backup**, then import it on the server in **Settings → Import & export
 → Import backup**. API keys, engine sign-ins and paired devices stay where they
 are on both sides; routines arrive paused. An older desktop app's **Copy this
-computer here** is answered with "Update OpenMausBot to bring your bots here by
+computer here** is answered with "Update Uni to bring your bots here by
 itself."
 
 Only conversations you start yourself on that server can use what you share;
@@ -999,7 +999,7 @@ is bootstrapped; while it does, Settings refuses to change that list and says
 which variable to change instead. One that is empty, as `.env.example` and the
 Compose files leave them, leaves the list to Settings.
 
-The code itself comes from `accounts.openmausbot.com`, the OpenMausBot
+The code itself comes from `accounts.openmausbot.com`, the Uni
 account service, so your server needs no email credentials. Your server asks
 it to send the code, checks the answer, and then issues its own session
 cookie: the browser only ever talks to your server, and who is welcome is
@@ -1008,12 +1008,12 @@ their own: ten in a minute from one address pause sign-in there for a minute. Se
 `openmausbot devices` and can be revoked the same way.
 
 To send the codes through your own mail server instead, so nobody signs in
-through the account service and no MausBot account is made, give the server
+through the account service and no Uni account is made, give the server
 an SMTP address:
 
 ```sh
 OMB_SIGNIN_SMTP_URL="smtps://signin%40yourcompany.com:PASSWORD@smtp.yourcompany.com:465"
-OMB_SIGNIN_SMTP_FROM="OpenMausBot <signin@yourcompany.com>"   # else the user name, if it is an address
+OMB_SIGNIN_SMTP_FROM="Uni <signin@yourcompany.com>"   # else the user name, if it is an address
 ```
 
 `smtps://` uses TLS from the start (port 465); `smtp://` upgrades with
@@ -1043,7 +1043,7 @@ hosted workspace refuses them.
 
 ### Who may answer a card
 
-Approval cards are the provider's own (see the approval modes); OpenMausBot
+Approval cards are the provider's own (see the approval modes); Uni
 adds none. On a workspace several people share — portal membership, or an
 email sign-in list that names users — it narrows only whose answer counts,
 and only when the card can be traced to a person:
@@ -1187,7 +1187,7 @@ is the reference implementation.
 
 In a paired admin browser, as in the desktop app, **Take control** turns the
 Computer panel's picture into the live desktop for Local VMs and your own VPS,
-through the same address as OpenMausBot; **Full screen** fills the window with
+through the same address as Uni; **Full screen** fills the window with
 the same session. Shared, per-bot and pool Local VMs connect through their
 managed container's loopback port. VPS desktops connect
 through an SSH tunnel opened by the server. Neither needs an additional public
@@ -1693,9 +1693,9 @@ routine's run row, or in the Chief's "Problems to look at" chat.
 | `OMB_ROUTINE_FAILURE_SPACING_MS` | `3600000` (1 hour) | How long after the failure that starts the spacing the next run waits. From `60000`. |
 | `OMB_ROUTINE_FAILURE_SPACING_MAX_MS` | `14400000` (4 hours) | How long after each later failure the next run waits. Never below `OMB_ROUTINE_FAILURE_SPACING_MS`. |
 | `OMB_CHIEF_INCIDENT_TURNS_PER_HOUR` | `6` | The turns a Chief of Staff is started for problems in an hour, across all the chats it hears about. Past that, the Chief is not started: you are notified of each such problem, and one line in its "Problems to look at" chat counts them, names the first five chats they came from and links the newest. From `1`. |
-| `OMB_STARTUP_ROUTINE_GAP_MS` | `1800000` (30 minutes) | On a server not started by the desktop app, how soon after the start that last ran them routines set to "Also run when OpenMausBot starts" may run again. A start within that time leaves one row per routine: "Not run at 4 starts because OpenMausBot started again soon after the start that last ran it". `0` runs them at every start. |
+| `OMB_STARTUP_ROUTINE_GAP_MS` | `1800000` (30 minutes) | On a server not started by the desktop app, how soon after the start that last ran them routines set to "Also run when Uni starts" may run again. A start within that time leaves one row per routine: "Not run at 4 starts because Uni started again soon after the start that last ran it". `0` runs them at every start. |
 | `OMB_ROUTINE_RESTART_STAGGER_MS` | `30000` (30 seconds) | The time between the runs a restart cut off as each starts again, so they do not all start at once. From `0`. |
-| `OMB_BURST_PART_MAX_RESTARTS` | `2` | The times a burst's part, or its merge, starts again after a restart cut it off. Past that the part fails with "Not started again: OpenMausBot restarted while this part ran 3 times.", and the parts are posted as they came instead of merged. From `0`. |
+| `OMB_BURST_PART_MAX_RESTARTS` | `2` | The times a burst's part, or its merge, starts again after a restart cut it off. Past that the part fails with "Not started again: Uni restarted while this part ran 3 times.", and the parts are posted as they came instead of merged. From `0`. |
 
 A routine every minute (`* * * * *`) is still accepted and is spaced out the
 same way. Identical failures are told to you and to the Chief once: two

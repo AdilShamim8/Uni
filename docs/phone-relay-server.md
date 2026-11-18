@@ -1,8 +1,8 @@
-# Phones through MausBot Relay on a self-hosted server
+# Phones through Uni Relay on a self-hosted server
 
-`openmausbot serve --relay` lets the MausBot phone app pair with a server on a
+`openmausbot serve --relay` lets the Uni phone app pair with a server on a
 VPS by scanning a QR code, from anywhere: no domain, no open port, no VPN and
-no tunnel address. The server dials out to MausBot Relay, the phone dials the
+no tunnel address. The server dials out to Uni Relay, the phone dials the
 relay, and the relay passes sealed bytes it cannot open. It is the same
 end-to-end encrypted connection the desktop app gives phones; the wire spec is
 [`companion/src/e2e/README.md`](../companion/src/e2e/README.md).
@@ -240,17 +240,17 @@ The server keeps working on every other way in; the relay only adds one. What
 
 | Situation | Line |
 |---|---|
-| The machine serves a tunnel, runs on a fleet credential or holds a tunnel address | MausBot Relay stays off here: (why). A relay token would make that tunnel go for good; use the relay on a machine signed in with `openmausbot login --relay`. |
-| Not signed in, or the sign-in expired | MausBot Relay needs this machine signed in to a MausBot account: `openmausbot login --relay` |
-| The control plane says no (rollout, blocked, switched off) | MausBot Relay is not available for this machine right now. The server keeps working here; it asks again every half hour. |
-| The control plane does not answer | The MausBot account service did not answer. The server keeps working here and keeps trying. |
-| The relay does not answer | Can't reach MausBot Relay yet. The server keeps working here and keeps trying; phones pair once it connects. |
+| The machine serves a tunnel, runs on a fleet credential or holds a tunnel address | Uni Relay stays off here: (why). A relay token would make that tunnel go for good; use the relay on a machine signed in with `openmausbot login --relay`. |
+| Not signed in, or the sign-in expired | Uni Relay needs this machine signed in to a Uni account: `openmausbot login --relay` |
+| The control plane says no (rollout, blocked, switched off) | Uni Relay is not available for this machine right now. The server keeps working here; it asks again every half hour. |
+| The control plane does not answer | The Uni account service did not answer. The server keeps working here and keeps trying. |
+| The relay does not answer | Can't reach Uni Relay yet. The server keeps working here and keeps trying; phones pair once it connects. |
 
 The server log says `phone relay: connecting`, `phone relay: connected via
 relay2.openmausbot.com` and `phone relay: relay token …`. It redials at once,
 then backs off to a minute, moves to the next node on a restart or refusal, and
 renews its token hourly; sessions already open survive a token renewal. A phone
-that cannot reach the relay shows "Can't reach MausBot Relay right now. Trying
+that cannot reach the relay shows "Can't reach Uni Relay right now. Trying
 again…".
 
 ## Not yet

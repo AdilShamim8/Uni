@@ -77,7 +77,7 @@ shows it again to everyone.
       "kind": "sponsor",
       "label": "Sponsor",
       "title": "Acme Inference: $5 of free credit",
-      "body": "Acme Inference sponsors MausBot. New accounts get $5 of credit for any model they serve.",
+      "body": "Acme Inference sponsors Uni. New accounts get $5 of credit for any model they serve.",
       "primary": { "label": "Get a key", "action": { "open_url": "https://example.com/acme?utm_source=openmausbot&utm_medium=sponsorship" } },
       "secondary": { "label": "Add a key", "action": { "open": "api_keys" } },
       "starts": "2026-12-01T00:00:00Z",
@@ -163,7 +163,7 @@ that use it.
   that launch and follows it there.
 - **At most one remote card a launch**, and **at most one `sponsor` card in any 7 days** per person (counted from the day
   one was shown).
-- **Never** in the launch whose welcome just finished, over MausBot's first-launch card, during a live call, or while a
+- **Never** in the launch whose welcome just finished, over Uni's first-launch card, during a live call, or while a
   move to My Cloud is under way (the built-in sponsor card's exclusions).
 - **Never on a branded build** (`brandStatus().source === "file"`), any kind, as the What's new popup.
 - **Sponsor cards** also skip a desktop whose organization's policy limits the AI providers (company models only, or a

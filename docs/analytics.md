@@ -1,6 +1,6 @@
 # Usage analytics
 
-MausBot can send anonymous product analytics to PostHog (US cloud, `us.i.posthog.com`), so its maintainers can see
+Uni can send anonymous product analytics to PostHog (US cloud, `us.i.posthog.com`), so its maintainers can see
 which features people set up and use. This page lists every event and every property the app can send. Nothing else is
 sent.
 
@@ -130,7 +130,7 @@ use their own Boat key, and how many bots run on cloud computers, without sendin
 | `onboarding_step` | A first-run screen is shown | `step`: `meet`, `chief`; `replay`: true/false |
 | `onboarding_completed` | The first run ends in the chat | `reason`: `completed`; `at`: the screen it ended on; `replay`: true/false |
 | `setup_import_applied` | You bring in the skills and MCP servers found from other AI tools on this computer, in Settings → Import & export | `skills`, `tools`: how many were added. Never their names or where they came from |
-| `onboarding_cloud` | You tap Try Cloud under MausBot's first messages, which opens Add a Cloud | `action`: `start_trial` |
+| `onboarding_cloud` | You tap Try Cloud under Uni's first messages, which opens Add a Cloud | `action`: `start_trial` |
 | `message_sent` | You send a message | To a bot: `driver`: engine; `queued`: true/false. To a room: `room`: true; `mode`: `chat`, `goal`; `queued`: true/false |
 | `call_started` | You start a call with a bot | `driver`: engine; `mode`: `turns`, `live` |
 | `group_call_started` | You start a call with a room | `memberCount`: count |
@@ -147,7 +147,7 @@ use their own Boat key, and how many bots run on cloud computers, without sendin
 | `cloud_card_action` | You act on the MausBot Cloud card | `action`: `start`, `howto`, `signin`, `not_now`, `close` |
 | `whats_new` | The What's new popup (once per person after an update, on this computer's page): a slide comes on screen, counted once per slide each time the popup is up, or you act on it | `action`: `seen`, `next`, `back` (the slide changed, by its buttons, its dots or the arrow keys), `get_pro` (Get Pro, which opens Add a Cloud), `see_cloud` (See the new Cloud, which opens the Cloud website), `start_team` (Start a Team, which opens the Team plan's checkout on the Cloud website, or Add a Cloud for someone with a plan of their own), `not_now`, `close` (the X, Escape or a click outside); `slide`: the slide it happened on: `pro` (the new MausBot Cloud), `team` (Team); `audience`: `no_plan` (both slides), `own_plan` (a Cloud plan of one's own: the Team slide only); `signed_in`: true/false, signed in to MausBot Cloud in the app; `campaign`: the popup's campaign, `whats-new-2026-11` |
 | `cloud_howto` | The "Show me how" tip ends | `result`: `no_button`, `skipped`, `closed` |
-| `cloud_dialog_shown` | The Add a Cloud dialog opens | `source`: `app_card`, `app_howto`, `app_menu`, `app_settings`, `app_routines`, `app_whats_new_pro` (Get Pro in the What's new popup), `app_whats_new_team` (Start a Team in it, for someone with a plan of their own), `app_onboarding` (Try Cloud under MausBot's first messages); `view`: the dialog's first screen |
+| `cloud_dialog_shown` | The Add a Cloud dialog opens | `source`: `app_card`, `app_howto`, `app_menu`, `app_settings`, `app_routines`, `app_whats_new_pro` (Get Pro in the What's new popup), `app_whats_new_team` (Start a Team in it, for someone with a plan of their own), `app_onboarding` (Try Cloud under Uni's first messages); `view`: the dialog's first screen |
 | `cloud_dialog_view` | The Add a Cloud dialog reaches a step | `view`: `received`, `starting`, `ready` |
 | `cloud_signin` | Signing in to MausBot Cloud inside the Add a Cloud dialog takes a step | `step`: `code_sent` (a sign-in code was emailed), `signed_in`, `browser` (Continue in browser); `source`: as for `cloud_dialog_shown` |
 | `cloud_checkout_opened` | A Cloud checkout opens in the browser | `plan`: Cloud plan; `trial`: true/false; `source`: as for `cloud_dialog_shown` |
