@@ -162,12 +162,12 @@ const TOOL_DEFINITIONS = [
   },
   {
     name: "list_room_targets",
-    description: "Discover actual OpenMausBot teammates you can reach, in every department, and rooms. Works in a normal bot conversation too; no room is required. Returns bot and room IDs, roles and working folders, never other conversations' history. Use these bots, not native coding helpers with similar names, when the user asks their team to work together.",
+    description: "Discover actual Uni teammates you can reach, in every department, and rooms. Works in a normal bot conversation too; no room is required. Returns bot and room IDs, roles and working folders, never other conversations' history. Use these bots, not native coding helpers with similar names, when the user asks their team to work together.",
     inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "coordinate_bots",
-    description: "The one way to hand work on: ask existing OpenMausBot teammates a question or assign them concrete work. Give 1-4 bot_ids from list_bots; they see only what you send, so include constraints and done_when, and pass files they need in files. In a room it goes to this room; elsewhere to your standing work thread with each teammate. Results return here and resume you, so end your turn after sending; on return, verify the outcome and send fixes with rework true. Never target whoever assigned you this work or anyone above it: end your turn and your reply reaches them. Never thank a finished teammate or repeat a refused call unchanged.",
+    description: "The one way to hand work on: ask existing Uni teammates a question or assign them concrete work. Give 1-4 bot_ids from list_bots; they see only what you send, so include constraints and done_when, and pass files they need in files. In a room it goes to this room; elsewhere to your standing work thread with each teammate. Results return here and resume you, so end your turn after sending; on return, verify the outcome and send fixes with rework true. Never target whoever assigned you this work or anyone above it: end your turn and your reply reaches them. Never thank a finished teammate or repeat a refused call unchanged.",
     inputSchema: { type: "object", additionalProperties: false, properties: {
       group_id: { type: "string", description: "Another room, from list_room_targets." },
       bot_ids: { type: "array", items: { type: "string", description: "A teammate's id as list_bots prints it, or its unique name." }, minItems: 1, maxItems: 4, uniqueItems: true },
