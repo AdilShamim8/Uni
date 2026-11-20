@@ -49,9 +49,16 @@ function unused(dir: string, name: string, taken: Set<string>): string {
   const ext = extname(name);
   const stem = name.slice(0, name.length - ext.length);
   let candidate = name;
-  for (let n = 2; taken.has(join(dir, candidate)); n++) candidate = `${stem} (${n})${ext}`;
+  for (let n = 2; taken.has(join(dir, candidate)) || existsSync(join(dir, candidate)); n++) candidate = `${stem} (${n})${ext}`;
   taken.add(join(dir, candidate));
   return candidate;
+}
+
+function unusedFolder(parent: string, name: string, taken: Set<string>): string {
+  let folder = join(parent, name);
+  for (let n = 2; taken.has(folder) || existsSync(folder); n++) folder = join(parent, `${name} (${n})`);
+  taken.add(folder);
+  return folder;
 }
 
 export function exportFolder(dir: string, force: boolean): string {
@@ -137,7 +144,7 @@ export async function exportJob(client: HeadlessClient, options: ExportOptions, 
   const maxBytes = options.maxBytes ?? 500_000_000;
   const job = await readJob(client, options.threadId, { since: String(options.since ?? 0), full: "1" });
   const nodes: Rec[] = (job.nodes ?? []).filter((node: Rec) => !options.root || node.rootId === options.root);
-  if (options.root && !nodes.length) throw usageError(`no job with root ${options.root} in this conversation`, "openmausbot export TARGET without --root writes all of it");
+  if (options.root && !nodes.length) throw usageError(`no job with root ${options.root} in this conversation`, "uni export TARGET without --root writes all of it");
   for (const dir of ["transcripts", "files", "screens"]) mkdirSync(join(out, dir), { recursive: true });
 
   const threads = new Map<string, string>([[options.threadId, "conversation"]]);
@@ -181,11 +188,11 @@ export async function exportJob(client: HeadlessClient, options: ExportOptions, 
     if (files.length >= maxFiles) return void skipped.push({ ...about, reason: `more than --max-files ${maxFiles}` });
     const response = await fileRoute(threadId, messageId, { path: link, listFolder: true });
     if (!response?.ok) return void skipped.push({ ...about, reason: await refusal(response) });
-    if (response.headers.get("x-openmausbot-folder") !== "1") {
+    if (response.headers.get("x-uni-folder") !== "1") {
       return keep(response, join(out, "files", folder), fileName(response.headers.get("content-disposition"), link), about, files);
     }
     const listing = await response.json() as Rec;
-    const dir = join(out, "files", folder, safeName(String(listing.name ?? "folder")));
+    const dir = unusedFolder(join(out, "files", folder), safeName(String(listing.name ?? "folder")), taken);
     for (const entry of Array.isArray(listing.entries) ? listing.entries as Rec[] : []) {
       const name = String(entry.name);
       const one = { ...about, entry: name };

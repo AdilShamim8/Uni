@@ -22,7 +22,7 @@ it("stops a turn that keeps the person's message unread in a long tool call, and
   const owner = randomBytes(32).toString("base64url");
   const realFetch = globalThis.fetch;
   globalThis.fetch = (input, init = {}) => realFetch(input, { ...init,
-    headers: { ...Object.fromEntries(new Headers(init.headers)), "x-openmausbot-desktop-owner": owner } });
+    headers: { ...Object.fromEntries(new Headers(init.headers)), "x-uni-desktop-owner": owner } });
   const fixture = await launchVerificationServer({ ...process.env, OMB_TEST_DESKTOP_OWNER_TOKEN: owner, OMB_PERSON_FIRST_MS: "1500",
     FAKE_CLAUDE_TOOL_CALLS_FILE: calls, FAKE_CLAUDE_MARKER_REPLIES: markers });
   try {

@@ -18,7 +18,9 @@ import { installOneHome } from "../../electron/one-home-main.mjs";
 import type { OneHomeView } from "../../electron/one-home.mjs";
 import { cloudPairingSignature, cloudRequestSignature } from "../../server/cloud-home.ts";
 import type { TeamMember } from "../../server/cloud-team.ts";
+import { bitwardenCliPath } from "../../server/host/bitwarden-cli.ts";
 import { removeTempDir, waitForExit } from "../../server/testing/cleanup.ts";
+import type { FakeBwAccount } from "../../server/testing/fake-bw.ts";
 import { freePortBlock } from "../../server/testing/ports.ts";
 
 const SERVER_DIR = fileURLToPath(new URL("../../server/", import.meta.url));
@@ -149,16 +151,35 @@ export interface CloudTeamFixture {
 
 const TEAM_MACHINE_ID = "0d9e8f7a-6b5c-4d3e-9f8a-7b6c5d4e3f2a";
 
-function fakeOnePassword(at: string, token: string): string {
+/** The fake `bw` where the server installs the real one (server/host/bitwarden-cli.ts), so it is used as installed. */
+function installFakeBw(dataDir: string, account: FakeBwAccount): void {
+  const tool = bitwardenCliPath(dataDir, { asset: "fake", bytes: 0, sha256: "", executable: process.platform === "win32" ? "bw.exe" : "bw" });
+  mkdirSync(join(tool, ".."), { recursive: true });
+  const vault = join(tool, "..", "fake-bw-vault.json");
+  writeFileSync(vault, JSON.stringify(account));
+  writeFileSync(tool, `#!/usr/bin/env node
+process.env.FAKE_BW_VAULT = ${JSON.stringify(vault)};
+import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-bw-process.ts")).href)});
+`, { mode: 0o755 });
+}
+
+/** One item in the fake 1Password's one vault, in the SDK's shapes (no website: a secret, not a login). */
+export interface FakeOnePasswordItem { id: string; title: string; category: string; fields: Array<{ id: string; title: string; fieldType: string; value: string }> }
+
+function fakeOnePassword(at: string, token: string, items: readonly FakeOnePasswordItem[] = []): string {
   const sdk = join(at, "node_modules", "@1password", "sdk");
   mkdirSync(sdk, { recursive: true });
   writeFileSync(join(sdk, "package.json"), JSON.stringify({ name: "@1password/sdk", version: "0.5.0", main: "index.js" }));
   writeFileSync(join(sdk, "index.js"), `"use strict";
+const ITEMS = ${JSON.stringify(items)};
 exports.createClient = async ({ auth }) => {
   if (auth !== ${JSON.stringify(token)}) throw new Error("error authenticating: invalid service account token");
   return {
     vaults: { list: async () => [{ id: "v1", title: "Shared with Uni" }] },
-    items: { list: async () => [], getAll: async () => ({ individualResponses: [] }) },
+    items: {
+      list: async () => ITEMS.map(({ id, title, category }) => ({ id, title, category, websites: [] })),
+      getAll: async (vaultId, ids) => ({ individualResponses: ITEMS.filter((item) => ids.includes(item.id)).map(({ id, fields }) => ({ content: { id, fields } })) }),
+    },
   };
 };
 `);
@@ -171,8 +192,12 @@ exports.createClient = async ({ auth }) => {
  * with an installation of its own as the desktop app registers one, My Cloud registering itself as a Cloud home does.
  * `env`: more of both servers' environment. `cloudEngine`: lines run at the start of My Cloud's synthetic Claude CLI, to
  * script its turns (fake-claude-cli.ts). */
-export async function launchCloudSendFixture({ onePasswordToken, cloudOnePasswordToken = onePasswordToken, toolCalls = 0, broker, env = {}, cloudEnv = {}, cloudEngine = "", desktopEngine = "", space, cloudSignedIn = true, team }: {
+export async function launchCloudSendFixture({ onePasswordToken, cloudOnePasswordToken = onePasswordToken, onePasswordItems = [], bitwarden, toolCalls = 0, broker, env = {}, cloudEnv = {}, cloudEngine = "", desktopEngine = "", space, cloudSignedIn = true, team }: {
   onePasswordToken: string; cloudOnePasswordToken?: string; toolCalls?: number;
+  /** A fake Bitwarden tool already in each server's data folder, holding this one account (no download, no network). */
+  bitwarden?: FakeBwAccount;
+  /** What every server's fake 1Password vault ("Shared with Uni") holds; empty by default. */
+  onePasswordItems?: readonly FakeOnePasswordItem[];
   /** A Team Cloud too (OMB_CLOUD_ROLE=team), with its own environment and synthetic Claude CLI lines. */
   team?: { id: string; name: string; env?: NodeJS.ProcessEnv; engine?: string; noAi?: boolean;
     /** Scopes of this checkout's node_modules (`@duckdb`) linked into the Team Cloud's native tree before it starts: the
@@ -201,8 +226,9 @@ export async function launchCloudSendFixture({ onePasswordToken, cloudOnePasswor
 
   async function start(name: string, own: NodeJS.ProcessEnv, port: number, extra: string[] = [], ipc = false, acceptedToken = onePasswordToken, calls = 0, engine = "", signedIn = true): Promise<ChildProcess> {
     const home = join(root, name);
-    const dataDir = join(home, ".openmausbot");
+    const dataDir = join(home, ".uni");
     mkdirSync(dataDir, { recursive: true });
+    if (bitwarden) installFakeBw(dataDir, bitwarden);
     const cli = join(home, "fixture-claude.mjs");
     const tools = calls ? JSON.stringify(Array.from({ length: calls }, (_, i) => ({ name: "Bash", input: { command: `echo step ${i}` } }))) : "";
     writeFileSync(cli, `#!/usr/bin/env node
@@ -221,7 +247,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     const child = spawn(process.execPath, ["--import", offline, ...extra, join(SERVER_DIR, "index.ts")], {
       cwd: join(SERVER_DIR, ".."),
       env: { PATH: process.env.PATH, ...(process.env.SystemRoot ? { SystemRoot: process.env.SystemRoot } : {}), HOME: home, USERPROFILE: home, OMB_DATA_DIR: dataDir,
-        OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1), OMB_DUCKDB_DIR: fakeOnePassword(join(home, "native"), acceptedToken), ...env, ...own },
+        OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1), OMB_DUCKDB_DIR: fakeOnePassword(join(home, "native"), acceptedToken, onePasswordItems), ...env, ...own },
       stdio: ["ignore", "pipe", "pipe", ...(ipc ? ["ipc" as const] : [])],
     });
     children.add(child);
@@ -252,7 +278,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
   const startDesktop = async (dataDir?: string) => {
     const child = await start("desktop", { OMB_DESKTOP_PARENT: "1", ...(dataDir ? { OMB_DATA_DIR: dataDir } : {}),
       ...(broker && desktopInstallation ? { OMB_COMPOSIO_BROKER_URL: broker.url, OMB_COMPOSIO_BROKER_TOKEN: desktopInstallation.token } : {}) }, desktopPort, ["--import", parentPort], true, onePasswordToken, toolCalls, desktopEngine);
-    child.send({ type: "openmausbot:desktop-mutation-token", token: ownerCapability });
+    child.send({ type: "uni:desktop-mutation-token", token: ownerCapability });
     return child;
   };
   let desktop = await startDesktop();
@@ -295,8 +321,8 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     const stopOverIpc = process.platform === "win32";
     const stopOnMessage = `data:text/javascript,${encodeURIComponent('process.on("message", (message) => { if (message === "stop") process.emit("SIGTERM"); }); process.channel?.unref();')}`;
     if (team.noAi) {
-      mkdirSync(join(root, "team", ".openmausbot"), { recursive: true });
-      writeFileSync(join(root, "team", ".openmausbot", "config.json"), JSON.stringify({ instances: Object.fromEntries(["claude", "codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi", "grok"].map((id) => [id, { driver: "not-a-real-driver" }])) }));
+      mkdirSync(join(root, "team", ".uni"), { recursive: true });
+      writeFileSync(join(root, "team", ".uni", "config.json"), JSON.stringify({ instances: Object.fromEntries(["claude", "codex", "cursor", "githubCopilot", "openaiCompat", "qwen", "hermes", "pi", "grok"].map((id) => [id, { driver: "not-a-real-driver" }])) }));
     }
     for (const scope of team.native ?? []) {
       mkdirSync(join(root, "team", "native", "node_modules"), { recursive: true });
@@ -359,7 +385,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
       signed: (method, path, body) => signedRequest(teamBase, method, path, body === undefined ? "" : JSON.stringify(body)),
       async capability(botId, threadId, kind) {
         // A loopback caller with the private key, as the harness mints one: never through the edge.
-        const minted = await fetch(`${teamBase}/api/testing/internal-capability`, { method: "POST", headers: { "content-type": "application/json", "x-openmausbot-test-capability": CAPABILITY_KEY }, body: JSON.stringify({ botId, threadId, ...(kind ? { kind } : {}) }) });
+        const minted = await fetch(`${teamBase}/api/testing/internal-capability`, { method: "POST", headers: { "content-type": "application/json", "x-uni-test-capability": CAPABILITY_KEY }, body: JSON.stringify({ botId, threadId, ...(kind ? { kind } : {}) }) });
         const answer = parse(await minted.text());
         if (minted.status !== 200 && minted.status !== 201) throw new Error(`no test capability: ${minted.status} ${JSON.stringify(answer)}`);
         return answer.token as string;
@@ -376,7 +402,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
 
   const local = async (method: string, path: string, body?: unknown) => {
     const response = await remember(await fetch(`${desktopBase}${path}`, { method, headers: {
-      "x-openmausbot-desktop-owner": ownerCapability, ...(body === undefined ? {} : { "content-type": "application/json" }) },
+      "x-uni-desktop-owner": ownerCapability, ...(body === undefined ? {} : { "content-type": "application/json" }) },
     body: body === undefined ? undefined : JSON.stringify(body) }));
     return { status: response.status, body: parse(await response.text()) };
   };
@@ -418,7 +444,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     ipcMain: { handle: (channel, handler) => { handlers.set(channel, handler); } },
     cloudPage: (event) => (event as { page?: "local" | "cloud" })?.page ?? null,
     server: () => port,
-    localRequest: async (route, init = {}) => remember(await fetch(`${desktopBase}${route}`, { ...init, headers: { ...init.headers as Record<string, string>, "x-openmausbot-desktop-owner": ownerCapability } })),
+    localRequest: async (route, init = {}) => remember(await fetch(`${desktopBase}${route}`, { ...init, headers: { ...init.headers as Record<string, string>, "x-uni-desktop-owner": ownerCapability } })),
     home: () => ({ origin: cloudBase, grant: async () => ({ origin: cloudBase, code: await mintCode("Uni app (Cloud)") }) }),
     cookieFetch: throughEdge(owner) as typeof fetch,
     reconnect: async () => false,
@@ -455,7 +481,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
   let main = wire();
   const asks = createLoginHandoffClient();
   const older = () => createCloudSend({
-    local: async (route, init) => remember(await fetch(`${desktopBase}${route}`, { method: init?.method ?? "GET", headers: { "x-openmausbot-desktop-owner": ownerCapability } })),
+    local: async (route, init) => remember(await fetch(`${desktopBase}${route}`, { method: init?.method ?? "GET", headers: { "x-uni-desktop-owner": ownerCapability } })),
     cloud: {
       origin: () => cloudBase,
       asleep: () => false,
@@ -475,12 +501,12 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     const capability = randomBytes(32).toString("base64url");
     const startIt = async () => {
       const child = await start(name, { OMB_DESKTOP_PARENT: "1", OMB_ENVIRONMENT_LABEL: label }, deskPort, ["--import", parentPort], true, onePasswordToken, toolCalls, desktopEngine);
-      child.send({ type: "openmausbot:desktop-mutation-token", token: capability });
+      child.send({ type: "uni:desktop-mutation-token", token: capability });
       return child;
     };
     let child = await startIt();
     const deskLocal: CloudSendDesk["local"] = async (method, path, body) => {
-      const response = await remember(await fetch(`${base}${path}`, { method, headers: { "x-openmausbot-desktop-owner": capability, ...(body === undefined ? {} : { "content-type": "application/json" }) },
+      const response = await remember(await fetch(`${base}${path}`, { method, headers: { "x-uni-desktop-owner": capability, ...(body === undefined ? {} : { "content-type": "application/json" }) },
         ...(body === undefined ? {} : { body: JSON.stringify(body) }) }));
       return { status: response.status, body: parse(await response.text()) };
     };
@@ -497,7 +523,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
       ipcMain: { handle: () => {} },
       cloudPage: (event) => (event as { page?: "local" | "cloud" })?.page ?? null,
       server: () => ipc,
-      localRequest: async (route, init = {}) => remember(await fetch(`${base}${route}`, { ...init, headers: { ...init.headers as Record<string, string>, "x-openmausbot-desktop-owner": capability } })),
+      localRequest: async (route, init = {}) => remember(await fetch(`${base}${route}`, { ...init, headers: { ...init.headers as Record<string, string>, "x-uni-desktop-owner": capability } })),
       home: () => ({ origin: cloudBase, grant: async () => ({ origin: cloudBase, code: await mintCode("Uni app (Cloud)") }) }),
       cookieFetch: throughOwner,
       reconnect: async () => false,
@@ -534,7 +560,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     listenIt();
     desks.push({ close: () => deskMain.close() });
     return {
-      base, dataDir: join(root, name, ".openmausbot"), local: deskLocal, account: deskAccount, journalFile, spies,
+      base, dataDir: join(root, name, ".uni"), local: deskLocal, account: deskAccount, journalFile, spies,
       oneHome: { kick: () => deskMain.kick(), view: () => deskMain.view(), away: () => deskMain.away() },
       async relaunch({ kill = true } = {}) {
         deskMain.close();
@@ -564,7 +590,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     get intercept() { return fixture.intercept; },
     set intercept(hook) { fixture.intercept = hook; },
     oneHome: { kick: () => main.kick(), view: () => main.view(), away: () => main.away() },
-    desktopDataDir: join(root, "desktop", ".openmausbot"),
+    desktopDataDir: join(root, "desktop", ".uni"),
     async relaunch({ kill = true, cloud: cloudMore, dataDir } = {}) {
       main.close();
       await waitForExit(desktop, { signal: kill ? "SIGKILL" : "SIGTERM" });
@@ -580,7 +606,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
     },
     handoff: (what) => asks.request(port, what as ConnectionAsk),
     async picture(bytes) {
-      const response = await fetch(`${desktopBase}/api/attachments`, { method: "POST", headers: { "x-openmausbot-desktop-owner": ownerCapability, "content-type": "image/png" }, body: bytes });
+      const response = await fetch(`${desktopBase}/api/attachments`, { method: "POST", headers: { "x-uni-desktop-owner": ownerCapability, "content-type": "image/png" }, body: bytes });
       return `/api/attachments/${((await response.json()) as { path: string }).path.split(/[\\/]/).pop()}`;
     },
     call: <T>(channel: string, page: "local" | "cloud", ...args: unknown[]) => Promise.resolve(handlers.get(channel)!({ page }, ...args)) as Promise<T>,

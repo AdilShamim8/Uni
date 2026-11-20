@@ -37,7 +37,7 @@ afterEach(async () => {
 async function boot(env: NodeJS.ProcessEnv, config: Record<string, unknown> = {}) {
   chmodSync(FAKE_CLAUDE, 0o755);
   const home = mkdtempSync(join(tmpdir(), "omb-live-azure-"));
-  const dataDir = join(home, ".openmausbot");
+  const dataDir = join(home, ".uni");
   const fetches = join(home, "fetches.log");
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(join(home, "web"));
@@ -179,7 +179,7 @@ it("on a Team Cloud: a Super admin and an Admin get through; a User is refused i
   const phone = await s.redeem(made.body.code);
   expect(await s.start(botId, phone)).toEqual(REFUSED);
   // The companion's header carries no authority.
-  expect(await s.start(botId, { ...member, "x-openmausbot-companion": "1", "x-openmausbot-companion-device": "phone-1" })).toEqual(REFUSED);
+  expect(await s.start(botId, { ...member, "x-uni-companion": "1", "x-uni-companion-device": "phone-1" })).toEqual(REFUSED);
   expect(await s.start(botId)).toMatchObject({ status: 403, body: { error: expect.stringContaining("may only use the service routes") } });
   expect(s.liveSessions()).toHaveLength(2);
 

@@ -38,13 +38,13 @@ function bot(overrides: Partial<BotRecord> = {}): BotRecord {
 const routine = { id: "r1", name: "Morning sweep", botId: "bot-1", prompt: "Sweep the inbox.", runOn: "computer", enabled: true,
   schedule: { type: "daily", time: "09:00", weekdays: [1, 2, 3, 4, 5] }, durationMinutes: 30 } as unknown as Routine;
 
-function host(options: { submit?: (submission: unknown) => Promise<CommunityResult>; signedIn?: boolean; bots?: BotRecord[]; picture?: (bot: BotRecord) => string | undefined } = {}) {
+function host(options: { submit?: (submission: unknown) => Promise<CommunityResult>; signedIn?: boolean; bots?: BotRecord[]; picture?: (bot: BotRecord) => string | undefined; brief?: string } = {}) {
   const dataDir = scratch(), botFolder = scratch();
   const patches: Array<{ messageId: string; card: TemplateCard }> = [];
   const bots = options.bots ?? [bot()];
   const publisher = createCommunityPublisher({ access: () => options.signedIn === false ? null : { kind: "desktop", url: "https://admin.example.com/api/cloud/pages/token", token: "t" } });
   const share = createShareHost({
-    dataDir, bots: () => bots, groups: () => [], routines: () => [routine], brief: () => undefined,
+    dataDir, bots: () => bots, groups: () => [], routines: () => [routine], brief: () => options.brief,
     collectTeamSkills: (list) => ({ ok: true, skipped: [], skillsByBot: new Map(list.map((each) => [each.id, [{ name: "triage", description: "Sort the inbox.", instructions: skillText, enabled: true }]])) }),
     picture: options.picture ?? (() => undefined), botFolder: (id) => join(botFolder, id),
     publisher: options.submit ? { ...publisher, submit: options.submit } : publisher,
@@ -70,6 +70,24 @@ describe("making a template", () => {
     expect(folder.document.package.agents[0]).toMatchObject({ tools: { off: ["images"] } });
     expect(folder.document.package.agents[0]).not.toHaveProperty("connections");
     expect(folder.document.package).not.toHaveProperty("connections");
+  });
+
+  it("never shows a department's shared instructions as its line, and says what arrives for a bot or a department", () => {
+    const { share } = host({ brief: "We sell a team plan at 49 per seat.\nNever promise discounts." });
+    const department = share.export({ scope: "department", section: "Ops", bots: [bot()] }, [routine]);
+    expect(department.card.tagline).toBe("");
+    const departmentDetails = share.get(department.card.id).details;
+    expect(departmentDetails.summary).toMatch(/^Shared from MausBot\. Its bots, skills, group chats and routines arrive/);
+    expect(departmentDetails.brief).toContain("49 per seat");
+    const quiet = host({ bots: [bot({ title: undefined, description: undefined })] });
+    const lone = quiet.share.export({ scope: "bot", bot: bot({ title: undefined, description: undefined }) }, []);
+    expect(lone.card.tagline).toBe("");
+    const loneSummary = quiet.share.get(lone.card.id).details.summary ?? "";
+    expect(loneSummary).toMatch(/^Shared from MausBot\. The bot arrives as a new copy/);
+    expect(loneSummary).not.toMatch(/group chats|Uni/);
+    const titled = share.export({ scope: "bot", bot: bot() }, []);
+    expect(titled.card.tagline).toBe("Inbox helper");
+    expect(share.get(titled.card.id).details.summary).toBe("Keeps the inbox tidy.");
   });
 
   it("makes the same template again in the same folder and keeps its card", () => {
@@ -110,11 +128,11 @@ describe("publishing", () => {
       access: () => ({ kind: "desktop", url: "https://admin.example.com/api/cloud/pages/token", token: "omb_pd_token" }),
       fetch: (async (url: string, init: RequestInit) => {
         sent = { url, init };
-        return Response.json({ link: "https://github.com/milind-soni/openmausbot-teams/tree/abc/teams/helper", prUrl: "https://github.com/milind-soni/openmausbot-teams/pull/7" });
+        return Response.json({ link: "https://github.com/AdilShamim8/uni-teams/tree/abc/teams/helper", prUrl: "https://github.com/AdilShamim8/uni-teams/pull/7" });
       }) as typeof fetch,
     });
     const result = await publisher.submit({ slug: "helper", files: { "bot.md": "x", "avatars/helper.png": { base64: "iVBORw0K" } } });
-    expect(result).toEqual({ ok: true, link: "https://github.com/milind-soni/openmausbot-teams/tree/abc/teams/helper", prUrl: "https://github.com/milind-soni/openmausbot-teams/pull/7" });
+    expect(result).toEqual({ ok: true, link: "https://github.com/AdilShamim8/uni-teams/tree/abc/teams/helper", prUrl: "https://github.com/AdilShamim8/uni-teams/pull/7" });
     expect(sent!.url).toBe("https://admin.example.com/api/cloud/community/submissions");
     expect(sent!.init.redirect).toBe("error");
     expect((sent!.init.headers as Record<string, string>).authorization).toBe("Bearer omb_pd_token");
@@ -131,8 +149,8 @@ describe("publishing", () => {
     const expected = pagesHomeSignature(home.secret, home.machineId, headers["x-omb-cloud-timestamp"]!, headers["x-omb-cloud-nonce"]!, body, "omb-community-v1");
     expect(headers["x-omb-cloud-signature"]).toBe(`v1=${expected}`);
     expect(expected).not.toBe(pagesHomeSignature(home.secret, home.machineId, headers["x-omb-cloud-timestamp"]!, headers["x-omb-cloud-nonce"]!, body));
-    answer = Response.json({ prUrl: "https://github.com/milind-soni/openmausbot-teams/pull/2", link: "https://github.com/milind-soni/openmausbot-teams/tree/b/teams/a", updated: true });
-    expect(await publisher.submit({ slug: "a", files: { "bot.md": "x" } })).toMatchObject({ ok: true, prUrl: "https://github.com/milind-soni/openmausbot-teams/pull/2" });
+    answer = Response.json({ prUrl: "https://github.com/AdilShamim8/uni-teams/pull/2", link: "https://github.com/AdilShamim8/uni-teams/tree/b/teams/a", updated: true });
+    expect(await publisher.submit({ slug: "a", files: { "bot.md": "x" } })).toMatchObject({ ok: true, prUrl: "https://github.com/AdilShamim8/uni-teams/pull/2" });
   });
 
   it("sends a folder the Admin's checks accept: BotMRR v2 frontmatter, skills named as their folders, pictures as base64, paused routines, under the caps", async () => {
@@ -169,7 +187,7 @@ describe("publishing", () => {
 
   it("never shows a link outside the community repository", async () => {
     const publisher = createCommunityPublisher({ access: () => ({ kind: "desktop", url: "https://admin.example.com/x", token: "t" }),
-      fetch: (async () => Response.json({ link: "https://github.com/someone/else/tree/main/teams/a", prUrl: "https://github.com/milind-soni/openmausbot-teams/pull/1" })) as typeof fetch });
+      fetch: (async () => Response.json({ link: "https://github.com/someone/else/tree/main/teams/a", prUrl: "https://github.com/AdilShamim8/uni-teams/pull/1" })) as typeof fetch });
     expect(await publisher.submit({ slug: "a", files: {} })).toMatchObject({ ok: false, reason: "failed" });
   });
 
@@ -180,7 +198,7 @@ describe("publishing", () => {
     share.shown(made.card.id, "thread-1", "message-1");
     expect(await share.publish(made.card.id)).toMatchObject({ status: "failed", error: "You've published a lot today. Try again tomorrow." });
     expect(patches.map((patch) => patch.card.status)).toEqual(["publishing", "failed"]);
-    answer = { ok: true, link: "https://github.com/milind-soni/openmausbot-teams/tree/a/teams/helper", prUrl: "https://github.com/milind-soni/openmausbot-teams/pull/1" };
+    answer = { ok: true, link: "https://github.com/AdilShamim8/uni-teams/tree/a/teams/helper", prUrl: "https://github.com/AdilShamim8/uni-teams/pull/1" };
     expect(await share.publish(made.card.id)).toMatchObject({ status: "published", link: answer.link });
     expect(share.delete(made.card.id).status).toBe("gone");
     expect(existsSync(made.dir)).toBe(false);

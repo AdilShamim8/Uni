@@ -7,7 +7,7 @@ import { userErrorThrown } from "./user-errors.ts";
 import { THIS_COMPUTER_NOT_READY } from "../shared/your-computer.ts";
 import { cuaUnavailableReason, decodeCuaConnection, type LocalComputerConnection } from "./local-computer.ts";
 
-export const DESKTOP_COMPUTER_GRANT = "openmausbot:local-computer";
+export const DESKTOP_COMPUTER_GRANT = "uni:local-computer";
 
 export interface DesktopComputer {
   /** Only ever called with a message from the parent port; true when it was this grant. */

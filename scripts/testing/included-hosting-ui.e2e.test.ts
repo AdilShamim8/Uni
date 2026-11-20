@@ -106,7 +106,7 @@ async function until<T>(probe: () => Promise<T> | T, what: string, timeoutMs = 3
     // The bot publishes two folders of its own through its tool's route: the server reads them and asks the relay.
     const bot = ((await api("GET", "/api/bots")).bots as Array<{ id: string; threadId: string }>).find((one) => one.id === info.botId)!;
     const { token: capability } = await fetch(`${info.url}/api/testing/internal-capability`, { method: "POST",
-      headers: { "content-type": "application/json", "x-openmausbot-test-capability": CAPABILITY_KEY }, body: JSON.stringify({ botId: bot.id, threadId: bot.threadId }) }).then((answer) => answer.json()) as { token: string };
+      headers: { "content-type": "application/json", "x-uni-test-capability": CAPABILITY_KEY }, body: JSON.stringify({ botId: bot.id, threadId: bot.threadId }) }).then((answer) => answer.json()) as { token: string };
     const workspace = join(info.dataDir, "workspaces", info.botId);
     const tool = async (input: Record<string, unknown>) => {
       const answer = await fetch(`${info.url}/api/internal/apps/publish`, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${capability}` }, body: JSON.stringify(input) });

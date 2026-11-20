@@ -181,7 +181,7 @@ describe("staging from an install", () => {
       return directory;
     };
     const staged = await stageDuckdb({ root, targets: [{ platform: "win32", arch: "x64" }], pack, sign: false, log: null });
-    const cache = path.join(root, "node_modules", ".cache", "openmausbot", "duckdb");
+    const cache = path.join(root, "node_modules", ".cache", "uni", "duckdb");
     // Both native packages the host lacks are fetched, each at its own pin.
     expect(packed).toEqual([
       { name: "node-bindings-win32-x64", version: PIN, cache, scope: "@duckdb" },

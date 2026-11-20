@@ -4,17 +4,17 @@ Install [Node.js](https://nodejs.org/) 24 or newer, then choose either way to ru
 
 ```sh
 # Install once, then use the short command:
-npm install -g openmausbot
+npm install -g uni
 openmausbot
 ```
 
 Or, without a global install:
 
 ```sh
-npx openmausbot
+npx uni
 ```
 
-Use the same command next time. The first launch guides you through setup; later launches reuse your saved AI connection and phone-access choice. `openmausbot start` is the same as the bare command. If that workspace is already running, Uni opens it instead of starting a second server.
+Use the same command next time. The first launch guides you through setup; later launches reuse your saved AI connection and phone-access choice. `uni start` is the same as the bare command. If that workspace is already running, Uni opens it instead of starting a second server.
 
 ## First launch
 
@@ -48,7 +48,7 @@ After the connection is ready:
 
 Choose **Connect** on the phone. Scanning alone is not a successful pairing. The code is private, single-use, and works for 10 minutes. Guided phone pairing grants client access for chat and approvals, not settings or pairing administration.
 
-If the workspace starts but its HTTPS check fails, the local workspace remains usable and no phone code is created. Fix the connection and run `openmausbot pair` in another terminal to try again. A missing account, connector, or Tailscale prerequisite can prevent startup; follow the printed error, or use `openmausbot --local`. To add phone access after skipping it, stop the server, run `openmausbot setup`, then start it again.
+If the workspace starts but its HTTPS check fails, the local workspace remains usable and no phone code is created. Fix the connection and run `uni pair` in another terminal to try again. A missing account, connector, or Tailscale prerequisite can prevent startup; follow the printed error, or use `uni --local`. To add phone access after skipping it, stop the server, run `uni setup`, then start it again.
 
 ## Commands
 
@@ -56,15 +56,15 @@ The examples below assume a global install; prefix them with `npx` otherwise.
 
 | Command | Use |
 | --- | --- |
-| `openmausbot` | Set up once, then start with saved settings. |
-| `openmausbot setup` | Revisit AI and optional phone setup, save, and exit without starting. This is not a reset. |
-| `openmausbot --no-open` | Start without opening a browser. |
-| `openmausbot --local` | Ignore saved remote access for this launch; keep the saved choice for next time. |
-| `openmausbot --no-pair` | Suppress phone setup prompts and pairing invitations. This does **not** turn off saved remote access; use `--local` for that. |
-| `openmausbot pair` | Create another phone invitation while the configured workspace and HTTPS connection are running. |
-| `openmausbot devices` | List paired devices; `openmausbot devices revoke ID` signs one out. |
-| `openmausbot serve` | Start without onboarding prompts or automatic browser opening; specify remote-access flags explicitly for a service. |
-| `openmausbot login` | Sign in to an Uni account for `--tunnel`; this does not sign in to an AI provider or start the tunnel. |
+| `uni` | Set up once, then start with saved settings. |
+| `uni setup` | Revisit AI and optional phone setup, save, and exit without starting. This is not a reset. |
+| `uni --no-open` | Start without opening a browser. |
+| `uni --local` | Ignore saved remote access for this launch; keep the saved choice for next time. |
+| `uni --no-pair` | Suppress phone setup prompts and pairing invitations. This does **not** turn off saved remote access; use `--local` for that. |
+| `uni pair` | Create another phone invitation while the configured workspace and HTTPS connection are running. |
+| `uni devices` | List paired devices; `uni devices revoke ID` signs one out. |
+| `uni serve` | Start without onboarding prompts or automatic browser opening; specify remote-access flags explicitly for a service. |
+| `uni account login` | Sign in to an Uni account for `--tunnel`; this does not sign in to an AI provider or start the tunnel. |
 
 `start` accepts the same server options as `serve`, including `--port`, `--data-dir`, `--tailscale`, `--tunnel`, and `--public-url`. Keep using your custom data directory and port when starting or pairing:
 
@@ -81,6 +81,6 @@ API keys are hidden while typed or pasted. New API connections save their key in
 
 The packaged desktop app does not keep your AI provider and service keys there: it encrypts them with the operating system (Keychain on macOS, DPAPI on Windows, the system secret store on Linux, where a desktop without one gets only Electron's fixed-key obfuscation) in `credentials.bin` and moves keys it finds in `config.json` into that store at startup. Keys entered through this CLI setup, OpenCode provider keys, keys given to one engine (`environment` or `key`), and MCP header values stay plaintext in `config.json`, on desktop too. `mcp-oauth.json` is also plaintext.
 
-Ctrl-C during AI setup leaves unsaved OMB changes unapplied. Installations and provider sign-ins already completed remain available. Ctrl-C during the later phone step keeps the AI setup you already saved, exits without starting a server, and does not undo an account sign-in already completed. Run `openmausbot setup` to continue; no destructive reset is needed.
+Ctrl-C during AI setup leaves unsaved OMB changes unapplied. Installations and provider sign-ins already completed remain available. Ctrl-C during the later phone step keeps the AI setup you already saved, exits without starting a server, and does not undo an account sign-in already completed. Run `uni setup` to continue; no destructive reset is needed.
 
 For remote access and background deployment options, see [self-hosting](self-hosting.md) and [the VPS guide](deploy-vps.md).

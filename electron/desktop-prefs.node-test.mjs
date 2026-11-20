@@ -26,7 +26,7 @@ test("a page on an older release keeps working with the longer list: its own ids
 });
 
 test("What's new, Boat's credit offer and the Grok Bot move are the notices a page can record; seen and analytics survive a restart; a broken record never stops the app", () => {
-  assert.deepEqual([...DESKTOP_NOTICES], [POPUP, BOAT, GROK, MODELGO]);
+  assert.deepEqual([...DESKTOP_NOTICES], [POPUP, BOAT, GROK, MODELGO, "teams-2026-11b"]);
   let saved = null;
   const writes = [];
   const prefs = createDesktopPrefs({ read: () => saved, write: value => { writes.push(value); saved = structuredClone(value); } });
@@ -68,6 +68,18 @@ test("an announcement card's mark and the last sponsor day are kept beside the f
   assert.equal(marks.length, 40); assert.equal(marks.at(-1), "announcement:card-44"); assert.ok(prefs.seen().includes(POPUP));
   const restarted = createDesktopPrefs({ read: () => saved, write: () => {} });
   assert.deepEqual(restarted.seen(), prefs.seen(), "survives a restart");
+});
+
+test("the Teams What's new is one the desktop keeps, and of when Announcements was last opened only the newest", () => {
+  let saved = { seen: [POPUP] };
+  const prefs = createDesktopPrefs({ read: () => saved, write: value => { saved = structuredClone(value); } });
+  prefs.markSeen("teams-2026-11b");
+  prefs.markSeen("announcements-read-1763380800000"); prefs.markSeen("announcements-read-1763467200000"); prefs.markSeen("announcements-read-1763300000000");
+  assert.deepEqual(prefs.seen(), [POPUP, "teams-2026-11b", "announcements-read-1763467200000"]);
+  for (const id of ["announcements-read-", "announcements-read-x", `announcements-read-${"9".repeat(17)}`, "announcements-read-1:2"]) prefs.markSeen(id);
+  assert.deepEqual(prefs.seen(), [POPUP, "teams-2026-11b", "announcements-read-1763467200000"], "nothing else of that shape");
+  prefs.markSeen("announcement:phone-app");
+  assert.deepEqual(createDesktopPrefs({ read: () => saved, write: () => {} }).seen(), [POPUP, "teams-2026-11b", "announcement:phone-app", "announcements-read-1763467200000"], "survives a restart");
 });
 
 test("a write that fails leaves the last whole record on disk, analytics opt-out included", () => {
@@ -335,7 +347,7 @@ test("production wiring: main answers this computer's page, My Cloud's own page 
   const context = vm.createContext({
     registerDesktopPrefs: value => { options = value; }, jsonFile: file => ({ read: () => file, write: () => {} }), ipcMain: {}, updatesConsent: null, cloudAccount: "the client",
     nativeText: { prefs: { kept: true }, set: code => { calls.push(["language", code]); return code === "pt-br"; }, follow: code => { calls.push(["shown", code]); return code === "de"; } }, applyNativeLanguage: () => calls.push("relabel"), talk: { relabel: () => calls.push("talk relabel") },
-    path: { join: (...parts) => parts.join("/") }, app: { getPath: () => "/user-data" }, desktopDataDir: () => "/home/.openmausbot",
+    path: { join: (...parts) => parts.join("/") }, app: { getPath: () => "/user-data" }, desktopDataDir: () => "/home/.uni",
     navigateMainWindow: async url => { calls.push(["navigate", url]); return loads; },
     senderIsLocal: localOrigin.isLocalSender, workspaceSenderAllowed: environments.workspaceSenderAllowed,
     mainWindow: { webContents: contents }, environmentsState: { environments: [{ id: "vps", name: "VPS", origin: VPS }], activeId: "vps" },
@@ -350,7 +362,7 @@ test("production wiring: main answers this computer's page, My Cloud's own page 
   vm.runInContext(main.slice(start, end), context);
   assert.equal(options.prefs, context.nativeText.prefs, "the record main read before the tray and the startup screen");
   assert.match(main, /const nativeText = createDesktopText\(app\), nativeT = nativeText\.t;/);
-  assert.equal(options.localConfig(), "/home/.openmausbot/config.json", "This computer's own workspace, whichever server the window shows");
+  assert.equal(options.localConfig(), "/home/.uni/config.json", "This computer's own workspace, whichever server the window shows");
   assert.deepEqual([options.frame.made(), options.frame.restarts], [false, true], "Windows: the frame its window was made with, until a restart");
   options.frame.changed();
   assert.equal(broadcasts, 1, "the pages hear the frame change");
@@ -407,9 +419,9 @@ test("the talk shortcut is on with ⌃⌥Space until changed, and the choice sur
 test("each server keeps its own Quick asks chat; nothing malformed is read back", () => {
   let saved = null;
   const prefs = createDesktopPrefs({ read: () => saved, write: value => { saved = structuredClone(value); } });
-  prefs.setQuickAsksChat("/Users/a/.openmausbot", { botId: "bot-1", threadId: "t-1" });
-  assert.deepEqual(createDesktopPrefs({ read: () => saved, write: () => {} }).quickAsksChat("/Users/a/.openmausbot"), { botId: "bot-1", threadId: "t-1" });
-  assert.equal(prefs.quickAsksChat("/Users/a/.openmausbot-aprs"), null);
+  prefs.setQuickAsksChat("/Users/a/.uni", { botId: "bot-1", threadId: "t-1" });
+  assert.deepEqual(createDesktopPrefs({ read: () => saved, write: () => {} }).quickAsksChat("/Users/a/.uni"), { botId: "bot-1", threadId: "t-1" });
+  assert.equal(prefs.quickAsksChat("/Users/a/.uni-aprs"), null);
   const broken = createDesktopPrefs({ read: () => ({ quickAsks: { a: { botId: "../x", threadId: "t" }, b: "t-1", c: { botId: "b", threadId: "t", extra: 1 } } }), write: () => {} });
   assert.equal(broken.quickAsksChat("a"), null);
   assert.equal(broken.quickAsksChat("b"), null);

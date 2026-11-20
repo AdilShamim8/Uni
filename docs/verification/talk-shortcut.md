@@ -52,8 +52,8 @@ or taller than the card shows a box the app never draws.
 
 - A packaged build of the branch installed beside, never over, the installed
   Uni (maintainers: the OMB2 side-by-side build). Never touch
-  `/Applications/Uni.app` or `~/.openmausbot`.
-- Launch with `OMB_DATA_DIR=$HOME/.openmausbot-test` unless the check needs real
+  `/Applications/Uni.app` or `~/.uni`.
+- Launch with `OMB_DATA_DIR=$HOME/.uni-test` unless the check needs real
   bots. Only one running app may hold the key: quit any other Uni first.
 - Use composer dictation once first so Microphone and Speech Recognition are
   granted.

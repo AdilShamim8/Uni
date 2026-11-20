@@ -448,7 +448,7 @@ const OUTSIDE_WHY = "A webhook's run made or changed this routine, so it runs wi
  * no network beyond loopback, the scripted engine, and the owner's paired device. */
 async function launchCloudHome() {
   const home = mkdtempSync(join(SHORT_TMP, "omb-cloud-journey-"));
-  const dataDir = join(home, ".openmausbot");
+  const dataDir = join(home, ".uni");
   mkdirSync(join(home, "tmp"), { recursive: true });
   mkdirSync(dataDir, { recursive: true });
   const planPath = join(home, "room-plan.json");
@@ -473,7 +473,7 @@ await import(${JSON.stringify(pathToFileURL(join(ROOT, "server", "testing", "fak
   const { server: serverEnv, secrets } = cloudHomeChildEnvironments(cloudHomeConfiguration(offered)!, offered, home);
   const env = { ...serverEnv, OMB_PORT: String(port), OMB_WEBHOOK_PORT: String(port + 1), OMB_TEST_SEALED_PATH: "1", TMPDIR: join(home, "tmp") };
   const offline = `data:text/javascript,${encodeURIComponent('const real = globalThis.fetch; globalThis.fetch = async (url, init) => String(url).startsWith("http://127.0.0.1:") ? real(url, init) : new Response("offline fixture", { status: 503 });')}`;
-  const evidenceDir = join(tmpdir(), "openmausbot-verification-evidence");
+  const evidenceDir = join(tmpdir(), "uni-verification-evidence");
   mkdirSync(evidenceDir, { recursive: true });
   const logPath = join(evidenceDir, `cloud-journey-${Date.now()}-${process.pid}.log`);
   const log = createWriteStream(logPath);

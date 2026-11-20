@@ -49,23 +49,23 @@ export function createManagedDesktopRelay({ timeoutMs = 15_000 } = {}) {
   return {
     send(proc, connection) {
       if (!proc) return connection ? Promise.reject(new Error("The local bot runtime is not available.")) : Promise.resolve();
-      return post(proc, { type: "openmausbot:managed-desktop", connection });
+      return post(proc, { type: "uni:managed-desktop", connection });
     },
     sendPolicy(proc, policy) {
-      return proc ? post(proc, { type: "openmausbot:managed-desktop-policy", policy }) : Promise.resolve();
+      return proc ? post(proc, { type: "uni:managed-desktop-policy", policy }) : Promise.resolve();
     },
     sendIdentity(proc, identity) {
-      return proc ? post(proc, { type: "openmausbot:managed-desktop-identity", identity }) : Promise.resolve();
+      return proc ? post(proc, { type: "uni:managed-desktop-identity", identity }) : Promise.resolve();
     },
     receive(proc, raw) {
       const message = raw?.data ?? raw;
-      if (message?.type !== "openmausbot:managed-desktop-result") return false;
+      if (message?.type !== "uni:managed-desktop-result") return false;
       if (pending.get(message.requestId)?.proc === proc && typeof message.ok === "boolean") settle(message.requestId, !message.ok);
       return true;
     },
     sendLibrary(proc, library) {
       if (!proc) return library ? Promise.reject(new Error("The local bot runtime is not available.")) : Promise.resolve();
-      return post(proc, { type: "openmausbot:managed-library", library });
+      return post(proc, { type: "uni:managed-library", library });
     },
     rejectProcess(proc) { for (const [id, entry] of pending) if (entry.proc === proc) settle(id, true); },
   };

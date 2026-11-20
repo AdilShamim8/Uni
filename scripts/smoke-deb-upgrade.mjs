@@ -17,7 +17,7 @@ const candidate = path.resolve(process.argv[2] ?? "");
 if (!candidate.endsWith(".deb") || !fs.existsSync(candidate)) fail("pass the newly built DEB path");
 
 try {
-  const status = execFileSync("dpkg-query", ["-W", "-f=${db:Status-Abbrev}", "openmausbot"], {
+  const status = execFileSync("dpkg-query", ["-W", "-f=${db:Status-Abbrev}", "uni"], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "ignore"],
   }).trim();
@@ -32,7 +32,7 @@ const legacyRoot = path.join(temporary, "legacy-package");
 const controlRoot = path.join(legacyRoot, "DEBIAN");
 const legacyApp = path.join(legacyRoot, "opt", "Uni");
 const legacyResources = path.join(legacyApp, "resources");
-const legacyDeb = path.join(temporary, "openmausbot_0.1.7_amd64.deb");
+const legacyDeb = path.join(temporary, "uni_0.1.7_amd64.deb");
 
 try {
   fs.mkdirSync(controlRoot, { recursive: true, mode: 0o755 });
@@ -42,10 +42,10 @@ try {
   fs.writeFileSync(
     path.join(controlRoot, "control"),
     [
-      "Package: openmausbot",
+      "Package: uni",
       "Version: 0.1.7",
       "Architecture: amd64",
-      "Maintainer: Uni CI <ci@openmausbot.invalid>",
+      "Maintainer: Uni CI <ci@uni.invalid>",
       "Description: Legacy Uni directory-mode upgrade fixture",
       "",
     ].join("\n"),
@@ -100,7 +100,7 @@ try {
   ) {
     fail(`upgraded Chromium sandbox is not root:root 4755: ${chromiumSandbox}`);
   }
-  const installedVersion = execFileSync("dpkg-query", ["-W", "-f=${Version}", "openmausbot"], {
+  const installedVersion = execFileSync("dpkg-query", ["-W", "-f=${Version}", "uni"], {
     encoding: "utf8",
   }).trim();
   console.log(

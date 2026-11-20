@@ -270,9 +270,9 @@ test("utility replies cannot be forged by another child or reused across request
   const relay = createManagedDesktopRelay(); let message;
   const proc = { postMessage: value => { message = value; } }, foreign = {};
   let completed = false; const operation = relay.send(proc, null).then(() => { completed = true; });
-  relay.receive(foreign, { type: "openmausbot:managed-desktop-result", requestId: message.requestId, ok: true });
+  relay.receive(foreign, { type: "uni:managed-desktop-result", requestId: message.requestId, ok: true });
   await settle(); assert.equal(completed, false);
-  relay.receive(proc, { type: "openmausbot:managed-desktop-result", requestId: message.requestId, ok: true });
+  relay.receive(proc, { type: "uni:managed-desktop-result", requestId: message.requestId, ok: true });
   await operation; assert.equal(completed, true);
   const pending = relay.send(proc, { fixture: true }); relay.rejectProcess(proc);
   await assert.rejects(pending, /could not be connected/);

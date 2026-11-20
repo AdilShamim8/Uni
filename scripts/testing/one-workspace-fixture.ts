@@ -383,7 +383,7 @@ export async function launchHomeWorld(fx: CloudSendFixture, { chrome, versionEve
       }
       next();
     });
-  }, Object.fromEntries(PROXIED.map((path) => [path, { target: fx.desktopBase, ws: true, headers: { "x-openmausbot-desktop-owner": fx.ownerCapability } }])));
+  }, Object.fromEntries(PROXIED.map((path) => [path, { target: fx.desktopBase, ws: true, headers: { "x-uni-desktop-owner": fx.ownerCapability } }])));
   cleanup.push(() => localEdge.close());
 
   // Main's ipcMain, reached by the preload's ipcRenderer.
@@ -571,7 +571,7 @@ export async function launchHomeWorld(fx: CloudSendFixture, { chrome, versionEve
     },
     changed: () => lending?.cloudChanged(),
   }) : null;
-  const ownCopy = async (route: string, init?: RequestInit) => fetch(`${fx.desktopBase}${route}`, { ...init, headers: { "x-openmausbot-desktop-owner": fx.ownerCapability } });
+  const ownCopy = async (route: string, init?: RequestInit) => fetch(`${fx.desktopBase}${route}`, { ...init, headers: { "x-uni-desktop-owner": fx.ownerCapability } });
   const makeHome = () => createHomeWindow({
     ...(clean ? { clean } : {}),
     journal: () => (moves.moved ? { v: 1, phase: "done", cloud: { origin: cloudOrigin, account: ACCOUNT_ID, machine: cloudOrigin }, doneAt: Date.now() } : null),

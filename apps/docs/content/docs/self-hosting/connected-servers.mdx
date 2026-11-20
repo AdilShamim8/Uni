@@ -5,16 +5,16 @@ icon: ShieldCheck
 ---
 
 <Callout title="Connected mode is not on sale yet">
-  A standalone server, the default, has no connector and nothing on this page applies to it. This page describes the connector's code as it is in the [public repository](https://github.com/milind-soni/Uni/tree/main/connector), so you can check every line against it. No released connector or server contains this mode yet. Items marked **planned** do not exist yet.
+  A standalone server, the default, has no connector and nothing on this page applies to it. This page describes the connector's code as it is in the [public repository](https://github.com/AdilShamim8/Uni/tree/main/connector), so you can check every line against it. No released connector or server contains this mode yet. Items marked **planned** do not exist yet.
 </Callout>
 
 A connected server is a Uni server you installed and run yourself, which Uni's control plane (the Admin) may start, stop, update and back up for you, and whose health it watches. The part that does this on your server is the **connector**. On a server you run it works in **customer-run mode**, and that mode is what this page describes.
 
-The whole list of what the Admin may run, ask and learn in this mode is one file: [`connector/src/customer-run.ts`](https://github.com/milind-soni/Uni/blob/main/connector/src/customer-run.ts). The connector enforces it on your server. It does not depend on the Admin behaving.
+The whole list of what the Admin may run, ask and learn in this mode is one file: [`connector/src/customer-run.ts`](https://github.com/AdilShamim8/Uni/blob/main/connector/src/customer-run.ts). The connector enforces it on your server. It does not depend on the Admin behaving.
 
 ## The connector
 
-- One container, `mausbot-connector`, from `ghcr.io/milind-soni/mausbot-connector`, pinned by digest.
+- One container, `mausbot-connector`, from `ghcr.io/adilshamim8/mausbot-connector`, pinned by digest.
 - It only calls out: one HTTPS request to enrol, then one WebSocket to the Admin. It opens no port.
 - It makes its own Ed25519 key at enrolment. The private key stays on your server. It pins the Admin's signing keys.
 - It runs with every Linux capability dropped, a read-only file system and no new privileges.
@@ -23,7 +23,7 @@ The whole list of what the Admin may run, ask and learn in this mode is one file
 
 ## It connects the server you installed
 
-The connector attaches to the Uni the [server installer](/docs/self-hosting/deploy-vps) made in `/opt/openmausbot`: the same containers, the same `data` folder, the same settings. Nothing is reinstalled and no data moves. Two limits:
+The connector attaches to the Uni the [server installer](/docs/self-hosting/deploy-vps) made in `/opt/uni`: the same containers, the same `data` folder, the same settings. Nothing is reinstalled and no data moves. Two limits:
 
 - It attaches only to that layout: Docker Compose, the published image, the data in a folder beside the Compose file. A server built from source, or run without Docker, cannot be connected yet.
 - A connector started the other way (the mode Uni uses on servers it operates itself) refuses to enrol on a machine where your Uni already runs, so there are never two.
@@ -35,7 +35,7 @@ Every job is signed by the Admin for your server alone and is refused 15 minutes
 | Job | What it does on your server |
 |---|---|
 | `start`, `stop`, `restart` | Starts or stops your server's containers, with your settings. A `start` that names an image or a setting is refused |
-| `update` | Hands one image, Uni's server image pinned by digest, to your server's own updater: `update.sh` in `/opt/openmausbot`, the command you run by hand. It copies the data aside, starts the new version, checks it, and puts the old version and the copy back when the check fails |
+| `update` | Hands one image, Uni's server image pinned by digest, to your server's own updater: `update.sh` in `/opt/uni`, the command you run by hand. It copies the data aside, starts the new version, checks it, and puts the old version and the copy back when the check fails |
 | `status` | Reads the server's state, the two versions and the list of backups |
 | `backup` | Copies the data folder to a Docker volume on your server. Uni's three newest are kept; a backup you made is never removed to make room |
 | `host-health` | Reads the server's size, load and checks (below) |
@@ -44,7 +44,7 @@ Three things to know:
 
 - **Not on the list, so refused:** `export-disk` (uploads an archive of the data to Uni) and `import-disk` (replaces the data with an archive from elsewhere). They exist in the connector for servers Uni operates itself.
 - **`update` only moves forward.** An image whose version is older than the one your server runs, or that names no version, is refused: once by the connector, and again by the updater's runner on your server, outside any container. Uni cannot roll your server back to an earlier release. A second floor, the first release with the hardened profile, is **planned**: no release has that profile yet.
-- **`update` needs your updater.** It works only when `update.sh` is in `/opt/openmausbot` and the connector's installer has set up the small systemd unit that runs it. Without either, the job is refused and nothing changes. A server installer that puts `update.sh` there is not released yet: **planned**.
+- **`update` needs your updater.** It works only when `update.sh` is in `/opt/uni` and the connector's installer has set up the small systemd unit that runs it. Without either, the job is refused and nothing changes. A server installer that puts `update.sh` there is not released yet: **planned**.
 
 ## What only you can do: two more jobs
 
@@ -56,7 +56,7 @@ Two jobs exist on your server and are refused when Uni sends them. Root on the s
 | `restore` | It puts older data back over what is there, after a safety copy |
 
 ```sh
-docker exec mausbot-connector mausbot-connector job self-update '{"image":"ghcr.io/milind-soni/mausbot-connector@sha256:…"}'
+docker exec mausbot-connector mausbot-connector job self-update '{"image":"ghcr.io/adilshamim8/mausbot-connector@sha256:…"}'
 docker exec mausbot-connector mausbot-connector job restore '{"backupId":"20261028-104512-3fa9"}'
 ```
 

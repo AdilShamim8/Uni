@@ -279,7 +279,7 @@ export function PairPage({ initialCode, initialEmail = null, reason }: { initial
             ) : null}
             {ownServer ? (
               <p className="mt-3 text-[13px] text-ink-secondary">
-                {t("pair.noCode")} <code className="select-all rounded bg-inset px-1.5 py-0.5 text-[12px] text-ink">npx openmausbot pair</code>
+                {t("pair.noCode")} <code className="select-all rounded bg-inset px-1.5 py-0.5 text-[12px] text-ink">npx uni pair</code>
               </p>
             ) : null}
             {emailOffered ? (

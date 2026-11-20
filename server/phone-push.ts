@@ -36,7 +36,7 @@ export const PHONE_PUSH_FILE = "push-devices.json";
 export const PHONE_PUSH_ENV = "OMB_PHONE_PUSH";
 /** A push-only installation credential, for a server that holds no other (a Cloud home). */
 export const PHONE_PUSH_CREDENTIAL_ENV = "OMB_PUSH_CREDENTIAL";
-export const PHONE_PUSH_DESKTOP_MESSAGE = "openmausbot:phone-push-access";
+export const PHONE_PUSH_DESKTOP_MESSAGE = "uni:phone-push-access";
 
 const INSTALLATION_CREDENTIAL = /^omb_install_[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}$/;
 /** As routes/phones.ts `phoneKey` mints them. */
@@ -444,7 +444,7 @@ export function phonePushAccess(controlPlane: unknown, credential: unknown): Pho
 
 /** Where this server's control-plane access comes from, first match wins: the desktop app's private message (its
  * credential lives in the OS store this process cannot read), OMB_PUSH_CREDENTIAL, a fleet's
- * OMB_INSTALLATION_CREDENTIAL, `openmausbot login`'s tunnel-account.json. OMB_CONTROL_PLANE_URL overrides the origin. */
+ * OMB_INSTALLATION_CREDENTIAL, `uni login`'s tunnel-account.json. OMB_CONTROL_PLANE_URL overrides the origin. */
 export class PhonePushAccessSource {
   private desktop: PhonePushAccess | null | undefined;
   private readonly env: NodeJS.ProcessEnv;

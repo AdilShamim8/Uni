@@ -51,7 +51,7 @@ describe("harness MCP capability proxy", () => {
   it("sends Email calls to their own harness route with the Email instructions", async () => {
     status = 200;
     payload = { result: { tools: [{ name: "EMAIL_READ_MESSAGE" }], instructions: "mail" } };
-    await expect(harnessMcpRequest(frame("initialize"), connection("email"))).resolves.toMatchObject({ result: { serverInfo: { name: "openmausbot-email" }, instructions: expect.stringContaining("Uni holds the password") } });
+    await expect(harnessMcpRequest(frame("initialize"), connection("email"))).resolves.toMatchObject({ result: { serverInfo: { name: "uni-email" }, instructions: expect.stringContaining("Uni holds the password") } });
     await expect(harnessMcpRequest(frame("tools/list"), connection("email"))).resolves.toEqual({ jsonrpc: "2.0", id: 1, result: { tools: [{ name: "EMAIL_READ_MESSAGE" }], instructions: "mail" } });
     expect(requests.at(-1)).toEqual({ path: "/api/internal/email/mcp", auth: "Bearer scoped-capability", body: { method: "tools/list", params: {} } });
     status = 401;
@@ -77,7 +77,7 @@ describe("harness MCP capability proxy", () => {
   it("sends the cloud computer's calls to its own harness route", async () => {
     status = 200;
     payload = { result: { tools: [{ name: "screenshot" }] } };
-    await expect(harnessMcpRequest(frame("initialize"), connection("computer"))).resolves.toMatchObject({ result: { serverInfo: { name: "openmausbot-computer" } } });
+    await expect(harnessMcpRequest(frame("initialize"), connection("computer"))).resolves.toMatchObject({ result: { serverInfo: { name: "uni-computer" } } });
     await expect(harnessMcpRequest(frame("tools/list"), connection("computer"))).resolves.toEqual({ jsonrpc: "2.0", id: 1, result: { tools: [{ name: "screenshot" }] } });
     expect(requests.at(-1)).toEqual({ path: "/api/internal/computer/mcp", auth: "Bearer scoped-capability", body: { method: "tools/list", params: {} } });
     status = 401;
@@ -93,7 +93,7 @@ describe("harness MCP capability proxy", () => {
     status = 200;
     payload = { result: { tools: [{ name: "data_sql" }], instructions: "DuckDB" } };
     const initialized = await harnessMcpRequest(frame("initialize"), connection("data")) as { result: { serverInfo: { name: string }; instructions?: string } };
-    expect(initialized.result.serverInfo.name).toBe("openmausbot-data");
+    expect(initialized.result.serverInfo.name).toBe("uni-data");
     expect(initialized.result.instructions).toContain("GROUP BY ALL");
     expect(((await harnessMcpRequest(frame("initialize"), connection("browser"))) as { result: Record<string, unknown> }).result.instructions).toBeUndefined();
     await expect(harnessMcpRequest(frame("tools/list"), connection("data"))).resolves.toEqual({ jsonrpc: "2.0", id: 1, result: { tools: [{ name: "data_sql" }], instructions: "DuckDB" } });

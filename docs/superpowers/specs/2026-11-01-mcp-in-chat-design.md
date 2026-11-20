@@ -2,7 +2,7 @@
 
 Date: 2026-11-01 · Status: awaiting review · Scope: server, desktop (macOS, Windows), iPhone, Android
 
-Repos: server and desktop in milind-soni/OpenMausBot; phone apps in SupaMaus/mausbot-mobile (separate PR).
+Repos: server and desktop in milind-soni/Uni; phone apps in SupaMaus/mausbot-mobile (separate PR).
 
 Mockup (approved): [assets/2026-11-01-mcp-in-chat/mockup.html](assets/2026-11-01-mcp-in-chat/mockup.html), four tabs with working buttons.
 

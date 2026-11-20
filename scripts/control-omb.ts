@@ -1,5 +1,5 @@
 #!/usr/bin/env -S node --experimental-strip-types
-// The openmausbot headless verbs for verifying an isolated fixture. A verb that
+// The uni headless verbs for verifying an isolated fixture. A verb that
 // changes something never runs on a server it merely found.
 import { spawn, type ChildProcess } from "node:child_process";
 import { closeSync, mkdirSync, mkdtempSync, openSync, readFileSync, writeFileSync } from "node:fs";
@@ -47,7 +47,7 @@ export const HELP_UI = `renderer (needs a ui launch handle; every verb takes --u
   ui wait-settle --ui HANDLE [--timeout 30]
   ui help`;
 
-export const HELP = `control-omb — the openmausbot headless verbs (docs/headless-cli.md), for verifying a fixture
+export const HELP = `control-omb — the uni headless verbs (docs/headless-cli.md), for verifying a fixture
 
 read-only (every verb also takes --url URL):
   doctor
@@ -291,7 +291,7 @@ export async function launchVerificationServer(
   enterprise?: { dir: string; licenseKey: string },
   room?: { scripted: boolean },
   /** Optional repository-owned fake providers for multi-engine setup checks. */
-  extraProviders: Array<"codex" | "cline" | "copilot" | "customAcp" | "opencode"> = [],
+  extraProviders: Array<"codex" | "cline" | "copilot" | "customAcp" | "opencode" | "kimi"> = [],
   /** Programmatic tests only: an owned loopback Boat provider, never a live account. */
   boatFixtureApi?: string,
   /** Programmatic web UI qualification against the fixture's static server. */
@@ -317,11 +317,11 @@ export async function launchVerificationServer(
   const url = `http://127.0.0.1:${port}`;
   // Native browser daemons use UNIX sockets, and a macOS temp home can exceed
   // their path limit.
-  const dataDir = mkdtempSync(join(browser && process.platform !== "win32" ? "/tmp" : tmpdir(), "openmausbot-verify-data-"));
+  const dataDir = mkdtempSync(join(browser && process.platform !== "win32" ? "/tmp" : tmpdir(), "uni-verify-data-"));
   const fixtureTemp = join(dataDir, "tmp");
   const fixtureDumpPath = join(dataDir, "fake-claude-dump.json");
   mkdirSync(fixtureTemp, { recursive: true });
-  const evidenceDir = join(tmpdir(), "openmausbot-verification-evidence");
+  const evidenceDir = join(tmpdir(), "uni-verification-evidence");
   mkdirSync(evidenceDir, { recursive: true });
   const logPath = join(evidenceDir, `server-${Date.now()}-${process.pid}.log`);
   const imageApi = parentEnv.OMB_FAKE_IMAGE_API_URL?.trim() ?? "";
@@ -334,6 +334,10 @@ export async function launchVerificationServer(
     // A setup card's answers would be one more engine call at every new bot, taking replies a test scripts for its turns.
     features: { smartSetupChoices: false },
     instances: {
+      ...(extraProviders.includes("kimi") ? { kimi: {
+        driver: "kimiAgent", displayName: "Verification Kimi",
+        config: { cli: fileURLToPath(new URL("../server/testing/fake-acp-cli.ts", import.meta.url)) },
+      } } : {}),
       ...(extraProviders.includes("codex") ? { codex: {
         driver: "codex", displayName: "Verification Codex", config: { cli: fileURLToPath(new URL("../server/testing/fake-codex-app-server.ts", import.meta.url)) },
       } } : {}),
@@ -412,7 +416,7 @@ export async function launchVerificationServer(
           signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
         });
         const body = response.ok ? await response.json() as { app?: string } : null;
-        if (body?.app === "openmausbot") break;
+        if (body?.app === "uni") break;
       } catch {
       }
       if (Date.now() >= deadline) throw new Error(`verification server did not become ready; see ${logPath}${logTail()}`);

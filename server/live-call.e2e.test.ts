@@ -70,14 +70,6 @@ posixOnly("Live call e2e", () => {
     expect(session).toBeDefined();
     return { started, call, session };
   };
-  const setGeneratedTitles = async (on: boolean) => {
-    const res = await fetch(`${base}/api/config`, {
-      method: "PATCH",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ features: { llmThreadTitles: on } }),
-    });
-    expect(res.status).toBe(200);
-  };
 
   beforeAll(async () => {
     chmodSync(FAKE_CLAUDE, 0o755);
@@ -85,13 +77,13 @@ posixOnly("Live call e2e", () => {
     chmodSync(FAKE_CODEX, 0o755);
     live = await startFakeOpenAiLive();
     home = mkdtempSync(join(tmpdir(), "omb-live-call-"));
-    mkdirSync(join(home, ".openmausbot"), { recursive: true });
+    mkdirSync(join(home, ".uni"), { recursive: true });
     steerGate = join(home, "steer.gate");
     titleRoutes = join(home, "title-routes.json");
     writeFileSync(titleRoutes, JSON.stringify({ "Requests:\nwhat is six times seven": "Times table question" }));
     queueSteerGate = join(home, "queue-steer.gate");
     writeFileSync(
-      join(home, ".openmausbot", "config.json"),
+      join(home, ".uni", "config.json"),
       JSON.stringify({
         instances: {
           claude: {
@@ -348,7 +340,7 @@ posixOnly("Live call e2e", () => {
 
   it("ends a phone's call, and refuses it another, once the companion says it was unpaired", async () => {
     const bot = await createBot();
-    const phone = { "x-openmausbot-companion": "1", "x-openmausbot-companion-device": "phone-e2e" };
+    const phone = { "x-uni-companion": "1", "x-uni-companion-device": "phone-e2e" };
     const sse = await openSse(`${base}/api/events`);
     try {
       const before = live.sessions.length;
@@ -359,7 +351,7 @@ posixOnly("Live call e2e", () => {
       await live.waitForAttach(session.id);
       await sse.until((frame) => frame.kind === "live.call" && frame.call?.callId === call.callId && frame.call?.status === "live");
 
-      expect(await post("/api/live/device-revoked", {}, { ...phone, "x-openmausbot-companion-device": "phone-other" }))
+      expect(await post("/api/live/device-revoked", {}, { ...phone, "x-uni-companion-device": "phone-other" }))
         .toEqual({ status: 200, body: { call: null } });
       expect(await post("/api/live/device-revoked", {}, phone)).toMatchObject({ status: 200, body: { call: { callId: call.callId } } });
       await live.waitForCommand(session.id, (c) => c.type === "session.close", 5_000);
@@ -531,42 +523,29 @@ posixOnly("Live call e2e", () => {
   }, 40_000);
 
   // The first call's missing title is checked only after the second's title arrives: an event, not a clock.
-  it("names a call from what was asked on it when generated titles are on, and never one that ended while they were off", async () => {
-    const quiet = await createBot();
+  it("names a call from what was asked on it", async () => {
     const named = await createBot();
     const sse = await openSse(`${base}/api/events`);
     let callId = "";
-    const askAndHangUp = async (bot: { id: string; threadId: string }) => {
-      const { call, session } = await startCall(bot.id);
+    try {
+      const { call, session } = await startCall(named.id);
       callId = call.callId;
       await live.waitForAttach(session.id);
       live.emit(session.id, { type: "session.input_transcript.delta", delta: "what is six times seven", start_ms: 100, end_ms: 900 });
-      live.emit(session.id, { type: "session.delegation.created", offset_ms: 950, delegation: { id: `del_${bot.id}`, target: "client", type: "delegation" } });
+      live.emit(session.id, { type: "session.delegation.created", offset_ms: 950, delegation: { id: `del_${named.id}`, target: "client", type: "delegation" } });
       await live.waitForCommand(session.id, (c) => c.type === "session.commentary.append" && String(c.content).includes("42"), 20_000);
       expect(await post("/api/live/call/end", { callId })).toMatchObject({ status: 200 });
-      return sse.until((frame) => frame.kind === "message" && frame.threadId === bot.threadId && frame.message?.kind === "call", 10_000);
-    };
-    try {
-      const first = await askAndHangUp(quiet);
-      expect(first.message.call.title).toBeUndefined();
-
-      await setGeneratedTitles(true);
-      const second = await askAndHangUp(named);
-      expect(second.message.call.title).toBeUndefined();
+      const ended = await sse.until((frame) => frame.kind === "message" && frame.threadId === named.threadId && frame.message?.kind === "call", 10_000);
+      expect(ended.message.call.title).toBeUndefined();
       const titled = await sse.until(
-        (frame) => frame.kind === "message.patch" && frame.message?.id === second.message.id && typeof frame.message?.call?.title === "string",
+        (frame) => frame.kind === "message.patch" && frame.message?.id === ended.message.id && typeof frame.message?.call?.title === "string",
         15_000,
       );
-      expect(titled.message.call).toMatchObject({ callId: second.message.call.callId, title: "Times table question" });
-      expect(titled.message.text).toBe(second.message.text);
-
-      const { messages } = (await (await fetch(`${base}/api/threads/${quiet.threadId}/messages`)).json()) as { messages: Array<{ id: string; call?: { title?: string } }> };
-      expect(messages.find((message) => message.id === first.message.id)?.call?.title).toBeUndefined();
-      expect(sse.frames.some((frame) => frame.kind === "message.patch" && frame.message?.id === first.message.id)).toBe(false);
+      expect(titled.message.call).toMatchObject({ callId: ended.message.call.callId, title: "Times table question" });
+      expect(titled.message.text).toBe(ended.message.text);
     } finally {
-      await setGeneratedTitles(false);
       if (callId) await post("/api/live/call/end", { callId });
-      for (const bot of [quiet, named]) await expect.poll(() => isBusy(bot.id), { timeout: 20_000 }).toBe(false);
+      await expect.poll(() => isBusy(named.id), { timeout: 20_000 }).toBe(false);
       sse.close();
     }
   }, 90_000);
@@ -653,7 +632,7 @@ posixOnly("Live call on the person's Cloud", () => {
     chmodSync(FAKE_CLAUDE, 0o755);
     live = await startFakeOpenAiLive();
     home = mkdtempSync(join(tmpdir(), "omb-live-cloud-"));
-    const dataDir = join(home, ".openmausbot");
+    const dataDir = join(home, ".uni");
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(join(dataDir, "config.json"), JSON.stringify({
       instances: {
@@ -751,7 +730,7 @@ posixOnly("Live call on the person's Cloud", () => {
 // No plan anywhere and no Live key: a phone's call starts once the person's own OpenAI key is in Settings → API keys.
 posixOnly("Live calls for everyone, with the person's own OpenAI key", () => {
   const OPENAI_KEY = "sk-fake-api-keys-openai";
-  const phone = { "x-openmausbot-companion": "1", "x-openmausbot-companion-device": "phone-byok" };
+  const phone = { "x-uni-companion": "1", "x-uni-companion-device": "phone-byok" };
   let child: ChildProcess;
   let home = "";
   let base = "";
@@ -772,7 +751,7 @@ posixOnly("Live calls for everyone, with the person's own OpenAI key", () => {
     chmodSync(FAKE_CLAUDE, 0o755);
     live = await startFakeOpenAiLive();
     home = mkdtempSync(join(tmpdir(), "omb-live-byok-"));
-    const dataDir = join(home, ".openmausbot");
+    const dataDir = join(home, ".uni");
     mkdirSync(dataDir, { recursive: true });
     writeFileSync(join(dataDir, "config.json"), JSON.stringify({
       instances: {

@@ -33,13 +33,13 @@ test("leaves every other link to its own handler", () => {
 test("a published page's link opens in the browser, never as a chat", () => {
   for (const page of ["https://abcdefghijklmnopqrstuvwxyz.mausbot.page/", "https://abcdefghijklmnopqrstuvwxyz.mausbot.page/thread/abc?bot=pepper"]) {
     assert.equal(chatLinkFrom(page), null);
-    assert.equal(chatLinkFromCommandLine(["/usr/bin/openmausbot", page]), null);
+    assert.equal(chatLinkFromCommandLine(["/usr/bin/uni", page]), null);
     assert.equal(externalWebUrl(page), page);
   }
 });
 
 test("finds the link among a second launch's arguments", () => {
-  assert.equal(chatLinkFromCommandLine(["/usr/bin/openmausbot", "--no-sandbox", THREAD_LINK]), THREAD_LINK);
-  assert.equal(chatLinkFromCommandLine(["/usr/bin/openmausbot", "--no-sandbox", BOT_LINK]), BOT_LINK);
+  assert.equal(chatLinkFromCommandLine(["/usr/bin/uni", "--no-sandbox", THREAD_LINK]), THREAD_LINK);
+  assert.equal(chatLinkFromCommandLine(["/usr/bin/uni", "--no-sandbox", BOT_LINK]), BOT_LINK);
   assert.equal(chatLinkFromCommandLine(["/usr/bin/openmausbot", "openmausbot://cloud"]), null);
 });

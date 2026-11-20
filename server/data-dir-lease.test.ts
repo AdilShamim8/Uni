@@ -57,7 +57,7 @@ describe("Uni data-directory lease", () => {
   it("holds one directory until its matching handle releases it", () => {
     const dir = tempDataDir();
     const lease = acquireDataDirLease(dir);
-    const stored = JSON.parse(readFileSync(join(dir, "openmausbot-server.lease"), "utf8"));
+    const stored = JSON.parse(readFileSync(join(dir, "uni-server.lease"), "utf8"));
 
     // boot/uptime identify which boot wrote the record, so a pid recycled
     // across a restart cannot be mistaken for a live owner, and ns/start which
@@ -89,7 +89,7 @@ describe("Uni data-directory lease", () => {
 
   it("will not release a lease whose owner token changed", () => {
     const dir = tempDataDir();
-    const path = join(dir, "openmausbot-server.lease");
+    const path = join(dir, "uni-server.lease");
     const lease = acquireDataDirLease(dir);
     const original = JSON.parse(readFileSync(path, "utf8"));
     const replacement = { ...original, token: randomUUID() };
@@ -155,7 +155,7 @@ describe("Uni data-directory lease", () => {
 
   it("fails closed on a corrupt owner record", () => {
     const dir = tempDataDir();
-    const path = join(dir, "openmausbot-server.lease");
+    const path = join(dir, "uni-server.lease");
     writeFileSync(path, "not-json\n", { mode: 0o600 });
 
     expect(() => acquireDataDirLease(dir)).toThrow(/lease is invalid.*refusing to start/i);

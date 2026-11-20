@@ -17,10 +17,10 @@ From a blank Linux server to Uni running on it around the clock, reachable from 
 For a fresh Ubuntu 22.04 or 24.04 server (x86-64, at least 2 CPUs, 4 GB of memory and 20 GB of free disk) and a domain name whose A record already points at it:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/milind-soni/Uni/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com
+curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com
 ```
 
-The installer ([`deploy/install.sh`](https://github.com/milind-soni/Uni/blob/main/deploy/install.sh)) does path B below for you and ends with Uni answering at `https://maus.example.com`.
+The installer ([`deploy/install.sh`](https://github.com/AdilShamim8/Uni/blob/main/deploy/install.sh)) does path B below for you and ends with Uni answering at `https://maus.example.com`.
 
 **It checks the server first, and changes nothing while it checks.** Each check that fails prints one sentence saying what to fix, and nothing is installed until all pass:
 
@@ -42,12 +42,12 @@ The installer ([`deploy/install.sh`](https://github.com/milind-soni/Uni/blob/mai
 To run only the checks, add `--check`:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/milind-soni/Uni/main/deploy/install.sh | sudo sh -s -- --check --domain maus.example.com
+curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/install.sh | sudo sh -s -- --check --domain maus.example.com
 ```
 
 If Docker is missing, the installer asks before installing it with Docker's official script (`get.docker.com`); `--install-docker` says yes ahead of time. It installs nothing else on the server.
 
-**Then it installs** everything under one folder, `/opt/openmausbot` (`--dir` picks another):
+**Then it installs** everything under one folder, `/opt/uni` (`--dir` picks another):
 
 | Path | What |
 |---|---|
@@ -72,10 +72,10 @@ cd /opt/openmausbot && sudo docker compose exec omb openmausbot pair --label "Fi
 
 Open the link it prints, or paste it into the desktop app under **＋ → Connect to a server**. To sign in with an emailed code instead, run the installer with `--email you@example.com`.
 
-- **Update:** `sudo /opt/openmausbot/update.sh`, which backs the data up, checks the new version's health and puts the old one back if it fails. The installer places it once this repository has it and prints the command when it finishes; until then, running the install command again moves to the newest release. `update.sh` pins the version by digest in `.env`, and a later run of the installer keeps that pin.
+- **Update:** `sudo /opt/uni/update.sh`, which backs the data up, checks the new version's health and puts the old one back if it fails. The installer places it once this repository has it and prints the command when it finishes; until then, running the install command again moves to the newest release. `update.sh` pins the version by digest in `.env`, and a later run of the installer keeps that pin.
 - **Repair:** run the install command again. It checks the server, rewrites its own files and leaves `.env` and `data/` alone. That also moves an install made before Caddy got its own container: Caddy then shared the server's network, and HTTPS went down whenever the server restarted without it.
-- **Stop:** `--uninstall` stops the server and removes its containers. It deletes nothing: your data stays in `/opt/openmausbot/data`.
-- **Every other command in this guide** that starts `docker compose` for path B works from `/opt/openmausbot`.
+- **Stop:** `--uninstall` stops the server and removes its containers. It deletes nothing: your data stays in `/opt/uni/data`.
+- **Every other command in this guide** that starts `docker compose` for path B works from `/opt/uni`.
 - **What the installer contacts:** the registries and Let's Encrypt from the table, GitHub's release list, this repository's files on `raw.githubusercontent.com`, and `cloudflare.com/cdn-cgi/trace` to learn the server's public address for the DNS check. It sends no telemetry.
 - **Behind a load balancer or NAT** that forwards ports 80 and 443 to the server, set `OMB_INSTALL_SKIP_DNS=1` to skip the DNS check.
 
@@ -153,16 +153,16 @@ root, sign in again as `maus`; those accounts have different homes and credentia
 
 ## Path A: a public address with one command
 
-No domain, no proxy, no open port. The server gets an address like `https://c-7f3a9c.openmausbot.com` through a Cloudflare tunnel; only traffic through the tunnel reaches it, and that traffic still has to pair.
+No domain, no proxy, no open port. The server gets an address like `https://c-7f3a9c.uni.com` through a Cloudflare tunnel; only traffic through the tunnel reaches it, and that traffic still has to pair.
 
 ```sh
-npx openmausbot login          # once: an emailed code signs this machine in and reserves its address
-npx openmausbot serve --tunnel # runs the server there and prints the pairing link with a QR code
+npx uni account login          # once: an emailed code signs this machine in and reserves its address
+npx uni serve --tunnel # runs the server there and prints the pairing link with a QR code
 ```
 
-`login` asks for your email, sends an 8-digit code, and prints the address it reserved for this machine. `serve --tunnel` downloads `cloudflared` on the first run (a pinned version with a verified digest, into `~/.openmausbot`), starts the server, connects the tunnel, and after a few seconds prints `tunnel: live at https://…`. Leave it running; see "Keep it running" for a service.
+`login` asks for your email, sends an 8-digit code, and prints the address it reserved for this machine. `serve --tunnel` downloads `cloudflared` on the first run (a pinned version with a verified digest, into `~/.uni`), starts the server, connects the tunnel, and after a few seconds prints `tunnel: live at https://…`. Leave it running; see "Keep it running" for a service.
 
-The account credentials live in `~/.openmausbot/tunnel-account.json`, readable only by your user. `npx openmausbot logout` releases the address.
+The account credentials live in `~/.uni/tunnel-account.json`, readable only by your user. `npx uni account logout` releases the address.
 
 Skip to "Install and sign the engines in".
 
@@ -183,7 +183,7 @@ The [installer](#quick-start-one-command-on-your-own-domain) does these steps fo
 3. **Get the deploy files and set the name:**
 
    ```sh
-   git clone https://github.com/milind-soni/Uni && cd Uni/deploy
+   git clone https://github.com/AdilShamim8/Uni && cd Uni/deploy
    cp .env.example .env
    nano .env                # DOMAIN=maus.example.com ; ENGINES=@anthropic-ai/claude-code @openai/codex
    ```
@@ -200,7 +200,7 @@ The [installer](#quick-start-one-command-on-your-own-domain) does these steps fo
 
    Caddy requests the certificate on its own; give it a minute. Then `https://maus.example.com` shows a page asking for a pairing code. That is correct: nothing works until you pair.
 
-In this path, every `npx openmausbot …` command below is run inside the container instead:
+In this path, every `npx uni …` command below is run inside the container instead:
 
 ```sh
 docker compose exec omb openmausbot pair --label "My MacBook"
@@ -224,7 +224,7 @@ browser and pair it as below.
 From the administrator shell, install Tailscale on the server and sign in (`curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`). Enable HTTPS certificates for your tailnet once at https://login.tailscale.com/admin/dns (HTTPS Certificates), then run this from the `maus` shell:
 
 ```sh
-npx openmausbot serve --tailscale
+npx uni serve --tailscale
 ```
 
 Tailscale terminates HTTPS with its own certificate and the pairing link uses the server's MagicDNS name (`https://maus.tail1234.ts.net`). `serve` runs `tailscale serve` in the foreground, so the share ends when it stops. Only devices on your tailnet can reach it, which is a very good property for a server that can run tools.
@@ -276,7 +276,7 @@ engines you use. For path B, run the installed CLI inside the container, for
 example `docker compose exec omb claude`.
 
 Engine logins belong to the service user's home (for example `~/.codex` and
-`~/.claude`), separately from Uni's `~/.openmausbot`. Keep that home when
+`~/.claude`), separately from Uni's `~/.uni`. Keep that home when
 restarting or upgrading. The systemd example below includes `~/.local/bin` in PATH.
 
 ## Pair your first device
@@ -284,12 +284,12 @@ restarting or upgrading. The systemd example below includes `~/.local/bin` in PA
 `serve` already printed a pairing block when it started in a terminal (a service prints none into its log). For another device later:
 
 ```sh
-npx openmausbot pair --label "Kitchen iPad"
+npx uni pair --label "Kitchen iPad"
 ```
 
 ```
 Pairing code   RR8Y-BLR6-H939   works once, until 10:59 · everything
-Link           https://c-7f3a9c.openmausbot.com/pair#code=RR8Y-BLR6-H939
+Link           https://c-7f3a9c.uni.com/pair#code=RR8Y-BLR6-H939
 
   Desktop app   ＋ → Connect to a server, paste the link
   Phone         scan with your camera or the Uni app
@@ -306,14 +306,14 @@ Worth knowing: a code works **once**, for **10 minutes** (`--ttl 24h` keeps it o
 Every paired device is a session:
 
 ```sh
-npx openmausbot devices               # id, device, scope, last seen, expires
-npx openmausbot devices revoke ID     # signs that device out and closes its stream at once
-npx openmausbot status                # what the server says about itself
+npx uni devices               # id, device, scope, last seen, expires
+npx uni devices revoke ID     # signs that device out and closes its stream at once
+npx uni account status                # what the server says about itself
 ```
 
 ## Keep it running
 
-`npx openmausbot serve` is a plain foreground process. For systemd (paths A and C),
+`npx uni serve` is a plain foreground process. For systemd (paths A and C),
 install a chosen release first, from the `maus` shell. Replace `X.Y.Z` with the
 published version you want to run:
 
@@ -322,10 +322,10 @@ npm install --global --prefix "$HOME/.local" openmausbot@X.Y.Z
 ```
 
 Stop the foreground server with Ctrl-C before enabling the service. From the
-administrator shell, save this as `/etc/systemd/system/openmausbot.service`:
+administrator shell, save this as `/etc/systemd/system/uni.service`:
 
 ```ini
-# /etc/systemd/system/openmausbot.service
+# /etc/systemd/system/uni.service
 [Unit]
 Description=Uni server
 After=network-online.target
@@ -335,7 +335,7 @@ User=maus
 WorkingDirectory=/home/maus
 Environment=HOME=/home/maus
 Environment=PATH=/home/maus/.local/bin:/usr/local/bin:/usr/bin:/bin
-ExecStart=/home/maus/.local/bin/openmausbot serve --tunnel
+ExecStart=/home/maus/.local/bin/uni serve --tunnel
 Restart=always
 RestartSec=5
 
@@ -348,7 +348,7 @@ sudo systemctl daemon-reload && sudo systemctl enable --now openmausbot
 journalctl -u openmausbot -f            # the server's log, including "tunnel: live at …"
 ```
 
-Use `--tailscale` instead of `--tunnel` for path C. A service is not a terminal, so `serve` writes no pairing code into the journal; mint one with `npx openmausbot pair` when you need it. Docker (path B) restarts on its own (`restart: unless-stopped`).
+Use `--tailscale` instead of `--tunnel` for path C. A service is not a terminal, so `serve` writes no pairing code into the journal; mint one with `npx uni pair` when you need it. Docker (path B) restarts on its own (`restart: unless-stopped`).
 
 Adjust the account, home, and PATH if yours differ; Node 24 must be available on
 that PATH. The service runs the installed CLI directly, so a restart uses the
@@ -358,7 +358,7 @@ same release without an npm install prompt or an implicit upgrade.
 
 A self-hosted server follows the **stable** channel: a released version that
 Uni's own Clouds have run for 48 hours first. The image tag `stable` and
-[`stable.json`](https://raw.githubusercontent.com/milind-soni/Uni/channels/stable.json)
+[`stable.json`](https://raw.githubusercontent.com/AdilShamim8/Uni/channels/stable.json)
 name it. The tag `latest` follows every change on `main`; it is for trying
 things out, not for a server you rely on. **Check for updates** in the app
 compares your server with the stable version. To hear of every release as soon
@@ -393,9 +393,9 @@ command.
 git pull && sudo ./update-runner.sh --install
 ```
 
-That places `/usr/local/sbin/openmausbot-update-runner`, the systemd units
-`openmausbot-update.path` and `openmausbot-update.service`, and root's folder
-`/var/lib/openmausbot-update`: root's own copy of `update.sh`, which is what
+That places `/usr/local/sbin/uni-update-runner`, the systemd units
+`uni-update.path` and `uni-update.service`, and root's folder
+`/var/lib/uni-update`: root's own copy of `update.sh`, which is what
 the button runs, `request`, which the server's container writes, and `status`,
 which it reads and cannot write. One install per server: a second folder is
 refused until `--remove` on the first, and `--remove` for any other folder
@@ -485,15 +485,15 @@ git pull && ./update.sh
 `git pull` brings the current `update.sh` and `docker-compose.yml`; the server
 image comes from the stable channel, not from your checkout. An install that
 has no checkout, with its `compose.yaml`, `.env` and `data/` in one folder such
-as `/opt/openmausbot`, runs the same script on that folder:
+as `/opt/uni`, runs the same script on that folder:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/milind-soni/Uni/main/deploy/update.sh -o update.sh
+curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/update.sh -o update.sh
 sudo bash update.sh --dir /opt/openmausbot
 ```
 
 An install made with the installer (`deploy/install.sh`) already has `update.sh` in
-its folder: `sudo /opt/openmausbot/update.sh`.
+its folder: `sudo /opt/uni/update.sh`.
 
 Until a first version has been made stable, `./update.sh` takes the newest
 release instead, as **Check for updates** does then.
@@ -509,13 +509,13 @@ every file's owner and mode either way. The script then:
    volumes, stops the server, checks that it has stopped, and copies
    everything under `/data` into a new Docker volume named for the update
    (`deploy_data-before-update-20261110T120000Z`;
-   `openmausbot_data-before-update-…` for `/opt/openmausbot`). It then
+   `uni_data-before-update-…` for `/opt/uni`). It then
    compares the copy with the data, every file by checksum; a copy that does
    not match is thrown away, the server is started again, and nothing has
    changed. The copy from the update before is removed only after this one
    has matched. The server is down from here until step 4; how long depends
    on how much data there is.
-3. Writes the image into `.env` (`OMB_IMAGE=ghcr.io/milind-soni/openmausbot@sha256:…`)
+3. Writes the image into `.env` (`OMB_IMAGE=ghcr.io/adilshamim8/uni@sha256:…`)
    and starts it. An install the installer made while Caddy still shared the
    server's network gets the installer's current `compose.yaml` and
    `Caddyfile` here, as a run of the installer would write them (the rollback
@@ -524,7 +524,7 @@ every file's owner and mode either way. The script then:
 4. Waits, up to two minutes (`OMB_UPDATE_WAIT_S` for longer), until the new server answers `/api/health`
    steadily, says it is the new version, can still start a bot if it could
    before (the server's own count of ready engines, `GET /api/health/engines`,
-   which a hardened server answers too; `openmausbot doctor` on a version
+   which a hardened server answers too; `uni doctor` on a version
    without it), and Caddy runs again.
 5. If any of that fails: puts back the data from the copy, `.env` and the old
    image, starts the old version, and tells you what went wrong. Your server
@@ -600,8 +600,8 @@ from **Settings → Engines** live on the data volume and survive either way.
 There is no one-command updater for an npm install yet. Do what the script
 does: copy the data first, install one named version, check it, and keep the
 way back. Take the stable version number from
-[`stable.json`](https://raw.githubusercontent.com/milind-soni/Uni/channels/stable.json)
-(`"version"`), and note the one you run now (`openmausbot --version`). From
+[`stable.json`](https://raw.githubusercontent.com/AdilShamim8/Uni/channels/stable.json)
+(`"version"`), and note the one you run now (`uni --version`). From
 the administrator shell, replacing `X.Y.Z`:
 
 ```sh
@@ -623,7 +623,7 @@ sudo systemctl start openmausbot
 ```
 
 A service restart by itself does not update the installed package. For
-foreground `npx` usage, name the release: `npx --yes openmausbot@X.Y.Z serve --tunnel`.
+foreground `npx` usage, name the release: `npx --yes uni@X.Y.Z serve --tunnel`.
 
 ### How far behind a server may fall
 
@@ -637,7 +637,7 @@ Routines and queued work survive a restart; a turn running at that moment does n
 ## Back up
 
 Stop the server before copying its SQLite database: Ctrl-C for a foreground
-process, or `sudo systemctl stop openmausbot` from the administrator shell for
+process, or `sudo systemctl stop uni` from the administrator shell for
 the service above. Stop any engine processes and managed desktops still writing
 files you intend to back up.
 
@@ -670,7 +670,7 @@ docker compose start
 ```
 
 To restore that archive, with the project stopped, replace what is in the
-volume with it (`openmausbot-backup.XXXXXX` is the folder the backup made):
+volume with it (`uni-backup.XXXXXX` is the folder the backup made):
 
 ```sh
 docker compose stop
@@ -678,8 +678,8 @@ docker run --rm -v deploy_data:/data -v "$PWD/openmausbot-backup.XXXXXX":/b:ro a
 docker compose start
 ```
 
-With the installer, the data is the folder `/opt/openmausbot/data`. This backs
-it up, with `.env`, into an archive in `/opt/openmausbot/backups`, the whole
+With the installer, the data is the folder `/opt/uni/data`. This backs
+it up, with `.env`, into an archive in `/opt/uni/backups`, the whole
 project stopped and started again around it. The folder is `700` and the archive
 `600` whatever the server's umask or the folder's default ACLs, since the archive
 holds every chat, key and session:
@@ -702,14 +702,14 @@ cd /opt/openmausbot && sudo docker compose stop && sudo sh -c 'set -e; tar -tzf 
 ```
 
 Once Uni runs on the restored data, remove the old copy:
-`sudo rm -rf /opt/openmausbot/data.before-restore`. The restore leaves `.env` as
+`sudo rm -rf /opt/uni/data.before-restore`. The restore leaves `.env` as
 it is. On a new server, install first with the same `--domain`, then restore.
 
 Each path B backup creates a fresh private folder in the current directory, so it
 cannot overwrite an older archive with more permissive access. Keep the
 archive inside that folder privately on another machine. Restore paths A and C
 with the server stopped, using the same paths and original ownership. After
-backup or restore, start the service with `sudo systemctl start openmausbot`.
+backup or restore, start the service with `sudo systemctl start uni`.
 Stop and start the Docker project as a whole, as above, rather than `omb` on
 its own.
 
@@ -725,11 +725,11 @@ Read this before putting anything else in front of the server.
 
 ## Troubleshooting
 
-**`serve --tunnel` says "no account on this machine yet".** Run `npx openmausbot login` on this machine first; the credentials are per machine.
+**`serve --tunnel` says "no account on this machine yet".** Run `npx uni account login` on this machine first; the credentials are per machine.
 
 **The server does not start and says its data "was written by a newer Uni".** An older version was started on data a newer one had already changed, which happens when a version is put back without its data. Nothing was changed. Install the version the message names (or a newer one), or put back the copy of the data from before that update.
 
-**The tunnel stays on "retrying".** The server is running and usable locally; the public hop is not verified yet. Wait a minute (Cloudflare needs a moment on a fresh address), then check `journalctl`/the terminal for the reason. If it never comes up, `npx openmausbot logout && npx openmausbot login` issues a fresh address.
+**The tunnel stays on "retrying".** The server is running and usable locally; the public hop is not verified yet. Wait a minute (Cloudflare needs a moment on a fresh address), then check `journalctl`/the terminal for the reason. If it never comes up, `npx uni account logout && npx uni account login` issues a fresh address.
 
 **Path B: the page never loads or shows a certificate error.** Caddy could not get a certificate. Check that the name resolves to the server and that ports 80 and 443 are open; `docker compose logs caddy` shows the reason.
 
@@ -739,9 +739,9 @@ Read this before putting anything else in front of the server.
 
 **A bot says the engine is not signed in.** Sign that engine in again on the server.
 
-**What does the server think it is?** `https://<address>/.well-known/openmausbot/environment` is public and shows its id, label, version and capabilities; `npx openmausbot status` prints the same on the server.
+**What does the server think it is?** `https://<address>/.well-known/openmausbot/environment` is public and shows its id, label, version and capabilities; `npx openmausbot account status` prints the same on the server.
 
-**Something else.** `journalctl -u openmausbot --since -10m` (or `docker compose logs omb --tail 100`) shows the server's startup lines. Paste them with your question in the community channel.
+**Something else.** `journalctl -u uni --since -10m` (or `docker compose logs omb --tail 100`) shows the server's startup lines. Paste them with your question in the community channel.
 
 ### Ubuntu 24.04 browser sandbox
 
@@ -768,7 +768,7 @@ sudo chown -R root:root /opt/openmausbot-browser/chrome-VERSION
 sudo chmod -R go-w /opt/openmausbot-browser/chrome-VERSION
 ```
 
-Save this as the root-owned `/etc/apparmor.d/openmausbot-chrome`, replacing
+Save this as the root-owned `/etc/apparmor.d/uni-chrome`, replacing
 `VERSION` with the same value. Keep the exact executable path: a wildcard under
 the writable service home would also allow replacement executables.
 
@@ -776,7 +776,7 @@ the writable service home would also allow replacement executables.
 abi <abi/4.0>,
 include <tunables/global>
 
-profile openmausbot-chrome /opt/openmausbot-browser/chrome-VERSION/chrome flags=(unconfined) {
+profile uni-chrome /opt/uni-browser/chrome-VERSION/chrome flags=(unconfined) {
   userns,
 }
 ```
@@ -789,10 +789,10 @@ sudo apparmor_parser -r /etc/apparmor.d/openmausbot-chrome
 
 Add the following line under `[Service]` in the systemd unit above, again using
 the exact installed version, then run `sudo systemctl daemon-reload` and
-`sudo systemctl restart openmausbot`:
+`sudo systemctl restart uni`:
 
 ```ini
-Environment=AGENT_BROWSER_EXECUTABLE_PATH=/opt/openmausbot-browser/chrome-VERSION/chrome
+Environment=AGENT_BROWSER_EXECUTABLE_PATH=/opt/uni-browser/chrome-VERSION/chrome
 ```
 
 For a foreground server, export `AGENT_BROWSER_EXECUTABLE_PATH` to that same

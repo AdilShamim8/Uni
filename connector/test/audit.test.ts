@@ -9,7 +9,7 @@ import { localJobId, sendLocalJob, serveLocalJobs } from "../src/local.ts";
 import { parsePolicy } from "../src/policy.ts";
 import type { Job, JobReply } from "../src/protocol.ts";
 
-const HOME = `ghcr.io/milind-soni/openmausbot-cloud-home@sha256:${"a".repeat(64)}`;
+const HOME = `ghcr.io/adilshamim8/uni-cloud-home@sha256:${"a".repeat(64)}`;
 const SECRET = "Bootstrap-secret-0123456789abcdefghijklmnopq";
 const dirs: string[] = [];
 afterEach(() => {
@@ -105,7 +105,7 @@ describe("the server owner's policy", () => {
     run: async (job) => { ran.push(`${job.type}`); return { id: job.id, ok: true, result: { home: { state: "running", image: HOME, health: null } } } as JobReply; },
     audit: new AuditLog(join(dir, "audit.jsonl")), log: () => {}, policyFile: join(dir, "policy.json"),
   });
-  const SELF = { id: "self-1", type: "self-update", args: { image: `ghcr.io/milind-soni/mausbot-connector@sha256:${"b".repeat(64)}` } } as Job;
+  const SELF = { id: "self-1", type: "self-update", args: { image: `ghcr.io/adilshamim8/mausbot-connector@sha256:${"b".repeat(64)}` } } as Job;
   const UPDATE = { id: "u1", type: "update", args: { image: HOME } } as Job;
 
   it("limits what Uni may run here, records each refusal, and never limits root on the server or a self-update", async () => {

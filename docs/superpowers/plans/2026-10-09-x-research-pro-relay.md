@@ -14,7 +14,7 @@
 - Relay endpoint allow-list is exactly the eight ids in the spec.
 - Allowances: personal 1,500, pro 5,000, max 15,000 per account per UTC month; unknown plan `OMB_CLOUD_X_CALLS_PER_MONTH` (default 1,500).
 - Token prefixes: home `omb_x_`, desktop `omb_xd_`. Env: `OMB_CLOUD_TREG_KEY` (Admin), `OMB_CLOUD_X_URL` + secret `OMB_CLOUD_X_TOKEN` (homes).
-- App parent-port message: `{ type: "openmausbot:included-x", access: { url, token } | null }`.
+- App parent-port message: `{ type: "uni:included-x", access: { url, token } | null }`.
 - The included token is never written to config.json, never reported to a client, never in an engine's environment.
 
 ## Review Focus

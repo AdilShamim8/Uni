@@ -19,7 +19,7 @@ export function createPhoneLinkFact({ retired, server, log }) {
     const olderPhoneApps = count();
     if (sent?.proc === proc && sent.olderPhoneApps === olderPhoneApps) return;
     try {
-      proc.postMessage({ type: "openmausbot:phone-link", olderPhoneApps });
+      proc.postMessage({ type: "uni:phone-link", olderPhoneApps });
       sent = { proc, olderPhoneApps };
     } catch (error) {
       log(`phone link fact sync failed: ${error?.message ?? error}`);

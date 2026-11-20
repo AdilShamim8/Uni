@@ -310,8 +310,8 @@ it("binds a fresh volume to its machine and refuses anyone else's data", () => {
 it("a new home on a kept volume clears the data-directory lease the previous machine left, once the volume is confirmed its own, and never this machine's or another Cloud's (2026-10-23)", () => {
   const home = directory(), dataDir = cloudHomeDataDir({}, home);
   // The image runs on Linux, so the server is given a POSIX path; here only where it sits under the home is the point.
-  expect(relative(home, dataDir)).toBe(".openmausbot");
-  expect(cloudHomeDataDir({}, "/data")).toBe("/data/.openmausbot");
+  expect(relative(home, dataDir)).toBe(".uni");
+  expect(cloudHomeDataDir({}, "/data")).toBe("/data/.uni");
   expect(cloudHomeDataDir({ OMB_DATA_DIR: "/elsewhere" }, home)).toBe("/elsewhere");
   mkdirSync(join(home, "lost+found"));
   const locked: string[] = [];
@@ -319,7 +319,7 @@ it("a new home on a kept volume clears the data-directory lease the previous mac
   expect(prepareCloudHomeData(home, dataDir, "home-7f3k2", lock)).toEqual({ volume: "new", cleared: [] });
   expect(locked).toEqual([home]);
   // The lease the home destroyed mid-boot left (its hostname is Fly's machine id), and the previous machine's own pid.
-  const lease = join(dataDir, "openmausbot-server.lease");
+  const lease = join(dataDir, "uni-server.lease");
   mkdirSync(dataDir, { recursive: true });
   const left = (host: string) => writeFileSync(lease, `${JSON.stringify({ version: 1, pid: 613, host, token: "0f5e6c4a-1b2c-4d3e-8f9a-0b1c2d3e4f5a", createdAt: 1, boot: "boot-of-the-old-machine", uptime: 44_000 })}\n`);
   left("d8d9e0f1a2b3c4");
@@ -390,7 +390,7 @@ it("gives the edge only its routing name and the server the contract, never a ga
     OMB_CLOUD_AI_TOKEN: `omb_ai_${"a".repeat(43)}` };
   const config = cloudHomeConfiguration(withGateway())!;
   const { server, edge, secrets } = cloudHomeChildEnvironments(config, { ...withGateway(), ...relay, PATH: "/usr/bin" }, "/data");
-  expect(server).toMatchObject({ HOME: "/data", OMB_DATA_DIR: "/data/.openmausbot", NODE_COMPILE_CACHE: "/data/.openmausbot/cache/node-compile", OMB_PORT: "8799", OMB_WEBHOOK_PORT: "8800",
+  expect(server).toMatchObject({ HOME: "/data", OMB_DATA_DIR: "/data/.uni", NODE_COMPILE_CACHE: "/data/.uni/cache/node-compile", OMB_PORT: "8799", OMB_WEBHOOK_PORT: "8800",
     OMB_PUBLIC_URL: "https://omb-u-1a2b3c4d5e6f.fly.dev", OMB_WEBHOOK_PUBLIC_URL: "https://omb-u-1a2b3c4d5e6f.fly.dev", OMB_CLOUD_SECRETS_FD: "3" });
   for (const key of CLOUD_IGNORED_KEYS) expect(server).not.toHaveProperty(key);
   // The bot box switch reaches the server; an unknown name does not.

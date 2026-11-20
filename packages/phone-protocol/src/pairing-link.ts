@@ -18,7 +18,7 @@ export interface PairingE2EDescriptor {
 }
 
 const B64U_FIELD = /^[A-Za-z0-9_-]+$/;
-const RELAY_HOST = /^relay[1-9][0-9]?\.openmausbot\.com$/;
+const RELAY_HOST = /^relay[1-9][0-9]?\.uni\.com$/;
 
 /** The QR's `e2e` value, or null for anything a phone would refuse: then the link goes out without it, as from a
  * computer without the encrypted connection. A QR never says "local": a restriction is set per phone, later. */

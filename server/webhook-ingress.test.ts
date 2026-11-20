@@ -70,7 +70,7 @@ describe("webhook-only ingress", () => {
   it("exposes health but nothing from the main Uni API", async () => {
     const health = await fetch(`${ingress.baseUrl}/health`);
     expect(health.status).toBe(200);
-    expect(await health.json()).toEqual({ app: "openmausbot-webhooks", ready: true });
+    expect(await health.json()).toEqual({ app: "uni-webhooks", ready: true });
     expect((await fetch(`${ingress.baseUrl}/api/bots`)).status).toBe(404);
   });
 
@@ -323,7 +323,7 @@ describe("advertised base URL", () => {
         sent.on("error", reject);
         sent.end(method === "POST" ? "{}" : undefined);
       });
-      expect(await viaSocket("/health")).toEqual({ status: 200, body: JSON.stringify({ app: "openmausbot-webhooks", ready: true }) });
+      expect(await viaSocket("/health")).toEqual({ status: 200, body: JSON.stringify({ app: "uni-webhooks", ready: true }) });
       expect((await viaSocket("/api/bots")).status).toBe(404);
       const before = queued.length;
       expect((await viaSocket(`/hooks/${endpointId}/${secret}`, "POST")).status).toBe(202);

@@ -107,7 +107,7 @@ async function connected(call: ReturnType<typeof engineFor>) {
 
 beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "omb-cloud-lent-mcp-"));
-  const dataDir = join(home, ".openmausbot");
+  const dataDir = join(home, ".uni");
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(turnDumps());
   const cli = join(home, "fixture-claude.mjs");
@@ -225,7 +225,7 @@ readline.createInterface({ input: process.stdin }).on("line", (line) => {
   const answer = await call("tools/call", { name: "search_notes", arguments: { q: "plan" } });
   expect(answer.result).toEqual({ content: [{ type: "text", text: "On the Mac: plan" }] });
   // It reached the Mac's server from the Mac's connector, with the key saved on My Cloud.
-  expect(macRequests.filter((request) => request.method === "initialize").every((request) => request.client === "openmausbot-lent")).toBe(true);
+  expect(macRequests.filter((request) => request.method === "initialize").every((request) => request.client === "uni-lent")).toBe(true);
   expect(macRequests.every((request) => request.authorization === "Bearer mac-header-key")).toBe(true);
   expect(connector.activity(env.id).map((entry) => [entry.action, entry.ok])).toEqual(expect.arrayContaining([["mcp_tools", true], ["mcp_call", true]]));
 

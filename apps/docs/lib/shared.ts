@@ -2,10 +2,10 @@ export const docsRoute = '/docs';
 export const docsImageRoute = '/og/docs';
 export const docsContentRoute = '/llms.mdx/docs';
 export const appName = 'MausBot Docs';
-export const siteUrl = 'https://docs.openmausbot.com';
+export const siteUrl = 'https://docs.uni.com';
 
 export const gitConfig = {
-  user: 'milind-soni',
-  repo: 'OpenMausBot',
+  user: 'AdilShamim8',
+  repo: 'Uni',
   branch: 'main',
 };

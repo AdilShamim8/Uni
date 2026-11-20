@@ -1,9 +1,10 @@
 import { createHash, generateKeyPairSync, randomBytes } from "node:crypto";
+import { getDefaultAutoSelectFamilyAttemptTimeout, setDefaultAutoSelectFamilyAttemptTimeout } from "node:net";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { WebSocket, WebSocketServer } from "ws";
 
 import { b64u, ed25519RawPublicKey, mintRelayToken } from "../../src/e2e/credentials.ts";
-import { RelayClient, type RelayClientOptions } from "../../src/e2e/relay-client.ts";
+import { allowFarRelay, RelayClient, type RelayClientOptions } from "../../src/e2e/relay-client.ts";
 import { startFakeRelay, type FakeRelay } from "./fake-relay.ts";
 
 const signingKey = generateKeyPairSync("ed25519").privateKey;
@@ -74,23 +75,43 @@ function client(relays: Record<string, Pick<FakeRelay, "url">>, overrides: Parti
   return { instance, statuses, rejected };
 }
 
+describe("connecting to a far relay", () => {
+  const atAttemptTimeout = (ms: number) => {
+    const before = getDefaultAutoSelectFamilyAttemptTimeout();
+    cleanup.push(() => setDefaultAutoSelectFamilyAttemptTimeout(before));
+    setDefaultAutoSelectFamilyAttemptTimeout(ms);
+  };
+
+  it("gives each relay address longer than Node's 250 ms to connect", () => {
+    atAttemptTimeout(250);
+    allowFarRelay();
+    expect(getDefaultAutoSelectFamilyAttemptTimeout()).toBeGreaterThanOrEqual(2_000);
+  });
+
+  it("keeps a longer per-address connect time already set", () => {
+    atAttemptTimeout(5_000);
+    allowFarRelay();
+    expect(getDefaultAutoSelectFamilyAttemptTimeout()).toBe(5_000);
+  });
+});
+
 describe("the relay client", () => {
   it("authenticates, then sends the admission set, and again only when it changes", async () => {
     const relay = await relayAt();
     let set = ["a", "b"];
-    const { instance } = client({ "relay1.openmausbot.com": relay }, { admissionSet: () => set });
+    const { instance } = client({ "relay1.uni.com": relay }, { admissionSet: () => set });
     instance.start();
     await waitFor(() => instance.status === "connected");
     await waitFor(() => relay.admitted(hid).size === 2);
     set = ["a", "b", "c"];
     instance.refreshAdmission();
     await waitFor(() => relay.admitted(hid).has("c"));
-    expect(instance.node).toBe("relay1.openmausbot.com");
+    expect(instance.node).toBe("relay1.uni.com");
   });
 
   it("refreshes the token on the same socket", async () => {
     const relay = await relayAt();
-    const { instance } = client({ "relay1.openmausbot.com": relay });
+    const { instance } = client({ "relay1.uni.com": relay });
     instance.start();
     await waitFor(() => instance.status === "connected");
     const socket = relay.hosts.get(hid)!.control;
@@ -103,7 +124,7 @@ describe("the relay client", () => {
 
   it("asks for a new token on 4401 and reconnects once it has one", async () => {
     const relay = await relayAt();
-    const { instance, rejected } = client({ "relay1.openmausbot.com": relay }, { token: token(3600, "k9") });
+    const { instance, rejected } = client({ "relay1.uni.com": relay }, { token: token(3600, "k9") });
     instance.start();
     await waitFor(() => rejected.length === 1);
     expect(instance.status).toBe("connecting");
@@ -113,10 +134,10 @@ describe("the relay client", () => {
 
   it("stops when a newer control socket for the same computer takes over (4409)", async () => {
     const relay = await relayAt();
-    const first = client({ "relay1.openmausbot.com": relay });
+    const first = client({ "relay1.uni.com": relay });
     first.instance.start();
     await waitFor(() => first.instance.status === "connected");
-    const second = client({ "relay1.openmausbot.com": relay });
+    const second = client({ "relay1.uni.com": relay });
     second.instance.start();
     await waitFor(() => second.instance.status === "connected");
     await waitFor(() => first.instance.status === "off");
@@ -124,7 +145,7 @@ describe("the relay client", () => {
 
   it("reconnects after the relay announces a restart", async () => {
     const relay = await relayAt();
-    const { instance, statuses } = client({ "relay1.openmausbot.com": relay });
+    const { instance, statuses } = client({ "relay1.uni.com": relay });
     instance.start();
     await waitFor(() => instance.status === "connected");
     relay.restart();
@@ -139,21 +160,21 @@ describe("the relay client", () => {
     const firstPort = (await relayAt()).port;
     await cleanup.pop()!();
     const nodes: Record<string, FakeRelay> = {
-      "relay1.openmausbot.com": { url: `ws://127.0.0.1:${firstPort}` } as FakeRelay,
-      "relay2.openmausbot.com": second,
+      "relay1.uni.com": { url: `ws://127.0.0.1:${firstPort}` } as FakeRelay,
+      "relay2.uni.com": second,
     };
     const { instance } = client(nodes, { timing: { firstNodeRetryMs: 300 } });
     instance.start();
-    await waitFor(() => instance.node === "relay2.openmausbot.com", 5_000);
+    await waitFor(() => instance.node === "relay2.uni.com", 5_000);
     const first = await relayAt(firstPort);
-    await waitFor(() => instance.node === "relay1.openmausbot.com", 5_000);
+    await waitFor(() => instance.node === "relay1.uni.com", 5_000);
     await waitFor(() => first.admitted(hid).size === 2);
     await waitFor(() => !second.hosts.has(hid));
   });
 
   it("redials at once when the wall clock jumps past the monotonic one (sleep)", async () => {
     const relay = await relayAt();
-    const { instance, statuses } = client({ "relay1.openmausbot.com": relay }, { timing: { sleepCheckMs: 50 } });
+    const { instance, statuses } = client({ "relay1.uni.com": relay }, { timing: { sleepCheckMs: 50 } });
     instance.start();
     await waitFor(() => instance.status === "connected");
     const realNow = Date.now.bind(Date);
@@ -165,7 +186,7 @@ describe("the relay client", () => {
     const relay = await relayAt();
     const accepted: number[] = [];
     const adm = Buffer.from("admission value");
-    const { instance } = client({ "relay1.openmausbot.com": relay }, {
+    const { instance } = client({ "relay1.uni.com": relay }, {
       admissionSet: () => [b64u(createHash("sha256").update(adm).digest())],
       accept: (transport) => {
         accepted.push(Date.now());
@@ -192,7 +213,7 @@ describe("the relay client", () => {
       socket.close(1011);
     });
     // Immediate, then a minute: a count that reset on every hello would redial at once, over and over.
-    const { instance } = client({ "relay1.openmausbot.com": relay }, { timing: { backoffMs: [0, 60_000] } });
+    const { instance } = client({ "relay1.uni.com": relay }, { timing: { backoffMs: [0, 60_000] } });
     instance.start();
     await waitFor(() => relay.dials() === 2, SLOW);
     await waitFor(() => instance.problem === "unreachable", SLOW);
@@ -206,7 +227,7 @@ describe("the relay client", () => {
       setTimeout(() => socket.close(1011), 1_000);
     });
     // Without the reset, the second drop would wait a minute.
-    const { instance } = client({ "relay1.openmausbot.com": relay }, { timing: { stableAfterMs: 50, backoffMs: [0, 60_000] } });
+    const { instance } = client({ "relay1.uni.com": relay }, { timing: { stableAfterMs: 50, backoffMs: [0, 60_000] } });
     instance.start();
     await waitFor(() => relay.dials() >= 4, SLOW);
   });
@@ -215,16 +236,16 @@ describe("the relay client", () => {
     const silent = await relayAt();
     silent.silent = true;
     const second = await relayAt();
-    const { instance } = client({ "relay1.openmausbot.com": silent, "relay2.openmausbot.com": second }, { timing: { helloTimeoutMs: 1_000 } });
+    const { instance } = client({ "relay1.uni.com": silent, "relay2.uni.com": second }, { timing: { helloTimeoutMs: 1_000 } });
     instance.start();
-    await waitFor(() => instance.node === "relay2.openmausbot.com", SLOW);
+    await waitFor(() => instance.node === "relay2.uni.com", SLOW);
     expect(instance.problem).toBeNull();
     await waitFor(() => second.admitted(hid).size === 2, SLOW);
   });
 
   it("keeps a connected socket that answers its liveness check", async () => {
     const relay = await relayAt();
-    const { instance } = client({ "relay1.openmausbot.com": relay }, { timing: { livenessTimeoutMs: 5_000 } });
+    const { instance } = client({ "relay1.uni.com": relay }, { timing: { livenessTimeoutMs: 5_000 } });
     instance.start();
     await waitFor(() => instance.status === "connected", SLOW);
     const socket = relay.hosts.get(hid)!.control;
@@ -237,7 +258,7 @@ describe("the relay client", () => {
 
   it("dials again, once and with backoff, when a connected socket stops answering", async () => {
     const relay = await relayAt();
-    const { instance, statuses } = client({ "relay1.openmausbot.com": relay }, { timing: { livenessTimeoutMs: 200, redialSpreadMs: 600 } });
+    const { instance, statuses } = client({ "relay1.uni.com": relay }, { timing: { livenessTimeoutMs: 200, redialSpreadMs: 600 } });
     instance.start();
     await waitFor(() => instance.status === "connected", SLOW);
     relay.silent = true;
@@ -254,7 +275,7 @@ describe("the relay client", () => {
 
   it("waits for a new token when the relay answers a liveness check with 4401", async () => {
     const relay = await relayAt();
-    const { instance, rejected } = client({ "relay1.openmausbot.com": relay });
+    const { instance, rejected } = client({ "relay1.uni.com": relay });
     instance.start();
     await waitFor(() => instance.status === "connected", SLOW);
     relay.refuseRefresh = true;
@@ -269,7 +290,7 @@ describe("the relay client", () => {
 
   it("checks liveness on its own while connected", async () => {
     const relay = await relayAt();
-    const { instance } = client({ "relay1.openmausbot.com": relay }, { timing: { livenessEveryMs: 100 } });
+    const { instance } = client({ "relay1.uni.com": relay }, { timing: { livenessEveryMs: 100 } });
     instance.start();
     await waitFor(() => relay.refreshes >= 2, SLOW);
     expect(instance.status).toBe("connected");
@@ -277,7 +298,7 @@ describe("the relay client", () => {
 
   it("waits at least 30 s after the relay's rate limit (4429)", async () => {
     const relay = await scriptedRelay((socket) => socket.close(4429));
-    const { instance } = client({ "relay1.openmausbot.com": relay });
+    const { instance } = client({ "relay1.uni.com": relay });
     instance.start();
     await waitFor(() => instance.problem === "busy", SLOW);
     await pause(500);
@@ -287,7 +308,7 @@ describe("the relay client", () => {
   it("on a network change after a failed dial, dials now instead of waiting out its backoff", async () => {
     const relay = await scriptedRelay((socket) => socket.close(1011));
     // The backoff after the first failure is 30 s, so a second dial within the wait below can only be the shortcut.
-    const { instance } = client({ "relay1.openmausbot.com": relay }, { timing: { backoffMs: [30_000] } });
+    const { instance } = client({ "relay1.uni.com": relay }, { timing: { backoffMs: [30_000] } });
     instance.start();
     await waitFor(() => instance.problem === "unreachable", SLOW);
     expect(relay.dials()).toBe(1);
@@ -297,7 +318,7 @@ describe("the relay client", () => {
 
   it("on a network change keeps a wait the relay asked for (4429)", async () => {
     const relay = await scriptedRelay((socket) => socket.close(4429));
-    const { instance } = client({ "relay1.openmausbot.com": relay });
+    const { instance } = client({ "relay1.uni.com": relay });
     instance.start();
     await waitFor(() => instance.problem === "busy", SLOW);
     instance.checkAlive();

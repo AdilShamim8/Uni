@@ -51,24 +51,24 @@ describe("the headless command line", () => {
     expect(out[0]).toContain("Give a bot or room one job and wait until it, and every teammate it asked, is done.");
     expect(await runHeadless(["team", "apply", "--help"], { io })).toBe(0);
     expect(out[1]).toContain("a second apply prints \"No changes.\"");
-    expect(USAGE).toContain("openmausbot run BOT \"do this\"         give a bot one job and wait until it and every teammate it asked are done");
+    expect(USAGE).toContain("uni run BOT \"do this\"         give a bot one job and wait until it and every teammate it asked are done");
   });
 
   it("is reachable through the published entry, which keeps every other command as it was", () => {
-    const entry = join(import.meta.dirname, "..", "openmausbot.ts");
+    const entry = join(import.meta.dirname, "..", "uni.ts");
     const help = spawnSync(process.execPath, ["--experimental-strip-types", entry, "help", "export"], { encoding: "utf8" });
     expect(help.status).toBe(0);
-    expect(help.stdout).toContain("openmausbot export TARGET --out DIR");
+    expect(help.stdout).toContain("uni export TARGET --out DIR");
     const refused = spawnSync(process.execPath, ["--experimental-strip-types", entry, "run", "--json"], { encoding: "utf8", env: { ...process.env, OPENMAUSBOT_URL: "" } });
     expect(refused.status).toBe(2);
     expect(JSON.parse(refused.stdout)).toMatchObject({ ok: false, exitCode: 2 });
     const usage = spawnSync(process.execPath, ["--experimental-strip-types", entry, "--help"], { encoding: "utf8" });
-    expect(usage.stdout).toContain("openmausbot serve [--port 8799]");
+    expect(usage.stdout).toContain("uni serve [--port 8799]");
     expect(usage.stdout).toContain("Drive a running workspace");
   });
 
   it("serves MCP through the published entry, and Ctrl-C ends it like any command", async () => {
-    const entry = join(import.meta.dirname, "..", "openmausbot.ts");
+    const entry = join(import.meta.dirname, "..", "uni.ts");
     const child = spawn(process.execPath, ["--experimental-strip-types", entry, "mcp"], {
       env: { ...process.env, OPENMAUSBOT_URL: "http://127.0.0.1:19998", OPENMAUSBOT_TOKEN: "" }, stdio: ["pipe", "pipe", "pipe"],
     });
@@ -78,7 +78,7 @@ describe("the headless command line", () => {
     child.stdin.write(`${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize",
       params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "test", version: "1" } } })}\n`);
     await vi.waitFor(() => expect(stdout).toContain('"id":1'), { timeout: 10_000 });
-    expect(JSON.parse(stdout.split("\n")[0]!)).toMatchObject({ id: 1, result: { serverInfo: { name: expect.stringContaining("openmausbot") } } });
+    expect(JSON.parse(stdout.split("\n")[0]!)).toMatchObject({ id: 1, result: { serverInfo: { name: expect.stringContaining("uni") } } });
     child.kill("SIGINT");
     const timer = setTimeout(() => child.kill("SIGKILL"), 5_000);
     const { signal } = await exited;

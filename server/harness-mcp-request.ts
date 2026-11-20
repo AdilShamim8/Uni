@@ -74,7 +74,7 @@ export async function harnessMcpRequest(
   if (message.method === "initialize") return {
     jsonrpc: "2.0", id,
     result: {
-      protocolVersion: "2024-11-05", capabilities: { tools: {} }, serverInfo: { name: `openmausbot-${connection.kind}`, version: "1" },
+      protocolVersion: "2024-11-05", capabilities: { tools: {} }, serverInfo: { name: `uni-${connection.kind}`, version: "1" },
       ...(INSTRUCTIONS[connection.kind] ? { instructions: INSTRUCTIONS[connection.kind] } : {}),
     },
   };

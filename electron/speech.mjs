@@ -107,7 +107,7 @@ export function startSpeech(target, options = {}) {
   }
 
   // A direct spawn loses the bundle identity and TCC kills it; LaunchServices keeps it. `open` sends stdout/stderr to files, tailed here.
-  const sessionDir = mkdtempSync(path.join(app.getPath("temp"), "openmausbot-speech-"));
+  const sessionDir = mkdtempSync(path.join(app.getPath("temp"), "uni-speech-"));
   const outputPath = path.join(sessionDir, "stdout.ndjson");
   const errorPath = path.join(sessionDir, "stderr.log");
   const stopPath = path.join(sessionDir, "stop");

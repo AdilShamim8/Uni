@@ -159,7 +159,7 @@ describe("a server that runs on the person's computer, in a turn", () => {
 describe("the MCP endpoint a turn's engine reaches", () => {
   it("answers initialize and ping itself, and lists and calls tools on the lent computer with the server as saved", async () => {
     const { lent, requests } = fixture();
-    expect((await route(lent, `${LENT_MCP_PATH}local`, rpc("initialize", { protocolVersion: "2025-06-18" }))).json).toHaveBeenCalledWith(expect.anything(), 200, { jsonrpc: "2.0", id: 1, result: { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "openmausbot-local", version: "1" } } });
+    expect((await route(lent, `${LENT_MCP_PATH}local`, rpc("initialize", { protocolVersion: "2025-06-18" }))).json).toHaveBeenCalledWith(expect.anything(), 200, { jsonrpc: "2.0", id: 1, result: { protocolVersion: "2025-06-18", capabilities: { tools: {} }, serverInfo: { name: "uni-local", version: "1" } } });
     expect(requests).toEqual([]);
     const notification = await route(lent, `${LENT_MCP_PATH}local`, { jsonrpc: "2.0", method: "notifications/initialized" });
     expect(notification.res.writeHead).toHaveBeenCalledWith(202);

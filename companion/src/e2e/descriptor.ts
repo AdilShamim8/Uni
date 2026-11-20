@@ -6,7 +6,7 @@ import { isPublicKey, PUBLIC_KEY_BYTES } from "./noise.ts";
 export const DESCRIPTOR_VERSION = 1;
 export const MAX_DESCRIPTOR_CHARS = 1024;
 export const MAX_RELAY_NODES = 4;
-export const RELAY_HOST = /^relay[1-9][0-9]?\.openmausbot\.com$/;
+export const RELAY_HOST = /^relay[1-9][0-9]?\.uni\.com$/;
 
 export type DescriptorRoutes = "any" | "local";
 

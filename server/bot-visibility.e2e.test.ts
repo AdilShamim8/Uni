@@ -138,7 +138,7 @@ posixOnly("per-bot visibility on a shared workspace", () => {
   beforeAll(async () => {
     chmodSync(FAKE_CLI, 0o755);
     home = mkdtempSync(join(tmpdir(), "omb-bot-visibility-"));
-    const data = join(home, ".openmausbot");
+    const data = join(home, ".uni");
     mkdirSync(data, { recursive: true });
     writeFileSync(join(data, "config.json"), JSON.stringify({
       signIn: { admins: [BOSS], members: [ADA, BOB] },
@@ -328,7 +328,7 @@ posixOnly("per-bot visibility on a shared workspace", () => {
   });
 
   it("withdraws real scan results when an audience changes before the response", async () => {
-    const hold = join(home, ".openmausbot", "hold-search-result");
+    const hold = join(home, ".uni", "hold-search-result");
     let pending: Promise<{ status: number; body: any }> | undefined;
     try {
       expect((await api("GET", "/api/search?q=Zebra", undefined, ADA)).body.hits).toEqual(expect.arrayContaining([
@@ -486,7 +486,7 @@ posixOnly("per-bot visibility on a shared workspace", () => {
     expect(answer).not.toContain("SECRET-ROOM-42");
     expect((await api("PATCH", `/api/bots/${ids.pub}`, { modelSelection: { instanceId: "grok", model: "fake-model" } }, BOSS)).status).toBe(200);
     const minted = await fetch(`${BASE}/api/testing/internal-capability`, {
-      method: "POST", headers: { "content-type": "application/json", "x-openmausbot-test-capability": CAPABILITY_KEY },
+      method: "POST", headers: { "content-type": "application/json", "x-uni-test-capability": CAPABILITY_KEY },
       body: JSON.stringify({ botId: ids.pub, threadId: ids.pubThread }),
     });
     const { token } = await minted.json() as { token: string };
@@ -496,7 +496,7 @@ posixOnly("per-bot visibility on a shared workspace", () => {
     expect(found.hits.map((hit) => hit.threadId)).not.toContain(ids.roomMixedThread);
 
     const logLines = () => {
-      const dir = join(home, ".openmausbot", "workspaces", ids.pub, "memory", "log");
+      const dir = join(home, ".uni", "workspaces", ids.pub, "memory", "log");
       let text = "";
       try {
         for (const file of readdirSync(dir)) text += readFileSync(join(dir, file), "utf8");
@@ -515,7 +515,7 @@ posixOnly("per-bot visibility on a shared workspace", () => {
     await new Promise((r) => setTimeout(r, 500));
     expect(logLines()).toBe(linesBefore);
     const roomToken = await fetch(`${BASE}/api/testing/internal-capability`, {
-      method: "POST", headers: { "content-type": "application/json", "x-openmausbot-test-capability": CAPABILITY_KEY },
+      method: "POST", headers: { "content-type": "application/json", "x-uni-test-capability": CAPABILITY_KEY },
       body: JSON.stringify({ botId: ids.pub, threadId: ids.roomMixedThread }),
     });
     const note = await fetch(`${BASE}/api/internal/memory/log`, {
@@ -526,7 +526,7 @@ posixOnly("per-bot visibility on a shared workspace", () => {
     expect(((await note.json()) as { error: string }).error).toMatch(/visible to fewer people than you are/);
     expect((await api("PATCH", `/api/groups/${ids.roomMixed}`, { resetAudience: true }, BOSS)).status).toBe(200);
     const hrMinted = await fetch(`${BASE}/api/testing/internal-capability`, {
-      method: "POST", headers: { "content-type": "application/json", "x-openmausbot-test-capability": CAPABILITY_KEY },
+      method: "POST", headers: { "content-type": "application/json", "x-uni-test-capability": CAPABILITY_KEY },
       body: JSON.stringify({ botId: ids.hr, threadId: ids.hrThread }),
     });
     const hrSearch = await fetch(`${BASE}/api/internal/session-search?fromBotId=${ids.hr}&q=SECRET-ROOM-42`, {
@@ -558,7 +558,7 @@ posixOnly("per-bot visibility on a shared workspace", () => {
       expect(await bob.ready()).toBeTruthy();
       const boardThread = (await api("GET", "/api/bots?messages=0", undefined, BOSS)).body.bots.find((b: any) => b.id === ids.board).threadId;
       const minted = await fetch(`${BASE}/api/testing/internal-capability`, {
-        method: "POST", headers: { "content-type": "application/json", "x-openmausbot-test-capability": CAPABILITY_KEY },
+        method: "POST", headers: { "content-type": "application/json", "x-uni-test-capability": CAPABILITY_KEY },
         body: JSON.stringify({ botId: ids.board, threadId: boardThread }),
       });
       const { token } = await minted.json() as { token: string };
@@ -643,7 +643,7 @@ posixOnly("per-bot visibility on a shared workspace", () => {
     expect(await status("GET", `/api/threads/${ids.roomMixedThread}/messages`, ADA)).toBe(200);
     expect(JSON.stringify((await api("GET", "/api/bots?messages=0", undefined, ADA)).body.groups)).not.toContain("audienceFloor");
     const minted = await fetch(`${BASE}/api/testing/internal-capability`, {
-      method: "POST", headers: { "content-type": "application/json", "x-openmausbot-test-capability": CAPABILITY_KEY },
+      method: "POST", headers: { "content-type": "application/json", "x-uni-test-capability": CAPABILITY_KEY },
       body: JSON.stringify({ botId: ids.pub, threadId: ids.pubThread }),
     });
     const search = await fetch(`${BASE}/api/internal/session-search?fromBotId=${ids.pub}&q=SECRET-ROOM-42`, {

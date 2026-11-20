@@ -39,7 +39,7 @@ const DISCOVERY_URLS = configuredUrl
 let discoveredBaseUrl: string | undefined;
 
 export function log(msg: string) {
-  process.stderr.write(`[openmausbot-mcp] ${msg}\n`);
+  process.stderr.write(`[uni-mcp] ${msg}\n`);
 }
 
 export const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
@@ -75,7 +75,7 @@ async function fetchJson(url: string, options: RequestInit = {}): Promise<any> {
     const text = await response.text().catch(() => "");
     if (response.status === 403 && !new Headers(headers).has("Authorization")) {
       throw new UniApiError(403, /on this shared server/.test(text) // the server says which kind refused it
-        ? "This is a shared server, so a program on it without a paired session token may only check its health. Set OPENMAUSBOT_TOKEN to a paired session (openmausbot connect), as described in docs/mcp-server.md."
+        ? "This is a shared server, so a program on it without a paired session token may only check its health. Set OPENMAUSBOT_TOKEN to a paired session (uni connect), as described in docs/mcp-server.md."
         : "Uni refused this request because the installed desktop app requires a paired session token. Set OPENMAUSBOT_TOKEN as described in docs/mcp-server.md.");
     }
     throw new UniApiError(response.status, `Uni API error (${response.status}): ${text || response.statusText}`);
@@ -95,7 +95,7 @@ export async function probeBaseUrls(candidates: string[]): Promise<string> {
       const health = await fetchJson(`${candidate}/api/health`, {
         signal: AbortSignal.timeout(Math.min(requestTimeoutMs(), 2_000)),
       });
-      if (health?.app !== "openmausbot") {
+      if (health?.app !== "uni") {
         failures.push(`${candidate} answered, but it was not Uni`);
         continue;
       }
@@ -750,7 +750,7 @@ function sendReceipt(receipt: unknown) {
   };
 }
 
-/** Hooks a caller can give a long tool call (the openmausbot CLI streams progress). */
+/** Hooks a caller can give a long tool call (the uni CLI streams progress). */
 export interface ToolCallHooks {
   /** Each new state of the job a wait watches. */
   onProgress?(job: Record<string, any>): void;
@@ -802,11 +802,11 @@ export async function handleToolCall(
   switch (name) {
     case "get_system_health": {
       const res = await fetcher("/api/health");
-      if (res?.app !== "openmausbot") throw new Error("The configured endpoint is not an Uni server");
+      if (res?.app !== "uni") throw new Error("The configured endpoint is not an Uni server");
       return {
         status: "connected",
         endpoint: discoveredBaseUrl ?? OMB_BASE_URL,
-        app: "openmausbot",
+        app: "uni",
         packaged: Boolean(res.static),
       };
     }
@@ -1277,7 +1277,7 @@ export async function processMcpMessage(
           tools: {},
         },
         serverInfo: {
-          name: "openmausbot-mcp",
+          name: "uni-mcp",
           version: "1.1.0",
         },
         instructions: "Use bounded read tools before mutating the Uni team. Approval grants, deletion, and computer lifecycle are intentionally unavailable.",
@@ -1365,7 +1365,7 @@ export async function processMcpMessage(
 }
 
 /** Serve MCP on this process's stdin and stdout until stdin closes (then
- * resolves): what `pnpm mcp`, dist-server/mcp-server.js and `openmausbot mcp` run. */
+ * resolves): what `pnpm mcp`, dist-server/mcp-server.js and `uni mcp` run. */
 export function runStdio(): Promise<void> {
   log("Uni MCP server running on stdio");
   const rl = readline.createInterface({

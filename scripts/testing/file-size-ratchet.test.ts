@@ -16,22 +16,20 @@ const HARD_CAP = 2000;
 const LISTED_FROM = 1000;
 
 const LINES: Record<string, number> = {
-  "packages/phone-protocol/src/wire.ts": 1005,  // the protocol wire: one enum home plus the pre-v0.1 MausColor aliases
-  "server/index.ts": 15436,
+  "server/index.ts": 15337,
   "src/state/store.tsx": 3288,
-  "electron/main.mjs": 3160,
-  "server/store.ts": 2287,
-  "src/components/Sidebar.tsx": 1687,
-  "server/drivers/claude.ts": 2082,
-  "server/drivers/acp/core.ts": 1658,
-  "server/drivers/codex.ts": 1718,
+  "electron/main.mjs": 3124,
+  "server/store.ts": 2265,
+  "src/components/Sidebar.tsx": 1674,
+  "server/drivers/claude.ts": 2069,
+  "server/drivers/acp/core.ts": 1654,
+  "server/drivers/codex.ts": 1593,
   "server/routines.ts": 1553,
   "src/components/ComputerPanel.tsx": 1782,
   "src/components/RoutineCalendarPage.tsx": 1622,
   "server/config.ts": 1243,
-  "src/components/ChatView.tsx": 1281,
-  "server/routine-requests.ts": 1469,
-  "src/components/GroupView.tsx": 1215,
+  "src/components/ChatView.tsx": 1261,
+  "server/routine-requests.ts": 1469, // upstream #6560/#6623 grew the request admission; re-pinned at the merge
   "src/components/LocalComputerSection.tsx": 1437,
   "src/components/CursorAvatar.tsx": 1324,
   "server/skills.ts": 1379,
@@ -48,15 +46,40 @@ const LINES: Record<string, number> = {
   "src/components/AttachmentPreview.tsx": 1034,
   "server/meetings/meetbot.ts": 1047,
   "electron/data-dir-lease.node-test.mjs": 846, // the data-folder lease's own tests: many platform cases (Windows probes in data-dir-lease-windows.node-test.mjs)
+  "packages/phone-protocol/src/wire.ts": 1005, // upstream #6670 added session-compaction wire kinds; over 1000 at the merge
+  "src/components/AppNotices.tsx": 1061, // upstream #6665 folded the launch-notice kinds in; over 1000 at the merge // upstream #6670 added session-compaction wire kinds; over 1000 at the merge // the data-folder lease's own tests: many platform cases (Windows probes in data-dir-lease-windows.node-test.mjs)
 };
 
 function sourceFiles(): string[] {
-  const out = execFileSync("git", ["ls-files", "server", "shared", "packages", "src", "scripts", "evals", "electron", "companion"], { cwd: ROOT, encoding: "utf8" });
-  return out.split("\n").filter((file) => /\.(ts|tsx|mjs|cjs)$/.test(file))
-    .filter((file) => !file.includes(".test.") && !file.includes("/testing/") && !file.includes("goldens") && !file.startsWith("electron/vendor/"));
+  const out = execFileSync(
+    "git",
+    [
+      "ls-files",
+      "server",
+      "shared",
+      "packages",
+      "src",
+      "scripts",
+      "evals",
+      "electron",
+      "companion",
+    ],
+    { cwd: ROOT, encoding: "utf8" },
+  );
+  return out
+    .split("\n")
+    .filter((file) => /\.(ts|tsx|mjs|cjs)$/.test(file))
+    .filter(
+      (file) =>
+        !file.includes(".test.") &&
+        !file.includes("/testing/") &&
+        !file.includes("goldens") &&
+        !file.startsWith("electron/vendor/"),
+    );
 }
 
-const count = (file: string) => readFileSync(new URL(file, ROOT), "utf8").split("\n").length - 1;
+const count = (file: string) =>
+  readFileSync(new URL(file, ROOT), "utf8").split("\n").length - 1;
 
 describe("source files stay a readable size", () => {
   it("no listed file grows, and no new file over 1,000 lines goes unlisted", () => {
@@ -67,11 +90,16 @@ describe("source files stay a readable size", () => {
       const pinned = LINES[file];
       if (pinned !== undefined) {
         seen.add(file);
-        if (lines > pinned) problems.push(`${file} grew to ${lines} lines (listed at ${pinned}): move code out, do not add here`);
+        if (lines > pinned)
+          problems.push(
+            `${file} grew to ${lines} lines (listed at ${pinned}): move code out, do not add here`,
+          );
       } else if (lines > LISTED_FROM) {
-        problems.push(lines > HARD_CAP
-          ? `${file} is ${lines} lines, over the ${HARD_CAP}-line cap: split it`
-          : `${file} is ${lines} lines: a new file over ${LISTED_FROM} lines needs a line here and a reason in the PR`);
+        problems.push(
+          lines > HARD_CAP
+            ? `${file} is ${lines} lines, over the ${HARD_CAP}-line cap: split it`
+            : `${file} is ${lines} lines: a new file over ${LISTED_FROM} lines needs a line here and a reason in the PR`,
+        );
       }
     }
     expect(problems, "See server/host/README.md").toEqual([]);

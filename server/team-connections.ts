@@ -27,7 +27,7 @@ export type ConnectionKind = "app" | "mcp";
 export const SCOPES_FILE = "team-connection-scopes.json";
 export const PEOPLE_CONNECTIONS_DIR = "people-connections";
 /** Composio's toolkit slugs; an MCP server's name as mcp-registry.ts allows it. */
-export const APP_SLUG = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+export const APP_SLUG = /^(?!__proto__$)[a-z0-9_][a-z0-9_-]{0,63}$/;
 export const MCP_NAME = /^[a-z][a-z0-9_-]{0,31}$/;
 const PERSON = /^p_[\w-]{22}$/;
 const TOKEN = /^[0-9a-f]{64}$/;
@@ -118,7 +118,7 @@ const keyMarkOf = (apiKey: string) => createHash("sha256").update("omb-project-a
 
 /** A member's Composio user id in the team's project: the same at every start, from the team's id and the person key (a
  * hash), so Composio is given no address.
- * Security: never `openmausbot_…`, the prefix a personal installation on the same key may adopt as its own user. */
+ * Security: never `uni_…`, the prefix a personal installation on the same key may adopt as its own user. */
 export function memberComposioUser(teamId: string, person: string): string {
   return `omb_member_${createHash("sha256").update("omb-team-member\0").update(teamId).update("\0").update(person).digest("hex").slice(0, 32)}`;
 }

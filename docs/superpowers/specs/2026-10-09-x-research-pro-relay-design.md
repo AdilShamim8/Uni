@@ -104,7 +104,7 @@ loading.
     `cloud-home-start.ts` `SERVER_ENV_NAMES`, `WORKSPACE_CREDENTIAL_ENV`,
     diagnostics).
   - The desktop's main process sends
-    `{ type: "openmausbot:included-x", access: { url, token } | null }` on the
+    `{ type: "uni:included-x", access: { url, token } | null }` on the
     server's parent port; `null` clears it. Never written to disk.
 - Desktop main (`electron/main.mjs`, `cloud-account.mjs`): when the Cloud
   account is connected with an active paid entitlement, it asks the Admin for

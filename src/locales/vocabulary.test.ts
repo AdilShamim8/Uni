@@ -10,7 +10,7 @@ import { locales } from "./index";
 
 const RETIRED: ReadonlyArray<readonly [string, RegExp, string]> = [
   ["OMB Cloud", /OMB Cloud/i, "MausBot Cloud"],
-  ["OpenMausBot Cloud", /OpenMausBot Cloud/i, "MausBot Cloud"],
+  ["Uni Cloud", /Uni Cloud/i, "MausBot Cloud"],
   ["Uni Pro", /Uni Pro\b/, "MausBot Cloud"],
   // \b before "_" fails, so environment names such as OMB_PUBLIC_IPV4 pass.
   ["OMB", /\bOMB\b/, "Uni"],
@@ -138,7 +138,7 @@ describe("one name per thing", () => {
   });
 
   it("the public docs name MausBot Cloud and the Cloud as the app does", () => {
-    const names = new Set(["OMB Cloud", "OpenMausBot Cloud", "Uni Pro", "Connect to my Cloud", "your Cloud", "my Cloud"]);
+    const names = new Set(["OMB Cloud", "Uni Cloud", "Uni Pro", "Connect to my Cloud", "your Cloud", "my Cloud"]);
     const cloudNames = RETIRED.filter(([word]) => names.has(word));
     const pages = (dir: string): string[] => readdirSync(dir).flatMap((name) => {
       const path = join(dir, name);
@@ -185,7 +185,7 @@ describe("one name per thing", () => {
 
   it("the check catches each retired word, and lets own-key Boat and env names through", () => {
     for (const bad of [
-      "Sign in to OMB Cloud", "Sign in to OpenMausBot Cloud", "Get Uni Pro", "Uni Pro plans",
+      "Sign in to OMB Cloud", "Sign in to Uni Cloud", "Get Uni Pro", "Uni Pro plans",
       "restart OMB", "Cloud box", "Hosted desktop", "Run it in its cloud VM", "Boat cloud runner",
       "Open your Cloud dashboard", "Connect to my Cloud", "Your Cloud is ready", "Let my Cloud use this Mac",
       "Local (this computer)", "Choose Cloud to wake", "Auto, Cloud or Browser", "including one from T3",

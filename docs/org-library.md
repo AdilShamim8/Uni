@@ -107,12 +107,12 @@ the private utility port:
 
 ```jsonc
 // Electron main → runtime
-{ "type": "openmausbot:managed-library", "requestId": "…",
+{ "type": "uni:managed-library", "requestId": "…",
   "library": { "adminOrigin": "https://admin.example.com", "organizationId": "<uuid>",
                "organizationName": "Customer Co", "digest": "<sha256 of the catalog body>",
                "catalog": "<the raw catalog body, or the parsed object>" } }   // or library: null
 // runtime → Electron main, at once, before any other work
-{ "type": "openmausbot:managed-desktop-result", "requestId": "…", "ok": true }
+{ "type": "uni:managed-desktop-result", "requestId": "…", "ok": true }
 ```
 
 - A catalog body sent as a string must hash to `digest`.
@@ -131,7 +131,7 @@ releases, and sends a full snapshot back:
 
 ```jsonc
 // runtime → Electron main, which posts it to POST /api/desktop/library/report
-{ "type": "openmausbot:managed-library-state", "digest": "<applied digest>",
+{ "type": "uni:managed-library-state", "digest": "<applied digest>",
   "packages": [ { "packageId": "<uuid>", "release": "1.3.0", "sha256": "…",
                   "state": "installed" | "failed" | "removed" | "withdrawn",
                   "reason": "blob_unavailable" | "invalid_package" | "import_failed" | "newer_app_required"
@@ -241,7 +241,7 @@ These routes use admin scope, like import.
 Fixtures have no Electron parent. For tests, `POST /api/testing/org-library
 {library}` relays a catalog instead. The route exists only when the server
 starts with `OMB_TEST_ORG_LIBRARY_KEY`, and the request carries that key in
-`x-openmausbot-test-org-library`. Production never sets the key.
+`x-uni-test-org-library`. Production never sets the key.
 
 ## Not in this version
 

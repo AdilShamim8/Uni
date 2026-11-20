@@ -55,7 +55,7 @@ async function ownerPairing(): Promise<string> {
 
 beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "omb-cloud-sync-e2e-"));
-  const dataDir = join(home, ".openmausbot");
+  const dataDir = join(home, ".uni");
   mkdirSync(dataDir, { recursive: true });
   const cli = join(home, "fixture-claude.mjs");
   writeFileSync(cli, `#!/usr/bin/env node
@@ -113,7 +113,7 @@ const desktopFetch = (url: string, init: RequestInit & { headers?: Record<string
 function desktop(pcHome: string) {
   return createCloudFilesService({
     settingsFile: join(pcHome, "user", "settings.json"), stateFile: join(pcHome, "user", "state.db"),
-    documentsDir: join(pcHome, "Documents"), localDataDir: join(pcHome, ".openmausbot"), homeDir: pcHome, platform: process.platform, hostname: "Ash-PC",
+    documentsDir: join(pcHome, "Documents"), localDataDir: join(pcHome, ".uni"), homeDir: pcHome, platform: process.platform, hostname: "Ash-PC",
     cloudOrigin: () => PC_ORIGIN, fetch: desktopFetch as typeof fetch, trashItem: async (file: string) => rmSync(file), markDownloaded: async () => {},
     watch: () => () => {}, now: () => Date.now() + 60_000,
   });
@@ -170,7 +170,7 @@ it("a bot's turn wakes the desktop, and its new work comes down to Documents/Uni
   const service = desktop(pcHome);
   try {
     await service.pass();
-    const output = join(home, ".openmausbot", "task-workspaces", bot.id, bot.threadId);
+    const output = join(home, ".uni", "task-workspaces", bot.id, bot.threadId);
     mkdirSync(output, { recursive: true });
     writeFileSync(join(output, "report.md"), "# Q3");
     const later = new Date(Date.now() + 120_000);

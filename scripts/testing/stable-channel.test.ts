@@ -10,9 +10,9 @@ const release = (patch: Record<string, unknown> = {}) => ({
   tagName: "v0.1.151", isDraft: false, isPrerelease: false, publishedAt: "2026-11-09T22:56:49Z",
   url: "https://github.com/AdilShamim8/Uni/releases/tag/v0.1.151", ...patch,
 });
-const pinned = (name: string, letter: string) => `ghcr.io/milind-soni/${name}@sha256:${letter.repeat(64)}`;
-const IMAGE = pinned("openmausbot", "a");
-const HOME = pinned("openmausbot-cloud-home", "b");
+const pinned = (name: string, letter: string) => `ghcr.io/adilshamim8/${name}@sha256:${letter.repeat(64)}`;
+const IMAGE = pinned("uni", "a");
+const HOME = pinned("uni-cloud-home", "b");
 const index = (...platforms: string[]) => ({
   mediaType: "application/vnd.oci.image.index.v1+json",
   manifests: [...platforms, "unknown/unknown"].map((platform) => ({ platform: { os: platform.split("/")[0], architecture: platform.split("/")[1] } })),
@@ -49,7 +49,7 @@ describe("the stable channel", () => {
       releaseUrl: release().url, releasedAt: release().publishedAt, promotedAt: "2026-11-12T12:00:00.000Z",
       history: [{ version: "0.1.151", promotedAt: "2026-11-12T12:00:00.000Z" }],
     });
-    expect(() => stableRecord({ version: "0.1.151", image: "ghcr.io/milind-soni/openmausbot:v0.1.151", cloudHomeImage: HOME, release: release(), current: null, now: NOW })).toThrow("is not pinned by digest");
+    expect(() => stableRecord({ version: "0.1.151", image: "ghcr.io/adilshamim8/uni:v0.1.151", cloudHomeImage: HOME, release: release(), current: null, now: NOW })).toThrow("is not pinned by digest");
     if (process.platform === "win32") return;
     // Three promotions: the history then names older versions after the current one, as it does from the second on.
     let next = record;

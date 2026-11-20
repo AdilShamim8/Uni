@@ -51,7 +51,7 @@ reveals nothing about `psk`: the two are separate HMAC outputs under different l
   `e2e=<b64u(JSON)>`, where the JSON is:
 
 ```json
-{"v":1,"k":"<b64u 65-byte T.pub, 87 chars>","h":"<b64u 16-byte hostId, 22 chars>","r":["relay1.openmausbot.com","relay2.openmausbot.com"]}
+{"v":1,"k":"<b64u 65-byte T.pub, 87 chars>","h":"<b64u 16-byte hostId, 22 chars>","r":["relay1.uni.com","relay2.uni.com"]}
 ```
 
 - **Field rules:**
@@ -60,7 +60,7 @@ reveals nothing about `psk`: the two are separate HMAC outputs under different l
   - `h` and `r` are present only when the computer has a relay token (signed in, relay enabled). A device restricted to "Wi-Fi and
     Tailscale only" still gets them: they admit nothing by themselves, and they let a restricted phone away from home probe the relay
     now and then (4404 until it is allowed again).
-  - `r` lists 1 to 4 hostnames in the order to try. Each MUST match `^relay[1-9][0-9]?\.openmausbot\.com$`.
+  - `r` lists 1 to 4 hostnames in the order to try. Each MUST match `^relay[1-9][0-9]?\.uni\.com$`.
   - `routes` is optional, `"any"` or `"local"`. `"local"` means the computer restricted this device to Wi-Fi and
     Tailscale; it may come with `h` and `r` (an older computer sends it without them). Absent means `"any"`, so a
     descriptor without `h` and `r` and without `"local"` only says the computer has no relay right now (signed out, or
@@ -215,7 +215,7 @@ This uses the yamux wire format (`hashicorp/yamux` spec): a 12-byte header of `v
 
 ## 9. Relay protocol (outside the encryption)
 
-- **Hosts.** The relay nodes are `relay1.openmausbot.com` and `relay2.openmausbot.com`, WSS on 443. Caddy terminates TLS and proxies to the
+- **Hosts.** The relay nodes are `relay1.uni.com` and `relay2.uni.com`, WSS on 443. Caddy terminates TLS and proxies to the
   relay on `127.0.0.1:8080`. Auth is always the **first WebSocket message**, which works with every WebSocket client (Node's built-in client
   included).
 - **Pre-auth rules:**
@@ -267,7 +267,7 @@ own the `sid`, and a `sid` is single-use with a 10 s life. The relay then splice
 **Control plane endpoint:** `POST /v1/installations/self/relay-token` with `Authorization: Bearer <omb_install_…>`.
 - **Request body:** `{"appVersion":"0.1.150","devices":{"e2e":2,"legacy":1}}`. The counts are for adoption gates and carry no
   identifiers.
-- **200 response:** `{"token","hostId","nodes":["relay1.openmausbot.com","relay2.openmausbot.com"],"expiresAt","refreshAfter"}`.
+- **200 response:** `{"token","hostId","nodes":["relay1.uni.com","relay2.uni.com"],"expiresAt","refreshAfter"}`.
   - `refreshAfter = iat + 1 h`.
   - `nodes` is ordered by rendezvous hash: highest `SHA256(hostId ‖ nodeName)[0:8]` first. A future US node is ranked first when the
     request's `cf.continent` is NA or SA.

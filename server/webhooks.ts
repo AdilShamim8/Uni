@@ -78,7 +78,7 @@ export interface WebhookManagerOptions {
   /** delivery:"post" sink: lands in the trigger's own stable thread, never a caller-supplied one. */
   post?: (botId: string, threadId: string, text: string) => void;
   /** Absent, every post delivery fails with 503 rather than falling back to an ambient thread
-   *  (https://github.com/milind-soni/OpenMausBot/issues/2071). */
+   *  (https://github.com/AdilShamim8/Uni/issues/2071). */
   resolvePostThread?: (trigger: WebhookTrigger, forceNew: boolean) => string | undefined;
   /** delivery:"post" with a groupId: the room sink. Absent, a room delivery fails with 503
    *  rather than downgrading to a thread post. */
@@ -696,17 +696,18 @@ export class WebhookManager {
     if (requestedDeliveryId) {
       const key = `${trigger.endpointId}:${requestedDeliveryId}`;
       const committed = this.options.findRun?.(trigger.id, requestedDeliveryId);
-      const duplicate = committed ? { runId: committed.id } : this.deliveries.find((delivery) => delivery.key === key);
+      const duplicate: Pick<DeliveryReceipt, "runId" | "threadId"> | undefined = committed ? { runId: committed.id } : this.deliveries.find((delivery) => delivery.key === key);
       if (duplicate) {
+        const destination = duplicate.threadId ? { threadId: duplicate.threadId } : { runId: duplicate.runId };
         this.appendAttempt(trigger, event, {
           outcome: "duplicate",
           statusCode: 202,
           deliveryId: requestedDeliveryId,
-          runId: duplicate.runId,
+          ...destination,
           reason: "Duplicate delivery ignored",
         });
         this.save();
-        return { receipt: { runId: duplicate.runId, deliveryId: requestedDeliveryId, duplicate: true } };
+        return { receipt: { ...destination, deliveryId: requestedDeliveryId, duplicate: true } };
       }
       if (this.roomInFlight.has(key)) fail(409, "This delivery is still being posted; retry shortly");
     }

@@ -200,7 +200,7 @@ export function createWorker(
         const release = await tunnelReleaseHealth(env, healthConfig).catch(() => null);
         return secureResponse(json({
           ok: true,
-          service: "openmausbot-control-plane",
+          service: "uni-control-plane",
           ...(capacity === null ? {} : { capacity }),
           ...(adoption === null ? {} : { relayAdoption: adoption }),
           ...(release === null ? {} : { tunnelRelease: release }),

@@ -60,7 +60,7 @@ async function serveStub() {
 
 beforeAll(async () => {
   stub = await serveStub();
-  globalThis.fetch = (input, init = {}) => realFetch(input, { ...init, headers: { ...Object.fromEntries(new Headers(init.headers)), "x-openmausbot-desktop-owner": owner } });
+  globalThis.fetch = (input, init = {}) => realFetch(input, { ...init, headers: { ...Object.fromEntries(new Headers(init.headers)), "x-uni-desktop-owner": owner } });
   fixture = await launchVerificationServer({ ...process.env, OMB_TEST_DESKTOP_OWNER_TOKEN: owner, OMB_TEST_INTERNAL_CAPABILITY_KEY: CAPABILITY_KEY,
     OMB_TEST_DESKTOP_PAGES_ACCESS: JSON.stringify({ url: `${stub.url}/api/cloud/pages/token`, token: FAKE_DESKTOP_TOKEN }) }, undefined, undefined, undefined, undefined, { scripted: true });
 }, 90_000);
@@ -123,7 +123,7 @@ it.each([false, true])("keeps an Unpublish card when Stop aborts an upload whose
   const site = join(fixture.info.dataDir, "workspaces", bot.id, "site");
   mkdirSync(site, { recursive: true });
   writeFileSync(join(site, "index.html"), "<!doctype html><h1>Draft</h1>");
-  const minted = await api("/api/testing/internal-capability", { method: "POST", headers: { "x-openmausbot-test-capability": CAPABILITY_KEY },
+  const minted = await api("/api/testing/internal-capability", { method: "POST", headers: { "x-uni-test-capability": CAPABILITY_KEY },
     body: JSON.stringify({ botId: bot.id, threadId: bot.activeTaskId }) });
   const { token } = await minted.json() as { token: string };
   const pagesBefore = stub.service.pages.size;

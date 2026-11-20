@@ -17,7 +17,7 @@ export async function fixture(t, options = {}) {
   const identity = () => ({ cloudContractVersion: 1, expiresAt: f.now + 86400_000, device: { id: "fixture-device" }, account: { id: "fixture-account", email: "person@example.test" } });
   const server = createServer(async (req, res) => {
     let body = ""; for await (const chunk of req) body += chunk;
-    f.requests.push({ route: req.url, method: req.method, token: req.headers.authorization, version: req.headers["x-openmausbot-version"], body });
+    f.requests.push({ route: req.url, method: req.method, token: req.headers.authorization, version: req.headers["x-uni-version"], body });
     const send = (status, data) => { res.writeHead(status, { "content-type": "application/json" }); res.end(JSON.stringify(data)); };
     if (req.url === "/api/cloud/desktop/authorize") return send(201, { cloudContractVersion: 1, deviceCode: "A".repeat(43), userCode: "ABCDE-FGHJK",
       verificationUriComplete: f.badUrl ? "https://untrusted.example.test" : `${f.origin}/cloud/desktop?code=ABCDE-FGHJK`, expiresIn: f.expiresIn, interval: 5 });
@@ -31,6 +31,8 @@ export async function fixture(t, options = {}) {
       return send(f.disk.status, f.disk.body);
     }
     if (req.url === "/api/cloud/desktop/services/x" && req.headers.authorization === `Bearer ${accessToken}`) return send(f.x.status, f.x.body);
+    // My Cloud's pairing, only when a test sets an answer (`headers`: e.g. a 429's Retry-After).
+    if (f.pairing && req.url === "/api/cloud/desktop/pairing" && req.method === "POST") { res.writeHead(f.pairing.status, { "content-type": "application/json", ...f.pairing.headers }); return res.end(JSON.stringify(f.pairing.body)); }
     if (/^\/api\/cloud\/desktop\/teams\/[^/]+\/pairing$/.test(req.url) && req.method === "POST" && req.headers.authorization === `Bearer ${accessToken}`) return send(f.teamPairing.status, f.teamPairing.body);
     if (req.url === "/api/cloud/desktop/services/pages" && req.headers.authorization === `Bearer ${accessToken}`) return send(f.pages.status, f.pages.body);
     if (req.url === "/api/cloud/desktop/moved" && req.method === "POST" && req.headers.authorization === `Bearer ${accessToken}`) return send(f.moved.status, f.moved.body);

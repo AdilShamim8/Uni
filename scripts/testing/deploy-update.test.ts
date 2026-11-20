@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const SCRIPT = join(import.meta.dirname, "..", "..", "deploy", "update.sh");
 const FAKE = join(import.meta.dirname, "fake-compose-docker.mjs");
-const REPO = "ghcr.io/milind-soni/openmausbot";
+const REPO = "ghcr.io/adilshamim8/uni";
 const posix = process.platform !== "win32";
 
 const id = (letter: string) => `sha256:${letter.repeat(64)}`;
@@ -48,8 +48,8 @@ function install(target: Record<string, unknown> = {}, extra: Record<string, unk
   const data = join(fake, "volumes", "deploy_data");
   mkdirSync(join(root, "bin"));
   mkdirSync(deploy);
-  mkdirSync(join(data, ".openmausbot"), { recursive: true });
-  writeFileSync(join(data, ".openmausbot", "bots.json"), '[{"name":"Mira"}]');
+  mkdirSync(join(data, ".uni"), { recursive: true });
+  writeFileSync(join(data, ".uni", "bots.json"), '[{"name":"Mira"}]');
   writeFileSync(join(data, "started-by.txt"), "0.1.150\n");
   copyFileSync(SCRIPT, join(deploy, "update.sh"));
   writeFileSync(join(deploy, "docker-compose.yml"), "services: {}\n");
@@ -172,6 +172,51 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     expect(failed.stdout).toContain("The update to 0.1.151 did not work: it kept stopping as it started (This data was written by a newer Uni.).");
     expect(failed.said.at(-1)).toBe("Your server runs 0.1.150 again, with its data as it was before the update.");
     expect(tree(box.data)["started-by.txt"]).toBe("0.1.150\n0.1.150\n");
+  });
+
+  it("runs the new version's doctor on data that stops it from starting, and keeps the update when it then starts", () => {
+    const box = install({ behaviour: "repairable", doctor: "repairs" });
+    const done = box.run();
+    expect(done.status, done.stdout + done.stderr).toBe(0);
+    expect(done.said).toEqual([
+      "Downloading 0.1.151…",
+      "Stopping the server and copying its data aside…",
+      "Starting 0.1.151…",
+      "Waiting for it to answer and to be able to start bots…",
+      "Running 0.1.151's doctor on the data before going back…",
+      expect.stringMatching(/^The doctor repaired the data \(see .*\)\. Starting 0\.1\.151 once more…$/),
+      "Updated from 0.1.150 to 0.1.151.",
+      `The data from before the update is kept in the Docker volume ${box.copies()[0]} until the next update.`,
+      "To go back to it: ./update.sh --rollback",
+    ]);
+    // It kept stopping as it started, so it ran in its own container with the server stopped.
+    expect(box.state().doctorRuns).toEqual(["run"]);
+    expect(box.calls()).toContain("compose run --rm --no-deps -T omb uni doctor --data --fix --json");
+    expect(box.state().containers.omb).toMatchObject({ image: NEW.id, status: "running" });
+    expect(box.env()).toBe(`${ENV}OMB_IMAGE=${NEW.refs[0]}\n`);
+  });
+
+  it("rolls back as before when the doctor repairs nothing, or the new version has none", () => {
+    for (const target of [{ behaviour: "crashes", doctor: "nothing" }, { behaviour: "crashes" }, { behaviour: "silent", doctor: "nothing" }]) {
+      const box = install(target);
+      const failed = box.run();
+      expect(failed.status, JSON.stringify(target)).toBe(1);
+      expect(failed.said).toContain("Running 0.1.151's doctor on the data before going back…");
+      expect(failed.stdout).not.toContain("once more");
+      expect(failed.said.at(-1)).toBe("Your server runs 0.1.150 again, with its data as it was before the update.");
+      expect(box.state().containers.omb.image).toBe(OLD.id);
+      // A server still up is asked in its own container; one that stopped, in a one-off container.
+      expect(box.state().doctorRuns).toEqual([target.behaviour === "silent" ? "exec" : "run"]);
+    }
+  });
+
+  it("rolls back when the version the doctor repaired still does not start", () => {
+    const box = install({ behaviour: "crashes", doctor: "repairs", lastWords: "still broken" });
+    const failed = box.run();
+    expect(failed.status).toBe(1);
+    expect(failed.stdout).toContain("once more");
+    expect(failed.stdout).toContain("The update to 0.1.151 did not work: it kept stopping as it started (still broken).");
+    expect(box.state().containers.omb.image).toBe(OLD.id);
   });
 
   it.each([
@@ -341,7 +386,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     const box = install();
     const before = tree(box.data);
     expect(box.run().status).toBe(0);
-    writeFileSync(join(box.data, ".openmausbot", "bots.json"), "[]");
+    writeFileSync(join(box.data, ".uni", "bots.json"), "[]");
     const declined = box.run(["--rollback"], { input: "no\n" });
     expect(declined.status).toBe(4);
     expect(box.state().containers.omb.image).toBe(NEW.id);
@@ -373,7 +418,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
     expect(moving.env()).toBe(`${ENV}OMB_IMAGE=${OLD.refs[1]}\n`);
   });
 
-  // A hardened server answers `openmausbot doctor` without a session with a refusal, so before the server's own count
+  // A hardened server answers `uni doctor` without a session with a refusal, so before the server's own count
   // the check that a bot can still start never ran there.
   it("checks a hardened version's engines with the server's own count, where doctor is refused", () => {
     const hardened = { counts: true, doctor: false };
@@ -391,7 +436,7 @@ describe.skipIf(!posix)("deploy/update.sh", () => {
   it("moves an install the installer made with Caddy in the server's network to the current files, and back on rollback", () => {
     const box = install();
     const oldCompose = `# Written by Uni's installer (deploy/install.sh), and written again each time it runs.
-name: openmausbot
+name: uni
 services:
   omb:
     image: \${OMB_IMAGE:?run the installer again}
@@ -411,8 +456,8 @@ services:
     expect((statSync(join(box.deploy, ".update")).mode & 0o777).toString(8)).toBe("700");
     const compose = readFileSync(join(box.deploy, "compose.yaml"), "utf8");
     expect(compose).not.toContain("network_mode");
-    expect(compose).toContain("- edge:/run/openmausbot");
-    expect(readFileSync(join(box.deploy, "Caddyfile"), "utf8")).toContain("reverse_proxy unix//run/openmausbot/http.sock");
+    expect(compose).toContain("- edge:/run/uni");
+    expect(readFileSync(join(box.deploy, "Caddyfile"), "utf8")).toContain("reverse_proxy unix//run/uni/http.sock");
     expect(box.run(["--rollback", "--yes"]).status).toBe(0);
     expect(readFileSync(join(box.deploy, "compose.yaml"), "utf8")).toBe(oldCompose);
     expect(readFileSync(join(box.deploy, "Caddyfile"), "utf8")).toBe(oldCaddyfile);

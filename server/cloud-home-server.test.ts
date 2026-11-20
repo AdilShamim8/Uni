@@ -2,7 +2,7 @@
 // Cloud Pro dropped included AI. Disposable home; no network; a synthetic Claude CLI.
 import { randomBytes } from "node:crypto";
 import { spawn, type ChildProcess } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, mkdtempSync, openSync, readFileSync, rmSync, truncateSync, writeFileSync, writeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -60,7 +60,7 @@ async function api(method: string, path: string, options: { body?: unknown; remo
 
 beforeAll(async () => {
   home = mkdtempSync(join(tmpdir(), "omb-cloud-home-server-"));
-  const dataDir = join(home, ".openmausbot");
+  const dataDir = join(home, ".uni");
   mkdirSync(dataDir, { recursive: true });
   // A signed-in Claude Code whose turns record the environment they were given.
   // While the hang marker exists, a new turn records itself elsewhere and
@@ -78,6 +78,7 @@ if (hang) process.env.FAKE_CLAUDE_MODE = "hang";
 const failure = ${JSON.stringify(join(home, "fail.json"))};
 if (!hang && existsSync(failure)) Object.assign(process.env, JSON.parse(readFileSync(failure, "utf8")));
 if (process.argv[2] !== "--version") process.env.FAKE_CLAUDE_DUMP = ${JSON.stringify(join(home, "spawn"))} + (hang ? "-hang.json" : ".json");
+process.env.FAKE_CLAUDE_REPLY_FILE = ${JSON.stringify(join(home, "reply.md"))};
 await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-claude-cli.ts")).href)});
 `, { mode: 0o755 });
   writeFileSync(join(dataDir, "config.json"), JSON.stringify({
@@ -91,7 +92,7 @@ await import(${JSON.stringify(pathToFileURL(join(SERVER_DIR, "testing", "fake-cl
   mkdirSync(join(dataDir, ".backups"));
   writeFileSync(join(dataDir, ".backups", "last-restore.json"), JSON.stringify({ restored: true, id: "7c9e6679-7425-40de-944b-e07fc1f90ae7" }));
   mkdirSync(join(dataDir, "workspaces", "moved"), { recursive: true });
-  writeFileSync(join(dataDir, "workspaces", "moved", "MEMORY.md"), "The register is C:\\Users\\Ada\\.openmausbot\\files\\register.xlsx.\n");
+  writeFileSync(join(dataDir, "workspaces", "moved", "MEMORY.md"), "The register is C:\\Users\\Ada\\.uni\\files\\register.xlsx.\n");
   // The web UI's pages (a stand-in for the built app).
   mkdirSync(join(home, "web"));
   writeFileSync(join(home, "web", "index.html"), "<!doctype html><title>Uni</title>");
@@ -152,7 +153,7 @@ it("boots with a gateway's settings, says once that it ignores them, and never l
 
 // Cloud homes are Linux; on Windows the data folder is itself a drive path.
 it.skipIf(process.platform === "win32")("rewrites the data folder of the computer it was moved from before anything reads it", () => {
-  const dataDir = join(home, ".openmausbot");
+  const dataDir = join(home, ".uni");
   expect(readFileSync(join(dataDir, "workspaces", "moved", "MEMORY.md"), "utf8")).toBe(`The register is ${dataDir}/files/register.xlsx.\n`);
   expect(JSON.parse(readFileSync(join(dataDir, ".backups", "last-restore.json"), "utf8")).pathsRewritten).toBe(true);
 });
@@ -163,7 +164,7 @@ it("offers the included computers, voice and decisions with no key, and never sh
   expect(status.body.box).toEqual({ configured: true, included: true });
   expect(status.body.tts).toMatchObject({ configured: true, ready: true, provider: "elevenlabs", voice: "preset0voice0id", included: true });
   expect(status.body.decider).toEqual({ provider: "jev", configured: true, included: true, enabled: true, jobs: { roomRouting: true } });
-  const saved = readFileSync(join(home, ".openmausbot", "config.json"), "utf8");
+  const saved = readFileSync(join(home, ".uni", "config.json"), "utf8");
   for (const includedToken of includedTokens) {
     expect(JSON.stringify(status.body)).not.toContain(includedToken);
     expect(saved).not.toContain(includedToken);
@@ -337,7 +338,7 @@ it("records when a bot's turn first finished here, once, in the Cloud's own sett
   const first = async () => (await api("GET", "/api/config")).body.onboarding?.firstTurnAt as string | undefined;
   await expect.poll(first, { timeout: 15_000 }).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   const recorded = await first();
-  expect(JSON.parse(readFileSync(join(home, ".openmausbot", "config.json"), "utf8")).onboarding.firstTurnAt).toBe(recorded);
+  expect(JSON.parse(readFileSync(join(home, ".uni", "config.json"), "utf8")).onboarding.firstTurnAt).toBe(recorded);
   const created = await api("POST", "/api/bots", { body: {
     name: "Second fixture", modelSelection: { instanceId: "claude", model: "claude-sonnet-5" }, requireAvailableModel: true,
   } });
@@ -452,4 +453,70 @@ it("tells the Admin's signed health read a failed turn's code, never its words, 
   expect(log).not.toContain("ada.lovelace@example.test");
   expect((await read("W".repeat(43))).status).toBe(401);
   expect((await api("GET", "/api/cloud/health?after=0", { remote: true })).status).toBe(401);
+});
+
+it("streams a bot's 30 MB video to a browser signed in from the Cloud page, in ranges a player and a Save As both get", async () => {
+  const created = await api("POST", "/api/bots", { body: {
+    name: "Video fixture", modelSelection: { instanceId: "claude", model: "claude-sonnet-5" }, requireAvailableModel: true,
+  } });
+  expect(created.status, JSON.stringify(created.body)).toBe(201);
+  const botId = created.body.bot.id as string;
+  const clip = join(home, ".uni", "workspaces", botId, "trip.mp4");
+  const size = 30 * 1024 * 1024;
+  mkdirSync(dirname(clip), { recursive: true });
+  writeFileSync(clip, "");
+  truncateSync(clip, size);
+  const marks = openSync(clip, "r+");
+  writeSync(marks, "HEAD", 0);
+  writeSync(marks, "TAIL", size - 4);
+  closeSync(marks);
+  writeFileSync(join(home, "reply.md"), `Here it is: [Trip](<${pathToFileURL(clip).href}>)`);
+  let reply: { id: string } | undefined;
+  let threadId = "";
+  try {
+    expect((await api("POST", `/api/bots/${botId}/messages`, { body: { text: "make the trip video" } })).status).toBe(202);
+    await expect.poll(async () => {
+      const bot = ((await api("GET", "/api/bots?messages=10")).body.bots as any[]).find((candidate) => candidate.id === botId);
+      threadId = bot?.threadId ?? "";
+      reply = bot?.messages.find((message: any) => message.role === "bot" && message.kind === "text" && String(message.text).includes("trip.mp4"));
+      return Boolean(reply);
+    }, { timeout: 15_000 }).toBe(true);
+  } finally {
+    rmSync(join(home, "reply.md"), { force: true });
+  }
+  const credential = await mintBrowserSignIn();
+  const signedIn = await browserRequest({ code: credential, label: "Edge on Windows", cookie: true, browser: true, attemptId: randomBytes(12).toString("base64url") });
+  expect(signedIn.status).toBe(200);
+  const cookie = (signedIn.headers.get("set-cookie") ?? "").split(";")[0]!;
+  // What the edge forwards from the browser: Chromium's own Sec-Fetch headers, the page's Origin only on the POST.
+  const edge = { host: HOST, "x-forwarded-for": "203.0.113.9", "x-forwarded-proto": "https" };
+  const page = { ...edge, cookie, origin: base.replace("http:", "https:"), "sec-fetch-site": "same-origin", "sec-fetch-mode": "cors", "sec-fetch-dest": "empty" };
+  const player = { ...edge, cookie, "sec-fetch-site": "same-origin", "sec-fetch-mode": "no-cors", "sec-fetch-dest": "video" };
+  const route = `/api/threads/${encodeURIComponent(threadId)}/messages/${encodeURIComponent(reply!.id)}/file`;
+  const issued = await fetch(`${base}${route}`, { method: "POST", headers: { ...page, "content-type": "application/json" }, body: JSON.stringify({ path: pathToFileURL(clip).href, media: true }) });
+  expect(issued.status).toBe(200);
+  const link = await issued.json() as { url: string; mime: string; bytes: number };
+  expect(link).toMatchObject({ mime: "video/mp4", bytes: size });
+
+  const first = await fetch(`${base}${link.url}`, { headers: { ...player, range: "bytes=0-" } });
+  expect(first.status).toBe(206);
+  expect(first.headers.get("content-range")).toBe(`bytes 0-${8 * 1024 * 1024 - 1}/${size}`);
+  expect(Buffer.from(await first.arrayBuffer()).subarray(0, 4).toString()).toBe("HEAD");
+  const last = await fetch(`${base}${link.url}`, { headers: { ...player, range: "bytes=-4" } });
+  expect(last.status).toBe(206);
+  expect(await last.text()).toBe("TAIL");
+  expect((await fetch(`${base}${link.url}`, { headers: { ...player, range: `bytes=${size}-` } })).status).toBe(416);
+
+  // The desktop menu's Save As and Open: the window's own download, with the cookie and no Origin or Range.
+  const saved = await fetch(`${base}${link.url}`, { headers: { ...edge, cookie, "sec-fetch-site": "none", "sec-fetch-mode": "navigate", "sec-fetch-dest": "document" } });
+  expect(saved.status).toBe(200);
+  expect(saved.headers.get("content-length")).toBe(String(size));
+  expect(saved.headers.get("content-disposition")).toBe(`inline; filename="trip.mp4"; filename*=UTF-8''trip.mp4`);
+  await saved.body?.cancel();
+
+  // The link is this browser's alone: the edge without its cookie, a page on another site, and the owner's app all get nothing.
+  expect((await fetch(`${base}${link.url}`, { headers: { ...edge, range: "bytes=0-" } })).status).toBe(403);
+  expect((await fetch(`${base}${link.url}`, { headers: { ...player, origin: "https://evil.example", "sec-fetch-site": "cross-site", range: "bytes=0-" } })).status).toBe(403);
+  expect((await api("GET", link.url)).status).toBe(404);
+  await fetch(`${base}/api/auth/logout`, { method: "POST", headers: { ...page } }).catch(() => undefined);
 });

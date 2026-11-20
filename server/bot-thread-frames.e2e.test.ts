@@ -62,7 +62,7 @@ it("sends a thread's change alone to a stream that asked for it, the whole bot t
     const cursor = (whole.frames.find((frame) => frame.kind === "hello").cursor as string).split(":")[0];
     const lastSeq = Math.max(...whole.frames.map((frame) => frame.seq ?? 0));
     whole.close();
-    await vi.waitFor(async () => expect((await api("GET", "/api/health")).app).toBe("openmausbot"));
+    await vi.waitFor(async () => expect((await api("GET", "/api/health")).app).toBe("uni"));
     await turn("And another line.");
     whole = await openSse(`${url}/api/events?since=${cursor}:${lastSeq}`, { origin: url });
     expect((await whole.until((frame) => frame.kind === "hello")).resumed).toBe(false);

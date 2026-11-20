@@ -3,12 +3,12 @@ import ReactMarkdown from 'react-markdown';
 
 const RELEASE_REPOSITORIES = [
   'AdilShamim8/Uni',
-  'milind-soni/openmausbot-releases',
+  'AdilShamim8/uni-releases',
 ] as const;
 const RELEASES_PER_PAGE = 100;
 const MAX_RELEASE_PAGES = 10;
 const LEGACY_DRAFT_NOTES =
-  /^Draft assembled by the release workflow from milind-soni\/Uni@([0-9a-f]{40})\. Edit these notes, then publish\.\s*$/i;
+  /^Draft assembled by the release workflow from AdilShamim8\/Uni@([0-9a-f]{40})\. Edit these notes, then publish\.\s*$/i;
 
 interface GitHubRelease {
   body: string | null;

@@ -43,7 +43,7 @@ describe("MCP JSON-RPC protocol", () => {
     })))!);
     expect(supported.result).toMatchObject({
       protocolVersion: "2024-11-05",
-      serverInfo: { name: "openmausbot-mcp", version: "1.1.0" },
+      serverInfo: { name: "uni-mcp", version: "1.1.0" },
       capabilities: { tools: {} },
     });
 
@@ -717,8 +717,8 @@ describe("connection security and discovery", () => {
 
   it("skips a foreign process and discovers the real fallback port", async () => {
     globalThis.fetch = vi.fn(async (url: any) => {
-      if (String(url).includes(":8799")) return jsonResponse({ app: "not-openmausbot" });
-      if (String(url).includes(":18799")) return jsonResponse({ app: "openmausbot" });
+      if (String(url).includes(":8799")) return jsonResponse({ app: "not-uni" });
+      if (String(url).includes(":18799")) return jsonResponse({ app: "uni" });
       throw new Error("unexpected port");
     }) as any;
     await expect(probeBaseUrls(["http://127.0.0.1:8799", "http://127.0.0.1:18799"])).resolves.toBe("http://127.0.0.1:18799");

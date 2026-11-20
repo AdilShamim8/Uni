@@ -1,7 +1,7 @@
 #!/bin/sh
-# The Update server button's host side, for a Docker Compose install (the installer's /opt/openmausbot, or the deploy/
+# The Update server button's host side, for a Docker Compose install (the installer's /opt/uni, or the deploy/
 # folder of a git checkout). A server in a container cannot replace its own image, so it only leaves a file in a folder
-# it was given; systemd sees the file (openmausbot-update.path) and runs this, as root, outside every container. This
+# it was given; systemd sees the file (uni-update.path) and runs this, as root, outside every container. This
 # runs root's own copy of update.sh on the install, and writes how that ended where the server reads it.
 #
 #   sudo ./update-runner.sh --install     adds the button to this install, or refreshes it (run it again after git pull)
@@ -28,13 +28,13 @@ umask 022
 
 SBIN_DIR=${OMB_SBIN_DIR:-/usr/local/sbin}
 SYSTEMD_DIR=${OMB_SYSTEMD_DIR:-/etc/systemd/system}
-STATE=${OMB_UPDATE_STATE_DIR:-/var/lib/openmausbot-update}
+STATE=${OMB_UPDATE_STATE_DIR:-/var/lib/uni-update}
 POLICY=${OMB_UPDATE_POLICY:-/etc/mausbot/policy.json}
 GAP_S=${OMB_RUNNER_GAP_S:-240}
 QUIET_S=${OMB_RUNNER_QUIET_S:-30}
 IDLE_S=${OMB_RUNNER_IDLE_S:-300}
-UNIT=openmausbot-update
-RUNNER=openmausbot-update-runner
+UNIT=uni-update
+RUNNER=uni-update-runner
 INSTALLER_MARK="# Written by Uni's installer (deploy/install.sh)"
 OVERRIDE_MARK="# Written by update-runner.sh --install"
 # Where the server's container finds the two folders (SERVER_UPDATE_DIR in server/server-update.ts).
@@ -73,11 +73,11 @@ while [ $# -gt 0 ]; do
 done
 if [ -z "$DIR" ]; then
   DIR=$(cd "$(dirname "$0")" && pwd)
-  if [ ! -f "$DIR/compose.yaml" ] && [ ! -f "$DIR/docker-compose.yml" ] && [ -f /opt/openmausbot/compose.yaml ]; then DIR=/opt/openmausbot; fi
+  if [ ! -f "$DIR/compose.yaml" ] && [ ! -f "$DIR/docker-compose.yml" ] && [ -f /opt/uni/compose.yaml ]; then DIR=/opt/uni; fi
 fi
 case "$DIR" in
   /*) ;;
-  *) fail "--dir needs a full path, like /opt/openmausbot." ;;
+  *) fail "--dir needs a full path, like /opt/uni." ;;
 esac
 case "$DIR" in
   *[!A-Za-z0-9/._-]*) fail "The install's folder may hold only letters, digits, / . _ and -." ;;

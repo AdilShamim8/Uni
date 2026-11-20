@@ -1,7 +1,7 @@
 # Verifying Uni
 
 Uni has one development control surface: `pnpm control:omb`. It runs
-the published `openmausbot` verbs (docs/headless-cli.md), which call the MCP
+the published `uni` verbs (docs/headless-cli.md), which call the MCP
 tools in `scripts/mcp-server.ts`, so verification uses the same URL
 validation, task pinning, bounded transcripts, wait states, and redaction as
 external MCP clients and scripts.
@@ -68,6 +68,8 @@ Use only mapped, tested commands:
 - [Native dictation retention and send-to-stop](dictation.md)
 - [Proactive routines and the brief](proactive-routines.md)
 - [Waits: tell me when, with no AI while waiting](waits.md)
+- [Check-backs: a bot comes back later by itself](check-backs.md)
+- [Hand-off status: who's working on what](handoff-status.md)
 - [A new Cloud's first hour](first-hour.md)
 - [Chat widgets](widgets.md)
 - [Pages and apps in a room](room-pages.md)
@@ -89,6 +91,7 @@ Use only mapped, tested commands:
 - [Codex browser routing and native search](codex-browser-routing.md)
 - [Codex helper event isolation](codex-helpers.md)
 - [Qwen model route selection](qwen-models.md)
+- [Kimi subscription and Platform model selection](kimi-models.md)
 - [Team backups](team-backups.md)
 - [Sharing a whole team](team-sharing.md)
 - [The organization library](org-library.md)
@@ -345,6 +348,9 @@ desktop routing, cancellation, and computer authority cleanup.
 The [Gemini speech fixture](gemini-speech.md) checks write-only credentials,
 voice selection and WAV synthesis against an offline provider in an isolated
 server, with manual steps for real Google access and playback.
+The [DeepSeek speech fixture](deepseek-speech.md) checks the shared DeepSeek
+key, the Stella/Tide choice, WAV synthesis and DeepSeek transcription against an
+offline provider in an isolated server.
 
 The [persistence responsiveness benchmark](persistence-performance.md) measures
 synthetic message/log bursts and history scans, with isolated chat, visibility

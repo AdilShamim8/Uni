@@ -4,10 +4,10 @@ import type { PromptPart } from "./system-prompt.ts";
 
 let olderPhoneApps = 0;
 
-/** `{ type: "openmausbot:phone-link", olderPhoneApps }`: true when it was one (then applied), false for any other
+/** `{ type: "uni:phone-link", olderPhoneApps }`: true when it was one (then applied), false for any other
  * message; a malformed one throws and changes nothing. */
 export function applyPhoneLinkMessage(message: unknown): boolean {
-  if (!message || typeof message !== "object" || (message as { type?: unknown }).type !== "openmausbot:phone-link") return false;
+  if (!message || typeof message !== "object" || (message as { type?: unknown }).type !== "uni:phone-link") return false;
   const count = (message as { olderPhoneApps?: unknown }).olderPhoneApps;
   if (!Number.isSafeInteger(count) || (count as number) < 0 || (count as number) > 100) throw new Error("invalid phone link fact");
   olderPhoneApps = count as number;

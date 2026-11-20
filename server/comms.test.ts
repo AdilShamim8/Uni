@@ -120,7 +120,7 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
           name: candidate.name, busy: candidate.busy,
           tail: (candidate.messages ?? []).slice(-6).map((m: any) => ({ role: m.role, kind: m.kind, text: m.text?.slice(0, 300), tool: m.tool?.name, from: m.from?.name })),
         }));
-        const rows = readHandoffs(join(home, ".openmausbot")).map(({ id, parentId, botId, status, outcome, mode, result }) => ({ id, parentId, botId, status, outcome, mode, result: result.slice(0, 200) }));
+        const rows = readHandoffs(join(home, ".uni")).map(({ id, parentId, botId, status, outcome, mode, result }) => ({ id, parentId, botId, status, outcome, mode, result: result.slice(0, 200) }));
         throw new Error(`${what}.\nbots: ${JSON.stringify(tails)}\nrows: ${JSON.stringify(rows)}\nstderr: ${stderr.slice(-1500)}`);
       }
       await new Promise((r) => setTimeout(r, 250));
@@ -136,7 +136,7 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
   };
   const bot = async (botId: string): Promise<any> => (await api("GET", "/api/bots")).body.bots.find((candidate: any) => candidate.id === botId);
   const threadMessages = async (threadId: string): Promise<any[]> => (await api("GET", `/api/threads/${threadId}/messages?limit=200`)).body.messages ?? [];
-  const rows = () => readHandoffs(join(home, ".openmausbot"));
+  const rows = () => readHandoffs(join(home, ".uni"));
   const assignments = (helperId: string, askerId: string) => rows().filter((node) => node.botId === helperId && node.parentId
     && rows().find((parent) => parent.id === node.parentId)?.botId === askerId);
   const helperPrompt = (): string => {
@@ -208,7 +208,7 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
     }
     const antigravityProfile = join(
       home,
-      ".openmausbot",
+      ".uni",
       "providers",
       "antigravity",
       createHash("sha256").update("geminiAsker").digest("hex"),
@@ -238,9 +238,9 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
     });
     await new Promise<void>((resolve) => compat.listen(0, "127.0.0.1", resolve));
     compatUrl = `http://127.0.0.1:${(compat.address() as AddressInfo).port}/v1`;
-    mkdirSync(join(home, ".openmausbot"), { recursive: true });
+    mkdirSync(join(home, ".uni"), { recursive: true });
     writeFileSync(
-      join(home, ".openmausbot", "config.json"),
+      join(home, ".uni", "config.json"),
       JSON.stringify({
         threads: { maxConcurrentPerBot: 3 },
         openaiCompat: { key: "comms-compat-key", url: compatUrl },
@@ -816,7 +816,7 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
         expect(taskId).toBeTruthy();
         const minted = await request("/api/testing/internal-capability", {
           method: "POST",
-          headers: { "content-type": "application/json", "x-openmausbot-test-capability": TEST_CAPABILITY_KEY },
+          headers: { "content-type": "application/json", "x-uni-test-capability": TEST_CAPABILITY_KEY },
           body: JSON.stringify({ botId: chief.id, threadId: sourceThreadId, kind: "agents" }),
         });
         expect(minted.status).toBe(201);
@@ -1011,14 +1011,14 @@ describe("routine comms e2e on the job runtime (fake ACP fleet)", () => {
           failed = askerBot.messages.find((m: any) => m.kind === "activity" && m.tool?.ok === false && m.from?.botId === helper.id);
           return Boolean(failed) && lastText(askerBot.messages)?.text === WOKE_WITH_FAILURE && !askerBot.busy;
         }, 90_000, "the stall never reached the delegator");
-        expect(failed.tool.name).toMatch(/^CapHelper — failed: Stopped after 64 steps without a final answer\./);
+        expect(failed.tool.name).toMatch(/^CapHelper — failed: Stopped after 200 tool calls without a final answer\./);
         expect(failed.tool.name).not.toContain("\n");
         const tasks = (await bot(helper.id)).tasks;
         expect(tasks.map((task: any) => task.title).filter((title: string) => title?.startsWith("Continue:"))).toEqual([]);
         const handed = assignments(helper.id, asker.id);
         expect(handed).toHaveLength(1);
         expect(handed[0]).toMatchObject({ status: "failed", outcome: "stalled", executions: 2 });
-        expect(handed[0]!.outcomeDetail).toMatch(/^Stopped after 2 continuations without progress: Stopped after 64 steps/);
+        expect(handed[0]!.outcomeDetail).toMatch(/^Stopped after 2 continuations without progress: Stopped after 200 tool calls/);
       } finally {
         compatAnswer = "hang";
       }

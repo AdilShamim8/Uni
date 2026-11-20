@@ -4,8 +4,8 @@ import { existsSync, linkSync, mkdirSync, readdirSync, readFileSync, readlinkSyn
 import { homedir, hostname, uptime } from "node:os";
 import { dirname, join, posix } from "node:path";
 
-const LEASE_NAME = "openmausbot-server.lease";
-const DELEGATED_CHILD_DIR = ".openmausbot-server-child";
+const LEASE_NAME = "uni-server.lease";
+const DELEGATED_CHILD_DIR = ".uni-server-child";
 // Internal parent-to-child capability, obtained only from utilityServerLeaseEnvironment(); never public configuration.
 const CHILD_LEASE_ENV = "OPENMAUSBOT_INTERNAL_DATA_DIR_LEASE";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
@@ -187,7 +187,7 @@ function machineId() {
     const raw = readRawMachineId();
     cachedMachineId = raw === null
       ? null
-      : createHash("sha256").update(`openmausbot-machine:${raw.toLowerCase()}`).digest("hex").slice(0, 32);
+      : createHash("sha256").update(`uni-machine:${raw.toLowerCase()}`).digest("hex").slice(0, 32);
   }
   return cachedMachineId;
 }
@@ -789,6 +789,30 @@ function clearRecords(dataDir, stale) {
     cleared.push({ path, host: record.host, pid: record.pid });
   }
   return cleared;
+}
+
+/**
+ * Who holds the data directory's lease, read only (`uni doctor`): "none"; "alive", a running process on this
+ * machine; "dead", a process of this machine that is gone, which the next acquireDataDirLease() retires; "other-machine";
+ * or "invalid", a record that cannot be read, which acquireDataDirLease() refuses. Never changes a file.
+ */
+export function describeDataDirLease(dataDir) {
+  const path = join(validateDataDir(dataDir), LEASE_NAME);
+  let owner;
+  try {
+    owner = readOwner(path);
+  } catch {
+    return { state: "invalid", path };
+  }
+  if (!owner) return { state: "none", path };
+  const holder = { path, pid: owner.pid, host: owner.host, createdAt: owner.createdAt };
+  if (!sameMachine(owner, dataDir)) return { state: "other-machine", ...holder };
+  try {
+    return { state: ownerIsAlive(owner) ? "alive" : "dead", ...holder };
+  } catch {
+    // Liveness that cannot be told is taken as alive, as acquiring would refuse it.
+    return { state: "alive", ...holder };
+  }
 }
 
 export function acquireDataDirLeaseForProcess(dataDir, environment = process.env) {

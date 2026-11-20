@@ -76,7 +76,7 @@ async function installation(from?: string) {
   vi.resetModules();
   vi.stubEnv("HOME", home);
   vi.stubEnv("USERPROFILE", home);
-  vi.stubEnv("OMB_DATA_DIR", join(home, ".openmausbot"));
+  vi.stubEnv("OMB_DATA_DIR", join(home, ".uni"));
   const { Store } = await import("./store.ts");
   const { RoutineManager } = await import("./routines.ts");
   const skills = await import("./skills.ts");
@@ -266,7 +266,7 @@ describe("the relay", () => {
     expect(existsSync(app.statePath)).toBe(false);
     await library.settled();
     expect(Date.now() - started).toBeLessThan(15_000);
-    expect(app.posted).toEqual([{ type: "openmausbot:managed-library-state", digest: sha(JSON.stringify(body)), packages: [] }]);
+    expect(app.posted).toEqual([{ type: "uni:managed-library-state", digest: sha(JSON.stringify(body)), packages: [] }]);
     expect(app.readState()).toMatchObject({ version: 1, source: { adminOrigin: ADMIN, organizationId: ORG }, appliedDigest: sha(JSON.stringify(body)), installs: {} });
   });
 });

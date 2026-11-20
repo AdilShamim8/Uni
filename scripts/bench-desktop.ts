@@ -49,14 +49,14 @@ const { values } = parseArgs({
 const only = new Set((values.only ?? PHASES.join(",")).split(",").map((phase) => phase.trim()).filter(Boolean));
 for (const phase of only) if (!(PHASES as readonly string[]).includes(phase)) throw new Error(`unknown phase ${phase}; phases: ${PHASES.join(", ")}`);
 const IDLE_MS = Number(values["idle-seconds"]) * 1000;
-const STORAGE = { "omb-analytics-opt-out": "1", "omb-email-gate": "skipped", "omb-simple-mode-prompt": "1", "grok-move-2026-11": "1", "modelgo-offer-2026-11": "1", "omb-advanced-mode": values.advanced ? "1" : "0" };
+const STORAGE = { "omb-analytics-opt-out": "1", "omb-email-gate": "skipped", "omb-simple-mode-prompt": "1", "grok-move-2026-11": "1", "teams-2026-11b": "1", "modelgo-offer-2026-11": "1", "omb-advanced-mode": values.advanced ? "1" : "0" };
 const log = (line: string) => process.stderr.write(`bench-desktop: ${line}\n`);
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const round = (value: number, digits = 1) => Math.round(value * 10 ** digits) / 10 ** digits;
 const median = (samples: number[]) => { const sorted = [...samples].sort((a, b) => a - b); return sorted.length ? sorted[Math.floor(sorted.length / 2)]! : NaN; };
 const percentile = (samples: number[], p: number) => { const sorted = [...samples].sort((a, b) => a - b); return sorted[Math.min(sorted.length - 1, Math.max(0, Math.ceil((p / 100) * sorted.length) - 1))] ?? NaN; };
 const kb = (bytes: number) => round(bytes / 1024);
-const work = mkdtempSync(join(tmpdir(), "openmausbot-bench-work-"));
+const work = mkdtempSync(join(tmpdir(), "uni-bench-work-"));
 const cleanups: Array<() => Promise<void>> = [];
 
 // A long markdown answer the fake engine streams in small chunks, after a run of tool calls.
@@ -89,7 +89,7 @@ function platformEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
 }
 
 function newDataDir(): string {
-  const dir = mkdtempSync(join(process.platform === "win32" ? tmpdir() : "/tmp", "openmausbot-bench-"));
+  const dir = mkdtempSync(join(process.platform === "win32" ? tmpdir() : "/tmp", "uni-bench-"));
   mkdirSync(join(dir, "tmp"), { recursive: true });
   writeFileSync(join(dir, "config.json"), JSON.stringify({
     features: { smartSetupChoices: false },
@@ -121,7 +121,7 @@ async function startFixture(options: { dataDir?: string; staticDir?: string; fak
     if (child.exitCode !== null) break;
     try {
       const response = await fetch(`${url}/api/health`, { signal: AbortSignal.timeout(1_000) });
-      if (response.ok && (await response.json() as { app?: string }).app === "openmausbot") { readyMs = performance.now() - started; break; }
+      if (response.ok && (await response.json() as { app?: string }).app === "uni") { readyMs = performance.now() - started; break; }
     } catch { /* not listening yet */ }
     await sleep(25);
   }

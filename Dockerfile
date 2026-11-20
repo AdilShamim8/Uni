@@ -1,4 +1,4 @@
-# OpenMausBot harness server — hosted/self-hosted tenant image, and the
+# Uni harness server — hosted/self-hosted tenant image, and the
 # OMB Cloud Pro home machine (docs/cloud-pro.md).
 #
 # Build the renderer + the self-contained server bundle, then ship only those
@@ -11,13 +11,13 @@
 # Caddy in the same network namespace to terminate TLS and authentication at
 # the edge.
 #
-#   docker build -t openmausbot .
-#   docker build --build-arg ENGINES="@anthropic-ai/claude-code @openai/codex" -t openmausbot .
+#   docker build -t uni .
+#   docker build --build-arg ENGINES="@anthropic-ai/claude-code @openai/codex" -t uni .
 #   docker build --target cloud-home -t omb-cloud-home .
-#   docker buildx build --platform linux/arm64 -t openmausbot .   # Raspberry Pi 4/5, ARM servers
+#   docker buildx build --platform linux/arm64 -t uni .   # Raspberry Pi 4/5, ARM servers
 #
 # HOME is the /data volume, so engine CLI logins (~/.claude, ~/.codex, ~/.grok,
-# ...) and OpenMausBot's own state (~/.openmausbot) persist across container
+# ...) and Uni's own state (~/.uni) persist across container
 # restarts.
 #
 # The bots' browsers, engines and shells leave exited processes for an init to
@@ -111,9 +111,9 @@ RUN echo "agent-browser ${AGENT_BROWSER_VERSION}, Chrome for Testing ${CHROME_CA
   && npm install -g --cache /tmp/npm-cache agent-browser@${AGENT_BROWSER_VERSION} \
   && if [ "$TARGETARCH" = arm64 ]; then \
        apt-get update && apt-get install -y --no-install-recommends chromium && rm -rf /var/lib/apt/lists/* \
-       && mkdir -p /opt/openmausbot-browser && ln -s /usr/lib/chromium/chromium /opt/openmausbot-browser/chrome; \
-     else HOME=/opt/openmausbot-browser agent-browser install \
-       && ln -s /opt/openmausbot-browser/.agent-browser/browsers/chrome-*/chrome /opt/openmausbot-browser/chrome; \
+       && mkdir -p /opt/uni-browser && ln -s /usr/lib/chromium/chromium /opt/uni-browser/chrome; \
+     else HOME=/opt/uni-browser agent-browser install \
+       && ln -s /opt/uni-browser/.agent-browser/browsers/chrome-*/chrome /opt/uni-browser/chrome; \
      fi \
   && native="$(readlink -f "$(command -v agent-browser)")" \
   && case "$native" in */agent-browser/bin/agent-browser-linux-*) ;; *) echo "agent-browser is not a native binary: $native" >&2; exit 1;; esac \
@@ -126,9 +126,9 @@ RUN echo "agent-browser ${AGENT_BROWSER_VERSION}, Chrome for Testing ${CHROME_CA
 # which each image sets after its last build step, so no build step writes
 # into what a fresh volume starts with.
 #  OMB_DUCKDB_DIR: the DuckDB binding tree the server requires (no node_modules here).
-ENV AGENT_BROWSER_EXECUTABLE_PATH=/opt/openmausbot-browser/chrome \
+ENV AGENT_BROWSER_EXECUTABLE_PATH=/opt/uni-browser/chrome \
     OMB_DUCKDB_DIR=/app/duckdb \
-    OMB_DATA_DIR=/data/.openmausbot \
+    OMB_DATA_DIR=/data/.uni \
     OMB_STATIC_DIR=/app/dist \
     OMB_PORT=8799 \
     OMB_WEBHOOK_PORT=8800 \
@@ -233,7 +233,7 @@ VOLUME ["/data"]
 EXPOSE 8080
 # Fly uses the checks in fly.toml; this one serves a plain `docker run`.
 HEALTHCHECK --interval=15s --timeout=5s --start-period=30s --retries=5 \
-  CMD curl -sf http://127.0.0.1:8080/api/health | grep -q openmausbot || exit 1
+  CMD curl -sf http://127.0.0.1:8080/api/health | grep -q uni || exit 1
 # Starts as root: hands a fresh volume to `maus`, runs the server and the edge
 # as `maus`, and hands the server its secrets over a pipe, never an
 # environment `maus` could read (server/cloud-home-start.ts). It runs only
@@ -256,14 +256,14 @@ COPY --from=build --chown=maus:maus /src/dist-native/duckdb/target ./duckdb
 COPY --from=build --chown=maus:maus /src/dist-server ./dist-server
 COPY --from=build --chown=maus:maus /src/dist ./dist
 COPY --from=build --chown=maus:maus /src/skills ./skills
-# `docker compose exec omb openmausbot pair`: the commands the CLI prints start the same way.
-RUN printf '#!/bin/sh\nexec node /app/dist-server/openmausbot.js "$@"\n' > /usr/local/bin/openmausbot && chmod 0755 /usr/local/bin/openmausbot
+# `docker compose exec omb uni pair`: the commands the CLI prints start the same way.
+RUN printf '#!/bin/sh\nexec node /app/dist-server/uni.js "$@"\n' > /usr/local/bin/uni && chmod 0755 /usr/local/bin/uni
 ENV HOME=/data \
-    OMB_CLI_PREFIX="docker compose exec omb openmausbot"
+    OMB_CLI_PREFIX="docker compose exec omb uni"
 VOLUME ["/data"]
 USER maus
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -sf http://127.0.0.1:8799/api/health | grep -q openmausbot || exit 1
+  CMD curl -sf http://127.0.0.1:8799/api/health | grep -q uni || exit 1
 # The launcher runs dist-server/index.js and starts it again when it asks to
 # (a copied workspace committing, server/restart.ts), so the container, and a
 # Caddy sharing its network, stays up through that restart.

@@ -16,9 +16,9 @@ import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute } from "node:path";
 
 /** Installs the Linux libraries Chrome needs (as root, once). */
-export const LIBRARIES_COMMAND = "sudo openmausbot browser install --with-deps";
+export const LIBRARIES_COMMAND = "sudo uni browser install --with-deps";
 /** There is no command for the sandbox: an administrator allows one root-owned Chrome by hand. */
-export const SANDBOX_STEPS_URL = "https://github.com/milind-soni/OpenMausBot/blob/main/docs/deploy-vps.md#ubuntu-2404-browser-sandbox";
+export const SANDBOX_STEPS_URL = "https://github.com/AdilShamim8/Uni/blob/main/docs/deploy-vps.md#ubuntu-2404-browser-sandbox";
 
 /** What Chrome prints before aborting when it cannot sandbox itself. */
 export const NO_SANDBOX_SIGNATURE = "No usable sandbox";
@@ -35,7 +35,7 @@ export function sandboxDisabled(env: Readonly<Record<string, string | undefined>
 
 /** Set on Ubuntu 23.10+: unprivileged user namespaces need an AppArmor profile. */
 export const USERNS_RESTRICTION = "/proc/sys/kernel/apparmor_restrict_unprivileged_userns";
-export const APPARMOR_PROFILE_NAME = "openmausbot-chrome";
+export const APPARMOR_PROFILE_NAME = "uni-chrome";
 export const APPARMOR_PROFILE_PATH = `/etc/apparmor.d/${APPARMOR_PROFILE_NAME}`;
 
 /**

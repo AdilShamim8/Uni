@@ -9,8 +9,8 @@ import { SelfUpdater, successorSpec } from "../src/self-update.ts";
 import { StateStore } from "../src/state.ts";
 import { FakeDocker, type FakeContainer } from "./fake-docker.ts";
 
-const OLD = `ghcr.io/milind-soni/mausbot-connector@sha256:${"1".repeat(64)}`;
-const NEW = `ghcr.io/milind-soni/mausbot-connector@sha256:${"2".repeat(64)}`;
+const OLD = `ghcr.io/adilshamim8/mausbot-connector@sha256:${"1".repeat(64)}`;
+const NEW = `ghcr.io/adilshamim8/mausbot-connector@sha256:${"2".repeat(64)}`;
 const dirs: string[] = [];
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
@@ -136,7 +136,7 @@ describe("the connector replacing itself", () => {
 
   it("changes nothing when the new image cannot be downloaded, and nothing at all when it already runs it", async () => {
     const f = await fixture();
-    const missing = `ghcr.io/milind-soni/mausbot-connector@sha256:${"3".repeat(64)}`;
+    const missing = `ghcr.io/adilshamim8/mausbot-connector@sha256:${"3".repeat(64)}`;
     expect(await f.updater("instance-old").run({ ...f.job, args: { image: missing } }, f.agent)).toMatchObject({ ok: false, error: { code: "self_update_failed" } });
     expect(await f.updater("instance-old").run({ ...f.job, args: { image: OLD } }, f.agent)).toEqual({ id: "self-1", ok: true, result: { connector: { version: "1.0.0", protocol: 2, image: OLD } } });
     expect(f.agent).toMatchObject({ paused: 0, resumed: 0 });

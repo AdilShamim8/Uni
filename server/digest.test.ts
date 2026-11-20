@@ -53,7 +53,7 @@ describe("buildTurnDigest", () => {
     const d = buildTurnDigest({
       ...base,
       activities: [
-        activity('/bin/zsh -lc "jq \'.routines[]?\' ~/.openmausbot/bots/main/routines.json"', true, "jq '.routines[]?' routines.json"),
+        activity('/bin/zsh -lc "jq \'.routines[]?\' ~/.uni/bots/main/routines.json"', true, "jq '.routines[]?' routines.json"),
         activity('/bin/zsh -lc "rg -n todo src/"', true, "rg -n todo src/"),
         activity("list_routines", true),
       ],
@@ -70,7 +70,7 @@ describe("buildTurnDigest", () => {
     const d = buildTurnDigest({
       ...base,
       activities: [
-        activity('cp "/Users/someone/.openmausbot/task-workspaces/9d6ab24f-15b8-45e2/out.png" ~/Desktop/', true, "cp out.png ~/Desktop/"),
+        activity('cp "/Users/someone/.uni/task-workspaces/9d6ab24f-15b8-45e2/out.png" ~/Desktop/', true, "cp out.png ~/Desktop/"),
         activity("swift -e 'import AppKit\n// Target 1080 × 1080\nlet size = NSSize(width: 1080, height: 1080)'", true, "swift -e …"),
         activity("swift -e 'import AppKit\nlet canvas = NSImage()'", true, "swift -e …"),
         activity("memory_update", true),
@@ -214,6 +214,22 @@ describe("coverageForDriver", () => {
     expect(coverageForDriver("claudeAgent", true)).toBe("full");
     expect(coverageForDriver("grok", true)).toBe("full");
     expect(coverageForDriver(undefined)).toBe("none");
+  });
+});
+
+describe("digestCompletedLate", () => {
+  it("marks a preview digest full once every tool row of its turn has its full result, and leaves it otherwise", async () => {
+    const { digestCompletedLate } = await import("./digest.ts");
+    const preview = activity("Bash", true, "ls");
+    const full = { ...preview, tool: { ...preview.tool!, fullResult: true } };
+    const digest = buildTurnDigest({ ...base, activities: [preview], memory: [] });
+    const row: Message = { id: "d1", role: "bot", kind: "digest", at: 2, turnId: "turn-1", text: renderDigest(digest), digest };
+    expect(renderDigest(digest)).toContain("from tool previews");
+    expect(digestCompletedLate([preview, row], "turn-1")).toBeNull();
+    const completed = digestCompletedLate([full, row], "turn-1");
+    expect(completed).toMatchObject({ id: "d1", digest: { hookCoverage: "full" } });
+    expect(completed!.text).not.toContain("from tool previews");
+    expect(digestCompletedLate([full, { ...row, digest: completed!.digest }], "turn-1")).toBeNull();
   });
 });
 

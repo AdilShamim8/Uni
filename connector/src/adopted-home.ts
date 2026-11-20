@@ -1,5 +1,5 @@
 // The home on a customer-run server: the Uni server its owner installed with Docker Compose (deploy/install.sh:
-// project `openmausbot`, service `omb`, Caddy in front, the data in a folder beside the Compose file). The connector
+// project `uni`, service `omb`, Caddy in front, the data in a folder beside the Compose file). The connector
 // attaches to it and never makes a second one: it starts and stops those containers, copies that folder, and hands an
 // update to the server's own updater. It never writes the owner's settings and never picks the home's image itself.
 import { randomBytes } from "node:crypto";
@@ -15,12 +15,12 @@ import type { CopyInfo, HomeHealth, HomeReport, HomeState, JobError, JobReply, J
 import { BACKUPS_KEPT, HOME_STOP_TIMEOUT_S, LABELS, NAMES } from "./settings.ts";
 import type { HomeRecord, Operation, StateStore } from "./state.ts";
 
-export const COMPOSE_PROJECT = "openmausbot";
+export const COMPOSE_PROJECT = "uni";
 const SERVICE = "omb";
 const FRONT = "caddy";
 const PROJECT_LABEL = "com.docker.compose.project";
 const SERVICE_LABEL = "com.docker.compose.service";
-const HOME_REPOSITORY = "ghcr.io/milind-soni/openmausbot";
+const HOME_REPOSITORY = "ghcr.io/adilshamim8/uni";
 const COPY_CAPS = ["CHOWN", "DAC_OVERRIDE", "DAC_READ_SEARCH", "FOWNER", "FSETID"];
 const READ_CAPS = ["DAC_READ_SEARCH"];
 const DELETE_CAPS = ["DAC_OVERRIDE", "DAC_READ_SEARCH"];

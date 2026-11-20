@@ -172,7 +172,7 @@ would only send that person the same names and ids it can already read.
 ## Cloud homes
 
 A desktop has an installation credential once its owner turns on "Use your
-phone anywhere", and `openmausbot serve` has one after `openmausbot login` or
+phone anywhere", and `uni serve` has one after `uni account login` or
 from `OMB_INSTALLATION_CREDENTIAL`. A Cloud home has none, so today it cannot
 send.
 
@@ -330,13 +330,13 @@ What the owner provides and does, in order. Nothing here has been done.
 
 1. In the Apple Developer account, create an APNs auth key (`.p8`) with the
    Apple Push Notifications service enabled. Note its Key ID and the Team ID.
-2. Enable the Push Notifications capability on the App ID `com.openmausbot.app`
+2. Enable the Push Notifications capability on the App ID `com.uni.app`
    (and `.next` / `.dev` if those builds should get pushes), then regenerate
    the provisioning profiles.
 
 **Google**
 
-3. Create a Firebase project, add the Android app `com.openmausbot.companion`
+3. Create a Firebase project, add the Android app `com.uni.companion`
    (and the `.next` / `.dev` packages if wanted), and download
    `google-services.json`.
 4. In Project settings → Service accounts, generate a private key (the
@@ -351,7 +351,7 @@ What the owner provides and does, in order. Nothing here has been done.
    use the same APNs key (topic `<bundle id>.push-type.liveactivity`) and the
    same Firebase project.
 6. Set the secrets: `APNS_KEY_ID`, `APNS_TEAM_ID`, `APNS_PRIVATE_KEY` (the
-   `.p8`), `APNS_BUNDLE_ID` (`com.openmausbot.app`), optionally
+   `.p8`), `APNS_BUNDLE_ID` (`com.uni.app`), optionally
    `APNS_ENVIRONMENTS=production,sandbox` to accept development builds, and
    `FCM_SERVICE_ACCOUNT` (the whole service-account JSON).
 7. Deploy the Worker. Until a platform's secrets are set its routes answer

@@ -85,7 +85,7 @@ beforeAll(async () => {
   const jevUrl = `http://127.0.0.1:${(jev.address() as AddressInfo).port}`;
 
   home = mkdtempSync(join(tmpdir(), "omb-decider-rooms-"));
-  data = join(home, ".openmausbot");
+  data = join(home, ".uni");
   const staticDir = join(home, "static");
   mkdirSync(data, { recursive: true });
   mkdirSync(join(staticDir, "assets"), { recursive: true });
@@ -98,7 +98,6 @@ beforeAll(async () => {
   writeFileSync(titleFile, "Safari footer fix");
   writeFileSync(join(data, "config.json"), JSON.stringify({
     // a room task's first message is titled by the engine of whoever answers it
-    features: { llmThreadTitles: true },
     instances: {
       quick: {
         driver: "claudeAgent", displayName: "Quick fixture", config: { cli: FAKE_CLAUDE },

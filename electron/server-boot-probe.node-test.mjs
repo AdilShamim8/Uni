@@ -10,7 +10,7 @@ import {
   pollServerIdentity,
 } from "./server-boot-probe.mjs";
 
-const OUR_BODY = () => ({ app: "openmausbot", pid: 4242, static: true });
+const OUR_BODY = () => ({ app: "uni", pid: 4242, static: true });
 
 function okFetch({ body = OUR_BODY(), status = 200 } = {}) {
   return async () => ({
@@ -99,7 +99,7 @@ test("an identity mismatch (same payload shape, wrong pid) stays foreign", async
     port: 8799,
     pid: () => 4242,
     bootTimeoutMs: 5_000,
-    fetchImpl: okFetch({ body: { app: "openmausbot", pid: 999, static: true } }),
+    fetchImpl: okFetch({ body: { app: "uni", pid: 999, static: true } }),
   });
   assert.equal(outcome.outcome, "foreign-owner");
 });
@@ -157,7 +157,7 @@ test("regression: a pid read before the spawn event must not doom our own child"
   const fetchImpl = async () => {
     calls += 1;
     if (calls === 1) throw new Error("ECONNREFUSED");
-    return { ok: true, status: 200, json: async () => ({ app: "openmausbot", pid: 4242, static: true }) };
+    return { ok: true, status: 200, json: async () => ({ app: "uni", pid: 4242, static: true }) };
   };
   const outcome = await pollServerIdentity({
     port: 8799,
@@ -287,7 +287,7 @@ test("a child that says it is listening gets the grace before it times out", asy
 
 test("the listening line is heard when stdout splits it across chunks", () => {
   const listening = listeningSignal();
-  listening.hear("boot… openmausbot ser");
+  listening.hear("boot… uni ser");
   assert.equal(listening.heard(), false);
   listening.hear("ver on http://127.0.0.1:8799\n");
   assert.equal(listening.heard(), true);
@@ -312,4 +312,31 @@ test("an answer in flight when the child starts listening gets the grace", async
     now: (() => { const t0 = Date.now(); return () => t0 + (Date.now() - t0) * 5; })(),
   });
   assert.equal(outcome.outcome, "ready");
+});
+
+test("the listening line ends the wait between probes once; later waits run their full interval", async () => {
+  const listening = listeningSignal();
+  const waits = [];
+  let attempts = 0;
+  const outcome = await pollServerIdentity({
+    port: 8799,
+    pid: () => 4242,
+    bootTimeoutMs: 60_000,
+    listened: listening.announced,
+    now: () => 0,
+    sleep: (ms) => new Promise((resolve) => {
+      const wait = { ms, done: false, finish: () => { wait.done = true; resolve(); } };
+      waits.push(wait);
+      if (waits.length === 1) listening.hear("uni server on http://127.0.0.1:8799\n");
+      if (waits.length === 2) queueMicrotask(() => queueMicrotask(wait.finish));
+    }),
+    fetchImpl: async () => {
+      attempts += 1;
+      if (attempts < 3) throw new Error("refused");
+      return { ok: true, status: 200, json: async () => OUR_BODY() };
+    },
+  });
+  assert.equal(outcome.outcome, "ready");
+  assert.equal(attempts, 3);
+  assert.deepEqual(waits.map((wait) => wait.done), [false, true]);
 });

@@ -115,7 +115,7 @@ export function createCompanionE2E({
     tokenRejected: () => void tokens.refreshNow(),
     /** The computer woke: the sidecar redials now, and the token may have lapsed while asleep. */
     resumed() {
-      post({ type: "openmausbot:companion-e2e-redial" });
+      post({ type: "uni:companion-e2e-redial" });
       void tokens.refreshNow();
     },
   };

@@ -148,7 +148,7 @@ function sourceImageExtension(source: string | undefined): string | null {
   if (!source) return null;
   let pathname = source;
   try {
-    pathname = decodeURIComponent(new URL(source, "https://openmausbot.invalid").pathname);
+    pathname = decodeURIComponent(new URL(source, "https://uni.invalid").pathname);
   } catch {
     pathname = source.split(/[?#]/, 1)[0] ?? source;
   }
@@ -237,7 +237,7 @@ export async function requestMessageFile(
   });
   if (!response.ok) {
     const body = await response.json().catch(() => null) as { error?: string; code?: string } | null;
-    throw Object.assign(new Error(serverErrorText(body, body?.error ?? t("attach.downloadFailed"))), { code: body?.code });
+    throw Object.assign(new Error(serverErrorText(body, body?.error ?? t("attach.downloadFailed"))), { code: body?.code, status: response.status });
   }
   return response;
 }
@@ -299,7 +299,7 @@ export function useLocalFileSave(filePath: string, name?: string, message?: Mess
     request.current = controller;
     try {
       const response = await requestMessageFile(filePath, message, controller.signal, entry === undefined ? { list: true } : { entry });
-      if (response.headers.get("x-openmausbot-folder") === "1") {
+      if (response.headers.get("x-uni-folder") === "1") {
         const listing = await response.json() as MessageFolderListing;
         if (!mounted.current || controller.signal.aborted) return;
         setState("idle");

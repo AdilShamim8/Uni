@@ -293,7 +293,7 @@ function statusCommand(): void {
 
 /**
  * One line per check for install.sh: `ok <id>`, `warn <id> <fix>` or `fail <id> <fix>`. With --json, one object
- * `{ok, checks}` for `openmausbot doctor --host`, which asks the connector on a server that runs one. Exits 1 when any
+ * `{ok, checks}` for `uni doctor --host`, which asks the connector on a server that runs one. Exits 1 when any
  * check fails.
  */
 async function probeCommand(): Promise<void> {

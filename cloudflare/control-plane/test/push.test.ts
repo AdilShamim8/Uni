@@ -13,7 +13,7 @@ import {
   readApnsConfig,
 } from "../src/push";
 
-const BASE_URL = "https://auth.openmausbot.test";
+const BASE_URL = "https://auth.uni.test";
 const TOKEN_A = "a1".repeat(32);
 const TOKEN_B = "b2".repeat(32);
 

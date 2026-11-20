@@ -54,7 +54,7 @@ function hearDesktopReports(): void {
   hearingReports = true;
   parentPort.on("message", ({ data }) => {
     const message = data as { type?: unknown; ports?: unknown } | undefined;
-    if (message?.type !== "openmausbot:own-listeners" || !Array.isArray(message.ports) || message.ports.length > 256) return;
+    if (message?.type !== "uni:own-listeners" || !Array.isArray(message.ports) || message.ports.length > 256) return;
     reportedPorts = new Set(message.ports.filter(validPort));
   });
 }

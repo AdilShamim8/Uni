@@ -15,7 +15,7 @@ import { commandPath } from "./shell-path.mjs";
 export const LENT_MCP_ACTIONS = new Set(["mcp_tools", "mcp_call"]);
 /** Where a tools/call's `_meta` says which bot and conversation made it, as the Cloud says: a hint for the MCP server,
  * never proof of identity (`verified: false`). */
-export const CALLER_META = "openmausbot/caller";
+export const CALLER_META = "uni/caller";
 const callerMeta = caller => caller ? { _meta: { [CALLER_META]: { botId: caller.botId, threadId: caller.threadId, verified: false } } } : {};
 const callerId = value => typeof value === "string" && value.length > 0 && value.length <= 128;
 /** A job's MCP server, only on an MCP action, and its caller, only on a tool call: passed on as a hint, never trusted. */
@@ -269,7 +269,7 @@ export function createLentMcp({ environment = async () => ({ ...inheritedEnviron
     const client = "command" in server ? stdioClient(server, { environment: await environment(), home }) : httpClient(server, { fetch: fetchImpl });
     const live = { key, client, idle: null, failed: false, started: null };
     running.set(server.name, live);
-    live.started = client.request("initialize", { protocolVersion: PROTOCOL, capabilities: {}, clientInfo: { name: "openmausbot-lent", version: "1" } }, signal, START_MS).then(result => {
+    live.started = client.request("initialize", { protocolVersion: PROTOCOL, capabilities: {}, clientInfo: { name: "uni-lent", version: "1" } }, signal, START_MS).then(result => {
       client.started?.(result?.protocolVersion);
       client.notify("notifications/initialized");
     });

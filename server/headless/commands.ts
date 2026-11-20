@@ -19,7 +19,7 @@ const DAY = 24 * 3_600_000;
 async function doctorOnce(ctx: VerbContext): Promise<VerbOutcome> {
   const client = await ctx.client();
   // A shared server lets a local caller without a session count its engines, not list them: in the server's container
-  // (`docker compose exec omb openmausbot doctor`, as deploy/update.sh runs it) that count is the answer.
+  // (`docker compose exec omb uni doctor`, as deploy/update.sh runs it) that count is the answer.
   const counted = (refusal: unknown) => (refusal as { status?: unknown })?.status === 403
     ? client.json<Rec>("/api/health/engines").then((answer) => ({ counted: Number(answer?.engines) || 0 }), () => Promise.reject(refusal))
     : Promise.reject(refusal);
@@ -36,16 +36,16 @@ async function doctorOnce(ctx: VerbContext): Promise<VerbOutcome> {
   ]);
   const problems: string[] = [];
   const warnings: string[] = [];
-  const isOmb = health.app === "openmausbot";
+  const isOmb = health.app === "uni";
   if (!isOmb) problems.push(`${client.baseUrl} answered, but it is not Uni`);
   const tooOld = Boolean(server) && server!.capabilities?.jobs !== true;
   if (tooOld) problems.push(`Uni ${server!.version ?? "(unknown version)"} is too old for the headless commands: it cannot report a conversation's job`);
-  if (isOmb && !availableCount) problems.push("no engine is available: set one up with `openmausbot engine set KIND --key-env VAR`");
+  if (isOmb && !availableCount) problems.push("no engine is available: set one up with `uni engine set KIND --key-env VAR`");
   if (session?.kind === "session" && typeof session.expiresAt === "number" && session.expiresAt - Date.now() < 14 * DAY) {
-    warnings.push(`this session expires in ${Math.max(0, Math.floor((session.expiresAt - Date.now()) / DAY))} days: get a new one with openmausbot connect`);
+    warnings.push(`this session expires in ${Math.max(0, Math.floor((session.expiresAt - Date.now()) / DAY))} days: sign in again with uni login (a script: uni token create)`);
   }
   const browser = config?.browserEngine ?? null;
-  if (browser && browser.kind !== "engine") warnings.push(`bots have no built-in browser here: ${browser.reason ?? "not installed"}${browser.installable ? " (install it with `openmausbot browser install`)" : ""}`);
+  if (browser && browser.kind !== "engine") warnings.push(`bots have no built-in browser here: ${browser.reason ?? "not installed"}${browser.installable ? " (install it with `uni browser install`)" : ""}`);
   const ok = isOmb && !tooOld && availableCount > 0;
   const who = !session ? "unknown" : session.kind === "loopback"
     ? `this computer${session.trust === "service" ? " (as a local service, not the owner)" : " (the owner)"}`
@@ -73,9 +73,14 @@ async function doctorOnce(ctx: VerbContext): Promise<VerbOutcome> {
 export async function doctor(ctx: VerbContext): Promise<VerbOutcome> {
   if (ctx.flags.host === true) {
     if (flag(ctx.flags, "wait") !== undefined || flag(ctx.flags, "url") !== undefined) throw usageError("doctor --host checks this machine: drop --wait and --url");
+    if (ctx.flags.data === true || ctx.flags.fix === true) throw usageError("doctor --host and doctor --data are two runs");
     return (await import("./host-doctor.ts")).hostDoctor(ctx);
   }
-  if (flag(ctx.flags, "data-dir") !== undefined || flag(ctx.flags, "domain") !== undefined) throw usageError("--data-dir and --domain go with doctor --host");
+  if (ctx.flags.data === true || ctx.flags.fix === true) {
+    if (["wait", "url", "port", "token-file", "domain"].some((name) => flag(ctx.flags, name) !== undefined)) throw usageError("doctor --data checks this computer's data folder: drop --wait, --url, --port, --token-file and --domain");
+    return (await import("../doctor/command.ts")).dataDoctor(ctx);
+  }
+  if (flag(ctx.flags, "data-dir") !== undefined || flag(ctx.flags, "domain") !== undefined) throw usageError("--data-dir goes with doctor --host or doctor --data, --domain with doctor --host");
   const raw = flag(ctx.flags, "wait");
   const deadline = Date.now() + (raw ? parseDuration(raw, "--wait") : 0);
   for (;;) {
@@ -93,14 +98,15 @@ export async function doctor(ctx: VerbContext): Promise<VerbOutcome> {
 }
 
 export async function list(ctx: VerbContext): Promise<VerbOutcome> {
-  const tool = ctx.verb === "bots" ? "list_bots" : ctx.verb === "channels" ? "list_channels" : "list_available_models";
+  const bots = ctx.verb === "bots" || ctx.verb === "bots list";
+  const tool = bots ? "list_bots" : ctx.verb === "channels" ? "list_channels" : "list_available_models";
   const result = await (await ctx.client()).tool(tool, {});
-  const human = ctx.verb === "bots"
+  const human = bots
     ? (result.bots as Rec[]).map((bot) => `${bot.name}${bot.title ? ` — ${bot.title}` : ""} · ${bot.section ? `team ${bot.section}` : "no team"}${bot.chiefOfStaff ? " · Chief of Staff" : ""} · ${bot.activity === "waiting-on-you" ? "waiting on you" : bot.busy ? "working" : bot.waitingForTeammates ? "waiting on teammates" : "idle"} · id ${bot.id}`)
     : ctx.verb === "channels"
       ? (result.channels as Rec[]).map((room) => `${room.name} · ${room.memberIds?.length ?? 0} members · ${room.working ? "working" : "idle"} · id ${room.id}`)
       : (result.instances as Rec[]).map((instance) => `${instance.instanceId} · ${instance.snapshot?.state ?? "unknown"}${instance.models?.default ? ` · default ${instance.models.default}` : ""}${Array.isArray(instance.models?.options) ? ` · ${instance.models.options.length} models` : ""}`);
-  return { result, exitCode: EXIT.done, human: human.length ? human : [`No ${ctx.verb === "models" ? "engines" : ctx.verb} yet.`] };
+  return { result, exitCode: EXIT.done, human: human.length ? human : [`No ${ctx.verb === "models" ? "engines" : bots ? "bots" : ctx.verb} yet.`] };
 }
 
 export async function messages(ctx: VerbContext): Promise<VerbOutcome> {
@@ -137,7 +143,7 @@ export async function send(ctx: VerbContext): Promise<VerbOutcome> {
   return {
     result: title !== undefined ? { ...result, newConversation: { title } } : result, exitCode: EXIT.done,
     human: [`Sent to ${target.name ?? target.id} ${title !== undefined ? `in a new conversation, "${title}", ` : ""}(thread ${result.taskId})${result.queued ? "; it waits until the turn running there ends" : ""}.`,
-      `Follow it with: openmausbot wait --thread ${result.taskId}`],
+      `Follow it with: uni wait --thread ${result.taskId}`],
   };
 }
 
@@ -162,14 +168,14 @@ function modelArgs(ctx: VerbContext, required: boolean): Rec {
   const instance = flag(ctx.flags, "instance")?.trim();
   const effort = flag(ctx.flags, "effort")?.trim();
   if (!model) {
-    if (instance || effort || required) throw usageError("--model is required (INSTANCE/MODEL, such as claude/claude-sonnet-5-5)", "openmausbot models lists them");
+    if (instance || effort || required) throw usageError("--model is required (INSTANCE/MODEL, such as claude/claude-sonnet-5-5)", "uni models lists them");
     return {};
   }
   let instanceId = instance;
   let modelId = model;
   if (!instanceId) {
     const slash = model.indexOf("/");
-    if (slash <= 0 || slash === model.length - 1) throw usageError("--model must be INSTANCE/MODEL, such as claude/claude-sonnet-5-5", "openmausbot models lists them");
+    if (slash <= 0 || slash === model.length - 1) throw usageError("--model must be INSTANCE/MODEL, such as claude/claude-sonnet-5-5", "uni models lists them");
     instanceId = model.slice(0, slash);
     modelId = model.slice(slash + 1);
   }
@@ -195,7 +201,7 @@ export async function newChannel(ctx: VerbContext): Promise<VerbOutcome> {
   const memberIds = wanted.map((member) => {
     const found = bots.filter((bot) => bot.id === member);
     const byName = found.length ? found : bots.filter((bot) => String(bot.name).trim().toLowerCase() === member.toLowerCase());
-    if (byName.length !== 1) throw usageError(byName.length ? `"${member}" names ${byName.length} bots: use their ids` : `no bot named "${member}"`, "openmausbot bots lists them");
+    if (byName.length !== 1) throw usageError(byName.length ? `"${member}" names ${byName.length} bots: use their ids` : `no bot named "${member}"`, "uni bots lists them");
     return byName[0]!.id as string;
   });
   const team = (flag(ctx.flags, "team") ?? flag(ctx.flags, "section"))?.trim();
@@ -219,7 +225,7 @@ export async function edit(ctx: VerbContext): Promise<VerbOutcome> {
   const explicit = flag(ctx.flags, "bot")?.trim();
   const [first, second] = ctx.positionals;
   const target: Target | undefined = explicit ? { type: "bot", id: explicit, ...(flag(ctx.flags, "task") ? { taskId: flag(ctx.flags, "task")!.trim() } : {}) } : undefined;
-  if (!target && !first) throw usageError("a bot is required", "openmausbot edit BOT --message ID TEXT, or --bot ID");
+  if (!target && !first) throw usageError("a bot is required", "uni edit BOT --message ID TEXT, or --bot ID");
   const messageId = requiredFlag(ctx.flags, "message");
   const text = await readMessage(ctx, target ? first : second);
   const resolved = target ?? await resolveTarget(ctx, first, "bot");

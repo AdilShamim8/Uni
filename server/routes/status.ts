@@ -1,9 +1,10 @@
 import { readBotActivity } from "../activity.ts";
-import { activityCsv, activityEntries, parseActivityWhat, readAdminActivityRange } from "../admin-activity.ts";
+import { activityCsv, activityEntries, flushAdminActivity, parseActivityWhat, readAdminActivityRange } from "../admin-activity.ts";
 import { loadBrand } from "../brand.ts";
 import { browserEngineStatus, ensureChrome, installAgentBrowserBinary, resolveAgentBrowserBinary } from "../browser-engine.ts";
 import { DATA_DIR, EVENTS_DIR, NATIVE_DIR, instanceConfigs, type AppConfig } from "../config.ts";
 import { boundRetentionDays, decisionsCsv, readDecisionRange, readDecisions, type DecisionRow } from "../decision-log.ts";
+import { doctorSummary } from "../doctor/start.ts";
 import { flushNativeLog } from "../drivers/native.ts";
 import { editionForMembers, editionStatus, entitled } from "../enterprise.ts";
 import { reportableServerVersion } from "../environment.ts";
@@ -52,10 +53,12 @@ export function createStatusRoutes(deps: StatusRouteDeps): RouteHandler {
     const decision = deps.records?.decisionRow(auth) ?? ((row: DecisionRow) => row);
     // The packaged app's port fallback: the forked child proves it is ours by echoing its pid.
     if (method === "GET" && path === "/api/health") {
-      return json(res, 200, { app: "openmausbot", ...(version ? { version } : {}), pid: process.pid, static: Boolean(STATIC_DIR), capabilities: {
+      // The data checks of this version's first start (server/doctor/start.ts): counts and check names only.
+      const doctor = doctorSummary();
+      return json(res, 200, { app: "uni", ...(version ? { version } : {}), pid: process.pid, static: Boolean(STATIC_DIR), capabilities: {
         guardedMessages: 1, guardedRequests: 1, guardedFullAccess: 1, guardedOnBehalfOf: 1,
         ...(sharedWorkspaceFullAccessEnabled() ? { sharedWorkspaceFullAccess: 1 } : {}),
-      }, ...(deps.boxOn ? { box: deps.boxOn() ? "on" : "off" } : {}) });
+      }, ...(deps.boxOn ? { box: deps.boxOn() ? "on" : "off" } : {}), ...(doctor ? { doctor } : {}) });
     }
     // JSON-only, so a form posted from another local page cannot start the install. One install at a time.
     if (method === "POST" && path === "/api/browser-engine/install") {
@@ -86,7 +89,7 @@ export function createStatusRoutes(deps: StatusRouteDeps): RouteHandler {
     if (fleetRoute) {
       if (!entitled("admin")) return json(res, 403, { error: "Workspaces need an enterprise licence with the admin feature." });
       const socket = fleetSocketPath();
-      if (!fleetAvailable(socket)) return json(res, 404, { error: "No fleet agent on this server. Run `openmausbot fleet init --domain … --operator <this user>` as root." });
+      if (!fleetAvailable(socket)) return json(res, 404, { error: "No fleet agent on this server. Run `uni fleet init --domain … --operator <this user>` as root." });
       const [, resource, slug, sub] = fleetRoute;
       let forward: { method: string; path: string; body?: unknown } | null = null;
       if (method === "GET" && !resource) forward = { method: "GET", path: "/workspaces" };
@@ -188,6 +191,7 @@ export function createStatusRoutes(deps: StatusRouteDeps): RouteHandler {
       if (!range) return json(res, 400, { error: "from and to must be dates (YYYY-MM-DD), from no later than to, at most a year apart" });
       const what = parseActivityWhat(url.searchParams.get("what"));
       if (!what) return json(res, 400, { error: "what must be all, approvals, decisions, config, people, session, webhook, mcp, engine, bot, budget or visibility" });
+      await flushAdminActivity(DATA_DIR); // rows are appended in the background; a change already answered is listed
       const entries = activityEntries(readDecisionRange(DATA_DIR, range).map(decision), readAdminActivityRange(DATA_DIR, range).filter(deps.records?.adminActionShown(auth) ?? (() => true)), {
         what,
         who: (url.searchParams.get("who") ?? "").slice(0, 200),

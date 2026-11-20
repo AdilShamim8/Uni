@@ -8,7 +8,7 @@ passphrase, and never runs an agent remotely.
 
 ## Choosing the backend
 
-The published [Your own VPS guide](https://docs.openmausbot.com/docs/computers/byo-vps)
+The published [Your own VPS guide](https://docs.uni.com/docs/computers/byo-vps)
 shows the setup steps and configuration fields. In 0.1.151 and 0.1.152, the Simple layout can
 hide the backend selector for an existing bot (#5225; selector fix #5228). The guide
 includes a stopped-app `bots.json` workaround for affected builds. Do not look for
@@ -63,7 +63,7 @@ transport runs it. Podman cannot replace the Docker CLI here: this backend only 
 Uni connects only through a named alias in your `~/.ssh/config` — you type the alias into
 Settings → API keys, nothing else. Every bot action becomes a `docker exec` over SSH, so the app
 supplies connection sharing and fail-fast timeouts itself: it runs each VPS command through its own
-`ssh_config` (under `~/.openmausbot/ssh/`) that includes your file first and fills in `ControlMaster`,
+`ssh_config` (under `~/.uni/ssh/`) that includes your file first and fills in `ControlMaster`,
 `ControlPersist`, keepalives and a connect timeout wherever your alias leaves them unset. Anything your
 alias sets wins. Startup, previews, bot tools and their connection probes use the same settings.
 The live desktop's tunnel is the exception: it opens its own connection (`ControlPath=none`), so
@@ -104,7 +104,7 @@ computer with the alias that holds it.
 
 A bot cannot be moved to another server while its computer still lives on the old one, and the default alias
 cannot change while any computer it manages still exists: remove the computer first from Settings → Local VM →
-Self-hosted VPS computers (or by hand: `docker -H ssh://old-server rm -f openmausbot-vps-<bot>-<hash>`). A server
+Self-hosted VPS computers (or by hand: `docker -H ssh://old-server rm -f uni-vps-<bot>-<hash>`). A server
 that cannot be reached never traps a bot: moving the bot to another server, switching its computer, or deleting
 it goes ahead, and the app says what may be left on that server and the command that removes it once the server
 is back. (Changing the default alias still waits until its server can be listed.) Any alias from your
@@ -114,7 +114,7 @@ is back. (Changing the default alias still waits until its server can be listed.
 
 Some cloud boxes pause after a while without traffic and refuse SSH until they are resumed. On macOS and Linux
 you can give the app a wake step: put an executable script named `wake` in the app's SSH folder
-(`~/.openmausbot/ssh/wake`, or `ssh/wake` in your data directory). When a server cannot be reached, the app
+(`~/.uni/ssh/wake`, or `ssh/wake` in your data directory). When a server cannot be reached, the app
 runs it once with the alias as its only argument (`wake my-vps`), then tries the connection once more. Make the
 script resume the box with your provider's command or API and return once the server accepts SSH again; it gets
 up to two minutes. If it exits with an error, the app shows that error next to the SSH one. Without the file
@@ -170,7 +170,7 @@ internet, so firewall the machine: its SSH and Docker ports should accept connec
 - **Firewall the VPS to SSH only**, ideally from your IP. Nothing Uni does needs any other inbound
   port open, so anything else open is pure attack surface.
 - **Nothing sensitive is stored.** The only thing Uni persists is the alias name itself
-  (`~/.openmausbot/config.json`, plus a bot's own alias in `bots.json` when it has one); keys, passphrases,
+  (`~/.uni/config.json`, plus a bot's own alias in `bots.json` when it has one); keys, passphrases,
   and agent state stay with SSH. Aliases are also kept out of the settings and bot records that paired phones
   and members of a shared workspace receive — they get configured-or-not, never the name. An SSH or Docker
   error that a bot reports in its conversation can still quote a server's name.
@@ -180,7 +180,7 @@ internet, so firewall the machine: its SSH and Docker ports should accept connec
 
 ## Container lifecycle
 
-Each bot owns one container on the VPS, named `openmausbot-vps-<bot>-<hash>` — stable across restarts and
+Each bot owns one container on the VPS, named `uni-vps-<bot>-<hash>` — stable across restarts and
 independent of the bot's display name. It lives on the bot's server: the default alias, or the bot's own
 when it has one.
 

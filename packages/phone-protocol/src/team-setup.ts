@@ -10,6 +10,8 @@ export interface TeamSetupFields {
   section?: string;
   modelSelection?: ModelSelection;
   chiefOfStaff?: boolean;
+  /** Update only: the bot's MCP servers by name. Applies like the plan's other changes. */
+  mcpServers?: string[];
 }
 
 export interface TeamSetupOperation {
@@ -27,7 +29,7 @@ export interface TeamSetupResult {
   error?: string;
 }
 
-/** The complete, reviewed operation. It never accepts executable permissions. */
+/** The complete, reviewed operation. Of the execution permissions it changes only a bot's MCP server list. */
 export interface TeamSetupRequest {
   version: 1;
   requestId: string;
@@ -66,5 +68,5 @@ export function noCloudComputerNote(name: string): string {
 /** The Chief's resumed turn once its team setup card is decided. `lacksComputer` names newly created bots with no cloud computer yet. */
 export function teamSetupDecisionText(request: TeamSetupRequest, lacksComputer: (botId: string) => boolean): string {
   const bare = request.result?.state === "applied" ? request.result.bots.filter((bot) => bot.action === "created" && lacksComputer(bot.id)) : [];
-  return `OpenMausBot team setup decision ${request.requestId}: ${JSON.stringify(request.result)}. Report this exact result and continue the user's already requested work. Do not ask for confirmation again or repeat this setup/deletion. A denied or cancelled operation did not authorize any substitute action. Existing thread models were not changed.${bare.map((bot) => noCloudComputerNote(bot.name)).join("")}`;
+  return `Uni team setup decision ${request.requestId}: ${JSON.stringify(request.result)}. Report this exact result and continue the user's already requested work. Do not ask for confirmation again or repeat this setup/deletion. A denied or cancelled operation did not authorize any substitute action. Existing thread models were not changed.${bare.map((bot) => noCloudComputerNote(bot.name)).join("")}`;
 }

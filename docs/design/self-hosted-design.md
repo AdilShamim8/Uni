@@ -20,7 +20,7 @@ A standalone server becomes connected by enrolling the connector. No reinstall, 
 
 ## Parts and where the code lives
 
-- **Home**: the server image our own Clouds run (`ghcr.io/milind-soni/openmausbot`). This repository.
+- **Home**: the server image our own Clouds run (`ghcr.io/adilshamim8/uni`). This repository.
 - **Connector** (`connector/`): enrols with a one-time code, holds its own Ed25519 key, keeps one outbound WebSocket
   and runs only a fixed job list. No shell, no command of its own choosing, no read of a file by path. In this
   repository, so customers can read what it can do. It has two modes, chosen on the server when it enrols:
@@ -107,7 +107,7 @@ The Coolify hosted-workspace path (never proven on a real install). `fleet` stay
 
 Decided: the server installer brings MausBot; the connector attaches to that install and the Admin never starts it.
 
-- **Chosen on the server.** `connector/install.sh` picks `customer-run` when `/opt/openmausbot/compose.yaml` exists
+- **Chosen on the server.** `connector/install.sh` picks `customer-run` when `/opt/uni/compose.yaml` exists
   and starts the connector with `MAUSBOT_MODE=customer-run`; the enrolment writes the mode into the connector's state.
   The stricter of the two always wins, and nothing the Admin sends changes it. A connector started in `operated` mode
   refuses to enrol where the owner's MausBot already runs.
@@ -130,12 +130,12 @@ Decided: the server installer brings MausBot; the connector attaches to that ins
 - **The report is rebuilt, not filtered.** `reducedHeartbeat` and `reducedReply` copy named fields; every string is an
   enumerated code or matches a pattern (a version, an image reference, a machine's own name for itself). A failed job
   sends its code and a fixed sentence; the reason stays in the audit log.
-- **Adoption.** `AdoptedHome` finds the Compose project `openmausbot` (service `omb`, Caddy in front, `/data` bound
+- **Adoption.** `AdoptedHome` finds the Compose project `uni` (service `omb`, Caddy in front, `/data` bound
   to a folder). `start`, `stop` and `restart` start and stop those containers. `backup` and `restore` copy that folder
   to and from Docker volumes on the same server with helpers run from the home's own image.
 - **Update: the server's own updater.** The connector never recreates the owner's containers and never writes the
   owner's `.env`. It leaves `id` and `image` in `/var/lib/mausbot/update/request`; a systemd path unit on the host runs
-  `mausbot-update-runner`, which checks the image again and runs `/opt/openmausbot/update.sh --image <digest>`; the
+  `mausbot-update-runner`, which checks the image again and runs `/opt/uni/update.sh --image <digest>`; the
   connector reads the exit code. So a connected update and a hand-run update are the same code, with the same copy,
   health check, rollback and journal. Chosen over driving Compose from inside the connector (which would need the
   install folder writable in a container and a Compose binary in the image) and over recreating containers through
@@ -157,7 +157,7 @@ Backward compatible: a field is only ever added, and only by a customer-run serv
 | `JobErrorCode` | `refused_by_mode`, `paused`, `update_unavailable`, `update_not_started`, `older_version` | Only from a customer-run server. Its error `message` is a fixed sentence per code |
 
 For a customer-run box the Admin should: send `start` with no arguments; send `update` with
-`ghcr.io/milind-soni/openmausbot@sha256:…` (the server image, not the Cloud home image); never an older version than the one running; never send `export-disk`,
+`ghcr.io/adilshamim8/uni@sha256:…` (the server image, not the Cloud home image); never an older version than the one running; never send `export-disk`,
 `import-disk`, `self-update`, `restore` or a request other than `GET /v1/health`, `/v1/version`, `/v1/seats`, `/v1/update`; send
 `schedule.image: null` in the signed config (a Cloud home image there is accepted, any other is ignored with the whole
 config); and sign people in by sending them to the server's own address, never by pairing.
@@ -188,7 +188,7 @@ Read at the commit that adds the customer-run mode. "Built" means the code is in
 ### Different from this document
 
 - **Updates on a connected server need `update.sh` in place.** The connector hands an update to
-  `/opt/openmausbot/update.sh`. The installer places that file only once it and the update command have merged (see
+  `/opt/uni/update.sh`. The installer places that file only once it and the update command have merged (see
   In review), so until then the `update` job is refused with `update_unavailable` and nothing changes.
 - **Backups stay on the server.** `backup` copies the data to a Docker volume on the same server. A bucket the
   customer configures is phase 2.
@@ -222,7 +222,7 @@ Read at the commit that adds the customer-run mode. "Built" means the code is in
 
 Written and under review, not merged:
 
-- **The installer** (`deploy/install.sh`, #5158): the preflight, the install under `/opt/openmausbot`, and for a
+- **The installer** (`deploy/install.sh`, #5158): the preflight, the install under `/opt/uni`, and for a
   version with the hardened profile the host's preparation for the bots' sandbox and the server's own self-check of
   it. It places `update.sh` and keeps the version that pins.
 - **The `stable` channel and the one-command update with rollback** for standalone servers (`deploy/update.sh`,

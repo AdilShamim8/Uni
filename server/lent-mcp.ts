@@ -208,7 +208,7 @@ export function createLentMcp(deps: LentMcpDeps) {
     const { id, method } = message;
     if (method === "initialize") {
       const asked = (message.params as { protocolVersion?: unknown } | undefined)?.protocolVersion;
-      return reply(id, { protocolVersion: PROTOCOLS.includes(String(asked)) ? asked : "2025-03-26", capabilities: { tools: {} }, serverInfo: { name: `openmausbot-${name}`, version: "1" } });
+      return reply(id, { protocolVersion: PROTOCOLS.includes(String(asked)) ? asked : "2025-03-26", capabilities: { tools: {} }, serverInfo: { name: `uni-${name}`, version: "1" } });
     }
     if (method === "ping") return reply(id, {});
     if (method !== "tools/list" && method !== "tools/call") return rpcError(id, "Method not found.", -32601);

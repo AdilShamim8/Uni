@@ -22,22 +22,22 @@ The local preview does **not** give the bot control of this computer by itself. 
 the global **Enable local control** choice and assigning a bot to **This computer**; every action still enters the
 approval flow. On Wayland, local control is disabled and legacy opt-ins are cleared automatically. Automatic Wayland
 helper installation, native on-device dictation, and ARM64 remain unavailable and fail closed; follow their
-progress in [issue #29](https://github.com/milind-soni/OpenMausBot/issues/29) and the safety hold in
-[issue #345](https://github.com/milind-soni/OpenMausBot/issues/345). Bundled
-CUA supply-chain work is tracked in [issue #113](https://github.com/milind-soni/OpenMausBot/issues/113). Xorg is tracked in
-[issue #79](https://github.com/milind-soni/OpenMausBot/issues/79), and guarded GNOME/Wayland support in
-[issue #109](https://github.com/milind-soni/OpenMausBot/issues/109).
+progress in [issue #29](https://github.com/AdilShamim8/Uni/issues/29) and the safety hold in
+[issue #345](https://github.com/AdilShamim8/Uni/issues/345). Bundled
+CUA supply-chain work is tracked in [issue #113](https://github.com/AdilShamim8/Uni/issues/113). Xorg is tracked in
+[issue #79](https://github.com/AdilShamim8/Uni/issues/79), and guarded GNOME/Wayland support in
+[issue #109](https://github.com/AdilShamim8/Uni/issues/109).
 
 ## Download packages
 
 Choose one Ubuntu 24.04 x86_64 package from the latest release:
 
-- [Debian package (`Uni-amd64.deb`)](https://github.com/milind-soni/OpenMausBot/releases/latest/download/Uni-amd64.deb) — recommended; APT installs its desktop dependencies and configures the bundled bot browser's sandbox.
-- [Portable AppImage (`Uni.AppImage`)](https://github.com/milind-soni/OpenMausBot/releases/latest/download/Uni.AppImage) — does not install system files.
-- [SHA-256 checksums](https://github.com/milind-soni/OpenMausBot/releases/latest/download/SHA256SUMS-ubuntu-x64.txt)
+- [Debian package (`Uni-amd64.deb`)](https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-amd64.deb) — recommended; APT installs its desktop dependencies and configures the bundled bot browser's sandbox.
+- [Portable AppImage (`Uni.AppImage`)](https://github.com/AdilShamim8/Uni/releases/latest/download/Uni.AppImage) — does not install system files.
+- [SHA-256 checksums](https://github.com/AdilShamim8/Uni/releases/latest/download/SHA256SUMS-ubuntu-x64.txt)
 
 Versioned packages and previous releases remain available on the
-[releases page](https://github.com/milind-soni/OpenMausBot/releases).
+[releases page](https://github.com/AdilShamim8/Uni/releases).
 
 ## Build packages
 
@@ -48,7 +48,7 @@ Requirements for building from source:
 - pnpm 10.33.0 (Corepack can install the version declared by the project)
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot.git
+git clone https://github.com/AdilShamim8/Uni.git
 cd Uni
 corepack enable
 pnpm install --frozen-lockfile
@@ -99,7 +99,7 @@ pnpm package:arch
 sudo pacman -U release/Uni-<version>-x64.pacman
 ```
 
-Replace `<version>` with the built version (for example, `0.1.149`). Then launch `openmausbot` from the application launcher or command line.
+Replace `<version>` with the built version (for example, `0.1.149`). Then launch `uni` from the application launcher or command line.
 
 #### Portable AppImage
 A minimal Arch install lacks the FUSE helper and some desktop libraries the AppImage needs, so install them first:
@@ -141,8 +141,8 @@ user namespaces, its bundled browser can still report `No usable sandbox`. Insta
 do not add `--no-sandbox`, disable AppArmor globally, or allowlist arbitrary executables under your home
 directory. See [Chromium's explanation of the Ubuntu restriction](https://chromium.googlesource.com/chromium/src/+/main/docs/security/apparmor-userns-restrictions.md).
 
-Application data remains local in `~/.openmausbot`. Electron browser data and window state use the normal XDG
-configuration directory (`~/.config/openmausbot` unless the environment overrides it).
+Application data remains local in `~/.uni`. Electron browser data and window state use the normal XDG
+configuration directory (`~/.config/uni` unless the environment overrides it).
 
 ## Develop the desktop shell
 
@@ -321,7 +321,7 @@ pnpm smoke:linux-package
 The verifier checks `.deb` metadata, desktop identity, the exact dormant Cua resource tree and provenance,
 SquashFS/DEB directory modes, runtime path policy, and matching binary hashes across all artifacts. The local smoke
 launches the unpacked app and AppImage without `--no-sandbox`; CI first reproduces a `0.1.7` in-place DEB upgrade and
-then runs the same smoke against `/opt/Uni/openmausbot`. These lanes prove the embedded server and UI are
+then runs the same smoke against `/opt/Uni/uni`. These lanes prove the embedded server and UI are
 usable while an optional Composio broker stalls, verify that an old local-control opt-in is cleared, and assert that
 no Cua executable starts on Xorg or simulated Wayland. Low-level runtime tests retain the future private-daemon
 contract without activating it in a packaged app. Only a real-seat acceptance matrix can authorize re-enablement.

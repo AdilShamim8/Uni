@@ -120,11 +120,11 @@ let desktopXRefused = false;
 
 const LOOPBACK = new Set(["127.0.0.1", "localhost", "[::1]"]);
 
-/** `{ type: "openmausbot:included-x", access: { url, token } | null }` from
+/** `{ type: "uni:included-x", access: { url, token } | null }` from
  * the desktop's main process. True when it was one (then applied), false for
  * any other message; a malformed one throws and changes nothing. */
 export function applyIncludedXMessage(message: unknown): boolean {
-  if (!message || typeof message !== "object" || (message as { type?: unknown }).type !== "openmausbot:included-x") return false;
+  if (!message || typeof message !== "object" || (message as { type?: unknown }).type !== "uni:included-x") return false;
   const access = (message as { access?: unknown }).access;
   if (access === null) {
     desktopX = null;

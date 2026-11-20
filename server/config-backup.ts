@@ -64,7 +64,7 @@ export function configSaveRefusal(read: { state: "unreadable" | "invalid"; reaso
   const aside = read.state === "invalid" ? keepUnreadableAside(path) : null;
   const kept = aside ? ` A copy of it was kept at ${aside}.` : "";
   return Object.assign(
-    new Error(`The settings file ${path} was left as it is because ${why}, so nothing was saved. Repair the file, or put a dated copy back with "openmausbot config restore".${kept}`),
+    new Error(`The settings file ${path} was left as it is because ${why}, so nothing was saved. Repair the file, or put a dated copy back with "uni config restore".${kept}`),
     { status: 503 },
   );
 }
@@ -104,7 +104,7 @@ export function writeConfigBackup(path: string, text: string, now: Date = new Da
     } catch {
       return null;
     }
-    pruneConfigBackups(dir);
+    pruneConfigBackups(dir, name);
     return name;
   }
   return null;
@@ -138,9 +138,12 @@ export function listConfigBackups(dir: string): ConfigBackup[] {
     });
 }
 
-function pruneConfigBackups(dir: string): void {
+function pruneConfigBackups(dir: string, justWritten: string): void {
   const copies = listConfigBackups(dir);
-  for (const copy of copies.slice(0, Math.max(0, copies.length - CONFIG_BACKUP_KEEP))) {
+  // A corrected clock may put this save before every existing timestamp. The
+  // copy that makes the imminent overwrite reversible must survive retention.
+  const removable = copies.filter((copy) => copy.name !== justWritten);
+  for (const copy of removable.slice(0, Math.max(0, copies.length - CONFIG_BACKUP_KEEP))) {
     try {
       unlinkSync(copy.path);
     } catch {
@@ -157,13 +160,13 @@ export type ConfigBackupCheck = (text: string) => string | null;
  * A dry run reports what it would do and changes nothing. Nothing is put back over a file that cannot be read or
  * kept: a restore never loses what it finds. */
 export function restoreConfigBackup(dir: string, name: string, options: { dryRun?: boolean; check?: ConfigBackupCheck } = {}): ConfigRestore {
-  if (!BACKUP_NAME.test(name)) return { ok: false, error: `${name} is not a dated copy of the settings file; run openmausbot config backups to see the copies` };
+  if (!BACKUP_NAME.test(name)) return { ok: false, error: `${name} is not a dated copy of the settings file; run uni config backups to see the copies` };
   const source = join(dir, name);
   let text: string;
   try {
     text = readFileSync(source, "utf8");
   } catch {
-    return { ok: false, error: `The copy ${name} could not be read; run openmausbot config backups to see the copies` };
+    return { ok: false, error: `The copy ${name} could not be read; run uni config backups to see the copies` };
   }
   try {
     const parsed = parseJson(text);

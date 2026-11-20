@@ -14,10 +14,10 @@ set -eu
 
 settings() {
   SYSROOT="${OMB_INSTALL_SYSROOT:-}"
-  INSTALL_DIR="${OMB_INSTALL_DIR:-/opt/openmausbot}"
-  IMAGE_REPO=milind-soni/openmausbot
+  INSTALL_DIR="${OMB_INSTALL_DIR:-/opt/uni}"
+  IMAGE_REPO=adilshamim8/uni
   RELEASES_URL=https://api.github.com/repos/AdilShamim8/Uni/releases/latest
-  ADMIN_URL="${MAUSBOT_ADMIN_URL:-https://cloud.openmausbot.com}"
+  ADMIN_URL="${MAUSBOT_ADMIN_URL:-https://cloud.uni.com}"
   SCRIPT_URL=https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/install.sh
   # Where the files this installer places come from: this repository at the tag of the version it installs, and at
   # main when that tag does not have them. OMB_INSTALL_SOURCE names one copy to use instead (https://… or file:///…).
@@ -31,7 +31,7 @@ settings() {
   SANDBOX_WARN_ONLY="keyring-denied hostname-private cpu-list-readable fly-api-hidden egress-public-allowed"
   SECCOMP=seccomp-omb-home.json
   APPARMOR_PROFILE=omb-home-narrow
-  PROJECT=openmausbot
+  PROJECT=uni
   MIN_DOCKER=24
   MIN_CPUS=2
   MIN_MEMORY_MB=3500
@@ -79,7 +79,7 @@ usage() {
   say "  --domain NAME      the name people will open, already pointing at this server"
   say "  --email ADDRESS    the first admin's email, so they can sign in with an emailed code"
   say "  --install-docker   install Docker with Docker's official script when it is missing, without asking"
-  say "  --dir PATH         where the install lives (default /opt/openmausbot)"
+  say "  --dir PATH         where the install lives (default /opt/uni)"
   say "  --no-sandbox       do not prepare this server for the bots' sandbox (only for a server you alone sign in to)"
   say "  <code>             the one-time code Uni shows, to also connect this server to Uni"
 }
@@ -130,7 +130,7 @@ parse() {
   esac
   case "$INSTALL_DIR" in
     /?*) ;;
-    *) fail "--dir needs a full path, like /opt/openmausbot." ;;
+    *) fail "--dir needs a full path, like /opt/uni." ;;
   esac
   case "$INSTALL_DIR" in
     *[!A-Za-z0-9/._-]*) fail "--dir may hold only letters, digits, / . _ and -." ;;
@@ -395,8 +395,8 @@ check_outbound() {
     return
   fi
   ok "outbound: the image registries and Let's Encrypt are reachable"
-  if ! reachable https://accounts.openmausbot.com/; then
-    note "accounts.openmausbot.com is not reachable, so signing in with an emailed code needs a mail server of your own (OMB_SIGNIN_SMTP_URL). Pairing codes work without it."
+  if ! reachable https://accounts.uni.com/; then
+    note "accounts.uni.com is not reachable, so signing in with an emailed code needs a mail server of your own (OMB_SIGNIN_SMTP_URL). Pairing codes work without it."
   fi
 }
 
@@ -637,7 +637,7 @@ write_compose() {
 # two Unix sockets in the `edge` volume, which Caddy, in its own container, reaches it through. A request on a socket is
 # always a remote one to the server. Caddy does not share the server's network: a server that restarted on its own came
 # back in a new one, and left Caddy refusing HTTPS in the old one.
-name: openmausbot
+name: uni
 services:
   omb:
     image: ${OMB_IMAGE:?run the installer again}
@@ -646,16 +646,16 @@ services:
     shm_size: 512m
     volumes:
       - ./data:/data
-      - edge:/run/openmausbot
+      - edge:/run/uni
       # The Update server button (update-runner.sh, root's folder): the server leaves a request in the first, reads the
       # outcome in the second.
-      - /var/lib/openmausbot-update/request:/run/omb-update/request
-      - /var/lib/openmausbot-update/status:/run/omb-update/status:ro
+      - /var/lib/uni-update/request:/run/omb-update/request
+      - /var/lib/uni-update/status:/run/omb-update/status:ro
     environment:
       OMB_PORT: "8799"
       OMB_WEBHOOK_PORT: "8800"
-      OMB_TUNNEL_SOCKET: /run/openmausbot/http.sock
-      OMB_WEBHOOK_SOCKET: /run/openmausbot/hooks.sock
+      OMB_TUNNEL_SOCKET: /run/uni/http.sock
+      OMB_WEBHOOK_SOCKET: /run/uni/hooks.sock
       OMB_WEBHOOK_PUBLIC_URL: https://${DOMAIN}
       OMB_PUBLIC_URL: https://${DOMAIN}
       OMB_SERVER_NAME: ${OMB_SERVER_NAME:-${DOMAIN}}
@@ -664,10 +664,10 @@ services:
       OMB_SIGNIN_MEMBER_EMAILS:
       OMB_SIGNIN_SMTP_URL:
       OMB_SIGNIN_SMTP_FROM:
-      # "1": phones pair by QR through Uni Relay. Sign in once: docker compose exec omb openmausbot login --relay
+      # "1": phones pair by QR through Uni Relay. Sign in once: docker compose exec omb uni login --relay
       OMB_PHONE_RELAY:
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8799/api/health | grep -q openmausbot"]
+      test: ["CMD-SHELL", "curl -sf http://127.0.0.1:8799/api/health | grep -q uni"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -687,7 +687,7 @@ services:
       DOMAIN: ${DOMAIN}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - edge:/run/openmausbot
+      - edge:/run/uni
       - ./caddy/data:/data
       - ./caddy/config:/config
 
@@ -711,7 +711,7 @@ write_caddyfile() {
 	# own per-hook secrets), so it sits outside any login. The path is passed
 	# through unchanged: the receiver routes on /hooks/<id>.
 	handle /hooks/* {
-		reverse_proxy unix//run/openmausbot/hooks.sock
+		reverse_proxy unix//run/uni/hooks.sock
 	}
 
 	handle {
@@ -721,7 +721,7 @@ write_caddyfile() {
 		#   }
 		# and set both variables in .env (hash with `caddy hash-password`,
 		# every `$` doubled for Compose).
-		reverse_proxy unix//run/openmausbot/http.sock {
+		reverse_proxy unix//run/uni/http.sock {
 			# SSE: stream events as they arrive
 			flush_interval -1
 			# Compression is `encode`'s job above; the server would gzip its
@@ -955,7 +955,7 @@ wait_healthy() {
 }
 
 https_answers() {
-  curl -fsS --max-time 10 --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/api/health" 2>/dev/null | grep -q openmausbot
+  curl -fsS --max-time 10 --resolve "$DOMAIN:443:127.0.0.1" "https://$DOMAIN/api/health" 2>/dev/null | grep -q uni
 }
 
 wait_https() {
@@ -1039,10 +1039,10 @@ connect_server() {
   [ "$status" = 0 ] || fail "Uni is installed and running here, but connecting it did not finish (the reason is above). Nothing needs reinstalling: fix that and run this again with a new code."
 }
 
-# The first admin's one-time sign-in link, as `openmausbot pair` prints it: its code line (until when it works) and the
+# The first admin's one-time sign-in link, as `uni pair` prints it: its code line (until when it works) and the
 # link. Nothing when the server would not make one.
 first_admin_link() {
-  made=$(compose exec -T omb openmausbot pair --label "First admin" 2>/dev/null) || return 1
+  made=$(compose exec -T omb uni pair --label "First admin" 2>/dev/null) || return 1
   lines=$(printf '%s\n' "$made" | grep -E '^(Pairing code|Link) ' || true)
   case "$lines" in *"Link "*"https://$DOMAIN/pair#code="*) printf '%s\n' "$lines" | sed 's/^/  /' ;; *) return 1 ;; esac
 }
@@ -1051,7 +1051,7 @@ finish() {
   say ""
   say "Uni is running at https://$DOMAIN"
   say ""
-  pair_command="cd $INSTALL_DIR && sudo docker compose exec omb openmausbot pair --label \"First admin\""
+  pair_command="cd $INSTALL_DIR && sudo docker compose exec omb uni pair --label \"First admin\""
   # Only to a terminal: in a log, the link would let whoever reads it sign in as the admin until it is used or expires.
   if [ -t 1 ] && link=$(first_admin_link); then
     say "To sign in as the first admin, open this one-time link in your browser. Anyone who has it can use it, once:"

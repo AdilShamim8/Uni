@@ -283,7 +283,7 @@ export class ChatGptPlanAuthController {
     const redirectUri = `http://127.0.0.1:${address.port}/auth/callback`;
     const url = new URL(`${this.issuer}/api/accounts/authorize`);
     url.search = new URLSearchParams({ client_id: clientId ?? "dynamic_agent_client", ext_agent_host_id: hostId,
-      ...(clientId ? {} : { agent_name_hint: "openmausbot" }), ...(previous?.email ? { login_hint: previous.email } : {}),
+      ...(clientId ? {} : { agent_name_hint: "uni" }), ...(previous?.email ? { login_hint: previous.email } : {}),
       ...(previous?.tokens && !previous.tokens.scopes.includes(DIRECT_SCOPE) ? { prompt: "consent" } : {}),
       response_type: "code", redirect_uri: redirectUri, scope: SCOPES, resource: this.resource, state, nonce,
       code_challenge_method: "S256", code_challenge: createHash("sha256").update(verifier).digest("base64url"),

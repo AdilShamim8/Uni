@@ -1,13 +1,13 @@
-# Self-hosting the Uni server
+# Self-hosting the MausBot server
 
-To keep Uni and its agents on your current computer and use a VPS only as a
+To keep MausBot and its agents on your current computer and use a VPS only as a
 bot’s remote desktop, see [Bring Your Own VPS](byo-vps.md) and the
-[published setup guide](https://docs.openmausbot.com/docs/computers/byo-vps).
+[published setup guide](https://docs.uni.com/docs/computers/byo-vps).
 
 Run the server on a machine you control (a VPS, a home server, a Mac mini in a
 closet). Then connect the desktop app, browsers and phones to it. Every path
 below ends the same way: the server prints **one link**, and you paste it into
-Uni under **＋ → Connect to a server**.
+MausBot under **＋ → Connect to a server**.
 
 > **Security first:** the server listens on `127.0.0.1:8799`, and a program on
 > that machine counts as its owner. Never forward that port yourself. Let one
@@ -23,12 +23,12 @@ For server feature switches, defaults and configuration-file instructions, see
 
 | You have | Run | Link it prints |
 |---|---|---|
-| HTTPS in front already (cloudflared, Caddy, nginx) | `npx openmausbot serve --public-url https://maus.example.com` | `https://maus.example.com/pair#code=…` |
-| A domain name, and ports 80 and 443 open | `npx openmausbot serve --domain maus.example.com` | `https://maus.example.com/pair#code=…` |
-| Tailscale on the server and your devices | `npx openmausbot serve --tailscale` | `https://<machine>.<tailnet>.ts.net/pair#code=…` |
-| Only this network (home or office) | `npx openmausbot serve --lan` | `http://192.168.1.20:8799/pair#code=…` |
-| Nothing at all | `npx openmausbot login`, then `npx openmausbot serve --tunnel` | `https://c-….openmausbot.com/pair#code=…` |
-| Only the phone app, from anywhere (a machine with no tunnel address, for now) | `npx openmausbot login --relay`, then `npx openmausbot serve --relay` | a QR for the Uni app ([Uni Relay](phone-relay-server.md)) |
+| HTTPS in front already (cloudflared, Caddy, nginx) | `npx uni serve --public-url https://maus.example.com` | `https://maus.example.com/pair#code=…` |
+| A domain name, and ports 80 and 443 open | `npx uni serve --domain maus.example.com` | `https://maus.example.com/pair#code=…` |
+| Tailscale on the server and your devices | `npx uni serve --tailscale` | `https://<machine>.<tailnet>.ts.net/pair#code=…` |
+| Only this network (home or office) | `npx uni serve --lan` | `http://192.168.1.20:8799/pair#code=…` |
+| Nothing at all | `npx uni account login`, then `npx uni serve --tunnel` | `https://c-….uni.com/pair#code=…` |
+| Only the phone app, from anywhere (a machine with no tunnel address, for now) | `npx uni login --relay`, then `npx uni serve --relay` | a QR for the MausBot app ([MausBot Relay](phone-relay-server.md)) |
 
 `--lan` can be added to any of the others. Plain `http://` is only for a
 private network: the desktop app accepts it on LAN addresses, Tailscale
@@ -42,26 +42,26 @@ refuses plain http on the open internet.
 On any machine with Node 24 or newer:
 
 ```sh
-npx openmausbot setup                                        # once: AI access and a default model
-npx openmausbot serve --public-url https://maus.example.com  # or --domain, --tailscale, --lan, --tunnel
+npx uni setup                                        # once: AI access and a default model
+npx uni serve --public-url https://maus.example.com  # or --domain, --tailscale, --lan, --tunnel
 ```
 
 In a terminal, `serve` checks the address and prints one pairing block:
 
 ```
-Uni 0.1.147 · server "hetzner-1"
-data: /home/maus/.openmausbot
+MausBot 0.1.147 · server "hetzner-1"
+data: /home/maus/.uni
 Reach    https://maus.example.com   ✓ answers as this server (11:04)
 
 Pairing code   7KQ2-M9XD-H4TP   works once, until 11:14 · everything
 Link           https://maus.example.com/pair#code=7KQ2-M9XD-H4TP
 
   Desktop app   ＋ → Connect to a server, paste the link
-  Phone         scan with your camera or the Uni app
+  Phone         scan with your camera or the MausBot app
 
   ▄▄▄▄▄▄▄ ▄ ▄▄ ▄▄▄▄▄▄▄   (QR of the link)
-For a phone (chat and approvals only)   npx openmausbot pair --phone
-New code later   npx openmausbot pair
+For a phone (chat and approvals only)   npx uni pair --phone
+New code later   npx uni pair
 Stop with Ctrl+C
 ```
 
@@ -69,16 +69,16 @@ Each way in has its own Reach line:
 
 - `--lan`: `http://192.168.1.20:8799   this network only, not encrypted`
 - `--tailscale`: `… · your tailnet`
-- `--tunnel`: `… · Uni web address`
+- `--tunnel`: `… · MausBot web address`
 
-Paste the link into Uni: **＋ → Connect to a server**. The sheet names the
-server it found ("✓ hetzner-1 · Uni 0.1.147 · HTTPS"), and **Connect to
+Paste the link into MausBot: **＋ → Connect to a server**. The sheet names the
+server it found ("✓ hetzner-1 · MausBot 0.1.147 · HTTPS"), and **Connect to
 hetzner-1** finishes. You can also type the address (`maus.example.com`,
 `192.168.1.20:8799`) and the pairing code in their own fields.
 
 `serve` with no way in mints no code. It lists the ways in instead. Every
-command the CLI prints starts the way you started it (`npx openmausbot`,
-`openmausbot`, `pnpm omb`, or `docker compose exec omb openmausbot`), so you
+command the CLI prints starts the way you started it (`npx uni`,
+`uni`, `pnpm omb`, or `docker compose exec omb uni`), so you
 can paste it as is.
 
 ### Already have cloudflared, Caddy or nginx in front
@@ -89,13 +89,13 @@ and don't buffer the event stream ([details](#putting-a-proxy-in-front)).
 Then:
 
 ```sh
-npx openmausbot serve --public-url https://maus.example.com
+npx uni serve --public-url https://maus.example.com
 ```
 
 Setting `OMB_PUBLIC_URL=https://maus.example.com` in the environment works the
 same way. If the Reach line says
 `✗ https://maus.example.com doesn't reach this server`, the tunnel points
-somewhere else. Fix that, then run `npx openmausbot status` to check again.
+somewhere else. Fix that, then run `npx uni account status` to check again.
 
 ### Docker on your computer or home network
 
@@ -121,16 +121,16 @@ would answer the whole internet over plain http. More options are in
 ### Docker with your own domain
 
 On a fresh Ubuntu 22.04 or 24.04 server (x86-64), one command checks the
-server, installs Uni under `/opt/openmausbot` and ends with HTTPS on your
+server, installs MausBot under `/opt/uni` and ends with HTTPS on your
 domain:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/milind-soni/OpenMausBot/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com
+curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com
 cd /opt/openmausbot && sudo docker compose exec omb openmausbot pair   # Link https://<DOMAIN>/pair#code=…
 ```
 
 Add `--check` to only check the server. Running it again repairs;
-`sudo /opt/openmausbot/update.sh` updates, with a copy of the data first;
+`sudo /opt/uni/update.sh` updates, with a copy of the data first;
 `--uninstall` stops the server and keeps your data. The checks, the files it
 writes and what it contacts are in
 [Deploy on a VPS](deploy-vps.md#quick-start-one-command-on-your-own-domain).
@@ -138,7 +138,7 @@ writes and what it contacts are in
 By hand, on any system with Docker:
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot && cd Uni/deploy
+git clone https://github.com/AdilShamim8/Uni && cd Uni/deploy
 cp .env.example .env                          # set DOMAIN (and ENGINES)
 docker compose pull omb && docker compose up -d
 docker compose exec omb openmausbot pair      # Link https://<DOMAIN>/pair#code=…
@@ -149,7 +149,7 @@ Caddy gets the certificate. See [Docker (with HTTPS on your own domain)](#docker
 ### Keep it running (a service)
 
 ```sh
-npx openmausbot service install --public-url https://maus.example.com   # the same way-in options as serve
+npx uni service install --public-url https://maus.example.com   # the same way-in options as serve
 ```
 
 This writes a systemd unit (Linux) or a launchd agent (macOS) with the same
@@ -158,8 +158,118 @@ installs a copy of this exact version beside your data, because npm prunes
 its npx cache. The service log never shows a code. Get one with:
 
 ```sh
-npx openmausbot pair
+npx uni pair
 ```
+
+### Podman (rootless, as a service)
+
+> **Warning: this install isolates less than the Docker install.** The
+> server shares the machine's network (Podman's host network), so:
+>
+> - Any port a bot or a tool opens on `0.0.0.0` is open on every interface
+>   of the machine, including a VPS's public IP, whatever `--local` says.
+>   Bots run unboxed, beside the data folder that holds the engines' logins.
+> - Bots can reach every loopback service on the machine: databases, other
+>   apps' admin ports.
+> - Every local account and process on the machine counts as the owner on
+>   the server's port, and can attach to Chrome's debugging port.
+>
+> Use it on a machine only you sign in to, and put a host firewall in front
+> (`ufw`, `firewalld`) that lets in only what you mean to serve.
+
+It needs Linux and Podman 4.9 or newer. One command run as your own user,
+without `sudo`, installs the published server image as your user's systemd
+service:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/podman/install.sh | sh
+podman exec -it openmausbot openmausbot pair      # a code, and a sign-in link for this machine's browser
+```
+
+It writes a Quadlet unit, `~/.config/containers/systemd/uni.container`,
+that runs the image pinned by its digest. systemd starts it again when it
+fails or stops answering its health check. It starts at boot once your user
+may run services without being logged in. The installer checks this and
+prints the one line to run as an administrator; it never runs `sudo` itself:
+
+```sh
+sudo loginctl enable-linger "$USER"
+```
+
+The server uses the host's network, as `npx uni serve` does. It
+listens on `127.0.0.1:8799` only, and a program on this machine counts as its
+owner ([Loopback trust](#loopback-trust-owner-or-service)). Nothing is
+forwarded into a container. `--local` and `--lan` decide only which
+addresses the server's own port answers; they do not limit other ports (see
+the warning above). Options, given after `sh -s --`:
+
+| Option | Does |
+|---|---|
+| `--lan` | The server's port also answers other devices on this network, over plain http, and only from private addresses. Each device pairs. |
+| `--local` | Back to this machine only (the default). |
+| `--port N` | Another port, when 8799 is taken (webhooks use the next one). |
+| `--public-url URL` | The HTTPS address a tunnel or proxy in front of it serves, for pairing links. |
+| `--dir PATH` | Another folder for the data and settings (not a Docker install's folder). |
+| `--uninstall` | Stops and removes the service. Keeps the data. |
+
+Running the command again repairs the install and keeps the version, the
+folder, the data and your settings. It restarts the server only when
+something changed. Without `--dir` it keeps the folder the service already
+uses; a `--dir` that names another folder is refused. It also refuses while
+`update.sh` is running, or after an update that did not finish: run
+`update.sh` first.
+
+| | Where |
+|---|---|
+| Data (chats, settings, engine logins) | `~/.local/share/uni/data`, owned by your user on the host |
+| The server's settings | `~/.local/share/uni/server.env`. Apply a change with `systemctl --user restart uni` |
+| Log | `journalctl --user -u uni -f` |
+| Status | `systemctl --user status uni` |
+
+**Update.** `~/.local/share/uni/update.sh` updates to the stable
+version (`--version X.Y.Z` for another, `--check` to only look). It is
+`deploy/update.sh`, as for Docker installs: it downloads the image by digest,
+stops the service, copies the data into a Podman volume and checks the copy,
+points the unit at the new image and restarts the service. Then it waits until
+the server answers and can still start bots. If it cannot, the old image and
+the copy of the data go back. `update.sh --rollback` goes back after an update
+that worked. Run it as your user, without `sudo`. The app's **Update server**
+button does not run it on this install yet: run `update.sh` yourself.
+When a rollback cannot find the old version by its digest, it names the
+copy it kept on this machine, `uni-before-update:local`, in the
+unit and in `.env`. Running the installer again never downloads that name:
+it pins the copy by the digest it came with, or, when it has none, keeps
+it as it is and says so, until the next `update.sh`.
+
+**Uninstall.** Run the same command with `--uninstall`. The data stays.
+Some of its files can belong to the container's other user ids, so remove
+it through Podman: `podman unshare rm -rf ~/.local/share/uni`. The
+copy of the data the last update kept is a Podman volume:
+`podman volume ls --filter label=com.mausbot.role=update-backup`.
+
+**What rootless does not do.**
+
+- The bots' sandbox (bubblewrap) is off. The published server image does
+  not include bubblewrap, so bots run in the server's container, beside its
+  data, as with the Docker image. Use this install on a machine only you
+  sign in to. Bubblewrap itself can run in a rootless container, with the
+  repository's seccomp profile (`connector/profiles/seccomp-omb-home.json`)
+  and `/proc` left uncovered (`--security-opt unmask=/proc/*`). There the
+  box's self-check passes 31 of 32 checks; the kernel keyring stays
+  reachable. This install sets neither.
+- Chrome runs with `--no-sandbox` inside the container, as in every
+  container install, and the container is the boundary. It needs no other
+  flag: the built-in browser starts and loads pages.
+- No HTTPS of its own: put Caddy, a tunnel or Tailscale in front and pass
+  `--public-url`.
+- Per-bot Linux desktops (**Local VM**) need the Podman socket, which this
+  install does not mount. [deploy/podman](../deploy/podman/README.md) runs
+  the full stack with them.
+
+Tested on Ubuntu 24.04 (x86-64, Podman 4.9.3), with
+`kernel.apparmor_restrict_unprivileged_userns=1`, and nowhere else yet.
+Other distributions with Podman 4.9 or newer (RHEL 9.4, or Podman 5 on
+Debian 13 and Fedora), SELinux hosts and ARM64 have not been tried.
 
 ## Troubleshooting
 
@@ -167,20 +277,20 @@ npx openmausbot pair
 |---|---|---|
 | "That's a pairing code. Also enter the server's address, like http://192.168.1.20:8799." | A code went into the address field. | Type the server's address in the first field; the code moves to its own field. |
 | "http://… is on the open internet and isn't encrypted…" | A plain http link to a public address. | Use its https address, or put HTTPS in front: `--public-url` behind cloudflared or Caddy, `--domain`, or `--tailscale`. |
-| "This points at this computer (127.0.0.1), not at the server." | A link to `127.0.0.1` or `localhost`, which is the computer you're on. | Use the address other devices reach the server at: run `openmausbot pair` on the server, or choose a way in. |
+| "This points at this computer (127.0.0.1), not at the server." | A link to `127.0.0.1` or `localhost`, which is the computer you're on. | Use the address other devices reach the server at: run `uni pair` on the server, or choose a way in. |
 | "Can't reach 192.168.1.20:8799. Check the server is running and reachable from this computer." | Nothing answers there. | Start it with a way in (`serve --lan` for this network), and check a firewall allows the port. |
 | "maus.example.com doesn't exist yet." / "…certificate isn't valid yet." | DNS or the certificate isn't ready. | Wait for the DNS record, or give a new server a minute. |
-| "That address answers, but it isn't a Uni server." | Something else answers there, often a proxy pointing at the wrong port. | Point it at `http://127.0.0.1:8799`. |
-| "That's a sign-in code from an email…" / "That code is for the phone app…" / "That's a script key…" | The wrong kind of code. | On the server, run `openmausbot pair` for a 12-character pairing code. |
+| "That address answers, but it isn't a MausBot server." | Something else answers there, often a proxy pointing at the wrong port. | Point it at `http://127.0.0.1:8799`. |
+| "That's a sign-in code from an email…" / "That code is for the phone app…" / "That's a script key…" | The wrong kind of code. | On the server, run `uni pair` for a 12-character pairing code. |
 | "Too many wrong codes. Try again at 11:19." | Five wrong codes in five minutes from one address. | Wait until then, or make a new code. |
-| `Reach    ✗ https://… doesn't reach this server (connection refused).` | Your tunnel or proxy doesn't reach port 8799. | Point it at `http://127.0.0.1:8799`, then run `openmausbot status`. |
-| `Reach    ✗ https://… answers as a different server.` | The address leads to another Uni server. | Point the tunnel at this machine's port. |
+| `Reach    ✗ https://… doesn't reach this server (connection refused).` | Your tunnel or proxy doesn't reach port 8799. | Point it at `http://127.0.0.1:8799`, then run `uni account status`. |
+| `Reach    ✗ https://… answers as a different server.` | The address leads to another MausBot server. | Point the tunnel at this machine's port. |
 | `Reach    … https://… doesn't answer yet` (`--domain`) | DNS isn't pointing here yet, or ports 80 and 443 are closed. | Fix the A record and open the ports; the certificate follows. |
 | `--lan: this machine has no private network address…` | A VPS with only a public address. | Use `--public-url`, `--domain` or `--tailscale`. |
 | `tailscale: HTTPS certificates are off for this tailnet, so this server listens on http://…` | Tailscale can't serve HTTPS yet, so the server listens on its own tailnet address. It works, and only your tailnet reaches it. | For an `https://` address, turn on HTTPS certificates at https://login.tailscale.com/admin/dns, then run `serve --tailscale` again. |
-| `No Uni server is running here. Start it: … serve` | `pair` found no server on this port. | Start it, or pass the server's `--port` and `--data-dir`. |
-| `Get a pairing code: openmausbot pair` and no code | The server runs as a service or under `docker compose logs`, where codes stay out of logs. | Run that command in a terminal. |
-| "This shared server takes no pairing commands from this machine." | The server runs with `OMB_LOOPBACK_TRUST=service`. | Let people sign in with their email (`openmausbot access add you@example.com`), or pair from a signed-in admin's Settings. |
+| `No MausBot server is running here. Start it: … serve` | `pair` found no server on this port. | Start it, or pass the server's `--port` and `--data-dir`. |
+| `Get a pairing code: uni pair` and no code | The server runs as a service or under `docker compose logs`, where codes stay out of logs. | Run that command in a terminal. |
+| "This shared server takes no pairing commands from this machine." | The server runs with `OMB_LOOPBACK_TRUST=service`. | Let people sign in with their email (`uni access add you@example.com`), or pair from a signed-in admin's Settings. |
 
 ## Reference
 
@@ -200,7 +310,7 @@ Runs fully on a server:
 - text-to-speech (with a key), the web UI (the server serves it itself)
 
 - a browser for bots, once the engine is installed on the server
-  (`npx openmausbot browser install`, or nothing to do in the Docker image,
+  (`npx uni browser install`, or nothing to do in the Docker image,
   which ships it): each bot gets its own isolated, persistent session.
   Watching it live from the app is the next step (docs/plans/browser-engine.md).
   It reaches the public internet and the dev servers a bot starts itself,
@@ -213,7 +323,7 @@ Desktop-only for now (needs the Mac/Linux app):
 
 ## Ways in, in detail
 
-`npx openmausbot start` (or plain `npx openmausbot`) is the guided start. It
+`npx uni start` (or plain `npx uni`) is the guided start. It
 asks for AI access, an account or API key, and the default model, then opens
 the workspace in this machine's browser. `setup` only configures, and `serve`
 starts without questions from the saved configuration and the flags you give
@@ -221,10 +331,10 @@ it (for services and scripts). The [setup guide](cli-onboarding.md) explains
 the choices. The npm package does not include engine CLIs (`claude`,
 `codex`, …); setup can install and sign in the supported ones. Run setup,
 engine sign-ins and the server as the same unprivileged user: engine
-credentials live in that user's home, not all under `.openmausbot`. For a
+credentials live in that user's home, not all under `.uni`. For a
 Linux service, the [VPS guide](deploy-vps.md#before-you-start) covers the
 account, engines and browser libraries. After installing browser libraries
-as administrator, run `npx openmausbot browser install` as the service user
+as administrator, run `npx uni browser install` as the service user
 too.
 
 - **`--public-url URL`**: you already have HTTPS in front. The address must
@@ -243,7 +353,7 @@ too.
   this user, the server listens on this machine's own tailnet addresses at
   `http://<name>:<port>` and answers only tailnet peers that use that exact
   name. Otherwise `serve` checks that
-  no other Uni server already answers on this machine's name. Then it
+  no other MausBot server already answers on this machine's name. Then it
   runs `tailscale serve --https=443 http://127.0.0.1:8799` in the foreground,
   so the share ends when `serve` stops. A marker file in the data dir lets the
   next start turn off a share that a crashed run left behind. It never
@@ -256,8 +366,8 @@ too.
   networks and VPN tunnels are skipped. A machine with no private address
   says so and stays on loopback. Plain http travels in clear, so use it only
   on a network you trust.
-- **`--tunnel`**: `npx openmausbot login` reserves an address like
-  `https://c-….openmausbot.com` for this machine (an emailed code signs it
+- **`--tunnel`**: `npx uni account login` reserves an address like
+  `https://c-….uni.com` for this machine (an emailed code signs it
   in). `serve --tunnel` connects it through a Cloudflare tunnel, the same one
   the desktop app uses for its companion. The first run downloads
   `cloudflared` (pinned version and digest) into the data dir. Only traffic
@@ -265,17 +375,17 @@ too.
   lands on a separate listener that the server treats as "through a proxy",
   never as the owner. That listener gzips JSON replies of 1 KB or more when
   the client accepts gzip; the loopback port never compresses.
-  `npx openmausbot logout` releases the address. The account credentials
-  live in `~/.openmausbot/tunnel-account.json` (mode 0600). Started from a
+  `npx uni account logout` releases the address. The account credentials
+  live in `~/.uni/tunnel-account.json` (mode 0600). Started from a
   fleet or a container, where nobody can type an emailed code? Set
   `OMB_INSTALLATION_CREDENTIAL` to the installation credential the fleet
   issued and skip `login`. The address and connector token are fetched at
   every start, and nothing is written to disk. A rejected credential stops
   the start with a clear message rather than serving locally.
 
-Later: `npx openmausbot pair --label "Kitchen iPad"` for another device
+Later: `npx uni pair --label "Kitchen iPad"` for another device
 (`--phone` for one that may chat but not change settings), and
-`npx openmausbot devices` to see or sign them out. `openmausbot serve` is a
+`npx uni devices` to see or sign them out. `uni serve` is a
 plain foreground process. For unattended use, run `service install` (above)
 or follow the [systemd example](deploy-vps.md#keep-it-running). Restarting a
 service never downloads a new release on its own.
@@ -359,7 +469,7 @@ use the [local Compose setup](../deploy/local/README.md). It defaults to
 `http://localhost:8080` and supports optional `.env` overrides.
 
 On Ubuntu, the [installer](deploy-vps.md#quick-start-one-command-on-your-own-domain)
-sets this up with one command, keeping the data in `/opt/openmausbot/data`.
+sets this up with one command, keeping the data in `/opt/uni/data`.
 The rest of this section is the same setup by hand.
 
 One tenant = one container for the server plus Caddy for HTTPS.
@@ -367,13 +477,13 @@ Requirements: Docker with Compose, a DNS name pointing at the machine, and
 ports 80/443 open.
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot && cd Uni/deploy
+git clone https://github.com/AdilShamim8/Uni && cd Uni/deploy
 cp .env.example .env            # set DOMAIN
 docker compose pull omb && docker compose up -d
 ```
 
 That starts the image CI publishes on every `main` push
-(`ghcr.io/milind-soni/openmausbot:latest`; each release is also tagged `v…`,
+(`ghcr.io/adilshamim8/uni:latest`; each release is also tagged `v…`,
 and the one our own Clouds have run for 48 hours is `stable`). Move to the
 stable version right away with `./update.sh`, which pins it by digest in
 `.env`. To build from your checkout instead: `docker compose up -d --build`. The
@@ -389,7 +499,7 @@ docker compose exec omb claude                       # each CLI you listed in EN
 docker compose exec omb openmausbot pair             # prints a code, a link and a QR
 ```
 
-Paste the link (`https://<DOMAIN>/pair#code=…`) into Uni under **＋ →
+Paste the link (`https://<DOMAIN>/pair#code=…`) into MausBot under **＋ →
 Connect to a server**, or open it in a browser, and it is paired; see "Using it from your computer" for what a session is. Webhook
 URLs (`https://<DOMAIN>/hooks/wh_…`) work without a session, and that is the
 base the app prints on new hooks because the stack sets
@@ -434,7 +544,7 @@ docker compose build --build-arg CHROME_CACHE_TAG=$(date +%F) omb && docker comp
 
 These platforms run the image's own command, with no `--init`, and usually
 with a 64 MB `/dev/shm` and a limit on how many processes the container may
-hold. The server image (`ghcr.io/milind-soni/openmausbot`) is built for that:
+hold. The server image (`ghcr.io/adilshamim8/uni`) is built for that:
 
 - **It brings its own init.** tini is the image's entrypoint and collects
   the processes that bots' engines, browsers and shell commands leave behind.
@@ -445,9 +555,9 @@ hold. The server image (`ghcr.io/milind-soni/openmausbot`) is built for that:
   starts itself again under the image's tini, which then stays process 1; an
   init of the platform's own on top (`docker run --init`, Compose's
   `init: true`) does no harm. A command you give the container runs as
-  written, so start it with `openmausbot …` or `node …`
-  (`docker run --rm ghcr.io/milind-soni/openmausbot openmausbot --version`):
-  a bare `--version` or `dist-server/openmausbot.js`, which older images
+  written, so start it with `uni …` or `node …`
+  (`docker run --rm ghcr.io/adilshamim8/uni uni --version`):
+  a bare `--version` or `dist-server/uni.js`, which older images
   passed on to Node, no longer starts.
 - **Chrome does not need a larger `/dev/shm`.** Where `/dev/shm` is under
   512 MB the bots' browser keeps its shared memory in `/tmp`, so there is
@@ -476,7 +586,7 @@ hold. The server image (`ghcr.io/milind-soni/openmausbot`) is built for that:
     with no forwarding header and a loopback `Host` is taken to be the
     server's owner.
   - A tunnel that dials out, so nothing has to reach the container:
-    `openmausbot serve --tunnel` as the start command ([`--tunnel`](#ways-in-in-detail)).
+    `uni serve --tunnel` as the start command ([`--tunnel`](#ways-in-in-detail)).
 
 **How many processes and how much memory.** A container's process limit
 (`pids.max`; Docker's `--pids-limit`, Kubernetes' `podPidsLimit`) counts
@@ -579,6 +689,51 @@ never came up, and processes that had to be force-stopped or outlived their
 turn. It holds numbers and fixed words only: no command line, path, bot name
 or message.
 
+**Per bot.** The same report carries each bot's share, taken from the same
+process list (no extra work per bot): its processes, threads, resident memory
+(now and at its most since start) and CPU time, counting its engine, what the
+engine started (including what outlived its turn in the engine's process group
+or session) and its own browser. An engine or browser several bots share (a
+shared engine process, a browser profile used by more than one bot) is counted
+once as "shared", never against any one bot. The report shows the ten bots
+using the most memory; `GET /api/diagnostics/bots` (admin only) lists every
+bot. Bot ids and numbers only.
+
+**Idle engines close sooner when room runs short.** A conversation's engine
+stays loaded after its turn (10 minutes by default, `OMB_SESSION_IDLE_MS`;
+30 seconds for work nobody is watching), a bot's browser stays open for its
+idle time, and a process several bots share is recycled a minute after its
+last session (`OMB_ACP_SHARED_RECYCLE_MS`; this one stays fixed). Where turns
+wait for room, a conversation's engine time and a browser's idle time shrink
+as memory or the process limit fills, down to a tenth (never below their
+floor), and engines already kept are looked at again every few seconds.
+Before a new turn or browser waits for room, the engine idle longest is
+closed.
+
+**One bot's memory.** Where turns wait for room, the server watches how
+much memory each bot uses against twice its fair share (the memory over
+the turns that may run at once), at least 1,900 MB and at most 80% of it,
+for each engine the bot runs (a bot with several conversations open may use
+that much for each). By default it only writes down a bot that stays over
+(for 30 seconds, or sooner while memory is short): the bot's id, the memory
+it used and how it was measured, the limit, its engines and the room left
+go to the server log and the health report. Nothing is stopped. To have the
+server act, set `OMB_BOT_MEMORY_MAX_MB` to a number of MB (any Linux host,
+the desktop app included); `auto` is the default (watch only) and `off` turns
+the watching off. Even then it acts only while the server is short of
+memory, only on the bot using the most, and in steps: first what the bot
+left running and its idle engines; then, measured again and still over, its
+largest busy engine. The browser of a stopped engine's conversation is
+closed once that turn lets it go. A turn whose engine is stopped ends with a
+line saying the bot used more memory than this computer allows for one bot.
+Engines and browsers several bots share, and a process other conversations
+may join, are never stopped this way; on a Team Cloud only the stopped
+conversation's own browser is closed, never the same bot's browsers for
+other members. The
+server watches by reading its process list; it logs at start whether the
+host also offers a systemd scope or a delegated cgroup, which are not used
+yet.
+
 **Bots' cloud computers do not count.** A bot's cloud computer runs at the
 provider that hosts it, not in this container, so its desktop and browser
 use none of the container's processes or memory. Only the built-in browser
@@ -590,7 +745,7 @@ Requirements: Node 24+, pnpm, and at least one agent CLI installed and
 signed in on the server.
 
 ```sh
-git clone https://github.com/milind-soni/OpenMausBot && cd Uni
+git clone https://github.com/AdilShamim8/Uni && cd Uni
 pnpm install
 
 # choose where data lives and start the server
@@ -601,19 +756,19 @@ OMB_DATA_DIR="$HOME/.openmausbot" OMB_PORT=8799 \
 For something durable, let the CLI write the service for you:
 
 ```sh
-npx openmausbot service install --domain maus.example.com   # or --public-url, --tunnel, --tailscale, --lan
+npx uni service install --domain maus.example.com   # or --public-url, --tunnel, --tailscale, --lan
 ```
 
 It renders a systemd unit (Linux) or a launchd agent (macOS) that runs the
-same `openmausbot serve …` with your options, restarts it if it stops, and,
+same `uni serve …` with your options, restarts it if it stops, and,
 for `--domain`, grants the unit the capability to bind ports 80 and 443
 without root. The file is written next to your data and the two commands
 that install and start it are printed (they need `sudo` on Linux).
-`openmausbot service uninstall` prints the reverse. Run from `npx`, it
+`uni service uninstall` prints the reverse. Run from `npx`, it
 first installs a copy of the same version into `<data dir>/app/<version>`,
 because npm may prune its npx cache. The unit points at that copy. Not being
 a terminal, the service writes no pairing code into its log: run
-`npx openmausbot pair` when you need one.
+`npx uni pair` when you need one.
 
 Engine CLIs read their logins from the service user's home: sign them in
 from Settings → Engines (below), or as that user in a terminal, before you
@@ -665,8 +820,8 @@ Providers added with `opencode auth login` work everywhere.
 
 ## Many client workspaces on one server
 
-`openmausbot fleet` runs one workspace per client on a single Linux server,
-each as its own OS user, its own `openmausbot@<name>` service on its own
+`uni fleet` runs one workspace per client on a single Linux server,
+each as its own OS user, its own `uni@<name>` service on its own
 loopback ports, its own data folder, brand, sign-in list and provider key,
 reached at `<name>.<your domain>` through the system Caddy. Bots of one
 workspace cannot read another's files or reach its API: the data lives in a
@@ -702,7 +857,7 @@ root service on a Unix socket only that user may open. Your workspace then
 shows **Settings → Installations** (with the enterprise `admin` feature): create
 an installation, add or remove who may sign in, suspend, resume, delete, upgrade
 all, and see each one's spend this month. Every action goes through the
-agent's audit log at `/var/log/openmausbot/fleet.jsonl`.
+agent's audit log at `/var/log/uni/fleet.jsonl`.
 
 `https://acme.example.com` is up when `create` returns; the first admin signs
 in with an emailed code. `OMB_LICENSE_KEY` in the environment (or
@@ -735,7 +890,7 @@ Pair once, then use the server from any browser on any machine that can
 reach it. On the server:
 
 ```sh
-npx openmausbot pair                         # npm install
+npx uni pair                         # npm install
 pnpm omb pair                                # from a checkout
 docker compose exec omb openmausbot pair     # Docker
 ```
@@ -746,18 +901,18 @@ address the server is reached at (`--public-url`, `--domain`, `--tunnel`,
 `--tailscale`, `--lan`, or `OMB_PUBLIC_URL`). Open the link, or open `/pair`
 on that address and type the code. The browser gets a session cookie (30
 days, renewed on use up to 180 days from pairing, revocable) and the app
-loads. `npx openmausbot devices` lists the paired devices and
+loads. `npx uni devices` lists the paired devices and
 `devices revoke ID` signs one out.
 
 From the **desktop app**, choose **＋ → Connect to a server** and paste the
 link. You can also type the address (`maus.example.com`,
 `192.168.1.20:8799`, a `*.ts.net` name) and the pairing code in its own
 field. The sheet looks the address up and names what it found, for example
-"✓ hetzner-1 · Uni 0.1.147 · HTTPS". A bare address tries https first,
+"✓ hetzner-1 · MausBot 0.1.147 · HTTPS". A bare address tries https first,
 then plain http when the address is private. Plain http works only on a
 private network (LAN addresses, Tailscale's 100.64/10 and `*.ts.net`,
 `*.local`); a public http address is refused with what to do instead.
-Generate a fresh code for each device: `npx openmausbot pair --label "My
+Generate a fresh code for each device: `npx uni pair --label "My
 desktop"` gives full access, and `--phone` gives chat and approvals only. A
 code already used by your phone cannot also pair your desktop.
 
@@ -881,7 +1036,7 @@ server, even when it runs on the same machine. Programs are unaffected: the
 CLI, scripts, `curl` and the companion send neither header.
 
 So the first time you open the web UI in a browser on the server's own
-machine, it shows the sign-in page. With no way in, `openmausbot pair` prints
+machine, it shows the sign-in page. With no way in, `uni pair` prints
 a link for it:
 
 ```
@@ -889,7 +1044,7 @@ a link for it:
 ```
 
 Open it and choose **Connect** (or type the code on the sign-in page); the browser
-keeps its session cookie from then on. `openmausbot` (the guided start) prints
+keeps its session cookie from then on. `uni` (the guided start) prints
 the same link when it opens the browser. The desktop app is unaffected:
 its window adds the app's own per-launch owner header to every request and
 WebSocket it sends to its server, and no other Electron session may reach the
@@ -938,16 +1093,16 @@ it too and is always `service` (docs/cloud-pro.md).
 
 With `service` on a self-hosted server:
 
-- `openmausbot serve` in a terminal still prints the first pairing code. It
+- `uni serve` in a terminal still prints the first pairing code. It
   hands the server it starts a one-off secret over the server's stdin (never
   its environment, which every engine inherits), and that secret opens the
   pairing route for that CLI alone. Pass `--no-pair` to skip the code; if
   the server refuses one anyway, `serve` says why and keeps running. Not in
   a terminal (a service), it prints no code and points at email sign-in.
-- `openmausbot pair` and `openmausbot devices`, run later from another
+- `uni pair` and `uni devices`, run later from another
   terminal, are refused like any other admin change and say so. Pair from
   the server's Settings while signed in as an admin, or let people sign
-  in with their email (`openmausbot access add you@example.com`, which edits
+  in with their email (`uni access add you@example.com`, which edits
   the sign-in list on disk).
 - A browser on an SSH tunnel gets the sign-in page instead of the app.
 - The MCP server script works with `OPENMAUSBOT_TOKEN` set to a paired session.
@@ -984,14 +1139,14 @@ npm package, the same thing from the command line, with the server running
 or not, no restart needed:
 
 ```sh
-npx openmausbot access add her@yourcompany.com
-npx openmausbot access add freelancer@example.com --chat-only
-npx openmausbot access list
+npx uni access add her@yourcompany.com
+npx uni access add freelancer@example.com --chat-only
+npx uni access list
 ```
 
 An entry is an address or `@domain` (everyone at that domain). Admins get
-the same access as a pairing code from `openmausbot serve`; users get the
-chat-only scope, the same as `openmausbot pair --phone`. The same lists live
+the same access as a pairing code from `uni serve`; users get the
+chat-only scope, the same as `uni pair --phone`. The same lists live
 in `config.json` under `signIn.admins` and `signIn.members` and can be changed
 through the settings API without a restart. An environment variable that
 names someone wins over its list, which is how a container or a service unit
@@ -999,16 +1154,16 @@ is bootstrapped; while it does, Settings refuses to change that list and says
 which variable to change instead. One that is empty, as `.env.example` and the
 Compose files leave them, leaves the list to Settings.
 
-The code itself comes from `accounts.openmausbot.com`, the Uni
+The code itself comes from `accounts.uni.com`, the Uni
 account service, so your server needs no email credentials. Your server asks
 it to send the code, checks the answer, and then issues its own session
 cookie: the browser only ever talks to your server, and who is welcome is
 decided only by your allow-list. Wrong codes count against a lockout of
 their own: ten in a minute from one address pause sign-in there for a minute. Sessions from a sign-in show the email in
-`openmausbot devices` and can be revoked the same way.
+`uni devices` and can be revoked the same way.
 
 To send the codes through your own mail server instead, so nobody signs in
-through the account service and no Uni account is made, give the server
+through the account service and no MausBot account is made, give the server
 an SMTP address:
 
 ```sh
@@ -1223,21 +1378,21 @@ creates a one-time code with a QR right in the browser, and lists every
 paired device with a sign-out button. Nobody needs the command line.
 
 The iOS app pairs with a server the same way a laptop does: scan the QR
-code that `openmausbot serve` (or `openmausbot pair`) prints, paste the
+code that `uni serve` (or `uni pair`) prints, paste the
 whole `https://host/pair#code=…` link into the address field on the pairing
 screen, or type the address and then the code. The phone gets a session of
-its own, listed and revocable with `openmausbot devices`. What it may do is
-the code's scope: a code from `openmausbot pair` carries `admin` and the app
-shows everything; a code from `openmausbot pair --phone` (also what the
+its own, listed and revocable with `uni devices`. What it may do is
+the code's scope: a code from `uni pair` carries `admin` and the app
+shows everything; a code from `uni pair --phone` (also what the
 guided phone setup mints) can chat, approve and read, and the app hides
 creating bots and sections, changing models, generating avatars, connecting
 apps and cloud desktops — those stay with the owner. A server reinstalled at
 the same address has a new identity; the app then asks to pair again rather
 than present the old session to it.
 
-Both native apps pair this way. `openmausbot pair --phone android` prints the
+Both native apps pair this way. `uni pair --phone android` prints the
 app-scheme QR that Android's scanner needs, and the iOS app accepts either
-that QR or the web link, for example `docker compose exec omb openmausbot
+that QR or the web link, for example `docker compose exec omb uni
 pair --phone android --public-url https://your-domain`. `pair` never asks
 questions, so it works the same from a script. Nothing extra to install, and
 the phone becomes a session like any other.
@@ -1245,7 +1400,7 @@ the phone becomes a session like any other.
 Older way, still supported, and only useful on a LAN or a tailnet: run the
 companion sidecar next to the harness and pair by its own QR. It advertises
 on your private networks (Tailscale-aware) and issues its own per-device
-credentials, which are **not** `openmausbot devices` and are revoked from
+credentials, which are **not** `uni devices` and are revoked from
 its own page at the `127.0.0.1:8811/#token=…` link it prints. It also serves phones over cleartext HTTP
 on port 8810, so do not expose it from a public server. It ships only in a
 git checkout: neither the npm package nor the Docker image contains it.
@@ -1292,14 +1447,16 @@ the day or month rolls over, and cuts nothing off mid-turn.
 
 When a turn ends on a usage limit (a subscription's 5-hour or weekly limit,
 one model's own weekly window, a model's extra usage credits), the bot carries
-on by itself with another AI the person has set up until that limit resets,
-and the person hears it once for that stretch of the limit, as a notification:
-"Codex reached its limit until 14:00, so Kai is using Claude meanwhile." With
-no AI to carry on, it says the bot waits instead. Nobody is asked.
+on by itself with a backup the person chose until that limit resets, and the
+person hears it once for that stretch of the limit, as a notification: "Codex
+reached its limit until 14:00, so Kai is using Claude meanwhile." With no
+chosen backup that can carry on, the bot waits for the reset and the
+notification says so ("…no backup you chose can take over"); no other AI is
+picked for it. Nobody is asked.
 
 - **Which AI.** For one model's own limit, the same AI's default model first;
-  then the backups chosen for the bot or in Automatic recovery; then the AI a
-  new bot would get. Only an AI that can run a turn now (installed, signed in,
+  then the backups chosen for the bot or in Automatic recovery, in that order.
+  Only an AI that can run a turn now (installed, signed in,
   allowed by your organisation, not limited itself) with the tools and the
   working folder the current one has, and one the conversation's approval level
   can move to without asking (Auto-accept edits stays on an AI that has it).
@@ -1354,7 +1511,7 @@ unless its status still says signed out.
 
 ### Which engine a new bot uses
 
-A saved default model (Settings, `openmausbot setup`, or the New Bot
+A saved default model (Settings, `uni setup`, or the New Bot
 defaults) always wins. Without one, new bots get the first engine that can
 run, in this order: a Claude account, a ChatGPT plan, Gemini, Grok, then the
 rest in the order of `instances`; OpenCode running only Zen's free no-login
@@ -1473,8 +1630,8 @@ shutdown): settings
 sessions, webhooks, MCP servers, engines and keys, bots created, deleted or
 given different permissions, spend limits and prices, and who can see a bot.
 Each row names who acted — the session's email or device label, `This
-computer` for the owner, `Command line` for `openmausbot` commands such as
-`openmausbot access add` — and the values before and after. Values are
+computer` for the owner, `Command line` for `uni` commands such as
+`uni access add` — and the values before and after. Values are
 redacted: anything under a key that names a credential, every value in a
 headers or environment map, the value after a flag such as `--api-key` or
 `-k`, URL parameters such as `?key=`, a token before a URL's host
@@ -1754,11 +1911,19 @@ is paused, so <bot> takes no new work. Resume every bot from any bot's menu in
 the sidebar." A message to a bot is refused with the same line. Resuming leaves
 a bot or department that was paused by itself paused.
 
-From a terminal on the server, to stop spending at once (an admin route like
-any other: see "Loopback trust: owner or service"):
+From a terminal, to stop spending at once:
 
 ```sh
-curl -X POST http://127.0.0.1:8799/api/paused \
+openmausbot bots pause --all      # openmausbot bots resume --all undoes it
+openmausbot stop --all            # or only stop the work running now, pausing nothing
+```
+
+Both are admin requests, so they need you signed in (`uni login`),
+except on a server you started with `uni serve` whose loopback trust is
+`owner` (see "Loopback trust: owner or service"). With a token instead:
+
+```sh
+curl -X POST http://127.0.0.1:8799/api/paused -H "Authorization: Bearer $(cat ~/omb-admin.token)" \
   -H 'content-type: application/json' -d '{"kind":"all","paused":true}'
 ```
 
@@ -1769,14 +1934,14 @@ directory and lasts across restarts until it is resumed.
 
 Self-hosted servers follow the **stable** channel: a released version that our
 own Clouds have run for 48 hours, named by the image tag `stable` and by
-[`stable.json`](https://raw.githubusercontent.com/milind-soni/OpenMausBot/channels/stable.json).
+[`stable.json`](https://raw.githubusercontent.com/AdilShamim8/Uni/channels/stable.json).
 `latest` follows `main` and is not for a server you rely on. The update check
 (`GET /api/updates/check`, **Check for updates** in the app) compares the
 server with the stable version; `OMB_UPDATE_CHANNEL=newest` makes it follow
 every release instead.
 
 A server installed with the [installer](deploy-vps.md#quick-start-one-command-on-your-own-domain)
-updates with `sudo /opt/openmausbot/update.sh`, which the installer puts there.
+updates with `sudo /opt/uni/update.sh`, which the installer puts there.
 Its admins can also press **Update server** in **Settings → Updates**, which runs
 that same script on the server; a Docker checkout gets the button with
 `sudo deploy/update-runner.sh --install`. Until the bots' sandbox is on for
@@ -1803,7 +1968,7 @@ update an earlier run left unfinished.
 For the npm service there is no one-command updater yet:
 [do the same steps by hand](deploy-vps.md#paths-a-and-c-npm-with-the-service-above-the-same-steps-by-hand),
 as the service user while the server is stopped. For a foreground invocation,
-`npx --yes openmausbot@X.Y.Z serve --tunnel` selects a particular published
+`npx --yes uni@X.Y.Z serve --tunnel` selects a particular published
 release; replace `X.Y.Z` with that version.
 
 The desktop and phone apps work with any server version that was the stable
@@ -1822,3 +1987,52 @@ engine credentials, browser state, and external workspaces. For Docker, the
 whole `/data` volume includes the CLI homes. See the
 [backup and restore instructions](deploy-vps.md#back-up) for the exact scope
 and stop/start commands.
+
+### The doctor: checking and repairing the data
+
+The doctor checks a server's data folder and repairs what can be repaired
+without losing anything. It runs by itself on the first start of each new
+version, before the server reads its data. It writes one log line for each
+thing it found, and adds a short `doctor` summary to `/api/health` (as seen by
+the owner): the names of the checks it fixed and of those left for you, never a
+path. When the new version fails its health check, `update.sh` runs that
+version's doctor with `--fix`. If the doctor repairs something, the update
+starts the new version once more; otherwise it rolls back as before.
+
+You can run it yourself, as the server's user:
+
+```sh
+openmausbot doctor --data                 # check and report; changes nothing
+openmausbot doctor --data --fix           # also apply the safe repairs (stop the server first)
+openmausbot doctor --data --json          # the report as JSON
+docker compose exec omb openmausbot doctor --data   # Docker
+```
+
+`--data-dir DIR` points it at another folder. It exits 0 when everything is
+fine (after `--fix`, fine now) and 8 when a problem is left. `--fix` changes
+nothing when it runs as a user other than the data folder's owner (Linux and
+macOS).
+
+| Check | Looks at | Repaired by `--fix` |
+|---|---|---|
+| Data format | `data-format.json` | Never. Data from a newer version stops every repair: install that version, or roll back. |
+| Data folder lease | `uni-server.lease` | A lease a dead process on this machine left is retired. A live server means nothing is changed. |
+| Folders | the data folder, `events`, `native` | Missing folders are made. |
+| Bots and rooms | `bots.json`, `groups.json` | A damaged file (not a whole list) is put back from the whole temp file of a save that was cut short. With no such copy, a copy of the damaged file is kept and you are told how to restore it. A file this user cannot read at all is reported as not checked and left alone. |
+| Unfinished saves | `<file>.<pid>.<id>.tmp` at the top of the data folder | Moved into the backup. |
+| Engine-run records | `engine-runs/` | Records with neither a server nor a process to stop are moved into the backup. |
+| Messages database | `messages.db` | SQLite's `quick_check`. A write-ahead log over 64 MB is folded back into the database. A damaged database is reported, never rewritten. One that cannot be opened (permissions, another program's lock) is reported as not checked, not as damaged. |
+| Private files | `config.json`, `sessions.json`, `bots.json`, `messages.db`, … | Made owner-only (0600). Not on Windows. |
+| Settings file | `config.json` | Never: it tells you `uni config restore latest` when dated copies exist. |
+
+Before changing anything, a repair copies it into
+`<data>/doctor-backups/<time>/`, with a `manifest.json` that lists what changed
+(for a file mode, the old mode). When a new run copies something, earlier runs
+go: any beyond the ten newest, and, oldest first, as many as it takes to bring
+the earlier runs together under 2 GB. A run that kept a copy of `bots.json` or
+`groups.json` stays for at least 30 days either way. The copies stay on that
+computer and are not part of a workspace backup.
+
+As a server starts, the doctor reads `messages.db` through and copies it before
+a checkpoint only while it and its write-ahead log come to 256 MB or less, so an update never waits on a large database;
+`uni doctor --data` does both at any size.

@@ -11,7 +11,7 @@ import { forgetCachedCapacity } from "../src/tunnel-capacity";
 import { rolloutBucket } from "../src/relay";
 import { forgetTunnelRelease } from "../src/tunnel-release";
 
-const BASE_URL = "https://auth.openmausbot.test";
+const BASE_URL = "https://auth.uni.test";
 const CONNECTOR_TOKEN = "eyJhbGciOiJIUzI1NiJ9.test-only-connector-token.signature";
 /** An endpoint whose hostname is not under its account's suffix refuses to act. */
 const HOST_SUFFIX = env.COMPANION_HOST_SUFFIX;
@@ -1222,7 +1222,7 @@ describe("managed companion endpoints", () => {
     cloudflare.dns.set(hostname, {
       ...record,
       content: "203.0.113.50",
-      name: "repurposed.openmausbot.test",
+      name: "repurposed.uni.test",
       proxied: false,
       type: "A",
     });
@@ -1236,7 +1236,7 @@ describe("managed companion endpoints", () => {
     expect(cloudflare.calls.some((entry) => entry.method === "DELETE")).toBe(false);
     expect(cloudflare.dns.get(hostname)).toMatchObject({
       content: "203.0.113.50",
-      name: "repurposed.openmausbot.test",
+      name: "repurposed.uni.test",
       type: "A",
     });
     const retained = await env.DB.prepare(
@@ -2225,7 +2225,7 @@ describe("managed endpoint provider capacity", () => {
     const text = await response.text();
     expect(JSON.parse(text)).toMatchObject({
       ok: true,
-      service: "openmausbot-control-plane",
+      service: "uni-control-plane",
       capacity: {
         checkedAt: expect.any(Number),
         dnsRecords: { limit: 3500, used: 400 },
@@ -3369,7 +3369,7 @@ describe("managed endpoints in several Cloudflare accounts", () => {
     const text = await response.text();
     expect(JSON.parse(text)).toEqual({
       ok: true,
-      service: "openmausbot-control-plane",
+      service: "uni-control-plane",
       capacity: {
         status: "ok",
         checkedAt: now - 120_000,
@@ -4314,7 +4314,7 @@ describe("self-hosted servers keep their tunnel", () => {
     ...extra,
   });
 
-  /** `openmausbot serve --tunnel` and `openmausbot login`: registration as any client sends it, `kind` only when given. */
+  /** `uni serve --tunnel` and `uni login`: registration as any client sends it, `kind` only when given. */
   async function register(worker: TestWorker, accountToken: string, clientInstanceId: string, appVersion: string, kind?: string) {
     const response = await call(worker, "/v1/installations", {
       body: { clientInstanceId, name: "home-server", platform: "linux", appVersion, ...(kind ? { kind } : {}) },

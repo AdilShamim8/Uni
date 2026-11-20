@@ -2113,8 +2113,8 @@
      "k": "BJiFmi3bzpQUayMJErl6eqt24mUOvHEUR6uzutPTHfundIgyZxs3bSzUMydGOfgbWdwQshIyzzlMWqxMkNHnmd0",
      "h": "lz81isB3BuNV6rHgYgG3Wg",
      "r": [
-      "relay1.openmausbot.com",
-      "relay2.openmausbot.com"
+      "relay1.uni.com",
+      "relay2.uni.com"
      ]
     }
    },
@@ -2136,10 +2136,10 @@
      "k": "BJiFmi3bzpQUayMJErl6eqt24mUOvHEUR6uzutPTHfundIgyZxs3bSzUMydGOfgbWdwQshIyzzlMWqxMkNHnmd0",
      "h": "lz81isB3BuNV6rHgYgG3Wg",
      "r": [
-      "relay1.openmausbot.com",
-      "relay2.openmausbot.com",
-      "relay3.openmausbot.com",
-      "relay99.openmausbot.com"
+      "relay1.uni.com",
+      "relay2.uni.com",
+      "relay3.uni.com",
+      "relay99.uni.com"
      ]
     }
    },
@@ -2152,8 +2152,8 @@
      "k": "BJiFmi3bzpQUayMJErl6eqt24mUOvHEUR6uzutPTHfundIgyZxs3bSzUMydGOfgbWdwQshIyzzlMWqxMkNHnmd0",
      "h": "lz81isB3BuNV6rHgYgG3Wg",
      "r": [
-      "relay1.openmausbot.com",
-      "relay2.openmausbot.com"
+      "relay1.uni.com",
+      "relay2.uni.com"
      ]
     }
    },
@@ -2166,8 +2166,8 @@
      "k": "BJiFmi3bzpQUayMJErl6eqt24mUOvHEUR6uzutPTHfundIgyZxs3bSzUMydGOfgbWdwQshIyzzlMWqxMkNHnmd0",
      "h": "lz81isB3BuNV6rHgYgG3Wg",
      "r": [
-      "relay1.openmausbot.com",
-      "relay2.openmausbot.com"
+      "relay1.uni.com",
+      "relay2.uni.com"
      ]
     }
    },
@@ -2190,8 +2190,8 @@
      "k": "BJiFmi3bzpQUayMJErl6eqt24mUOvHEUR6uzutPTHfundIgyZxs3bSzUMydGOfgbWdwQshIyzzlMWqxMkNHnmd0",
      "h": "lz81isB3BuNV6rHgYgG3Wg",
      "r": [
-      "relay1.openmausbot.com",
-      "relay2.openmausbot.com"
+      "relay1.uni.com",
+      "relay2.uni.com"
      ],
      "routes": "any"
     }
@@ -2215,8 +2215,8 @@
      "k": "BJiFmi3bzpQUayMJErl6eqt24mUOvHEUR6uzutPTHfundIgyZxs3bSzUMydGOfgbWdwQshIyzzlMWqxMkNHnmd0",
      "h": "lz81isB3BuNV6rHgYgG3Wg",
      "r": [
-      "relay1.openmausbot.com",
-      "relay2.openmausbot.com"
+      "relay1.uni.com",
+      "relay2.uni.com"
      ],
      "routes": "local"
     }

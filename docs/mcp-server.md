@@ -14,15 +14,15 @@ Uni team while the desktop app and its harness are running.
 The v1 server intentionally cannot approve requests, remember permission grants, delete data, import teams,
 change credentials, or control computer/VM lifecycle. Those actions stay in the human-facing app.
 
-## From the openmausbot command
+## From the uni command
 
-With the `openmausbot` npm package installed, the MCP client can run it
+With the `uni` npm package installed, the MCP client can run it
 directly; it serves the same tools:
 
 ```json
 {
   "mcpServers": {
-    "openmausbot": { "command": "openmausbot", "args": ["mcp"], "env": { "OMB_PORT": "8799" } }
+    "uni": { "command": "uni", "args": ["mcp"], "env": { "OMB_PORT": "8799" } }
   }
 }
 ```
@@ -37,7 +37,7 @@ Start Uni, then configure the MCP client to run:
 ```json
 {
   "mcpServers": {
-    "openmausbot": {
+    "uni": {
       "command": "pnpm",
       "args": ["--dir", "/absolute/path/to/Uni", "mcp"]
     }
@@ -52,8 +52,9 @@ loopback without one. A hosted or shared server with service loopback trust
 session for almost every tool, reads included. To authorize an external MCP
 client:
 
-1. In Uni, open **Settings → Phone → Set up a phone** and reveal the
-   one-time pairing code.
+1. In Uni, open **Settings → Phone & devices**, press **Pair** and
+   reveal the one-time pairing code (keep the access at everything for tools
+   that change settings).
 2. Exchange it locally (remove spaces from the displayed code):
 
    ```sh
@@ -74,8 +75,9 @@ client:
    }
    ```
 
-The paired client appears with phones under **Settings → Phone** and can be
-revoked there. Do not share the token or commit it to a repository.
+The paired client appears under **Settings → Phone & devices** and can be
+revoked there (or with `uni devices revoke ID` once you signed the
+terminal in with `uni login`). Do not share the token or commit it to a repository.
 
 ## From the installed desktop app
 
@@ -87,7 +89,7 @@ macOS example:
 ```json
 {
   "mcpServers": {
-    "openmausbot": {
+    "uni": {
       "command": "/Applications/Uni.app/Contents/MacOS/Uni",
       "args": ["/Applications/Uni.app/Contents/Resources/server/mcp-server.js"],
       "env": { "ELECTRON_RUN_AS_NODE": "1" }
@@ -100,7 +102,7 @@ On Windows, use the installed `Uni.exe` as `command`, the adjacent
 `resources\\server\\mcp-server.js` as the argument, and the same `ELECTRON_RUN_AS_NODE=1` environment value.
 The usual per-user install is under `%LOCALAPPDATA%\\Programs\\Uni`.
 
-On Ubuntu `.deb` installs, the executable is normally `/opt/Uni/openmausbot` and the script is
+On Ubuntu `.deb` installs, the executable is normally `/opt/Uni/uni` and the script is
 `/opt/Uni/resources/server/mcp-server.js`. Use the same environment value.
 
 ## Connection discovery

@@ -41,13 +41,13 @@ esac`);
   writeFileSync(join(audit, "audit.jsonl"), "{}\n");
   writeFileSync(join(etc, SECCOMP_FILE), "{}");
   writeFileSync(join(apparmor, APPARMOR_PROFILE), "profile");
-  const install = join(dir, "opt-openmausbot");
+  const install = join(dir, "opt-uni");
   const update = join(dir, "update");
   const sbin = join(dir, "sbin");
   const systemd = join(dir, "systemd");
   for (const made of [install, join(install, "data"), update, sbin, systemd]) mkdirSync(made);
   if (options.ownServer) {
-    writeFileSync(join(install, "compose.yaml"), "name: openmausbot\n");
+    writeFileSync(join(install, "compose.yaml"), "name: uni\n");
     writeFileSync(join(install, "data", "chats.json"), "theirs");
     for (const file of [join(update, "runner"), join(sbin, "mausbot-update-runner"), join(systemd, "mausbot-update.path"), join(systemd, "mausbot-update.service")]) writeFileSync(file, "1\n");
   }
@@ -56,7 +56,7 @@ esac`);
     env: {
       PATH: `${bin}:/usr/bin:/bin`, MAUSBOT_ETC_DIR: etc, MAUSBOT_APPARMOR_DIR: apparmor, MAUSBOT_AUDIT_DIR: audit,
       MAUSBOT_INSTALL_DIR: install, MAUSBOT_UPDATE_DIR: update, MAUSBOT_SBIN_DIR: sbin, MAUSBOT_SYSTEMD_DIR: systemd,
-      MAUSBOT_ADMIN_URL: "https://cloud.example.test", MAUSBOT_CONNECTOR_IMAGE: `ghcr.io/milind-soni/mausbot-connector@sha256:${"1".repeat(64)}`,
+      MAUSBOT_ADMIN_URL: "https://cloud.example.test", MAUSBOT_CONNECTOR_IMAGE: `ghcr.io/adilshamim8/mausbot-connector@sha256:${"1".repeat(64)}`,
       ...options.env,
     },
     timeout: 30_000,
@@ -144,7 +144,7 @@ describe("install.sh", () => {
   it("starts a customer-run connector with its mode and the updater's folder, and only where Uni is already installed", () => {
     expect(script).toContain('set -- "$@" -e MAUSBOT_MODE=customer-run -v "$UPDATE_DIR:/var/lib/mausbot/update"');
     expect(PATHS.update).toBe("/var/lib/mausbot/update");
-    expect(script).toContain('INSTALL_DIR="${MAUSBOT_INSTALL_DIR:-/opt/openmausbot}"');
+    expect(script).toContain('INSTALL_DIR="${MAUSBOT_INSTALL_DIR:-/opt/uni}"');
     expect(script).toContain("PathExists=$UPDATE_DIR/request");
     expect(script).toContain("ExecStart=$SBIN_DIR/$UPDATE_RUNNER");
   });
@@ -160,7 +160,7 @@ describe("install.sh", () => {
     const result = run(["uninstall", "--delete-data"], { ownServer: true });
     expect(result.status, result.stderr).toBe(0);
     expect(result.calls).toContain(`docker rm -f ${NAMES.connector} ${NAMES.connectorNext}`);
-    expect(result.calls.filter((call) => /mausbot-home|mausbot-data|openmausbot|compose/.test(call))).toEqual([]);
+    expect(result.calls.filter((call) => /mausbot-home|mausbot-data|uni|compose/.test(call))).toEqual([]);
     expect(readFileSync(join(result.install, "data", "chats.json"), "utf8")).toBe("theirs");
     expect(existsSync(join(result.install, "compose.yaml"))).toBe(true);
     for (const gone of [result.update, join(result.sbin, "mausbot-update-runner"), join(result.systemd, "mausbot-update.path"), join(result.systemd, "mausbot-update.service")]) expect(existsSync(gone), gone).toBe(false);

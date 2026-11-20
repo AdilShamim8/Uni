@@ -160,8 +160,8 @@
 - [x] Recheck issue and overlapping PRs, then open the authorized draft PR with screenshots, exact checks and live-device/model evidence.
 - [x] Attach every created PR to this Codex task; report its URL, validation and remaining limitations. Never merge.
 
-Submitted drafts: [tool selection #2101](https://github.com/milind-soni/OpenMausBot/pull/2101)
-and [Windows fixture cleanup #2100](https://github.com/milind-soni/OpenMausBot/pull/2100).
+Submitted drafts: [tool selection #2101](https://github.com/AdilShamim8/Uni/pull/2101)
+and [Windows fixture cleanup #2100](https://github.com/AdilShamim8/Uni/pull/2100).
 The feature diff excludes its CI prerequisites, maintainer PR #2088 and the
 separate cleanup PR. The full composed fork run passed all 26 selected checks;
 the [verification record](../../verification/tool-selection.md#completed-contribution-checks)

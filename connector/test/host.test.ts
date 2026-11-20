@@ -58,7 +58,7 @@ describe("the server's facts and checks", () => {
     const dir = mkdtempSync(join(tmpdir(), "omb-connector-probe-"));
     dirs.push(dir);
     const docker = new FakeDocker(dir);
-    const image = `ghcr.io/milind-soni/mausbot-connector@sha256:${"1".repeat(64)}`;
+    const image = `ghcr.io/adilshamim8/mausbot-connector@sha256:${"1".repeat(64)}`;
     docker.publish(image, null);
     await docker.pull(image);
     expect(await probeBox(docker, image, "{}")).toEqual({ ok: true });
@@ -101,7 +101,7 @@ describe("speaking to Docker", () => {
 
   it("pulls by digest, and reads a failure Docker reports inside a 200 stream", () => {
     const digest = `sha256:${"a".repeat(64)}`;
-    expect(pullParams(`ghcr.io/milind-soni/openmausbot-cloud-home@${digest}`)).toEqual({ fromImage: "ghcr.io/milind-soni/openmausbot-cloud-home", tag: digest });
+    expect(pullParams(`ghcr.io/adilshamim8/uni-cloud-home@${digest}`)).toEqual({ fromImage: "ghcr.io/adilshamim8/uni-cloud-home", tag: digest });
     expect(pullParams("localhost:5000/x:tag")).toEqual({ fromImage: "localhost:5000/x", tag: "tag" });
     expect(pullParams("localhost:5000/x")).toEqual({ fromImage: "localhost:5000/x", tag: "latest" });
     expect(pullFailure('{"status":"Pulling fs layer"}\n{"errorDetail":{"message":"manifest unknown"},"error":"manifest unknown"}\n')).toBe("manifest unknown");

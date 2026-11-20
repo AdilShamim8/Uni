@@ -100,7 +100,7 @@ jobs:
         run: |
           test -n "$GH_TOKEN" || { echo "::error::RELEASES_PAT is required for the updater bridge"; exit 1; }
           v="v$(node -p "require('./package.json').version")"
-          if gh release view "$v" --repo milind-soni/openmausbot-releases --json isDraft --jq .isDraft 2>/dev/null | grep -q false; then
+          if gh release view "$v" --repo AdilShamim8/uni-releases --json isDraft --jq .isDraft 2>/dev/null | grep -q false; then
             echo "::error::$v is already published on the legacy mirror — recover the canonical draft instead of rebuilding bytes"
             exit 1
           fi
@@ -494,7 +494,7 @@ jobs:
         run: pnpm smoke:linux-package
       - name: Remove the installed upgrade fixture
         if: always()
-        run: sudo dpkg --purge openmausbot || true
+        run: sudo dpkg --purge uni || true
       - name: Stable-named copies and checksums
         run: |
           v=$(node -p "require('./package.json').version")
@@ -665,14 +665,14 @@ jobs:
               sleep "$delay"
             done
           }
-          ensure_draft milind-soni/openmausbot-releases \
-            --draft --title "OpenMausBot $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
-          gh release edit "$tag" --repo milind-soni/openmausbot-releases \
-            --title "OpenMausBot $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
+          ensure_draft AdilShamim8/uni-releases \
+            --draft --title "Uni $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
+          gh release edit "$tag" --repo AdilShamim8/uni-releases \
+            --title "Uni $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
           for file in assets/*; do
-            gh release upload "$tag" "$file" --repo milind-soni/openmausbot-releases --clobber
+            gh release upload "$tag" "$file" --repo AdilShamim8/uni-releases --clobber
           done
-          echo "legacy asset count: $(gh release view "$tag" --repo milind-soni/openmausbot-releases --json assets --jq '.assets | length')"
+          echo "legacy asset count: $(gh release view "$tag" --repo AdilShamim8/uni-releases --json assets --jq '.assets | length')"
 
       - name: Prove both drafts contain the exact staged bytes
         env:
@@ -692,7 +692,7 @@ jobs:
           ]));
           for (const [repo, token] of [
             [process.env.GITHUB_REPOSITORY, process.env.CANONICAL_TOKEN],
-            ["milind-soni/openmausbot-releases", process.env.LEGACY_TOKEN],
+            ["AdilShamim8/uni-releases", process.env.LEGACY_TOKEN],
           ]) {
             const json = execFileSync("gh", ["release", "view", `v${version}`, "--repo", repo, "--json", "assets"], {
               encoding: "utf8",
@@ -721,9 +721,9 @@ jobs:
           GH_TOKEN="$CANONICAL_TOKEN" gh release view "v$VERSION" \
             --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft | grep -q false
           GH_TOKEN="$LEGACY_TOKEN" gh release edit "v$VERSION" \
-            --repo milind-soni/openmausbot-releases --draft=false --latest
+            --repo AdilShamim8/uni-releases --draft=false --latest
           GH_TOKEN="$LEGACY_TOKEN" gh release view "v$VERSION" \
-            --repo milind-soni/openmausbot-releases --json isDraft --jq .isDraft | grep -q false
+            --repo AdilShamim8/uni-releases --json isDraft --jq .isDraft | grep -q false
           echo "v$VERSION is live on the canonical feed and its legacy updater bridge"
           # Publishing created the tag with this workflow's token, and GitHub
           # starts no workflow from events that token creates. Start the

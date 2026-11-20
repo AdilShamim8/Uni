@@ -2,7 +2,7 @@
 // connection over the child's private utility-process port, which no other process on the computer can read or write,
 // and sends it again whenever the driver changes. The connection file the app also keeps grants nothing: a server reads
 // this computer only from this message (server/desktop-computer.ts), so a second Uni server never finds it.
-export const LOCAL_COMPUTER_GRANT = "openmausbot:local-computer";
+export const LOCAL_COMPUTER_GRANT = "uni:local-computer";
 
 export function localComputerGrantMessage(connection) {
   return {

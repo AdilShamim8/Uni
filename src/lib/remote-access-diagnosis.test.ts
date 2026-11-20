@@ -13,7 +13,7 @@ const companion = (overrides: Partial<Companion> = {}): Companion => ({
   devices: [],
   routes: { wifi: route(true), relay: route(true), tailscale: route(false), https: route(false) },
   endpoints: [{ url: "http://192.168.1.23:8810", kind: "lan", priority: 0 }],
-  e2e: { enabled: true, relay: "connected", node: "relay1.openmausbot.com", relayProblem: null, descriptor: null },
+  e2e: { enabled: true, relay: "connected", node: "relay1.uni.com", relayProblem: null, descriptor: null },
   relayToken: { state: "ready", code: null },
   ...overrides,
 });
@@ -150,7 +150,7 @@ describe("the remote access diagnosis", () => {
     const secrets = [
       "person@example.com", "c-0123abcd", "mausbot.si", "192.168.1.23", "100.64.0.9", "mac.tailnet.ts.net", "mac.local",
       "482913", "pairtoken_secret", "PUBKEY_secret", "hhash_secret", "eyJ2IjoxfQ", "omb_install_secret", "req_8f3a",
-      "device-secret-id", "Ana's iPhone", "Bearer", "relay9.example.com", "openmausbot.com",
+      "device-secret-id", "Ana's iPhone", "Bearer", "relay9.example.com", "uni.com",
     ];
     const account = {
       available: true, status: "error", email: "person@example.com", endpoint: "https://c-0123abcd.mausbot.si",
@@ -168,7 +168,7 @@ describe("the remote access diagnosis", () => {
       routes: { wifi: route(true), relay: route(true), tailscale: route(true, "mac.tailnet.ts.net"), https: route(true) },
       pairing: { code: "482913", token: "pairtoken_secret", expiresAt: 1 },
       devices: [{ id: "device-secret-id", name: "Ana's iPhone", createdAt: 1, lastSeenAt: 1, cloudDesktopAccess: false }],
-      e2e: { enabled: true, relay: "connecting", node: "relay9.example.com", relayProblem: "no_answer", descriptor: { v: 1, k: "PUBKEY_secret", h: "hhash_secret", r: ["relay1.openmausbot.com"] } },
+      e2e: { enabled: true, relay: "connecting", node: "relay9.example.com", relayProblem: "no_answer", descriptor: { v: 1, k: "PUBKEY_secret", h: "hhash_secret", r: ["relay1.uni.com"] } },
       relayToken: { state: "failed", code: "eyJ2IjoxfQ.c2lnbmF0dXJl" },
       error: undefined,
     } as unknown as Companion;

@@ -22,7 +22,7 @@ const api = async (method: string, path: string, body?: unknown, token?: string)
 };
 const mint = async (botId: string, threadId: string) => {
   const response = await fetch(fixture.info.url + "/api/testing/internal-capability", {
-    method: "POST", headers: { "content-type": "application/json", "x-openmausbot-test-capability": key },
+    method: "POST", headers: { "content-type": "application/json", "x-uni-test-capability": key },
     body: JSON.stringify({ botId, threadId, kind: "agents", skillAuthoring: true }),
   });
   expect(response.status).toBe(201);

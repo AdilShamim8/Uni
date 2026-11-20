@@ -7,7 +7,7 @@ import { readConfig } from "../src/config";
 import { createWorker } from "../src/index";
 import { forgetFcmAccessToken } from "../src/push-fcm";
 
-const BASE_URL = "https://auth.openmausbot.test";
+const BASE_URL = "https://auth.uni.test";
 const ACTIVITY_TOKEN = "ac".repeat(40);
 const START_TOKEN = "5a".repeat(40);
 const ALERT_TOKEN = "a1".repeat(32);

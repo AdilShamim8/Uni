@@ -227,16 +227,21 @@ describe("CI outputs", () => {
       "server/cloud-sync.e2e.test.ts",
       "server/cloud-team-asker-owns.e2e.test.ts",
       "server/cloud-team-away.e2e.test.ts",
+      "server/cloud-team-bitwarden.e2e.test.ts",
+      "server/cloud-team-box-audience.e2e.test.ts",
       "server/cloud-team-browser.e2e.test.ts",
+      "server/cloud-team-check-backs.e2e.test.ts",
       "server/cloud-team-connections.e2e.test.ts",
       "server/cloud-team-conversation-share.e2e.test.ts",
       "server/cloud-team-engine-homes.e2e.test.ts",
+      "server/cloud-team-files.e2e.test.ts",
       "server/cloud-team-gateway-mcp.e2e.test.ts",
       "server/cloud-team-inbox.e2e.test.ts",
       "server/cloud-team-included-hosting.e2e.test.ts",
       "server/cloud-team-mausbot-reach.e2e.test.ts",
       "server/cloud-team-member-secrets.e2e.test.ts",
       "server/cloud-team-new-chat-private.e2e.test.ts",
+      "server/cloud-team-onepassword.e2e.test.ts",
       "server/cloud-team-open-reach.e2e.test.ts",
       "server/cloud-team-own-key-apps.e2e.test.ts",
       "server/cloud-team-owners.e2e.test.ts",
@@ -254,6 +259,7 @@ describe("CI outputs", () => {
       "server/cloud-team-requests.e2e.test.ts",
       "server/cloud-team-routines.e2e.test.ts",
       "server/cloud-team-setup-request.e2e.test.ts",
+      "server/cloud-team-templates.e2e.test.ts",
       "server/cloud-team.e2e.test.ts",
       "server/host/brief-words.test.ts",
       "server/host/lending-lifts.test.ts",
@@ -685,7 +691,7 @@ describe("CI scope CLI", () => {
 });
 
 const pkg = (version: string, extra: Record<string, unknown> = {}) =>
-  `${JSON.stringify({ name: "openmausbot", private: true, version, scripts: { test: "vitest run" }, ...extra }, null, 2)}\n`;
+  `${JSON.stringify({ name: "uni", private: true, version, scripts: { test: "vitest run" }, ...extra }, null, 2)}\n`;
 
 describe("version-only package.json", () => {
   it("is only a changed top-level version", () => {
@@ -699,7 +705,7 @@ describe("version-only package.json", () => {
     ["a dependency added", pkg("0.1.100"), pkg("0.1.101", { dependencies: { zod: "4" } })],
     ["a script changed", pkg("0.1.100"), pkg("0.1.101").replace("vitest run", "vitest run --bail")],
     ["a nested version changed", pkg("0.1.100", { engines: { version: "1" } }), pkg("0.1.101", { engines: { version: "2" } })],
-    ["other keys reordered", pkg("0.1.100"), JSON.stringify({ private: true, name: "openmausbot", version: "0.1.101", scripts: { test: "vitest run" } })],
+    ["other keys reordered", pkg("0.1.100"), JSON.stringify({ private: true, name: "uni", version: "0.1.101", scripts: { test: "vitest run" } })],
     ["no version before", JSON.stringify({ name: "x" }), JSON.stringify({ name: "x", version: "1.0.0" })],
     ["not JSON", "{", pkg("0.1.101")],
     ["not an object", "[]", "[]"],

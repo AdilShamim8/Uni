@@ -31,7 +31,7 @@ export const CUSTOMER_RUN_LOCAL_JOBS = ["self-update", "restore"] as const satis
  * - `backup`: nothing. Copies the data to a Docker volume on this server; it never removes a copy the owner made.
  * - `status`, `host-health`: nothing. They read.
  */
-export const CUSTOMER_HOME_IMAGE = /^ghcr\.io\/milind-soni\/openmausbot@sha256:[0-9a-f]{64}$/;
+export const CUSTOMER_HOME_IMAGE = /^ghcr\.io\/adilshamim8\/uni@sha256:[0-9a-f]{64}$/;
 
 /** Who sent a job: the Admin over the connection, or root on this server. */
 export type JobSource = "admin" | "local";
@@ -97,7 +97,7 @@ export function checkCustomerRunJob(message: unknown, by: JobSource): CheckedJob
   }
   const image = (args as Record<string, unknown>).image;
   if (keys.length !== 1 || typeof image !== "string" || !CUSTOMER_HOME_IMAGE.test(image)) {
-    return { ok: false, id: shape.job.id, code: "invalid_args", message: "image must be ghcr.io/milind-soni/openmausbot@sha256:<digest>" };
+    return { ok: false, id: shape.job.id, code: "invalid_args", message: "image must be ghcr.io/adilshamim8/uni@sha256:<digest>" };
   }
   return { ok: true, job: { id: shape.job.id, type, args: { image } } };
 }
@@ -175,14 +175,14 @@ const parsed = (text: string | undefined): Record<string, unknown> => {
 export function parseHomeReads(output: string): HomeFacts {
   const [health, environment, seats] = output.split(RECORD_END);
   const said = parsed(health);
-  return { answers: said.app === "openmausbot", version: versionOrNull(parsed(environment).version), seats: seatsOrNull(parsed(seats).seats), box: boxOnOff(said.box) };
+  return { answers: said.app === "uni", version: versionOrNull(parsed(environment).version), seats: seatsOrNull(parsed(seats).seats), box: boxOnOff(said.box) };
 }
 
 // 4. WHAT LEAVES THE SERVER. The heartbeat (every 30 seconds) and each job's reply, rebuilt here field by field. A
 // field that is not copied below is not sent. No name, no address, no file name, no log line.
 
 const VERSION = /^v?\d{1,5}\.\d{1,5}\.\d{1,5}(?:-[0-9A-Za-z.]{1,32})?$/;
-const IMAGE = /^ghcr\.io\/milind-soni\/(?:openmausbot|mausbot-connector)(?:@sha256:[0-9a-f]{64}|:[0-9A-Za-z][0-9A-Za-z._-]{0,63})$/;
+const IMAGE = /^ghcr\.io\/adilshamim8\/(?:uni|mausbot-connector)(?:@sha256:[0-9a-f]{64}|:[0-9A-Za-z][0-9A-Za-z._-]{0,63})$/;
 /** An operating system, kernel or Docker version as the machine names itself: letters, digits and version punctuation. */
 const MACHINE = /^[0-9A-Za-z][0-9A-Za-z ._:+~()/#-]{0,79}$/;
 const COPY_ID = /^[a-z0-9][a-z0-9-]{0,62}$/;

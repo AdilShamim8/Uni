@@ -26,9 +26,9 @@ const CALLS: Record<string, Json> = {
   session_read: { thread_id: "thread-old", message_id: "message-old" },
   update_widget: { widget_id: "m7", widget: WIDGET_SAMPLES.buildStatus },
   update_html: { app_id: "m9", html: "<p>v2</p>" },
-  x_user_posts: { handle: "@openmausbot", limit: 5 },
-  x_post: { post: "https://x.com/openmausbot/status/123", replies: true },
-  x_profile: { handle: "openmausbot" },
+  x_user_posts: { handle: "@uni", limit: 5 },
+  x_post: { post: "https://x.com/uni/status/123", replies: true },
+  x_profile: { handle: "uni" },
 };
 
 /** What a call sends to the harness, and what the model reads back. */

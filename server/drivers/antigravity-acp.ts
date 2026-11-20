@@ -714,7 +714,7 @@ const OPEN_MODEL_ACCESS_RELEASE = [1, 5, 1] as const;
 export function antigravityClientInfo(version: string | null | undefined, editorName = ANTIGRAVITY_EDITOR_CLIENT_NAME): { name: string; version: string } {
   const match = /^(\d+)\.(\d+)\.(\d+)/u.exec(version?.trim() ?? "");
   const open = match !== null && OPEN_MODEL_ACCESS_RELEASE.reduce((difference, part, index) => difference || Number(match[index + 1]) - part, 0) >= 0;
-  return open || !editorName ? { name: "openmausbot", version: "0.0.0" } : { name: "zed", version: "0.0.0" };
+  return open || !editorName ? { name: "uni", version: "0.0.0" } : { name: "zed", version: "0.0.0" };
 }
 
 const runtimeVersion = (value: unknown) => typeof value === "string" ? value.replace(/^agy_acp_server_/u, "").trim() : "";

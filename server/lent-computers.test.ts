@@ -66,7 +66,7 @@ describe("what a server remembers about computers lent to it", () => {
     // One of two away: the bot is told about it, without the sentence meant for a person with nothing online.
     const other = { ...record, id: randomUUID(), name: "ASH-MBP", platform: "darwin" as const };
     expect(awayNotice([record, other], new Set([other.id]))).toEqual({ offline: [{ name: "ASH-PC", device: "PC", lastOnline: "2026-10-07 14:02 UTC", lent: true }] });
-    for (const sentence of [awayNotice([record], new Set()).say!, awayNotice([{ ...record, stoppedAt: at }], new Set()).say!]) expect(sentence).not.toMatch(/this Mac|OMB Cloud|OpenMausBot Cloud/u);
+    for (const sentence of [awayNotice([record], new Set()).say!, awayNotice([{ ...record, stoppedAt: at }], new Set()).say!]) expect(sentence).not.toMatch(/this Mac|OMB Cloud|Uni Cloud/u);
   });
 });
 

@@ -67,7 +67,7 @@ describe("this computer, only for the desktop app's own server", () => {
 
   it("ignores every other parent message and refuses a malformed grant", () => {
     const desktop = createDesktopComputer({ platform: "darwin" });
-    for (const message of [null, "x", [], { type: "openmausbot:desktop-mutation-token", token: "t" }, { connection: READY }]) {
+    for (const message of [null, "x", [], { type: "uni:desktop-mutation-token", token: "t" }, { connection: READY }]) {
       expect(desktop.receive(message)).toBe(false);
     }
     expect(() => desktop.receive({ type: DESKTOP_COMPUTER_GRANT, connection: "/path/to/cua-connection.json" })).toThrow();

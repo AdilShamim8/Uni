@@ -30,7 +30,7 @@ import { turnStdioMcpServers } from "./turn-mcp.ts";
 
 const DRIVER_KIND = "museCode";
 const PROVIDER_ID = "meta";
-const CLIENT_INFO = { name: "openmausbot", title: "Uni", version: "1" };
+const CLIENT_INFO = { name: "uni", title: "Uni", version: "1" };
 const MUSE_CONTEXT_WINDOW = 1_048_576;
 const RE_ANCHOR_TURNS = 8;
 const STARTUP_TIMEOUT_MS = 30_000;
@@ -334,7 +334,7 @@ export const MuseCodeDriver: ProviderDriver<MuseConfig> = {
       let host: Host | undefined;
       try {
         cwd = mkdtempSync(join(tmpdir(), "omb-muse-models-"));
-        host = await startHost(["serve", "--disable-shell", "--disable-write", "--no-session-log"], cwd, "models", false, "openmausbot");
+        host = await startHost(["serve", "--disable-shell", "--disable-write", "--no-session-log"], cwd, "models", false, "uni");
         const result = await Promise.race([
           host.connection.request("model/list", {}),
           new Promise<never>((_resolve, reject) => setTimeout(() => reject(new Error("Muse Code did not list its models.")), MODEL_LIST_TIMEOUT_MS).unref?.()),

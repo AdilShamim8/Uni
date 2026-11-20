@@ -113,7 +113,7 @@ describe("run", () => {
     setTimeout(() => controller.abort(), 50);
     const { code, result } = await h.run(["run", "--bot", "lead", "Go", "--json"], controller.signal);
     expect(code).toBe(130);
-    expect(result).toMatchObject({ exitCode: 130, error: "stopped waiting; the work keeps running", hint: "wait again: openmausbot wait --thread t1 --since 1000" });
+    expect(result).toMatchObject({ exitCode: 130, error: "stopped waiting; the work keeps running", hint: "wait again: uni wait --thread t1 --since 1000" });
     expect(h.calls.some((call) => call.name === "interrupt_conversation")).toBe(false);
   });
 
@@ -228,7 +228,7 @@ describe("wait", () => {
     expect((await harness([waited("settled", "completed", job("completed", "v1"))], { drops: [proxy] }).run(["wait", "--thread", "t1", "--json"])).code).toBe(0);
     const refused = Object.assign(new Error("Uni API error (401): {\"error\":\"unauthorized\"}"), { status: 401 });
     const gone = harness([waited("settled", "completed", job("completed", "v1"))], { drops: [refused] });
-    expect((await gone.run(["wait", "--thread", "t1", "--json"])).code).toBe(5);
+    expect((await gone.run(["wait", "--thread", "t1", "--json"])).code).toBe(4);
     expect(gone.calls.filter((call) => call.name === "wait_for_conversation")).toHaveLength(1);
     // a bug's TypeError is not a dropped connection: it fails at once
     const bug = harness([waited("settled", "completed", job("completed", "v1"))], { drops: [new TypeError("Cannot read properties of undefined (reading 'job')")] });
@@ -242,7 +242,7 @@ describe("wait", () => {
     setTimeout(() => controller.abort(), 50);
     const { code, result } = await h.run(["wait", "--thread", "t1", "--json"], controller.signal);
     expect(code).toBe(130);
-    expect(result).toMatchObject({ ok: false, exitCode: 130, error: "stopped waiting; the work keeps running", hint: "wait again: openmausbot wait --thread t1" });
+    expect(result).toMatchObject({ ok: false, exitCode: 130, error: "stopped waiting; the work keeps running", hint: "wait again: uni wait --thread t1" });
     expect(h.calls.some((call) => call.name === "interrupt_conversation")).toBe(false);
   });
 });

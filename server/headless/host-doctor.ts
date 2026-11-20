@@ -303,7 +303,7 @@ export function systemProbe(): HostProbe {
     async serverAnswers(port) {
       try {
         const response = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(2_000) });
-        return ((await response.json()) as { app?: unknown }).app === "openmausbot";
+        return ((await response.json()) as { app?: unknown }).app === "uni";
       } catch {
         return false;
       }
@@ -316,7 +316,7 @@ export async function hostDoctor(ctx: VerbContext, probe: HostProbe = systemProb
   const port = Number(rawPort);
   if (!Number.isInteger(port) || port < 1 || port > 65_535) throw usageError("--port must be 1-65535");
   // A Linux machine's path, also when the checks are tested on Windows.
-  const dataDir = posix.resolve(flag(ctx.flags, "data-dir") ?? (ctx.env.OMB_DATA_DIR || join(homedir(), ".openmausbot")));
+  const dataDir = posix.resolve(flag(ctx.flags, "data-dir") ?? (ctx.env.OMB_DATA_DIR || join(homedir(), ".uni")));
   const domain = flag(ctx.flags, "domain")?.trim().toLowerCase();
   return hostReport(await checkHost(probe, { dataDir, port, ...(domain ? { domain } : {}) }));
 }

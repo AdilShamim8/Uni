@@ -18,10 +18,10 @@ The same TypeScript **harness server** (`server/`) runs in four places:
 
 - **Desktop app** (`electron/`, macOS, Windows, Linux). The app starts the
   server on `127.0.0.1` and shows the web UI (`src/`, React) in its window.
-- **Self-hosted server** (`openmausbot serve`, from npm or the root
+- **Self-hosted server** (`uni serve`, from npm or the root
   `Dockerfile`). People pair browsers, desktops and phones with it.
 - **Hosted or shared workspaces.** Several people sign in to one server
-  (email sign-in, members, `openmausbot fleet`). Members and roles live in
+  (email sign-in, members, `uni fleet`). Members and roles live in
   `enterprise/`, and the hook point is `server/enterprise.ts`.
 - **MausBot Cloud home.** Each customer gets one Fly app with one machine
   (the `cloud-home` stage of the root `Dockerfile`, plus `deploy/fly/`). Caddy
@@ -56,7 +56,7 @@ Bots have tools:
      must sign in.
 2. **Desktop per-launch capability and paired sessions.**
    - In the desktop app, every public loopback mutation must carry the app's
-     private per-launch token (`x-openmausbot-desktop-owner`), which only the
+     private per-launch token (`x-uni-desktop-owner`), which only the
      app's own window sends. GETs that cause effects are classed as
      mutations (`mutatingPublicRoute`).
    - Off-machine access needs a **paired session**: a bearer token, or a
@@ -90,7 +90,7 @@ Bots have tools:
    - The pairing page (`companion/src/control.ts`) is loopback-only and needs
      a per-launch token.
    - The managed Cloudflare tunnel reaches only the desktop's own gateway
-     on `:8812`, or the server's tunnel socket (`openmausbot serve --tunnel`,
+     on `:8812`, or the server's tunnel socket (`uni serve --tunnel`,
      `OMB_TUNNEL_SOCKET`). It never reaches the LAN listener on `:8810`.
      Requests that arrive over the tunnel socket always need a paired session.
 6. **Egress gate for bots' browsers** (`server/browser/egress/`).
@@ -127,7 +127,7 @@ Bots have tools:
      (`server/cloud-secrets.ts`).
    - Text that crosses a boundary is redacted (`shared/redact.ts`).
 9. **Per-bot workspaces and memory.**
-   - Each bot's workspace (`~/.openmausbot/workspaces/<botId>`) holds its
+   - Each bot's workspace (`~/.uni/workspaces/<botId>`) holds its
      memory. Harness tools such as memory, `session_search`, recall and the
      recent-work brief must return only the calling bot's own conversations
      and the rooms it belongs to.
@@ -332,7 +332,7 @@ Set `OMB_LOOPBACK_TRUST=service` to act as a shared workspace. Send a
 ## Reports and patches
 
 - Give a minimal reproducer against the server
-  (`server/openmausbot.ts serve --data-dir <tmp>`), as a script or a few
+  (`server/uni.ts serve --data-dir <tmp>`), as a script or a few
   `curl` commands, and say which host type it needs: desktop, self-hosted,
   `service` trust, or Cloud.
 - State the boundary crossed (from the list above), the attacker's starting

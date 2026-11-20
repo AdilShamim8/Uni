@@ -31,7 +31,7 @@ const streams: SseRecorder[] = [];
 
 async function boot(env: Record<string, string>): Promise<Fixture> {
   const home = mkdtempSync(join(tmpdir(), "omb-phone-push-"));
-  const data = join(home, ".openmausbot");
+  const data = join(home, ".uni");
   mkdirSync(data, { recursive: true });
   writeFileSync(join(data, "config.json"), JSON.stringify({
     features: { smartSetupChoices: false },
@@ -184,7 +184,7 @@ describe("Live Activities by push", () => {
     const pip = await createBot(on, "Pip", "slow", "claude-sonnet-5");
     expect((await api(on, "PUT", "/api/push/device", { platform: "apns", token: "c3".repeat(32) }, phone.token)).status).toBe(200);
     const registered = await api(on, "PUT", "/api/push/activity", {
-      scheme: "openmausbot",
+      scheme: "uni",
       headlines: { needsYou: "{name} braucht dich", working: "{name} arbeitet" },
       statuses: { working: "Arbeitet", needsYou: { approval: "Braucht deine Freigabe", question: "Hat eine Frage", signIn: "Braucht deine Anmeldung", other: "Braucht dich" } },
       activities: [{ botId: pip.id, token: ACTIVITY }],

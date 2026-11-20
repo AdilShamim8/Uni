@@ -1,6 +1,6 @@
 # Run Uni from scripts and CI
 
-The `openmausbot` command can drive a running workspace without a screen: set
+The `uni` command can drive a running workspace without a screen: set
 up a team from a file, give a bot a job, wait until it and every teammate it
 asked are done, and keep what they made. It works against the server on this
 computer or one somewhere else, and it is built for scripts, CI and other
@@ -8,7 +8,7 @@ agents: every command can print one JSON document, and the exit code says how
 things went.
 
 ```sh
-npm install -g openmausbot            # or use npx openmausbot …
+npm install -g uni            # or use npx uni …
 openmausbot serve --no-pair &         # a workspace with no screen (or use your desktop app)
 openmausbot engine set claude --key-env ANTHROPIC_API_KEY
 openmausbot team apply launch-room.yaml
@@ -18,17 +18,60 @@ openmausbot run "Room Lead" "Rehearse the launch of https://example.com" --expor
 `run` prints progress as it goes, then the Room Lead's final reply and the
 files it links, and writes everything to `./rehearsal`.
 
+## Sign in once
+
+```sh
+openmausbot login                     # the MausBot app on this computer
+openmausbot login https://maus.example.com   # a Cloud or a server elsewhere
+```
+
+`login` asks the server, and the person allows it with one click. On this
+computer the MausBot app shows a card, "A terminal wants to control MausBot",
+with a short code; the same code is printed in the terminal, so you allow the
+terminal you are looking at. For a Cloud or a server elsewhere your browser
+opens the server's page, where the same card waits (sign in there first if it
+asks). On a server you started yourself with `uni serve`, a command on
+the same computer is its owner, so `login` signs in without a card.
+
+The sign-in lasts 30 days and renews while you use it. It is kept in the macOS
+Keychain, or on Linux and Windows in a file only you can read
+(`~/.config/uni/`), and it is never printed or taken on the command
+line. `--scope chat` signs in for chat only. Every command then goes to that
+server, with that sign-in, and the sign-in is sent only to the exact address
+it was made at.
+
+| Command | What it does |
+|---|---|
+| `login [SERVER] [--scope chat] [--name NAME]` | Sign in (above); the server becomes the current one. |
+| `logout [NAME]` | End the sign-in on the server and remove it here. |
+| `whoami` | The server the commands go to, and who you are to it. |
+| `servers` | The servers you signed in to; `*` marks the current one. |
+| `use NAME` | Make another saved server the current one. |
+
+Nothing on the computer gets your access for free: a program, a web page or a
+bot can only ask, and only a person pressing Allow in the app (or in a browser
+signed in to the server) lets a terminal in.
+
+**Inside a bot's own shell** the command acts as that bot. It never uses your
+saved sign-in, and `login` refuses there. So one bot cannot delete or stop the
+others through your session by accident. It is not a wall against a bot with
+Full access, which runs as you.
+
 ## Which workspace, and as whom
 
 - `--url URL` or `OPENMAUSBOT_URL`: a workspace somewhere else. `https://`
   works anywhere; plain `http://` works only on this computer or a private
   network (a LAN address, Tailscale's 100.x or `*.ts.net`, `*.local`).
 - `--port N` or `OMB_PORT`: this computer, on that port.
-- Otherwise the command looks on this computer's usual ports (8799, 18799,
-  28799), as the desktop app uses them.
+- Otherwise the server you signed in to with `login`, or else the command
+  looks on this computer's usual ports (8799, 18799, 28799), as the desktop
+  app uses them.
 
-On this computer a headless server treats you as its owner, and no token is
-needed. Anywhere else you need a token:
+Without a sign-in, a command on this computer can read from the desktop app
+(`bots`, `status`, `messages`, `export`, `events`) but every change is refused
+until you run `uni login`. A server you started with `uni
+serve` treats a command on its own computer as its owner, and needs no
+sign-in. For scripts and CI, a token in a file works anywhere:
 
 ```sh
 openmausbot connect https://maus.example.com --code 7KQ2-M9XD-H4TP --out ~/.openmausbot-token
@@ -37,11 +80,11 @@ openmausbot doctor --url https://maus.example.com --token-file ~/.openmausbot-to
 
 `connect` also takes the whole link the server printed
 (`https://maus.example.com/pair#code=…`), so `--code` can be left out then.
-Make the pairing code on the server with `openmausbot pair` (add
-`--client --ttl 24h` for a chat-only code that stays open up to a day; a code
-works once). On this
-computer's own server, `connect` makes the code itself (`--client` gives a
-token that can chat but not change settings). The token goes to a file only
+Make the pairing code in the app's Settings → Phone & devices, or on a server
+with `uni pair` (add `--client --ttl 24h` for a chat-only code that
+stays open up to a day; a code works once). On a server you started with
+`uni serve`, `connect` makes the code itself (`--client` gives a token
+that can chat but not change settings). The token goes to a file only
 you can read, and is never printed. Pass it with `--token-file FILE` or
 `OPENMAUSBOT_TOKEN`; there is no `--token` flag, because a command line can be
 read by other programs. A token is never sent while the command is still
@@ -55,11 +98,11 @@ openmausbot token list                     # name, scope, end date, last used (n
 openmausbot token revoke ID                # it stops working at once
 ```
 
-A `connect` session renews itself while it is used, up to 180 days; an access
+A `login` or `connect` session renews itself while it is used, up to 180 days; an access
 token never renews and ends on its date. `--expires` is at most the server's
 session limit (180 days unless `OMB_SESSION_MAX_DAYS` says otherwise), and
 `--scope client`, the default, can chat and answer approvals but not change
-settings. Tokens are listed and revoked like any session (`openmausbot
+settings. Tokens are listed and revoked like any session (`uni
 sessions`, and Settings), and the token itself is written only to `--out`.
 
 ## Output and exit codes
@@ -73,26 +116,35 @@ redaction the transcript uses). Durations are written `90`, `90s`, `5m`, `2h` or
 | Exit code | Meaning |
 |---|---|
 | 0 | Done |
-| 1 | Failed, stopped or stalled, or a step was refused |
-| 2 | The command line or a file is wrong |
+| 1 | Failed, stopped or stalled, or you answered no |
+| 2 | The command line or a file is wrong, or a script left out `--yes` |
 | 3 | Someone must answer (a question or an approval card) |
-| 4 | Timed out (the work keeps running) |
-| 5 | Cannot reach the server, not allowed, or the server is too old |
-| 6 | `team apply --check` found changes |
-| 7 | `doctor --host`: this machine is missing something the server needs |
+| 4 | Needs you signed in (`uni login`); for `run` and `wait`, also timed out (the work keeps running) |
+| 5 | Not allowed, cannot reach the server, or the server is too old |
+| 6 | Busy (stop it first); for `team apply --check`, it found changes |
+| 7 | Not found; for `doctor --host`, this machine is missing something the server needs |
+| 8 | `doctor --data`: the data folder has a problem left (after `--fix`, one it could not repair) |
 | 130 | Ctrl-C (the work keeps running) |
 
 ## Commands
 
-Run `openmausbot help VERB` for any of these. A TARGET is a bot or room by
+Run `uni help VERB` for any of these. A TARGET is a bot or room by
 name or id, or `--bot ID`, `--channel ID` or `--thread ID`; `--task ID` picks
 one of its conversations.
 
 | Command | What it does |
 |---|---|
-| `doctor [--wait 2m]` | Checks the server answers, is new enough, who you are to it (and when your session expires), that an engine is ready, and whether bots have a browser. On a shared server without a session (`docker compose exec omb openmausbot doctor`), it learns only how many engines are ready, not which (`GET /api/health/engines`). |
+| `doctor [--wait 2m]` | Checks the server answers, is new enough, who you are to it (and when your session expires), that an engine is ready, and whether bots have a browser. On a shared server without a session (`docker compose exec omb uni doctor`), it learns only how many engines are ready, not which (`GET /api/health/engines`). |
 | `doctor --host` | Checks this Linux machine can run the server and the bots' sandbox (below). |
+| `doctor --data [--fix] [--data-dir DIR]` | Checks this computer's data folder without the server; `--fix` applies the repairs that cannot lose data, while no server uses it ([self-hosting](self-hosting.md#the-doctor-checking-and-repairing-the-data)). |
+| `status` | Every bot at a glance: working, waiting on you, waiting on teammates, paused, failed or idle, with its computer and team. |
 | `bots`, `channels`, `models` | Your bots and what each is doing, your rooms, the engines and the models each offers. |
+| `bots get BOT` | One bot: its team, state, computer, model, approvals and conversations. |
+| `bots delete BOTS` | Deletes bots with their conversations (below). The MausBot bot and a busy bot are refused. |
+| `bots pause BOTS`, `bots resume BOTS` | Pauses bots: their work stops and nothing new starts, across restarts, until resumed. `--team` pauses the team itself, so bots added to it later are paused too; `--all` pauses every bot. |
+| `stop BOTS` (or `bots stop`) | Stops the work these bots are doing now, and pauses nothing: a new message or routine starts them again. |
+| `threads list BOT`, `threads clear BOT`, `threads delete BOT THREAD…` | A bot's conversations; `clear` deletes all of them and the bot starts one new, empty one. A conversation that is working is kept. |
+| `computers list`, `computers start BOT`, `computers sleep BOT` | Where each bot works and its cloud computer's state; create or wake a bot's cloud computer (the bot must be set to Cloud computer), or put it to sleep. |
 | `messages TARGET [--limit 30]` | The latest messages of a conversation. |
 | `send TARGET TEXT` | Sends one message and returns at once, to the conversation the bot or room has open. `--task new` starts a new conversation for it (`--title` names it, else the message's first line), and `--task ID` picks one. It says which conversation it went to. `--send-id ID` makes a retry safe: the same id never sends twice. |
 | `run TARGET TEXT` | Gives a bot or room one job and waits until it is done (below). |
@@ -110,12 +162,28 @@ one of its conversations.
 The message for `send` and `run` can be the next word, `--text TEXT`,
 `--message-file FILE`, or `-` to read it from stdin.
 
+BOTS is one or more bot names or ids, `--team NAME`, or `--all`. The commands
+that delete or stop many things (`bots delete`, `threads clear`, `threads
+delete`, `stop --all`) first print exactly what they would touch, then ask. A
+script passes `--yes` instead (without it they exit 2), and `--dry-run` only
+prints the list. They need a named server: the one you signed in to, or
+`--url`/`--port`. There is no flag that skips a permission or an approval.
+
+```text
+$ uni bots delete --team QA --dry-run
+Would delete 3 bots on "Studio" (http://127.0.0.1:8799), with their conversations and files:
+  QA Tester 3 (35d41705…), team QA
+  QA Tester 2 (53cbe304…), team QA
+  QA Tester 1 (2edb5834…), team QA
+Nothing was changed (--dry-run).
+```
+
 ## doctor --host
 
 Before you install a server, check the machine it will run on:
 
 ```text
-$ sudo openmausbot doctor --host --data-dir /srv/mausbot
+$ sudo uni doctor --host --data-dir /srv/mausbot
 ok    Ubuntu 24.04.1 LTS, kernel 6.8.0-45-generic
 ok    x86_64
 ok    Docker 27.3.1
@@ -137,7 +205,7 @@ It checks the system (Ubuntu 24.04 or 22.04, or Debian 12, are the ones we
 test), the processor (x86_64; arm64 runs a server but not a self-hosted Team
 server), Docker or Podman, that unprivileged user namespaces are allowed (the
 AppArmor and Debian switches), seccomp, cgroup v2, free disk for the data
-folder (`--data-dir`, else `OMB_DATA_DIR` or `~/.openmausbot`: at least 10 GB,
+folder (`--data-dir`, else `OMB_DATA_DIR` or `~/.uni`: at least 10 GB,
 and 100 GB for a Team server), disk encryption, CPUs and memory (a Team needs
 4 CPUs and 8 GB), the server's port (`--port`, else 8799), ports 80 and 443
 (required with `--domain HOST`, else only a warning), and the clock against
@@ -166,7 +234,7 @@ openmausbot run "Room Lead" --message-file brief.md --timeout 45m --on-input exi
 line) unless `--task current` or `--task ID` says otherwise, sends the message
 once, and waits for the whole job: the bot's own turn and every piece of work
 it handed to a teammate, and theirs in turn. Its first progress line names the
-conversation and when the job began (`since`), so a later `openmausbot wait
+conversation and when the job began (`since`), so a later `uni wait
 --thread ID --since MS` can pick the same job up again.
 
 - `--wait job` (the default) waits for the bot and every teammate; `--wait turn`
@@ -257,7 +325,9 @@ events; `--job ID` follows every conversation of that job as it grows, and
 connection it resumes from where it was; the server's first line says whether
 it could (`"resumed": false` means read the state again). A refusal (an
 expired token, a missing scope) ends it with exit 5 instead. The output is
-always JSON lines; `--jsonl` is accepted and changes nothing.
+always JSON lines; `--jsonl` is accepted and changes nothing. A tool step's
+output longer than 1,000 characters arrives as its first 1,000 with
+`"clipped": true` on the tool, as conversation pages carry it.
 
 ## engine
 
@@ -343,7 +413,7 @@ bots:                                       # at least one
     chief: true                             # Chief of Staff of its team (one per team); false removes it
     manages: [Support]                      # other teams this Chief is also in charge of (every bot reaches every bot anyway)
     soul: TEXT | { file: PATH }             # standing instructions, at most 24,000 bytes
-    model: claude/claude-sonnet-5-5         # INSTANCE/MODEL; openmausbot models lists them
+    model: claude/claude-sonnet-5-5         # INSTANCE/MODEL; uni models lists them
     effort: none | low | medium | high | xhigh | max
     approval: ask | edits | auto | full     # a new bot starts at full; Custom is set in the desktop app
     computer: auto | off | browser | local | vm | cloud
@@ -399,7 +469,7 @@ One Room Lead and the visitors who rehearse a launch, on a sandbox with no
 Claude login: the key runs every Claude bot.
 
 ```yaml
-# launch-room.yaml — openmausbot team apply launch-room.yaml
+# launch-room.yaml — uni team apply launch-room.yaml
 version: 1
 
 engines:
@@ -473,27 +543,27 @@ an engine that can limit built-in tools.
 
 ```yaml
 # .github/workflows/rehearse.yml (a sketch)
-- run: npm install -g openmausbot @anthropic-ai/claude-code
-- run: openmausbot serve --no-pair --data-dir "$RUNNER_TEMP/omb" &
+- run: npm install -g uni @anthropic-ai/claude-code
+- run: uni serve --no-pair --data-dir "$RUNNER_TEMP/omb" &
   env: { OMB_ANTHROPIC_API_KEY: "${{ secrets.ANTHROPIC_API_KEY }}" }   # the workspace's Claude key from the start
-- run: openmausbot doctor --wait 2m          # the server answers and an engine is ready
-- run: openmausbot team apply team.yaml
-- run: openmausbot run "Release checker" "Check the deploy at ${{ env.URL }}" --timeout 20m --strict --export ./out
+- run: uni doctor --wait 2m          # the server answers and an engine is ready
+- run: uni team apply team.yaml
+- run: uni run "Release checker" "Check the deploy at ${{ env.URL }}" --timeout 20m --strict --export ./out
 - uses: actions/upload-artifact@v4
   with: { name: release-check, path: ./out }
 ```
 
 `doctor --wait` waits for an engine too, so the server gets its key in its
 own environment, as here (`OMB_ANTHROPIC_API_KEY`; the team file's `engines:`
-section, or `openmausbot engine set`, can set it later instead).
+section, or `uni engine set`, can set it later instead).
 
 The step fails when the job fails (exit 1), needs someone (exit 3) or runs out
 of time (exit 4). To drive a workspace that is already running elsewhere, set
-`OPENMAUSBOT_URL` and pass a token made with `openmausbot connect` as a secret
+`OPENMAUSBOT_URL` and pass a token made with `uni connect` as a secret
 file (`--token-file`).
 
 ## For other agents
 
-`openmausbot mcp` serves the same operations as MCP tools on stdin and stdout
+`uni mcp` serves the same operations as MCP tools on stdin and stdout
 ([docs/mcp-server.md](mcp-server.md)): `wait_for_conversation` waits on the
 same job, and returns the same result, as `wait`.

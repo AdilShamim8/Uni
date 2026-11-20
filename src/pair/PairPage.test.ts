@@ -98,16 +98,16 @@ it("asks for the code first, with email sign-in as a link below, and says how to
   expect(html).toContain(en["pair.notEncrypted"].replace("'", "&#x27;"));
   expect(html).toContain(en["pair.fromLink"]);
   expect(html).toContain("openmausbot://pair?address=http%3A%2F%2F203.0.113.9%3A8799&amp;code=ABCD-EFGH-JK23");
-  expect(html).toContain("npx openmausbot pair");
+  expect(html).toContain("npx uni pair");
   expect(html.indexOf("<form")).toBeLessThan(html.indexOf(en["pair.code"]));
 });
 
 it("a team's Cloud whose session ended offers the way back through MausBot Cloud, as the signed-in session told this browser, and only to an https page", () => {
   const team = { environmentId: "e", label: "Acme", platform: "linux", version: "1", capabilities: { remoteSessions: true as const, cloudHome: true as const, cloudTeam: true as const } } as unknown as EnvironmentDescriptor;
-  expect(teamPage(team, "https://cloud.openmausbot.com/cloud/team/t1")).toBe("https://cloud.openmausbot.com/cloud/team/t1");
+  expect(teamPage(team, "https://cloud.uni.com/cloud/team/t1")).toBe("https://cloud.uni.com/cloud/team/t1");
   expect(teamPage(team, null), "never told before sign-in").toBeNull();
   for (const bad of ["javascript:alert(1)", "http://evil.example/cloud", "https://u:p@cloud.example/x", "https://cloud.example/x#signin=1", "nope"]) expect(teamPage(team, bad)).toBeNull();
-  expect(teamPage({ ...team, capabilities: { remoteSessions: true, cloudHome: true } } as unknown as EnvironmentDescriptor, "https://cloud.openmausbot.com/cloud/team/t1"), "a My Cloud has no team page").toBeNull();
+  expect(teamPage({ ...team, capabilities: { remoteSessions: true, cloudHome: true } } as unknown as EnvironmentDescriptor, "https://cloud.uni.com/cloud/team/t1"), "a My Cloud has no team page").toBeNull();
   expect(en["pair.team.open"].replace("{team}", "Acme")).toBe("Open Acme with MausBot Cloud");
 });
 

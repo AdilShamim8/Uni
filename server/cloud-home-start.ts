@@ -185,7 +185,7 @@ export function tunnelCommand(bin: string, token: string): { command: string; ar
 
 /** The server's data directory on the volume. */
 export function cloudHomeDataDir(env: NodeJS.ProcessEnv, home: string): string {
-  return env.OMB_DATA_DIR || posix.join(home, ".openmausbot");
+  return env.OMB_DATA_DIR || posix.join(home, ".uni");
 }
 
 /** flock(1)'s exit status when another process holds the lock (its --conflict-exit-code). */

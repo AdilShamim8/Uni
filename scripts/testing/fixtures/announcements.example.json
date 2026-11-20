@@ -22,7 +22,7 @@
       "label": "Sponsor",
       "title": "Acme Inference: $5 of free credit",
       "body": "Acme Inference sponsors Uni. New accounts get $5 of credit for any model they serve.",
-      "primary": { "label": "Get a key", "action": { "open_url": "https://example.com/acme?utm_source=openmausbot&utm_medium=sponsorship" } },
+      "primary": { "label": "Get a key", "action": { "open_url": "https://example.com/acme?utm_source=uni&utm_medium=sponsorship" } },
       "secondary": { "label": "Add a key", "action": { "open": "api_keys" } },
       "starts": "2026-12-01T00:00:00Z",
       "ends": "2026-12-15T00:00:00Z",

@@ -20,7 +20,7 @@ const WORK = mkdtempSync(join(tmpdir(), "omb-rail-"));
 const POLL_MS = 150_000;
 const DEBUG_PORT = 9333;
 
-const ADMIN_HOST = "cloud.openmausbot.com", AWAKE_HOST = "omb-u-aaaaaaaaaaaa.fly.dev", ASLEEP_HOST = "omb-u-bbbbbbbbbbbb.fly.dev";
+const ADMIN_HOST = "cloud.uni.com", AWAKE_HOST = "omb-u-aaaaaaaaaaaa.fly.dev", ASLEEP_HOST = "omb-u-bbbbbbbbbbbb.fly.dev";
 const BLOCKED = ["us.i.posthog.com", "us-assets.i.posthog.com", "app.posthog.com"];
 const TOKEN = `omc_${"T".repeat(43)}`, COOKIE = "omb_session_fixture";
 const results = [];
@@ -134,7 +134,7 @@ let app, server, rail, failure = null;
 try {
   const { certFile, ...tls } = trustThrowawayCertificate();
   server = await serve(tls);
-  const home = join(WORK, "home"), dataDir = join(home, ".openmausbot");
+  const home = join(WORK, "home"), dataDir = join(home, ".uni");
   mkdirSync(dataDir, { recursive: true });
   const plan = join(WORK, "room-plan.json");
   writeFileSync(plan, "{}");

@@ -153,7 +153,7 @@ export function tunnelHolder(env: NodeJS.ProcessEnv, dataDir: string): string | 
   const account = openTunnelCredentials(dataDir);
   if (account.status === "unavailable") return `${account.file} could not be read, so this machine may hold a tunnel address`;
   const document = account.read();
-  if (describeTunnelAccount(document).address || document[MANAGED_COMPANION_ENDPOINT_FIELD]) return "this machine holds a tunnel address from `openmausbot login`";
+  if (describeTunnelAccount(document).address || document[MANAGED_COMPANION_ENDPOINT_FIELD]) return "this machine holds a tunnel address from `uni account login`";
   return null;
 }
 
@@ -181,7 +181,7 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
   const version = reportableServerVersion();
   const holder = tunnelHolder(options.env, dataDir);
   if (holder) {
-    log(`phone relay: off: ${holder}. Use the relay on a machine signed in with \`openmausbot login --relay\`, which holds no tunnel address.`);
+    log(`phone relay: off: ${holder}. Use the relay on a machine signed in with \`uni login --relay\`, which holds no tunnel address.`);
     return offForTunnel(holder);
   }
   let key: KeyPair;
@@ -308,7 +308,7 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
    * remote, and whatever Host, proxy, cookie or owner headers the phone wrote are replaced: it needs a session of its own. */
   function scrub(req: IncomingMessage, peer: Peer): void {
     for (const name of Object.keys(req.headers)) {
-      if (name === "cookie" || name.startsWith("x-openmausbot-") || (PROXY_HEADERS as readonly string[]).includes(name)) delete req.headers[name];
+      if (name === "cookie" || name.startsWith("x-uni-") || (PROXY_HEADERS as readonly string[]).includes(name)) delete req.headers[name];
     }
     req.headers.host = "phone-relay.invalid";
     req.headers["x-forwarded-for"] = sourceOf(peer);
@@ -325,7 +325,7 @@ export function startPhoneRelay(options: PhoneRelayOptions): PhoneRelay | null {
     if (peer.kind === "pairing") {
       if (!PAIRING_SESSION_ROUTES.has(`${method} ${path}`)) return reply(res, 401, { error: "pair this phone first" });
       if (method === "POST" && devices.records().length >= MAX_RELAY_PHONES) {
-        return reply(res, 409, { error: `This server has ${MAX_RELAY_PHONES} phones on Uni Relay. Remove one (openmausbot devices revoke ID), then pair again.` });
+        return reply(res, 409, { error: `This server has ${MAX_RELAY_PHONES} phones on Uni Relay. Remove one (uni devices revoke ID), then pair again.` });
       }
     } else {
       const bearer = bearerToken(req.headers.authorization);

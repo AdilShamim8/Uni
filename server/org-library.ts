@@ -146,7 +146,7 @@ export interface OrgLibraryReportEntry {
 }
 
 export interface OrgLibraryStateMessage {
-  type: "openmausbot:managed-library-state";
+  type: "uni:managed-library-state";
   digest: string;
   packages: OrgLibraryReportEntry[];
 }
@@ -641,7 +641,7 @@ export class OrgLibrary {
   private report(): void {
     if (!this.library) return;
     const message: OrgLibraryStateMessage = {
-      type: "openmausbot:managed-library-state",
+      type: "uni:managed-library-state",
       digest: this.library.digest,
       packages: this.reportEntries(),
     };

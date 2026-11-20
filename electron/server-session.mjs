@@ -53,7 +53,7 @@ let reportTo = null;
 
 function report() {
   try {
-    reportTo?.postMessage({ type: "openmausbot:own-listeners", ports: [...ownPorts] });
+    reportTo?.postMessage({ type: "uni:own-listeners", ports: [...ownPorts] });
   } catch {}
 }
 

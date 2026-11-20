@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { applyPhoneLinkMessage, phoneLinkPart, phoneLinkPrompt } from "./phone-link.ts";
 import { buildSystemPrompt } from "./system-prompt.ts";
 
-const told = (olderPhoneApps: unknown) => applyPhoneLinkMessage({ type: "openmausbot:phone-link", olderPhoneApps });
+const told = (olderPhoneApps: unknown) => applyPhoneLinkMessage({ type: "uni:phone-link", olderPhoneApps });
 afterEach(() => { told(0); });
 
 describe("phoneLinkPrompt", () => {
@@ -30,7 +30,7 @@ describe("phoneLinkPrompt", () => {
   });
 
   it("takes main's word from the private parent port, and only a whole number of phones", () => {
-    expect(applyPhoneLinkMessage({ type: "openmausbot:included-x", access: null })).toBe(false);
+    expect(applyPhoneLinkMessage({ type: "uni:included-x", access: null })).toBe(false);
     expect(applyPhoneLinkMessage(null)).toBe(false);
     expect(told(1)).toBe(true);
     const built = buildSystemPrompt("You are Ada.", "", [phoneLinkPart()]);

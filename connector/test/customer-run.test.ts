@@ -18,10 +18,10 @@ import { StateStore, type AgentRecord } from "../src/state.ts";
 import { FakeAdmin } from "./fake-admin.ts";
 import { FakeDocker } from "./fake-docker.ts";
 
-const digest = (letter: string) => `ghcr.io/milind-soni/openmausbot@sha256:${letter.repeat(64)}`;
-const CLOUD_HOME = `ghcr.io/milind-soni/openmausbot-cloud-home@sha256:${"c".repeat(64)}`;
-const CONNECTOR = `ghcr.io/milind-soni/mausbot-connector@sha256:${"1".repeat(64)}`;
-const RUNNING = "ghcr.io/milind-soni/openmausbot:v0.1.151";
+const digest = (letter: string) => `ghcr.io/adilshamim8/uni@sha256:${letter.repeat(64)}`;
+const CLOUD_HOME = `ghcr.io/adilshamim8/uni-cloud-home@sha256:${"c".repeat(64)}`;
+const CONNECTOR = `ghcr.io/adilshamim8/mausbot-connector@sha256:${"1".repeat(64)}`;
+const RUNNING = "ghcr.io/adilshamim8/uni:v0.1.151";
 const NEXT = digest("b");
 const OLDER = digest("a");
 const UNNAMED = digest("d");
@@ -52,7 +52,7 @@ async function until(check: () => boolean, ms = 5_000): Promise<void> {
 async function server(options: { image?: string; seats?: number | null } = {}) {
   const dir = mkdtempSync(join(tmpdir(), "omb-customer-run-"));
   cleanups.push(() => rmSync(dir, { recursive: true, force: true }));
-  const dataDir = join(dir, "opt-openmausbot", "data");
+  const dataDir = join(dir, "opt-uni", "data");
   const updateDir = join(dir, "update");
   mkdirSync(dataDir, { recursive: true });
   mkdirSync(updateDir);
@@ -63,7 +63,7 @@ async function server(options: { image?: string; seats?: number | null } = {}) {
   const image = options.image ?? RUNNING;
   for (const [ref, version] of [[image, "v0.1.151"], [NEXT, "v0.1.152"], [OLDER, "v0.1.150"], [UNNAMED, null], ["caddy:2", null]] as const) docker.publish(ref, version);
   for (const ref of [image, "caddy:2"]) await docker.pull(ref);
-  const compose = (service: string) => ({ "com.docker.compose.project": "openmausbot", "com.docker.compose.service": service });
+  const compose = (service: string) => ({ "com.docker.compose.project": "uni", "com.docker.compose.service": service });
   const home = { answers: true, seats: options.seats === undefined ? 7 : options.seats, execs: [] as string[][] };
   docker.onExec = (_container, command) => {
     home.execs.push(command);
@@ -71,7 +71,7 @@ async function server(options: { image?: string; seats?: number | null } = {}) {
     return {
       code: 0,
       output: [
-        JSON.stringify({ app: "openmausbot", pid: 41, owner: EMAIL, box: "on" }),
+        JSON.stringify({ app: "uni", pid: 41, owner: EMAIL, box: "on" }),
         JSON.stringify({ environmentId: "env-1", label: SERVER_NAME, version: "0.1.151", admin: EMAIL }),
         home.seats === null ? JSON.stringify({ error: "Not found" }) : JSON.stringify({ seats: home.seats, people: [EMAIL] }),
       ].map((answer) => `${answer}\n\u001e\n`).join(""),
@@ -85,10 +85,10 @@ async function server(options: { image?: string; seats?: number | null } = {}) {
     onStep: ({ id, step }) => steps.push(`${id} ${step}`),
   });
   const install = async () => {
-    await docker.createContainer("openmausbot-omb-1", { Image: image, Labels: compose("omb"), HostConfig: { Mounts: [{ Type: "bind", Source: dataDir, Target: "/data" }] } });
-    await docker.createContainer("openmausbot-caddy-1", { Image: "caddy:2", Labels: compose("caddy"), HostConfig: { NetworkMode: "container:omb" } });
-    await docker.startContainer("openmausbot-omb-1");
-    await docker.startContainer("openmausbot-caddy-1");
+    await docker.createContainer("uni-omb-1", { Image: image, Labels: compose("omb"), HostConfig: { Mounts: [{ Type: "bind", Source: dataDir, Target: "/data" }] } });
+    await docker.createContainer("uni-caddy-1", { Image: "caddy:2", Labels: compose("caddy"), HostConfig: { NetworkMode: "container:omb" } });
+    await docker.startContainer("uni-omb-1");
+    await docker.startContainer("uni-caddy-1");
     docker.folder(dataDir).files.set("chats.json", WRITTEN);
     docker.calls.length = 0;
   };
@@ -159,7 +159,7 @@ describe("a customer-run server: the jobs Uni may run", () => {
     expect(checkCustomerRunJob({ id: "s1", type: "start", args: { image: CLOUD_HOME, env } }, "admin")).toMatchObject({ ok: false, id: "s1", code: "refused_by_mode" });
     expect(checkCustomerRunJob({ id: "s2", type: "start" }, "admin")).toEqual({ ok: true, job: { id: "s2", type: "start", args: {} } });
     expect(checkCustomerRunJob({ id: "u1", type: "update", args: { image: NEXT } }, "admin")).toEqual({ ok: true, job: { id: "u1", type: "update", args: { image: NEXT } } });
-    for (const image of [CLOUD_HOME, RUNNING, "ghcr.io/someone-else/openmausbot@sha256:" + "a".repeat(64)]) {
+    for (const image of [CLOUD_HOME, RUNNING, "ghcr.io/someone-else/uni@sha256:" + "a".repeat(64)]) {
       expect(checkCustomerRunJob({ id: "u2", type: "update", args: { image } }, "admin"), image).toMatchObject({ ok: false, code: "invalid_args" });
     }
     expect(checkCustomerRunJob({ id: "u3", type: "update", args: { image: NEXT, env } }, "admin")).toMatchObject({ ok: false, code: "invalid_args" });
@@ -230,7 +230,7 @@ describe("a customer-run server: pausing remote management", () => {
 });
 
 describe("a customer-run server: what leaves it", () => {
-  const TOLD = /^(?:v?\d+\.\d+\.\d+|ghcr\.io\/milind-soni\/[a-z-]+[@:][\w.:-]+|Ubuntu 24\.04\.3 LTS|6\.8\.0-1021-azure|x86_64|28\.0\.4|customer-run|running|stopped|starting|updating|absent|[a-z]+|\d{8}-\d{6}-[0-9a-f]{4})$/;
+  const TOLD = /^(?:v?\d+\.\d+\.\d+|ghcr\.io\/adilshamim8\/[a-z-]+[@:][\w.:-]+|Ubuntu 24\.04\.3 LTS|6\.8\.0-1021-azure|x86_64|28\.0\.4|customer-run|running|stopped|starting|updating|absent|[a-z]+|\d{8}-\d{6}-[0-9a-f]{4})$/;
   const strings = (value: unknown, out: string[] = []): string[] => {
     if (typeof value === "string") out.push(value);
     else if (Array.isArray(value)) for (const item of value) strings(item, out);
@@ -246,8 +246,8 @@ describe("a customer-run server: what leaves it", () => {
     expect(parseHomeReads("not json\n\u001e\n{\"version\":\"<script>\"}\n\u001e\n{\"seats\":\"seven\"}\n\u001e\n")).toEqual({ answers: false, version: null, seats: null, box: null });
     expect(parseHomeReads("")).toEqual({ answers: false, version: null, seats: null, box: null });
     // On or off, nothing else: a server without the field, or with anything else in it, says nothing about its box.
-    expect(parseHomeReads(`${JSON.stringify({ app: "openmausbot", box: "off" })}\n\u001e\n`).box).toBe("off");
-    expect(parseHomeReads(`${JSON.stringify({ app: "openmausbot", box: { checks: "33/33" } })}\n\u001e\n`).box).toBeNull();
+    expect(parseHomeReads(`${JSON.stringify({ app: "uni", box: "off" })}\n\u001e\n`).box).toBe("off");
+    expect(parseHomeReads(`${JSON.stringify({ app: "uni", box: { checks: "33/33" } })}\n\u001e\n`).box).toBeNull();
   });
 
   it("sends a heartbeat of versions, states, counts and the seat count, with no address, name or sentence in it", async () => {
@@ -330,10 +330,10 @@ describe("a customer-run server: the home its owner installed", () => {
     const fixture = await server();
     await fixture.install();
     expect(await fixture.adopted.stop()).toEqual({ home: { state: "stopped", image: RUNNING, health: null } });
-    expect(fixture.docker.calls).toEqual(["stop openmausbot-caddy-1", "stop openmausbot-omb-1"]);
+    expect(fixture.docker.calls).toEqual(["stop uni-caddy-1", "stop uni-omb-1"]);
     fixture.docker.calls.length = 0;
     expect(await fixture.adopted.start()).toMatchObject({ home: { state: "running", health: { ok: true, version: "0.1.151" } } });
-    expect(fixture.docker.calls).toEqual(["start openmausbot-omb-1", "exec openmausbot-omb-1", "start openmausbot-caddy-1"]);
+    expect(fixture.docker.calls).toEqual(["start uni-omb-1", "exec uni-omb-1", "start uni-caddy-1"]);
     fixture.docker.calls.length = 0;
     await fixture.adopted.restart();
     expect(fixture.docker.calls.filter((call) => /^(create|rm|rename|pull|rmi) /.test(call))).toEqual([]);
@@ -355,7 +355,7 @@ describe("a customer-run server: the home its owner installed", () => {
     await fixture.install();
     const { backup } = await fixture.adopted.backup("b1", "local");
     expect(fixture.docker.files(`mausbot-backup-${backup.id}`)).toEqual({ "chats.json": WRITTEN });
-    expect(fixture.docker.container("openmausbot-omb-1")?.status).toBe("running");
+    expect(fixture.docker.container("uni-omb-1")?.status).toBe("running");
     fixture.docker.folder(fixture.dataDir).files.set("chats.json", "changed since");
     fixture.docker.folder(fixture.dataDir).files.set("new.json", "made since");
     expect(await fixture.adopted.restore("r1", backup.id)).toMatchObject({ backupId: backup.id, home: { state: "running" } });
@@ -392,14 +392,14 @@ describe("a customer-run server: the home its owner installed", () => {
     fixture.state.saveHome({ ...fixture.state.home(), operation: { jobId: "r9", type: "restore", phase: "copy", previousImage: RUNNING, nextImage: null, target: `mausbot-backup-${backup.id}`, dataAtRisk: true, wasRunning: true, startedAt: 1 } });
     expect(await fixture.adopted.recover()).toEqual({ id: "r9", ok: false, error: { code: "interrupted", message: "The connector restarted during this restore; the data was put back as it was before, and the home was started again." } });
     expect(Object.fromEntries(fixture.docker.folder(fixture.dataDir).files)).toEqual(before);
-    expect(fixture.docker.container("openmausbot-omb-1")?.status).toBe("running");
+    expect(fixture.docker.container("uni-omb-1")?.status).toBe("running");
   });
 });
 
 describe("a customer-run server: replacing the connector", () => {
   it("is refused, even for the server's own root, when the new image is older than the one running or names no version", async () => {
     const fixture = await server();
-    const [now, newer, old, unnamed] = ["1", "2", "3", "4"].map((letter) => `ghcr.io/milind-soni/mausbot-connector@sha256:${letter.repeat(64)}`);
+    const [now, newer, old, unnamed] = ["1", "2", "3", "4"].map((letter) => `ghcr.io/adilshamim8/mausbot-connector@sha256:${letter.repeat(64)}`);
     for (const [ref, version] of [[now, "v0.1.152"], [newer, "v0.1.153"], [old, "v0.1.140"], [unnamed, null]] as const) {
       fixture.docker.publish(ref!, version);
       await fixture.docker.pull(ref!);

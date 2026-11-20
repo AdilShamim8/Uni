@@ -307,6 +307,10 @@ describe("computerPrompt", () => {
     const many = Array.from({ length: 45 }, (_, index) => ({ name: `key ${index}` }));
     expect(savedSecretsPrompt(many)).toContain('"key 39" and 5 more.');
     expect(savedSecretsPrompt([{ name: "x".repeat(200) }])).toContain(`"${"x".repeat(80)}"`);
+    expect(savedSecretsPrompt([{ name: "Stripe key" }], ["1password"])).toMatch(/value\. A 1Password reference \(op:\/\/vault\/item\/field\) the person gives you works as the label too\.$/u);
+    expect(savedSecretsPrompt([{ name: "Stripe key" }], ["1password", "bitwarden"]))
+      .toMatch(/ A 1Password reference \(op:\/\/vault\/item\/field\) or a Bitwarden reference \(bw:\/\/item\/field\) the person gives you works as the label too\.$/u);
+    expect(savedSecretsPrompt([{ name: "Stripe key" }])).not.toContain("op://");
   });
 });
 
@@ -456,7 +460,7 @@ describe("cloudHomePrompt", () => {
     const mac = cloudHomePrompt(false, [], [{ name: "Ash’s MacBook", platform: "darwin" }, { name: "ASH-PC", platform: "win32" }]);
     expect(mac).toContain("You cannot see or use their Mac (Ash’s MacBook), its screen or its files from here.");
     for (const text of [pc, mac, cloudHomePrompt(true), cloudHomePrompt(true, [], [{ name: "box", platform: "linux" }])]) {
-      expect(text).not.toMatch(/this Mac|OMB Cloud|OpenMausBot Cloud|Mac or PC/u);
+      expect(text).not.toMatch(/this Mac|OMB Cloud|Uni Cloud|Mac or PC/u);
       if (text.includes("Settings →")) expect(text).toContain("Settings → MausBot Cloud");
     }
     expect(cloudHomePrompt(true, [], [{ name: "box", platform: "linux" }])).toContain("Call it their computer: never assume it is a Mac.");
@@ -490,7 +494,7 @@ describe("longCommandsPrompt", () => {
       const text = longCommandsPrompt(kind);
       expect(text).toContain("pass `timeout` in milliseconds, up to 86400000, which is 1440 minutes, unless a lower limit is set here");
       expect(text).toContain("Never wait inside a command for CI, a deploy or any other job to finish (no sleep loops or polls): check once");
-      expect(text).toContain("tell the person what you made, with links. Only on a turn the person started in their own chat, set wait_until or a one-time trigger to check back and end your turn");
+      expect(text).toContain("tell the person what you made, with links. Only on a turn the person started in their own chat, set check_back (a time) or wait_until (a condition) and end your turn");
       expect(text).toContain("When the person writes while you work, answer them first.");
       expect(text).not.toContain("vm_exec");
     }

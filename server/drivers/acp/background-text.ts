@@ -146,7 +146,7 @@ export function runAcpOneShot(input: AcpOneShotInput): Promise<string> {
     (async () => {
       const init = await request("initialize", {
         protocolVersion: 1,
-        clientInfo: { name: "openmausbot_memory", version: "1" },
+        clientInfo: { name: "uni_memory", version: "1" },
         clientCapabilities: {
           fs: { readTextFile: false, writeTextFile: false },
           terminal: false,

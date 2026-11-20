@@ -12,7 +12,7 @@ import nativeText from "./native-text.cjs";
 
 const embedded = (extra = {}) => ({
   mode: "embedded", socketPath: "\\\\.\\pipe\\cua-driver-1234", mcpCommand: "C:\\Program Files\\Uni\\resources\\cua-driver.exe",
-  mcpArgs: ["mcp", "--embedded", "--socket", "\\\\.\\pipe\\cua-driver-1234"], mcpEnv: { CUA_DRIVER_EMBEDDED: "1", CUA_DRIVER_HOST_BUNDLE_ID: "com.openmausbot.app" }, ...extra,
+  mcpArgs: ["mcp", "--embedded", "--socket", "\\\\.\\pipe\\cua-driver-1234"], mcpEnv: { CUA_DRIVER_EMBEDDED: "1", CUA_DRIVER_HOST_BUNDLE_ID: "com.uni.app" }, ...extra,
 });
 
 test("a PC lends its apps and screen once its own embedded computer control runs, and never through another driver", () => {

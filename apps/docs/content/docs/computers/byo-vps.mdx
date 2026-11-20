@@ -32,7 +32,7 @@ Podman and a Windows Docker host do not replace this VPS backend.
 
 Docker access is root-equivalent on that server. Use a dedicated VPS, keep its
 inbound firewall limited to SSH, and verify the host key yourself. Uni never
-auto-accepts it. See the [detailed SSH setup and security notes](https://github.com/milind-soni/Uni/blob/main/docs/byo-vps.md).
+auto-accepts it. See the [detailed SSH setup and security notes](https://github.com/AdilShamim8/Uni/blob/main/docs/byo-vps.md).
 
 ### A computer on your Tailscale network
 
@@ -64,8 +64,8 @@ leave it off to reuse only an already-ready VPS.
 <Callout type="warn" title="Existing bots in 0.1.151 and 0.1.152">
   The Simple layout can hide this selector and show **Connect Boat first** even
   when your SSH alias works. A connected alias alone does not change the bot’s
-  backend. The selector regression is tracked in [#5225](https://github.com/milind-soni/Uni/issues/5225),
-  with the UI fix in [#5228](https://github.com/milind-soni/Uni/pull/5228).
+  backend. The selector regression is tracked in [#5225](https://github.com/AdilShamim8/Uni/issues/5225),
+  with the UI fix in [#5228](https://github.com/AdilShamim8/Uni/pull/5228).
   If your installed build still lacks the selector, use the stopped-app workaround
   below. The older **Bot Settings → Access → Server (SSH alias)** directions do
   not apply to that layout.
@@ -81,7 +81,7 @@ leave it off to reuse only an already-ready VPS.
    headless Uni service. Closing a window alone may leave it running. Do this
    on the computer **hosting** Uni, not on a paired phone or desktop client.
 2. Back up `config.json` and `bots.json` in that host’s application data directory
-   (normally `~/.openmausbot`; a custom data directory takes precedence).
+   (normally `~/.uni`; a custom data directory takes precedence).
 3. If the default alias was not saved through App Settings, merge this fragment
    into `config.json`, preserving every other setting:
 
@@ -135,5 +135,5 @@ configured VPS even when this Auto permission is off.
   itself is never stopped by Uni.
 
 For per-bot server changes, container cleanup and concurrent desktop ownership,
-see the [full BYO VPS reference](https://github.com/milind-soni/Uni/blob/main/docs/byo-vps.md).
+see the [full BYO VPS reference](https://github.com/AdilShamim8/Uni/blob/main/docs/byo-vps.md).
 For a container on the same host instead, see [Local VM](/docs/computers/local-vm).

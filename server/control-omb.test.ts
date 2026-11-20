@@ -97,7 +97,7 @@ describe("control-omb command mapping", () => {
 
   it("composes doctor from the shared health and model tools", async () => {
     const callTool = vi.fn(async (name: string) => name === "get_system_health"
-      ? { status: "connected", app: "openmausbot" }
+      ? { status: "connected", app: "uni" }
       : {
           instances: [
             { instanceId: "ready", snapshot: { state: "available" } },

@@ -74,7 +74,7 @@ test("every session main creates gets the guard before it loads anything", () =>
 test("the server hears about every port this app listens on, and about new ones as they open", async () => {
   const messages = [];
   reportOwnListeners({ postMessage: (message) => messages.push(message) }, [8810]);
-  assert.equal(messages.at(-1).type, "openmausbot:own-listeners");
+  assert.equal(messages.at(-1).type, "uni:own-listeners");
   assert.ok(messages.at(-1).ports.includes(8810));
   const server = createServer();
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));

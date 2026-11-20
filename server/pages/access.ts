@@ -46,10 +46,10 @@ function adminUrl(value: unknown): string | null {
   }
 }
 
-/** `{ type: "openmausbot:included-pages", access: { url, token } | null }` from the desktop's main process. True when it
+/** `{ type: "uni:included-pages", access: { url, token } | null }` from the desktop's main process. True when it
  * was one (then applied), false for any other message; a malformed one throws and changes nothing. */
 export function applyIncludedPagesMessage(message: unknown): boolean {
-  if (!message || typeof message !== "object" || (message as { type?: unknown }).type !== "openmausbot:included-pages") return false;
+  if (!message || typeof message !== "object" || (message as { type?: unknown }).type !== "uni:included-pages") return false;
   const access = (message as { access?: unknown }).access;
   if (access === null) {
     desktopPages = null;

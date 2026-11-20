@@ -92,6 +92,7 @@ so each service bills you directly and Uni pays for none of it.
 | --- | --- | --- |
 | **AgentMail**, email inboxes | `https://mcp.agentmail.to/mcp` | Browser sign-in |
 | **AgentPhone**, US and Canadian numbers, texts and calls | `https://mcp.agentphone.ai/mcp` | Browser sign-in |
+| **Higgsfield**, AI images and videos | `https://mcp.higgsfield.ai/mcp` | Browser sign-in |
 | **Vapi**, phone calls | `https://mcp.vapi.ai/mcp` | A private API key from the Vapi dashboard |
 | **Telnyx**, numbers in many countries, texts and calls | `https://api.telnyx.com/v2/mcp` | An API key from the Telnyx portal |
 
@@ -123,7 +124,7 @@ tools, so choose which bots get it under **Bot access**; **Read only** lists
 and runs only BubblaV's read-only tools. BubblaV saves the sign-in as an API
 key named **MCP Client** under **Settings → API Keys**, where revoking it ends
 the connection. The key lasts one year, then the card asks you to sign in
-again. See [BubblaV's Uni guide](https://docs.bubblav.com/user-guide/integrations/openmausbot).
+again. See [BubblaV's Uni guide](https://docs.bubblav.com/user-guide/integrations/uni).
 
 ### Servers that ask you to sign in
 
@@ -153,7 +154,7 @@ has nothing to work on. Background checks never do this.
   turn until someone signs in from this page. A signed-in server gets
   `Authorization: Bearer …` in place of any `Authorization` header you set,
   so every engine that reaches URL servers can use it.
-- **Tokens are kept apart.** They live in `~/.openmausbot/mcp-oauth.json`
+- **Tokens are kept apart.** They live in `~/.uni/mcp-oauth.json`
   (owner-only), never in `config.json` or an API response, and are left out of
   workspace backups. They belong to the server's address: changing the
   address or removing the server drops them. **Sign out** revokes them when
@@ -421,7 +422,7 @@ computer. Each tool call it gets names the bot and conversation that made it,
 in the call's `_meta`:
 
 ```json
-{ "_meta": { "openmausbot/caller": { "botId": "…", "threadId": "…", "verified": false } } }
+{ "_meta": { "uni/caller": { "botId": "…", "threadId": "…", "verified": false } } }
 ```
 
 It is a hint for the server's own logs or per-bot settings, never proof of
@@ -517,7 +518,7 @@ its engine list. Company Codex uses its own separate home, without your
 
 ## Advanced: edit the file
 
-The same registry lives in `~/.openmausbot/config.json`:
+The same registry lives in `~/.uni/config.json`:
 
 ```json
 {

@@ -9,7 +9,7 @@ export type { ServerUpdateStatus };
 /** GET /api/updates/check (server/update-check.ts). */
 export interface ServerUpdateCheck {
   current: string;
-  install: "desktop" | "managed" | "docker" | "podman" | "npm" | "git" | "unknown";
+  install: "desktop" | "managed" | "docker" | "podman" | "podman-service" | "npm" | "git" | "unknown";
   channel?: "stable" | "newest";
   latest?: string;
   available: boolean;
@@ -130,7 +130,7 @@ function runNote(status: ServerUpdateStatus | null): Pick<ServerUpdateView, "not
       return { note: `${t("serverUpdate.rollbackFailed")}${detail}`, noteTone: "danger" };
     }
     case "not-changed": return { note: `${t("serverUpdate.notChanged")} ${reasonText(run.reason ?? "failed", status!, run)}`, noteTone: "danger" };
-    case "not-started": return { note: `${t("serverUpdate.notStarted")} ${t("serverUpdate.runOnServer", { command: "systemctl status openmausbot-update.path" })}`, noteTone: "danger" };
+    case "not-started": return { note: `${t("serverUpdate.notStarted")} ${t("serverUpdate.runOnServer", { command: "systemctl status uni-update.path" })}`, noteTone: "danger" };
     default: return {};
   }
 }

@@ -298,7 +298,7 @@ export function fetchDeepSeekCatalog(
     initId = send("initialize", {
       protocolVersion: 1,
       clientCapabilities: { fs: { readTextFile: false, writeTextFile: false } },
-      clientInfo: { name: "openmausbot", version: "catalog" },
+      clientInfo: { name: "uni", version: "catalog" },
     });
   });
 }
@@ -306,6 +306,8 @@ export function fetchDeepSeekCatalog(
 export const deepseekSupport: AcpSupport = {
   driverKind: "deepseekAgent",
   displayName: "DeepSeek Harness",
+  // @deepseek-ai/dsh declares engines.node ">=24.9.0"; on older Node it quits before answering.
+  minNodeVersion: "24.9.0",
   models: DEEPSEEK_MODELS,
   defaultCli: "dsh",
   nativeSource: "deepseek.acp",

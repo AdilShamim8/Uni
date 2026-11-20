@@ -30,7 +30,7 @@ import { handleDirectUpgrade, isE2EUpgrade } from "./e2e/direct.ts";
 import { CLOSE, TRANSPORT_RELAY } from "./e2e/noise.ts";
 import { createE2EOrigin } from "./e2e/origin.ts";
 import { E2ERegistry } from "./e2e/registry.ts";
-import { RelayClient } from "./e2e/relay-client.ts";
+import { allowFarRelay, RelayClient } from "./e2e/relay-client.ts";
 import { companionOriginSocket, listenCompanionOrigin } from "./origin.ts";
 import { gzipTunnelReplies } from "./tunnel-gzip.ts";
 import { normalizedPhoneSecretPublicKey } from "./phone-secret-key.ts";
@@ -50,9 +50,9 @@ const controlReady = controlToken ? Promise.resolve() : new Promise<void>((resol
 parentPort?.on("message", ({ data }) => {
   if (!data || typeof data !== "object") return;
   const message = data as Record<string, unknown>;
-  if (message.type === "openmausbot:companion-e2e") return void configureE2E(message);
-  if (message.type === "openmausbot:companion-e2e-redial") return void relay?.redial();
-  if (message.type !== "openmausbot:companion-mutation-token") return;
+  if (message.type === "uni:companion-e2e") return void configureE2E(message);
+  if (message.type === "uni:companion-e2e-redial") return void relay?.redial();
+  if (message.type !== "uni:companion-mutation-token") return;
   if (typeof message.token === "string" && /^[A-Za-z0-9_-]{43}$/.test(message.token)) {
     mutationToken = message.token;
   }
@@ -72,7 +72,7 @@ const HARNESS_PORT = num(process.env.OMB_PORT, 8799);
 const WEBHOOK_PORT = num(process.env.OMB_WEBHOOK_PORT, HARNESS_PORT + 1);
 const COMPANION_PORT = num(process.env.OMB_COMPANION_PORT, 8810);
 const CONTROL_PORT = num(process.env.OMB_CONTROL_PORT, 8811);
-const SERVICE_TYPE = "_openmausbot._tcp";
+const SERVICE_TYPE = "_uni._tcp";
 let hostedUrl = hostedCompanionUrl(process.env.OMB_COMPANION_HOSTED_URL);
 directRoutesFromEnv(process.env);
 const PRIVATE_ORIGIN = companionOriginSocket(process.env.OMB_COMPANION_INTERNAL_ORIGIN);
@@ -201,6 +201,7 @@ function applyRelay(config: RelayConfig | null): void {
   e2e.setRelay(config && e2e.enabled ? { hostId: config.hostId, nodes: config.nodes } : null);
   if (!config || !e2e.enabled) return;
   if (relay) return relay.setToken(config.token, config.nodes);
+  allowFarRelay();
   relay = new RelayClient({
     nodes: config.nodes,
     token: config.token,
@@ -209,7 +210,7 @@ function applyRelay(config: RelayConfig | null): void {
       const session = e2e.accept(transport, TRANSPORT_RELAY, "relay", (context) => e2eOrigin.connect(context));
       return session && { receive: (data, binary) => session.receive(data, binary), transportClosed: (code) => session.transportClosed(code) };
     },
-    tokenRejected: () => parentPort?.postMessage({ type: "openmausbot:companion-e2e-token-rejected" }),
+    tokenRejected: () => parentPort?.postMessage({ type: "uni:companion-e2e-token-rejected" }),
     statusChanged: (status, node) => console.log(`e2e: relay ${status}${node ? ` via ${node}` : ""}`),
     baseUrl: relayBaseUrl,
   });

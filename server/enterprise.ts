@@ -115,7 +115,10 @@ function oss(notice?: string): EditionStatus {
   return current;
 }
 
-/** Never throws: a broken layer or key degrades to the open-source edition with a notice saying what to fix. */
+const LAYER_WITHOUT_KEY = "enterprise layer present but OMB_LICENSE_KEY is not set";
+
+/** Never throws: a broken layer or key degrades to the open-source edition with a notice saying what to fix. With no key
+ * and no hosted workspace nothing of the layer can be used, so it is not loaded. */
 export async function loadEnterpriseLayer(
   options: { dir?: string; licenseKey?: string; env?: NodeJS.ProcessEnv; serverRoot?: string } = {},
 ): Promise<EditionStatus> {
@@ -128,13 +131,14 @@ export async function loadEnterpriseLayer(
       licenseKey ? `OMB_LICENSE_KEY is set but no enterprise layer exists at ${dirs.join(" or ")}` : undefined,
     );
   }
+  if (!licenseKey && !hostedWorkspaceConfigured(options.env)) return oss(LAYER_WITHOUT_KEY);
   try {
     const loaded: unknown = await import(pathToFileURL(entry).href);
     const access: unknown = Reflect.get(Object(loaded), "createWorkspaceAccess");
     if (typeof access === "function") workspaceAccessFactory = access as (options: WorkspaceAccessOptions) => WorkspaceAccess;
     const register: unknown = Reflect.get(Object(loaded), "register");
     if (typeof register !== "function") throw new Error(`${entry} does not export register()`);
-    if (!licenseKey) return oss("enterprise layer present but OMB_LICENSE_KEY is not set");
+    if (!licenseKey) return oss(LAYER_WITHOUT_KEY);
     // A layer that ignores graceDays refuses an expired key at startup.
     const registered: unknown = await register({ licenseKey, graceDays: LICENSE_GRACE_DAYS });
     const layer = layerSchema.parse(registered);
@@ -207,9 +211,9 @@ export function licenseWarning(status: EditionStatus): string | null {
 export function describeEdition(status: EditionStatus): string {
   if (status.edition === "enterprise") {
     const until = status.expiresAt ? ` until ${status.expiresAt}` : "";
-    return `openmausbot enterprise edition for ${status.customer}${until}: ${status.features.join(", ") || "no features"}`;
+    return `uni enterprise edition for ${status.customer}${until}: ${status.features.join(", ") || "no features"}`;
   }
-  return `openmausbot open-source edition${status.notice ? ` (${status.notice})` : ""}`;
+  return `uni open-source edition${status.notice ? ` (${status.notice})` : ""}`;
 }
 
 /** The edition as Settings shows it: a licence block only while an Enterprise licence is near or past expiry. */

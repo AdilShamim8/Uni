@@ -2,7 +2,7 @@
 const { contextBridge, ipcRenderer, webFrame, webUtils } = require("electron");
 
 // Sandboxed preloads get Electron's restricted `require`, which cannot load sibling CommonJS files.
-const desktopRemoteClient = process.argv.includes("--openmausbot-remote-client");
+const desktopRemoteClient = process.argv.includes("--uni-remote-client");
 
 let pendingPackageInstallUrl = null;
 const packageInstallListeners = new Set();
@@ -122,10 +122,10 @@ const remoteKeys = isLocalPage ? REMOTE_SAFE : new Set([...REMOTE_SAFE, ...(upda
 // Keep in parity with shared/workspace-backup-client.ts (a sandboxed preload cannot import it).
 const COMPANY_BACKUP_CLIENT_KEYS = [
   "omb-drafts", "omb-draft-attachments", "omb-draft-send-ids", "omb-draft-channel-modes",
-  "omb-skin", "omb-show-threads", "omb-show-run-card", "omb-send-key", "omb-color-user-bubbles", "omb-chat-width", "openmausbot.sidebarDensity",
-  "openmausbot.sidebarToolsLayout",
-  "openmausbot.sidebarCollapsedSections.v1", "openmausbot.sidebarSectionOrder.v1",
-  "omb-analytics-opt-out", "openmausbot.remote-voice.v1",
+  "omb-skin", "omb-show-threads", "omb-show-run-card", "omb-send-key", "omb-color-user-bubbles", "omb-chat-width", "uni.sidebarDensity",
+  "uni.sidebarToolsLayout",
+  "uni.sidebarCollapsedSections.v1", "uni.sidebarSectionOrder.v1",
+  "omb-analytics-opt-out", "uni.remote-voice.v1",
 ];
 if (isLocalPage && !desktopRemoteClient && process.argv.includes("--omb-company-desktop=1")) {
   ipcRenderer.on("company-backups:collect-client-state", (_event, request) => {
@@ -188,6 +188,8 @@ const bridge = {
     // Make a server of the person's own their bots' home, from a click on the rail's own page (main refuses any other page).
     makeHome: (id) => isLocalPage || navigator.userActivation?.isActive === true
       ? ipcRenderer.invoke("workspaces:make-home", String(id)) : Promise.reject(new Error("Choose Make my home.")),
+    // The ids of the servers main offers Make … my home for now (this computer's own page and the rail's only).
+    homeOffers: () => ipcRenderer.invoke("workspaces:home-offers"),
     onChanged: (cb) => {
       const handler = () => cb();
       ipcRenderer.on("workspaces:changed", handler);
@@ -436,6 +438,10 @@ const bridge = {
   openHtmlInBrowser: (source, name) => invokeWithPlainError("desktop:open-html", source, name),
   // This app's own logs folder (server.log, desktop-crashes.log, updater.log); the page names no path.
   openLogsFolder: () => ipcRenderer.invoke("desktop:open-logs"),
+  alwaysOnHome: {
+    state: () => ipcRenderer.invoke("always-on-home:state"),
+    set: on => ipcRenderer.invoke("always-on-home:set", on === true),
+  },
   openAtLogin: {
     state: () => ipcRenderer.invoke("open-at-login:state"),
     set: on => on !== true || isLocalPage || navigator.userActivation?.isActive === true
@@ -507,6 +513,7 @@ const bridge = {
     signInStart: email => ipcRenderer.invoke("cloud-account:signInStart", String(email)),
     signInVerify: code => ipcRenderer.invoke("cloud-account:signInVerify", String(code)),
     signInCancel: () => ipcRenderer.invoke("cloud-account:signInCancel"),
+    resetSaved: () => ipcRenderer.invoke("cloud-account:resetSaved"),
     reopenCheckout: (plan, source) => ipcRenderer.invoke("cloud-account:reopenCheckout", String(plan), String(source)),
     copyCheckoutLink: () => ipcRenderer.invoke("cloud-account:copyCheckoutLink"),
     interest: () => ipcRenderer.invoke("cloud-account:interest"),
@@ -717,7 +724,9 @@ const bridge = {
       ipcRenderer.on("home:state-changed", handler);
       return () => ipcRenderer.removeListener("home:state-changed", handler);
     },
-    retry: () => ipcRenderer.invoke("home:retry"),
+    // `pressed`: Try again's own press (only this computer's screen may ask), never its looks as it opens, comes online or
+    // comes to the front.
+    retry: pressed => ipcRenderer.invoke("home:retry", pressed === true),
     remove: () => ipcRenderer.invoke("home:remove"),
     signIn: () => isLocalPage || navigator.userActivation?.isActive === true
       ? ipcRenderer.invoke("home:sign-in") : Promise.reject(new Error("Choose Sign in to sign in again.")),
