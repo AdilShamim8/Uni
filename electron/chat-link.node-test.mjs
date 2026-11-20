@@ -11,7 +11,7 @@ test("recognizes the links Copy link and a dashboard make", () => {
   assert.equal(chatLinkFrom(THREAD_LINK), THREAD_LINK);
   assert.equal(chatLinkFrom(BOT_LINK), BOT_LINK);
   assert.equal(chatLinkFrom(` ${BOT_LINK}\n`), BOT_LINK);
-  assert.equal(chatLinkFrom("Uni://Bot/abc"), "Uni://Bot/abc");
+  assert.equal(chatLinkFrom("Uni://Bot/abc"), null); // the registered scheme is openmausbot:// — case variants other than that prefix are not chat links
 });
 
 test("leaves every other link to its own handler", () => {
