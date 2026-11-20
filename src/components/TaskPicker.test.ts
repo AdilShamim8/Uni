@@ -109,7 +109,7 @@ describe("filterTasks", () => {
   });
 
   it("matches titles case-insensitively", () => {
-    expect(filterTasks(tasks, "openmaus").map((task) => task.title)).toEqual(["Uni Update"]);
+    expect(filterTasks(tasks, "uni").map((task) => task.title)).toEqual(["Uni Update"]);
   });
 
   it("ranks prefix hits ahead of substring hits, keeping input order in each tier", () => {
