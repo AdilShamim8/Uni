@@ -91,6 +91,13 @@
       "owner": "AdilShamim8",
       "reason": "Failed identically before and after the rebrand (verified on unmodified HEAD): the handed turn's FAKE_CLAUDE_DUMP never appears within 20s under load.",
       "since": "2026-11-20"
+    },
+    {
+      "file": "server/bot-projects-api.test.ts",
+      "test": "moves a live thread between folders without changing its model or deleting history",
+      "owner": "AdilShamim8",
+      "reason": "Windows shard 7/8 of cbc34a22fe: 'Matcher did not succeed in time' on one poll; 3/3 green locally and green on every other OS shard of the same commit.",
+      "since": "2026-11-20"
     }
   ]
 }
