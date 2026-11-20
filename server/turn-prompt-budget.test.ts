@@ -89,8 +89,8 @@ const PROMPT_BUDGET_BASELINE: Record<string, number> = {
   "claude:volatile-note": 178,
   "codex:direct-chat": 8391,
   "codex:setup-chat": 10787,
-  "codex:resumed-instructions": 213,
-  "codex:volatile-note": 97,
+  "codex:resumed-instructions": 205,
+  "codex:volatile-note": 89,
 };
 
 describe("Uni's prompt text per turn", () => {

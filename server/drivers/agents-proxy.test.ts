@@ -1701,7 +1701,7 @@ describe("agents-proxy MCP surface", () => {
   it("advertises VPS-compatible default execution separately from the Boat runner", async () => {
     const list = await rpc("tools/list");
     const routine = list.result.tools.find((entry: { name: string }) => entry.name === "trigger");
-    expect(routine.inputSchema.properties.run_on.enum).toEqual(["maus", "box"]);
+    expect(routine.inputSchema.properties.run_on.enum).toEqual(["computer", "maus", "box"]);
     expect(routine.inputSchema.properties.run_on.description).toContain("INCLUDING a self-hosted VPS");
   });
 

@@ -63,6 +63,34 @@
       "owner": "milind-soni",
       "reason": "Failed 11 times since Oct 26 in browser driver S4 (ubuntu-latest), on the host and in the container; five of the six logged failures are one stall of about 50 s in which navigate through tab-new get no picture. Not reproduced in 72 runs on ubuntu-latest on Oct 29. Each attempt starts its own Chrome.",
       "since": "2026-10-29"
+    },
+    {
+      "file": "server/drivers/antigravity-turn-outcome.test.ts",
+      "test": "fails only turns whose own steps end in an upstream error",
+      "owner": "AdilShamim8",
+      "reason": "Timed out at 40s twice in one Windows shard run of 839308c052 (136416ms for 7 tests); passes locally in ~1s across 3 runs and on other OSes in the same commit. Disk/SQLite latency under shard load.",
+      "since": "2026-11-20"
+    },
+    {
+      "file": "server/drivers/antigravity-turn-outcome.test.ts",
+      "test": "does not load a step that is no error, or an error step too large to read quickly",
+      "owner": "AdilShamim8",
+      "reason": "Same Windows shard run as above: timed out at 40s, passes locally and on macOS/Linux in the same commit.",
+      "since": "2026-11-20"
+    },
+    {
+      "file": "server/group-goal-run.e2e.test.ts",
+      "test": "stops the coordinator's direct turn without cancelling a routine goal waiting on its worker",
+      "owner": "AdilShamim8",
+      "reason": "Failed identically before and after the rebrand (verified on unmodified HEAD): directReplyStarted poll needs a hostTimeout like its siblings; poll default is tight under shard load.",
+      "since": "2026-11-20"
+    },
+    {
+      "file": "server/cloud-computer-lazy.e2e.test.ts",
+      "test": "work handed to a bot on Auto runs on that bot's own cloud computer; a consult, and a bot with none, get no computer",
+      "owner": "AdilShamim8",
+      "reason": "Failed identically before and after the rebrand (verified on unmodified HEAD): the handed turn's FAKE_CLAUDE_DUMP never appears within 20s under load.",
+      "since": "2026-11-20"
     }
   ]
 }

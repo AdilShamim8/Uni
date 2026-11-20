@@ -899,7 +899,7 @@ describe("installing the browser engine", () => {
 
 describe("what a bot gets", () => {
   // Without a gate the browser connects nowhere: Chrome fails every connection through port 0.
-  const gateArgs = ["--webrtc-ip-handling-policy=disable_non_proxied_udp", "--force-webrtc-ip-handling-policy=disable_non_proxied_udp", ...credentialStoreFlags()];
+  const gateArgs = ["--webrtc-ip-handling-policy=disable_non_proxied_udp", "--force-webrtc-ip-handling-policy=disable_non_proxied_udp", ...credentialStoreFlags("linux")]; // every spec this helper checks is built for "linux"
   const cacheArg = `--disk-cache-size=${64 * 1024 * 1024}`;
   /** A saved session's browser: its own kept profile, behind no gate. */
   const keptNoGate = (session: string) => ({
