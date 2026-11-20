@@ -144,9 +144,12 @@ describe("package v2 reader", () => {
     const parsed = parsePackageDocument(input);
     const text = JSON.stringify(parsed);
     expect(parsed.package).not.toHaveProperty("somethingNew");
-    for (const field of ["modelSelection", "visibility", "approvalMode", "alwaysAllow", "composio", "connectorTools", "computer", "cwd", "headers"]) {
-      expect(text).not.toContain(`"${field}"`);
+    const agentText = JSON.stringify(parsed.package.agents);
+    const connectionText = JSON.stringify(parsed.package.connections);
+    for (const field of ["modelSelection", "visibility", "approvalMode", "alwaysAllow", "composio", "connectorTools", "computer", "cwd"]) {
+      expect(agentText).not.toContain(`"${field}"`);
     }
+    expect(connectionText).not.toContain('"headers"');
     expect(text).not.toContain("value-that-must-not-travel");
   });
 

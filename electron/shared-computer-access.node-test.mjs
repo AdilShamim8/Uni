@@ -533,10 +533,11 @@ test("a protected directory spelled in another case is still refused", async t =
   grant.protectedPaths = [path.join(dir, "Uni")];
   folder.write = true;
   await assert.rejects(run({ action: "read_file", path: "Uni/credentials.bin" }), /Desktop credentials/);
-  await assert.rejects(run({ action: "read_file", path: "openmausbot/credentials.bin" }), /Desktop credentials/);
-  await assert.rejects(run({ action: "read_file", path: "OPENMAUSBOT/credentials.bin" }), /Desktop credentials/);
-  await assert.rejects(run({ action: "list_files", path: "openmausbot" }), /Desktop credentials/);
-  await assert.rejects(run({ action: "write_file", path: "openmausbot/computer-sharing.json", content: "{}" }), /sharing settings/);
+  // The case-folded spellings of the same directory, the point of this test on case-insensitive filesystems.
+  await assert.rejects(run({ action: "read_file", path: "uni/credentials.bin" }), /Desktop credentials/);
+  await assert.rejects(run({ action: "read_file", path: "UNI/credentials.bin" }), /Desktop credentials/);
+  await assert.rejects(run({ action: "list_files", path: "uni" }), /Desktop credentials/);
+  await assert.rejects(run({ action: "write_file", path: "uni/computer-sharing.json", content: "{}" }), /sharing settings/);
 });
 
 test("a protected directory spelled in another Unicode normalization is still refused", async t => {
