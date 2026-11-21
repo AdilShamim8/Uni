@@ -1,7 +1,6 @@
 <div align="center">
 
 # Uni
-
 **The open-source Grok Bot alternative: your own team of AI bots, in a chat app.**
 
 [**uni.com**](https://www.uni.com) &nbsp;·&nbsp; [Download](https://www.uni.com/download) &nbsp;·&nbsp; [Open source Grok Bot alternative, compared](https://www.uni.com/blog/grok-bot-vs-uni)
