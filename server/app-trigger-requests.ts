@@ -9,6 +9,7 @@ import { instructionsUpdateRefusal } from "./automation-instructions.ts";
 import { newId } from "./contracts.ts";
 import { UNDO_STALE } from "./direct-apply.ts";
 import { redactSecretsInText } from "./redact.ts";
+import { serverLine } from "./server-lines.ts";
 
 export interface AppTriggerRequestCard {
   title: string;
@@ -71,22 +72,22 @@ const ACTION_TITLE: Record<AppTriggerRequestOperation["action"], string> = {
 
 type Described = Pick<AppTrigger, "app" | "event" | "eventName" | "accountLabel" | "filter" | "delivery">;
 
-/** When it fires, in English for the model: "When an email arrives in Gmail (sales) from acme.com (it checks every 15 minutes)". */
-export function appWhenText(trigger: Described): string {
+/** The "when" half of the sentence, in the pack language: "When an email arrives in Gmail (sales) from acme.com (it checks every 15 minutes)". */
+export function appWhenText(trigger: Described, language?: string): string {
   const filter = trigger.filter ?? {};
   const details = [filter.from && `from ${filter.from}`, filter.subject && `about “${filter.subject}”`, filter.label && `labeled ${filter.label}`, filter.text && `mentioning “${filter.text}”`]
     .filter(Boolean).join(" ");
   const account = trigger.accountLabel ? ` (${trigger.accountLabel})` : "";
   const when = trigger.event === "GMAIL_NEW_GMAIL_MESSAGE"
-    ? `When an email arrives in Gmail${account}`
-    : `When “${trigger.eventName}” happens in ${appLabel(trigger.app)}${account}`;
-  return `${when}${details ? ` ${details}` : ""}${trigger.delivery === "poll" ? " (it checks every 15 minutes)" : ""}`;
+    ? serverLine(language, "server.triggers.app.email", { account })
+    : serverLine(language, "server.triggers.app.event", { event: trigger.eventName, app: appLabel(trigger.app), account });
+  return `${when}${details ? ` ${details}` : ""}${trigger.delivery === "poll" ? serverLine(language, "server.triggers.app.poll") : ""}`;
 }
 
 /** What the card and the tool result say it does; the app shows its own translated sentence. */
-export function appTriggerSentence(trigger: Described & Pick<AppTrigger, "prompt">, botName: string): string {
+export function appTriggerSentence(trigger: Described & Pick<AppTrigger, "prompt">, botName: string, language?: string): string {
   const instructions = redactSecretsInText(trigger.prompt).trim();
-  return `${appWhenText(trigger)}, ${botName} ${instructions ? `follows: ${instructions.slice(0, 400)}` : "reviews the event"}`;
+  return `${appWhenText(trigger, language)}, ${botName} ${instructions ? `follows: ${instructions.slice(0, 400)}` : serverLine(language, "server.triggers.app.reviews")}`;
 }
 
 export type AppTriggerRequestResult = { requestId: string; messageId: string; state: "applied"; action: AppTriggerRequestOperation["action"]; resultId: string; summary: string; runId?: string };
@@ -102,6 +103,8 @@ interface AppTriggerRequestServiceOptions {
   triggers: AppTriggerManager;
   botName: (botId: string) => string;
   now?: () => number;
+  /** The language of the conversation's person, for the card's words. */
+  languageOf?: (threadId: string) => string | undefined;
 }
 
 export class AppTriggerRequestService {
@@ -155,7 +158,7 @@ export class AppTriggerRequestService {
         break;
     }
     const subject = after ?? before!;
-    const summary = appTriggerSentence(subject, this.options.botName(owner));
+    const summary = appTriggerSentence(subject, this.options.botName(owner), this.options.languageOf?.(args.threadId));
     const requestId = newId();
     const payload: AppTriggerRequestCardData = {
       version: 1,

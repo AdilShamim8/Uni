@@ -13,6 +13,7 @@ import type { RosterMember } from "./peer-roster.ts";
 import type { RequestAuth } from "./request-auth.ts";
 import type { Routine, RoutineManager } from "./routines.ts";
 import { PASS, type RouteContext, type RouteHandler } from "./routes/table.ts";
+import { conversationLanguage } from "./server-lines.ts";
 import { listTriggers, triggerTarget } from "./trigger-tools.ts";
 import { addressFor } from "./webhook-address.ts";
 import type { WebhookManager } from "./webhooks.ts";
@@ -84,7 +85,7 @@ export function createAppTriggerHost(deps: AppTriggerHostDeps) {
     },
     emit: deps.emit,
   });
-  const requests = new AppTriggerRequestService({ store: deps.store, triggers: manager, botName: (botId) => deps.store.bot(botId)?.name ?? "the bot" });
+  const requests = new AppTriggerRequestService({ store: deps.store, triggers: manager, botName: (botId) => deps.store.bot(botId)?.name ?? "the bot", languageOf: conversationLanguage });
 
   const unavailableText = (reason: "self-hosted" | "unavailable" | "off") => reason === "self-hosted"
     ? "App events need Uni's connected apps. This server uses its own Composio key, so a bot cannot watch apps here yet: use a schedule that checks the app, or a webhook."

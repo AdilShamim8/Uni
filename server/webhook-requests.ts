@@ -7,6 +7,7 @@ import { instructionsUpdateRefusal } from "./automation-instructions.ts";
 import { newId } from "./contracts.ts";
 import { UNDO_STALE } from "./direct-apply.ts";
 import { redactSecretsInText } from "./redact.ts";
+import { serverLine } from "./server-lines.ts";
 import type { WebhookManager, WebhookTrigger } from "./webhooks.ts";
 
 export interface WebhookRequestCard {
@@ -104,12 +105,14 @@ function managerInput(definition: Partial<WebhookRequestDefinition>) {
 }
 
 /** What the card and the tool result say the trigger does, credential-scrubbed. */
-export function webhookTriggerSentence(webhook: Pick<WebhookTrigger, "prompt" | "eventTypes" | "payloadFilter">, botName: string): string {
+export function webhookTriggerSentence(webhook: Pick<WebhookTrigger, "prompt" | "eventTypes" | "payloadFilter">, botName: string, language?: string): string {
   const instructions = redactSecretsInText(webhook.prompt).trim();
   const fields = Object.entries(webhook.payloadFilter ?? {}).map(([field, value]) => `${field} is ${redactSecretsInText(value)}`);
   const only = [...(webhook.eventTypes ?? []), ...fields];
   const events = only.length ? ` (only ${only.join(", ")})` : "";
-  return `When another app sends something${events}, ${botName} ${instructions ? `follows: ${instructions.slice(0, 400)}` : "does what it is asked"}`;
+  return instructions
+    ? serverLine(language, "server.triggers.webhook.follows", { events, bot: botName, instructions: instructions.slice(0, 400) })
+    : serverLine(language, "server.triggers.webhook.received", { events, bot: botName });
 }
 
 const ACTION_TITLE: Record<WebhookRequestOperation["action"], string> = {
@@ -126,6 +129,8 @@ interface WebhookRequestServiceOptions {
   webhooks: WebhookManager;
   botName: (botId: string) => string;
   now?: () => number;
+  /** The language of the conversation's person, for the card's words. */
+  languageOf?: (threadId: string) => string | undefined;
 }
 
 export class WebhookRequestService {
@@ -196,7 +201,7 @@ export class WebhookRequestService {
     const subject = after ?? before!;
     const resultId = subject.id;
     const botName = this.options.botName(owner);
-    const summary = webhookTriggerSentence(subject, botName);
+    const summary = webhookTriggerSentence(subject, botName, this.options.languageOf?.(args.threadId));
     const requestId = newId();
     const payload: WebhookRequestCardData = {
       version: 1,
