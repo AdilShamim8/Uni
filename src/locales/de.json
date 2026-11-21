@@ -902,7 +902,7 @@
   "cloudBuy.team.readyTitle": "Deine Team-Cloud ist bereit",
   "cloudBuy.team.readySub": "{name} hält die Bots deines Teams 24/7 am Laufen, auch wenn dieser Computer ausgeschaltet ist.",
   "cloudBuy.staging": "Staging",
-  "cloudBuy.stagingHint": "Diese App nutzt die Staging-Uni-Cloud: Test-Zahlungen und Test-Clouds, keine echten.",
+  "cloudBuy.stagingHint": "Diese App nutzt die Staging-Uni Cloud: Test-Zahlungen und Test-Clouds, keine echten.",
   "cloudNotice.signIn.title": "Melde dich erneut an, um die Cloud zu erreichen",
   "cloudNotice.signIn.hint": "Dein Tarif und deine Bots dort sind davon nicht betroffen.",
   "cloudNotice.removed.title": "Dieser Computer wurde bei Uni Cloud abgemeldet",
