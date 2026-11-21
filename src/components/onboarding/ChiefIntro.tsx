@@ -5,7 +5,7 @@ import { usePrefersReducedMotion } from "@/components/mascot-clock";
 import { cn } from "@/lib/cn";
 import { chiefChoices, chiefFor, createChiefPatch, DEFAULT_BOT_NAME, myDefaultBot, setWelcomingBot, stageIntro, useViewerEmail } from "@/lib/default-bot";
 import { t } from "@/lib/i18n";
-import { FLIGHT_MS, landInSidebar } from "@/lib/mausbot-landing";
+import { FLIGHT_MS, landInSidebar } from "@/lib/uni-landing";
 import { useStore, type Bot } from "@/state/store";
 
 /** Clicks, Enter and Space wait this long after the dialog opens, so a double click on Next never presses Create. */

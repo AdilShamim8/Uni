@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { createUniOwnChat } from "./mausbot-own-chat.ts";
+import { createUniOwnChat } from "./uni-own-chat.ts";
 
 const key = (email: string) => `key:${email}`;
 function world(starters: Record<string, string> = {}) {

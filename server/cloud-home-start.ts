@@ -394,7 +394,7 @@ export function startCloudHome(processEnv: NodeJS.ProcessEnv = process.env) {
   const home = processEnv.HOME || "/data";
   const env = root ? { ...processEnv, ...readCloudSecretsFile(home) } : processEnv;
   const config = cloudHomeConfiguration(env);
-  if (!config) throw new Error("This image runs a My Cloud machine for MausBot Cloud; set its boot contract (docs/cloud-pro.md).");
+  if (!config) throw new Error("This image runs a My Cloud machine for Uni Cloud; set its boot contract (docs/cloud-pro.md).");
   // Linux hands orphans to process 1, and Node waits only for the children it started.
   if (process.pid === 1) console.warn("cloud home: this supervisor is process 1, so nothing collects the processes bots leave behind and they pile up as zombies. Keep the image's entrypoint (tini), or start the container with --init.");
   // Logged here once: the server child never sees what they are about.

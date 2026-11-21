@@ -1,5 +1,5 @@
 // This computer's server, started as the desktop app starts it (its private port emulated over Node's IPC), and servers of
-// the person's own (`uni serve`, nothing of MausBot Cloud), each paired with this app as a pairing link pairs it.
+// the person's own (`uni serve`, nothing of Uni Cloud), each paired with this app as a pairing link pairs it.
 // Main's own wiring for the move to such a server (electron/own-home-main.mjs) sits between them, its requests carrying
 // the pairing's session as the window's would. Disposable homes and a synthetic Claude CLI; no network.
 import { randomBytes } from "node:crypto";

@@ -119,7 +119,7 @@ in_container() {
 }
 
 install_browser_apparmor_profile() {
-  profile=$APP_ROOT/resources/openmausbot-browser.apparmor
+  profile=$APP_ROOT/resources/uni-browser.apparmor
   if [ -L "$profile" ] || [ ! -f "$profile" ] || [ "$(stat -c '%h' -- "$profile")" != 1 ]; then
     echo "Uni browser AppArmor profile is missing or unsafe: $profile" >&2
     exit 1
@@ -138,7 +138,7 @@ install_browser_apparmor_profile() {
     case "$restricted" in
       0|1) ;;
       *)
-        echo "OpenMausBot browser user-namespace restriction is invalid; refusing unsafe sandbox setup." >&2
+        echo "Uni browser user-namespace restriction is invalid; refusing unsafe sandbox setup." >&2
         exit 1
         ;;
     esac
@@ -146,7 +146,7 @@ install_browser_apparmor_profile() {
 
   if [ ! -d "$APPARMOR_DIR" ] || [ ! -x "$APPARMOR_PARSER" ]; then
     if [ "$restricted" = 1 ]; then
-      echo "OpenMausBot needs apparmor and apparmor_parser to configure the browser sandbox on this host." >&2
+      echo "Uni needs apparmor and apparmor_parser to configure the browser sandbox on this host." >&2
       exit 1
     fi
     return
@@ -160,12 +160,12 @@ install_browser_apparmor_profile() {
   fi
   # The policy directory belongs to the OS: validate it, never chmod it.
   if [ -L "$APPARMOR_DIR" ] || [ "$(stat -c '%U:%G:%a' -- "$APPARMOR_DIR")" != "$EXPECTED_OWNER:755" ]; then
-    echo "OpenMausBot AppArmor policy directory is unsafe: $APPARMOR_DIR" >&2
+    echo "Uni AppArmor policy directory is unsafe: $APPARMOR_DIR" >&2
     exit 1
   fi
-  target=$APPARMOR_DIR/openmausbot-browser
+  target=$APPARMOR_DIR/uni-browser
   if [ -L "$target" ] || { [ -e "$target" ] && [ ! -f "$target" ]; }; then
-    echo "OpenMausBot AppArmor profile target is unsafe: $target" >&2
+    echo "Uni AppArmor profile target is unsafe: $target" >&2
     exit 1
   fi
   if [ "$TEST_MODE" -eq 0 ]; then
@@ -184,11 +184,11 @@ install_browser_apparmor_profile() {
     # this policy. The host owns that setting: keep the staged policy, say
     # so, and install. A container that can load policy (LXD) loads it below.
     if [ "$restricted" = 1 ] && in_container; then
-      echo "OpenMausBot staged its browser AppArmor policy at $target but did not load it: AppArmor belongs to this container's host. The bot's browser needs the host to allow its user namespaces." >&2
+      echo "Uni staged its browser AppArmor policy at $target but did not load it: AppArmor belongs to this container's host. The bot's browser needs the host to allow its user namespaces." >&2
       return
     fi
     if [ "$restricted" = 1 ]; then
-      echo "OpenMausBot cannot load its browser sandbox policy while AppArmor restrictions are active but AppArmor is unavailable." >&2
+      echo "Uni cannot load its browser sandbox policy while AppArmor restrictions are active but AppArmor is unavailable." >&2
       exit 1
     fi
     return

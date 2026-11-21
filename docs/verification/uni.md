@@ -11,7 +11,7 @@ its menu's **Hide from sidebar** also turns off.
 ```sh
 pnpm exec vitest run server/default-bot.test.ts server/default-bot.e2e.test.ts \
   server/team-setup-requests.test.ts src/lib/default-bot.test.ts src/components/UniWelcome.test.ts \
-  src/lib/mausbot-landing.test.ts
+  src/lib/uni-landing.test.ts
 ```
 
 - `server/default-bot.test.ts`: a fresh install gets one Uni once; an
@@ -23,7 +23,7 @@ pnpm exec vitest run server/default-bot.test.ts server/default-bot.e2e.test.ts \
 - `server/default-bot.e2e.test.ts`: on a real fixture server, `DELETE
   /api/bots/:id` answers 409, the switch hides and shows it, and a Uni that
   is not the Chief creates a bot with `create_bot`.
-- `server/mausbot-notifications.test.ts`, `server/drivers/agents-mausbot-tools.test.ts`
+- `server/uni-notifications.test.ts`, `server/drivers/agents-uni-tools.test.ts`
   and the second case of `server/default-bot.e2e.test.ts`: Uni alone gets
   `list_unread_notifications` and `mark_notifications_read`, listed last.
   The list returns the unread feed (bounded, trimmed) with a lean per item;
@@ -44,7 +44,7 @@ pnpm exec vitest run server/default-bot.test.ts server/default-bot.e2e.test.ts \
   now turns the switch off, a name, colour, look or uploaded picture is saved as
   the bot's own edit screen saves it, a renamed Uni is still found by its
   mark, and a new install's intro offers only the setup still to do.
-- `src/lib/mausbot-landing.test.ts`: the rows already in the sidebar glide down
+- `src/lib/uni-landing.test.ts`: the rows already in the sidebar glide down
   by the new row's height, the avatar lands in the new slot and leaves nothing
   behind, reduced motion only fades the row in, and a hidden sidebar just adds it.
 - `server/default-bot.test.ts` also: a place with no Chief gets Uni as its
@@ -69,14 +69,14 @@ finish the first-run welcome and its tour, then:
 3. Its sidebar menu offers **Hide from sidebar**, not Archive or Delete; the
    switch in Settings → General brings it back.
 
-Evidence: [popup, light](evidence/mausbot/welcome-light.png),
-[popup, dark](evidence/mausbot/welcome-dark.png),
-[customise panel](evidence/mausbot/welcome-customize-light.png),
-[uploaded picture](evidence/mausbot/welcome-upload-light.png),
-[the fly-in](evidence/mausbot/fly-in.gif), [slowed](evidence/mausbot/fly-in-slow.gif),
-[compact, icon rail and reduced motion](evidence/mausbot/fly-in-compact-rail-reduced.png),
-[intro and setup](evidence/mausbot/added-light.png),
-[menu](evidence/mausbot/menu-light.png),
-[Settings, switched off](evidence/mausbot/settings-off.png),
-[chrome picture, light](evidence/mausbot/chrome-picture-daylight.png),
-[chrome picture, dark](evidence/mausbot/chrome-picture-midnight.png).
+Evidence: [popup, light](evidence/uni/welcome-light.png),
+[popup, dark](evidence/uni/welcome-dark.png),
+[customise panel](evidence/uni/welcome-customize-light.png),
+[uploaded picture](evidence/uni/welcome-upload-light.png),
+[the fly-in](evidence/uni/fly-in.gif), [slowed](evidence/uni/fly-in-slow.gif),
+[compact, icon rail and reduced motion](evidence/uni/fly-in-compact-rail-reduced.png),
+[intro and setup](evidence/uni/added-light.png),
+[menu](evidence/uni/menu-light.png),
+[Settings, switched off](evidence/uni/settings-off.png),
+[chrome picture, light](evidence/uni/chrome-picture-daylight.png),
+[chrome picture, dark](evidence/uni/chrome-picture-midnight.png).

@@ -9,10 +9,10 @@ things went.
 
 ```sh
 npm install -g uni            # or use npx uni …
-openmausbot serve --no-pair &         # a workspace with no screen (or use your desktop app)
-openmausbot engine set claude --key-env ANTHROPIC_API_KEY
-openmausbot team apply launch-room.yaml
-openmausbot run "Room Lead" "Rehearse the launch of https://example.com" --export ./rehearsal
+uni serve --no-pair &         # a workspace with no screen (or use your desktop app)
+uni engine set claude --key-env ANTHROPIC_API_KEY
+uni team apply launch-room.yaml
+uni run "Room Lead" "Rehearse the launch of https://example.com" --export ./rehearsal
 ```
 
 `run` prints progress as it goes, then the Room Lead's final reply and the
@@ -21,8 +21,8 @@ files it links, and writes everything to `./rehearsal`.
 ## Sign in once
 
 ```sh
-openmausbot login                     # the MausBot app on this computer
-openmausbot login https://maus.example.com   # a Cloud or a server elsewhere
+uni login                     # the MausBot app on this computer
+uni login https://maus.example.com   # a Cloud or a server elsewhere
 ```
 
 `login` asks the server, and the person allows it with one click. On this
@@ -74,8 +74,8 @@ serve` treats a command on its own computer as its owner, and needs no
 sign-in. For scripts and CI, a token in a file works anywhere:
 
 ```sh
-openmausbot connect https://maus.example.com --code 7KQ2-M9XD-H4TP --out ~/.openmausbot-token
-openmausbot doctor --url https://maus.example.com --token-file ~/.openmausbot-token
+uni connect https://maus.example.com --code 7KQ2-M9XD-H4TP --out ~/.uni-token
+uni doctor --url https://maus.example.com --token-file ~/.uni-token
 ```
 
 `connect` also takes the whole link the server printed
@@ -93,9 +93,9 @@ looking for a server: with a token, name the server.
 For CI, make an access token that ends on a date you choose:
 
 ```sh
-openmausbot token create "Nightly CI" --scope client --expires 90d --out ci-token   # on the server, or with an admin token
-openmausbot token list                     # name, scope, end date, last used (never the token)
-openmausbot token revoke ID                # it stops working at once
+uni token create "Nightly CI" --scope client --expires 90d --out ci-token   # on the server, or with an admin token
+uni token list                     # name, scope, end date, last used (never the token)
+uni token revoke ID                # it stops working at once
 ```
 
 A `login` or `connect` session renews itself while it is used, up to 180 days; an access
@@ -227,7 +227,7 @@ servers, and exits 7.
 ## run and wait
 
 ```sh
-openmausbot run "Room Lead" --message-file brief.md --timeout 45m --on-input exit --export ./out
+uni run "Room Lead" --message-file brief.md --timeout 45m --on-input exit --export ./out
 ```
 
 `run` starts a new conversation (titled by `--title` or the message's first
@@ -289,8 +289,8 @@ have).
 ## export
 
 ```sh
-openmausbot export "Room Lead" --out ./rehearsal          # its current conversation
-openmausbot export --thread 3f2a… --out ./rehearsal --root ROOT_ID
+uni export "Room Lead" --out ./rehearsal          # its current conversation
+uni export --thread 3f2a… --out ./rehearsal --root ROOT_ID
 ```
 
 | Written | What it holds |
@@ -313,7 +313,7 @@ lists are removed first, and nothing else in the folder is touched.
 ## events
 
 ```sh
-openmausbot events --job 3f2a… --until-settled > events.jsonl
+uni events --job 3f2a… --until-settled > events.jsonl
 ```
 
 One JSON line per event: messages as they are written and changed, threads,
@@ -332,8 +332,8 @@ output longer than 1,000 characters arrives as its first 1,000 with
 ## engine
 
 ```sh
-openmausbot engine set claude --key-env ANTHROPIC_API_KEY --base-url https://gateway.example.com --install
-openmausbot engine list
+uni engine set claude --key-env ANTHROPIC_API_KEY --base-url https://gateway.example.com --install
+uni engine list
 ```
 
 KIND is `claude`, `openai`, `openrouter`, `openai-compatible` (needs
@@ -356,10 +356,10 @@ with their standing instructions, models, approval levels and computers,
 skills, rooms, and the engines they run on. Write it in YAML or JSON.
 
 ```sh
-openmausbot team apply launch-room.yaml             # plan, then apply
-openmausbot team apply launch-room.yaml --dry-run   # only the plan
-openmausbot team apply launch-room.yaml --check     # exit 6 if anything would change (CI)
-openmausbot team export --team "Launch Room" --out exported.yaml
+uni team apply launch-room.yaml             # plan, then apply
+uni team apply launch-room.yaml --dry-run   # only the plan
+uni team apply launch-room.yaml --check     # exit 6 if anything would change (CI)
+uni team export --team "Launch Room" --out exported.yaml
 ```
 
 Apply prints its plan, then makes the changes:
@@ -527,7 +527,7 @@ Then rehearse, wait for every visitor, and keep the report, transcripts and
 screenshots:
 
 ```sh
-openmausbot run "Room Lead" "Rehearse the launch of https://example.com with every visitor, then write report.md." \
+uni run "Room Lead" "Rehearse the launch of https://example.com with every visitor, then write report.md." \
   --timeout 45m --export ./rehearsal
 ```
 

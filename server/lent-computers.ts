@@ -152,6 +152,6 @@ export function awayNotice(known: LentComputer[], online: ReadonlySet<string>, a
   const ask = askTool ? ` If the request needs it, call ${askTool}: it asks them with a one-tap Turn on, and you carry on once it's on. Don't explain the fix in chat.` : null;
   const say = latest.stoppedAt === null
     ? `Their ${device} ${latest.name} is shared with the Cloud but offline (last online ${dateText(latest.lastSeenAt)}): Uni on it is closed, or the ${device} is asleep or off.${ask ?? ` Ask them to open Uni on that ${device}; it reconnects by itself.`}`
-    : `Their ${device} ${latest.name} no longer shares itself with the Cloud: Uni on it is paused, or signed out of MausBot Cloud.${ask ?? ` Ask them to choose Resume from Uni's icon in the ${device === "Mac" ? "menu bar" : "taskbar"} on that ${device}, or sign in there again.`}`;
+    : `Their ${device} ${latest.name} no longer shares itself with the Cloud: Uni on it is paused, or signed out of Uni Cloud.${ask ?? ` Ask them to choose Resume from Uni's icon in the ${device === "Mac" ? "menu bar" : "taskbar"} on that ${device}, or sign in there again.`}`;
   return { offline, say };
 }

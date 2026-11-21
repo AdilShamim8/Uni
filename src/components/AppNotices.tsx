@@ -305,7 +305,7 @@ export function AppNotices({
     !onboardingCloudOffered(record);
   const stage = introStage(record, now());
   const trialDue = cloudTrialNotice(plan);
-  // What's new: This computer's page of a desktop that sells MausBot Cloud, once per person; never on a branded build or a
+  // What's new: This computer's page of a desktop that sells Uni Cloud, once per person; never on a branded build or a
   // desktop an organization runs.
   const whatsNewHere =
     Boolean(bridge && desktop) && brandStatus().source !== "file";
@@ -445,7 +445,7 @@ export function AppNotices({
   // also for a launch after the one whose welcome just finished. Account and billing notices keep their own rules.
   // Unknown (null) until the bots have loaded, so nothing lower in the queue flashes up before them.
   const firstChat = firstReplyPending(state);
-  // MausBot's first-launch card goes first: the popup and the question wait while it is due. The popup skips a launch the
+  // Uni's first-launch card goes first: the popup and the question wait while it is due. The popup skips a launch the
   // card used; the question may follow the card once it closes, as it follows the popup.
   const afterWelcome =
     welcomeFinishedThisLaunch() ||
@@ -493,7 +493,7 @@ export function AppNotices({
       ? null
       : true;
   // Everyone, whether or not a bot has answered yet (so not `afterWelcome`, which holds until one has), but never in the launch
-  // the welcome or MausBot's card took, or during a live call.
+  // the welcome or Uni's card took, or during a live call.
   const modelgoNow =
     !modelgoHere ||
     moving ||
@@ -545,7 +545,7 @@ export function AppNotices({
         });
   const announcement = picked && picked !== "wait" ? picked : null;
   // Teams: everyone once, ahead of every other notice, on every page but a branded build's or an organization's desktop;
-  // as the What's new popup, never in the launch a welcome or MausBot's card took, before a first reply, over a first
+  // as the What's new popup, never in the launch a welcome or Uni's card took, before a first reply, over a first
   // run's own screens or another dialog, during a live call or a move.
   const teamsSeen =
     noticeSeen(record, TEAMS_NOTICE) ||
@@ -628,7 +628,7 @@ export function AppNotices({
               [TEAMS_NOTICE]: teamsNow,
               [GROK_MOVE_NOTICE]: grokNow,
               [PHONE_UPDATE_NOTICE]: phoneNow,
-              // As the What's new popup: never in the launch whose welcome just finished, nor over MausBot's first-launch card.
+              // As the What's new popup: never in the launch whose welcome just finished, nor over Uni's first-launch card.
               [SIMPLE_MODE_NOTICE]:
                 !simpleDue || afterWelcome === true
                   ? false
@@ -732,7 +732,7 @@ export function AppNotices({
   useEffect(() => {
     if (!shownKey || !notice) return;
     markLaunchNotice(notice);
-    // The popups and the question own this launch: MausBot's first-launch card waits for a later one.
+    // The popups and the question own this launch: Uni's first-launch card waits for a later one.
     if (
       shownKey === TEAMS_NOTICE ||
       shownKey === GROK_MOVE_NOTICE ||

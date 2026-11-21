@@ -61,7 +61,7 @@ It runs the newest release, pinned by its version; once a `stable` channel is pu
 **Sign in as the first admin** with a one-time link made on the server. Run in a terminal, the installer makes one and prints it when it finishes. It does not when its output goes anywhere else, such as a log, because whoever reads the link can sign in as the admin until it is used or expires. To make one yourself:
 
 ```sh
-cd /opt/openmausbot && sudo docker compose exec omb openmausbot pair --label "First admin"
+cd /opt/uni && sudo docker compose exec omb uni pair --label "First admin"
 ```
 
 Open the link it prints, or paste it into the desktop app under **＋ → Connect to a server**. To sign in with an emailed code instead, run the installer with `--email you@example.com`.
@@ -204,7 +204,7 @@ The [installer](#quick-start-one-command-on-your-own-domain) does these steps fo
 In this path, every `npx uni …` command below is run inside the container instead:
 
 ```sh
-docker compose exec omb openmausbot pair --label "My MacBook"
+docker compose exec omb uni pair --label "My MacBook"
 ```
 
 ## Path C: only your Tailscale network
@@ -224,13 +224,13 @@ the image. For paths A and C, install Linux system libraries once from the
 administrator shell:
 
 ```sh
-sudo -H npx --yes openmausbot browser install --with-deps
+sudo -H npx --yes uni browser install --with-deps
 ```
 
 Then install the browser in the service account's home, from the `maus` shell:
 
 ```sh
-npx --yes openmausbot browser install
+npx --yes uni browser install
 ```
 
 The administrator's browser download is in a different home; it does not install
@@ -302,7 +302,7 @@ install a chosen release first, from the `maus` shell. Replace `X.Y.Z` with the
 published version you want to run:
 
 ```sh
-npm install --global --prefix "$HOME/.local" openmausbot@X.Y.Z
+npm install --global --prefix "$HOME/.local" uni@X.Y.Z
 ```
 
 Stop the foreground server with Ctrl-C before enabling the service. From the
@@ -328,8 +328,8 @@ WantedBy=multi-user.target
 ```
 
 ```sh
-sudo systemctl daemon-reload && sudo systemctl enable --now openmausbot
-journalctl -u openmausbot -f            # the server's log, including "tunnel: live at …"
+sudo systemctl daemon-reload && sudo systemctl enable --now uni
+journalctl -u uni -f            # the server's log, including "tunnel: live at …"
 ```
 
 Use `--tailscale` instead of `--tunnel` for path C. A service is not a terminal, so `serve` writes no pairing code into the journal; mint one with `npx uni pair` when you need it. Docker (path B) restarts on its own (`restart: unless-stopped`).
@@ -473,7 +473,7 @@ as `/opt/uni`, runs the same script on that folder:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/update.sh -o update.sh
-sudo bash update.sh --dir /opt/openmausbot
+sudo bash update.sh --dir /opt/uni
 ```
 
 An install made with the installer (`deploy/install.sh`) already has `update.sh` in
@@ -594,21 +594,21 @@ way back. Take the stable version number from
 the administrator shell, replacing `X.Y.Z`:
 
 ```sh
-sudo systemctl stop openmausbot
-sudo -iu maus sh -c 'umask 077; tar czf ~/openmausbot-before-update.tgz -C ~ .openmausbot && chmod 600 ~/openmausbot-before-update.tgz'
-sudo -iu maus npm install --global --prefix /home/maus/.local openmausbot@X.Y.Z
-sudo systemctl start openmausbot
-curl -sf http://127.0.0.1:8799/api/health && sudo -iu maus openmausbot doctor
+sudo systemctl stop uni
+sudo -iu maus sh -c 'umask 077; tar czf ~/uni-before-update.tgz -C ~ .uni && chmod 600 ~/uni-before-update.tgz'
+sudo -iu maus npm install --global --prefix /home/maus/.local uni@X.Y.Z
+sudo systemctl start uni
+curl -sf http://127.0.0.1:8799/api/health && sudo -iu maus uni doctor
 ```
 
 If the install fails, or the last line does not end with the server answering
 and an engine ready, go back (replace `OLD` with the version you noted):
 
 ```sh
-sudo systemctl stop openmausbot
-sudo -iu maus npm install --global --prefix /home/maus/.local openmausbot@OLD
-sudo -iu maus sh -c 'mv ~/.openmausbot ~/.openmausbot-failed-update && tar xzf ~/openmausbot-before-update.tgz -C ~'
-sudo systemctl start openmausbot
+sudo systemctl stop uni
+sudo -iu maus npm install --global --prefix /home/maus/.local uni@OLD
+sudo -iu maus sh -c 'mv ~/.uni ~/.uni-failed-update && tar xzf ~/uni-before-update.tgz -C ~'
+sudo systemctl start uni
 ```
 
 A service restart by itself does not update the installed package. For
@@ -635,9 +635,9 @@ credentials, and paired sessions). Run it from the service account's shell:
 
 ```sh
 umask 077
-backup_dir=$(mktemp -d "$PWD/openmausbot-backup.XXXXXX")
-tar czf "$backup_dir/openmausbot-data.tgz" -C "$HOME" .openmausbot
-chmod 600 "$backup_dir/openmausbot-data.tgz"
+backup_dir=$(mktemp -d "$PWD/uni-backup.XXXXXX")
+tar czf "$backup_dir/uni-data.tgz" -C "$HOME" .uni
+chmod 600 "$backup_dir/uni-data.tgz"
 ```
 
 A full backup also needs your engine credential/configuration paths, such as
@@ -653,8 +653,8 @@ volume name if you changed the Compose project:
 
 ```sh
 docker compose stop
-backup_dir=$(mktemp -d "$PWD/openmausbot-backup.XXXXXX")
-docker run --rm -v deploy_data:/data:ro -v "$backup_dir":/b alpine sh -c 'umask 077; tar czf /b/openmausbot-data.tgz -C /data . && chmod 600 /b/openmausbot-data.tgz'
+backup_dir=$(mktemp -d "$PWD/uni-backup.XXXXXX")
+docker run --rm -v deploy_data:/data:ro -v "$backup_dir":/b alpine sh -c 'umask 077; tar czf /b/uni-data.tgz -C /data . && chmod 600 /b/uni-data.tgz'
 docker compose start
 ```
 
@@ -663,7 +663,7 @@ volume with it (`uni-backup.XXXXXX` is the folder the backup made):
 
 ```sh
 docker compose stop
-docker run --rm -v deploy_data:/data -v "$PWD/openmausbot-backup.XXXXXX":/b:ro alpine sh -c 'find /data -mindepth 1 -delete && tar xzpf /b/openmausbot-data.tgz -C /data'
+docker run --rm -v deploy_data:/data -v "$PWD/uni-backup.XXXXXX":/b:ro alpine sh -c 'find /data -mindepth 1 -delete && tar xzpf /b/uni-data.tgz -C /data'
 docker compose start
 ```
 
@@ -674,7 +674,7 @@ project stopped and started again around it. The folder is `700` and the archive
 holds every chat, key and session:
 
 ```sh
-cd /opt/openmausbot && sudo docker compose stop && sudo sh -c 'set -e; install -d -m 700 backups; f="backups/backup-$(date -u +%Y%m%dT%H%M%SZ).tgz"; (umask 077; tar --warning=no-file-ignored -czf "$f" data .env); chmod 600 "$f"'; sudo docker compose start
+cd /opt/uni && sudo docker compose stop && sudo sh -c 'set -e; install -d -m 700 backups; f="backups/backup-$(date -u +%Y%m%dT%H%M%SZ).tgz"; (umask 077; tar --warning=no-file-ignored -czf "$f" data .env); chmod 600 "$f"'; sudo docker compose start
 ```
 
 Copy the archive to another machine and keep it private.
@@ -687,7 +687,7 @@ data takes its place, with its owner and permissions. An archive without a
 `data/` folder changes nothing:
 
 ```sh
-cd /opt/openmausbot && sudo docker compose stop && sudo sh -c 'set -e; tar -tzf backups/backup-20261110T153000Z.tgz data/ >/dev/null; rm -rf data.before-restore; mv data data.before-restore; tar -xzpf backups/backup-20261110T153000Z.tgz data'; sudo docker compose start
+cd /opt/uni && sudo docker compose stop && sudo sh -c 'set -e; tar -tzf backups/backup-20261110T153000Z.tgz data/ >/dev/null; rm -rf data.before-restore; mv data data.before-restore; tar -xzpf backups/backup-20261110T153000Z.tgz data'; sudo docker compose start
 ```
 
 Once Uni runs on the restored data, remove the old copy:
@@ -753,10 +753,10 @@ placeholder, not a fixed Chrome release. Copy the whole directory, including its
 libraries, to a new location that the service user cannot modify:
 
 ```sh
-sudo install -d -o root -g root -m 0755 /opt/openmausbot-browser
-sudo cp -R /home/maus/.agent-browser/browsers/chrome-VERSION /opt/openmausbot-browser/
-sudo chown -R root:root /opt/openmausbot-browser/chrome-VERSION
-sudo chmod -R go-w /opt/openmausbot-browser/chrome-VERSION
+sudo install -d -o root -g root -m 0755 /opt/uni-browser
+sudo cp -R /home/maus/.agent-browser/browsers/chrome-VERSION /opt/uni-browser/
+sudo chown -R root:root /opt/uni-browser/chrome-VERSION
+sudo chmod -R go-w /opt/uni-browser/chrome-VERSION
 ```
 
 Save this as the root-owned `/etc/apparmor.d/uni-chrome`, replacing
@@ -775,7 +775,7 @@ profile uni-chrome /opt/uni-browser/chrome-VERSION/chrome flags=(unconfined) {
 Load the profile:
 
 ```sh
-sudo apparmor_parser -r /etc/apparmor.d/openmausbot-chrome
+sudo apparmor_parser -r /etc/apparmor.d/uni-chrome
 ```
 
 Add the following line under `[Service]` in the systemd unit above, again using

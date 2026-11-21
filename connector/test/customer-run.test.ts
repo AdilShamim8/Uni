@@ -412,7 +412,7 @@ describe("a customer-run server: replacing the connector", () => {
 });
 
 describe("a customer-run server: updates go to the server's own updater", () => {
-  /** Stands in for mausbot-update-runner.sh: reads the request the connector left and answers with update.sh's exit code. */
+  /** Stands in for uni-update-runner.sh: reads the request the connector left and answers with update.sh's exit code. */
   const updater = (fixture: Awaited<ReturnType<typeof server>>, code: number, seen: string[] = []) => {
     writeFileSync(join(fixture.updateDir, UPDATE_FILES.runner), "1\n");
     const sleep = (fixture.adopted as unknown as { sleep: (ms: number) => Promise<void> }).sleep;

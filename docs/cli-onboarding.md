@@ -5,7 +5,7 @@ Install [Node.js](https://nodejs.org/) 24 or newer, then choose either way to ru
 ```sh
 # Install once, then use the short command:
 npm install -g uni
-openmausbot
+uni
 ```
 
 Or, without a global install:
@@ -69,8 +69,8 @@ The examples below assume a global install; prefix them with `npx` otherwise.
 `start` accepts the same server options as `serve`, including `--port`, `--data-dir`, `--tailscale`, `--tunnel`, and `--public-url`. Keep using your custom data directory and port when starting or pairing:
 
 ```sh
-openmausbot setup --data-dir /path/to/omb-data --port 8799
-openmausbot --data-dir /path/to/omb-data --port 8799
+uni setup --data-dir /path/to/omb-data --port 8799
+uni --data-dir /path/to/omb-data --port 8799
 ```
 
 Setup needs an interactive terminal. Later starts can run without one once setup is complete. Stop a running server before changing its setup or access mode: `--local` does not turn off a remote connection belonging to a server that is already running. You do not need to delete configuration, bots, or conversations to reconfigure it.

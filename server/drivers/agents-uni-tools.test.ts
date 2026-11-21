@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { availableTools, catalogProfileFromEnv, fullInputSchema } from "./agents-catalog.ts";
-import { MAUSBOT_TOOL_DEFINITIONS } from "./agents-mausbot-tools.ts";
+import { MAUSBOT_TOOL_DEFINITIONS } from "./agents-uni-tools.ts";
 
 const listed = (env: Record<string, string>) => availableTools(catalogProfileFromEnv({ OMB_BOT_ID: "maus", OMB_CHIEF_OF_STAFF: "1", ...env }));
 

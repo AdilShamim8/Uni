@@ -44,8 +44,8 @@ the root `compose.yaml` and the compose file the installer writes all pass it to
 the server container), `docker compose up -d`, then:
 
 ```sh
-docker compose exec omb openmausbot login --relay
-docker compose exec omb openmausbot pair --phone
+docker compose exec omb uni login --relay
+docker compose exec omb uni pair --phone
 ```
 
 A phone code is chat and approvals only (`pair --phone`), as on every other way

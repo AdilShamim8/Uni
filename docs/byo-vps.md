@@ -122,7 +122,7 @@ nothing changes. Only someone who can write to the data directory can add it; no
 
 ```sh
 #!/bin/sh
-# ~/.openmausbot/ssh/wake: $1 is the SSH alias the app could not reach.
+# ~/.uni/ssh/wake: $1 is the SSH alias the app could not reach.
 my-provider resume "$1" && my-provider wait-ready "$1"
 ```
 

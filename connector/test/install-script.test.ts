@@ -49,7 +49,7 @@ esac`);
   if (options.ownServer) {
     writeFileSync(join(install, "compose.yaml"), "name: uni\n");
     writeFileSync(join(install, "data", "chats.json"), "theirs");
-    for (const file of [join(update, "runner"), join(sbin, "mausbot-update-runner"), join(systemd, "mausbot-update.path"), join(systemd, "mausbot-update.service")]) writeFileSync(file, "1\n");
+    for (const file of [join(update, "runner"), join(sbin, "uni-update-runner"), join(systemd, "mausbot-update.path"), join(systemd, "mausbot-update.service")]) writeFileSync(file, "1\n");
   }
   const result = spawnSync("sh", [SCRIPT, ...args], {
     encoding: "utf8",
@@ -163,7 +163,7 @@ describe("install.sh", () => {
     expect(result.calls.filter((call) => /mausbot-home|mausbot-data|uni|compose/.test(call))).toEqual([]);
     expect(readFileSync(join(result.install, "data", "chats.json"), "utf8")).toBe("theirs");
     expect(existsSync(join(result.install, "compose.yaml"))).toBe(true);
-    for (const gone of [result.update, join(result.sbin, "mausbot-update-runner"), join(result.systemd, "mausbot-update.path"), join(result.systemd, "mausbot-update.service")]) expect(existsSync(gone), gone).toBe(false);
+    for (const gone of [result.update, join(result.sbin, "uni-update-runner"), join(result.systemd, "mausbot-update.path"), join(result.systemd, "mausbot-update.service")]) expect(existsSync(gone), gone).toBe(false);
     expect(result.stdout).toContain(`Your Uni in ${result.install} and its data were not touched, and it keeps running.`);
     expect(existsSync(join(result.apparmor, APPARMOR_PROFILE))).toBe(true);
   });

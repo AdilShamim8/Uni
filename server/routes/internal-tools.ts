@@ -5,7 +5,7 @@ import type { AppPublisher } from "../host/app-publisher.ts";
 import { createAppHostingInternalRoutes } from "./app-hosting.ts";
 import { createEngineLimitsRoutes, type EngineLimitsDeps } from "./engine-limits.ts";
 import { createHelperToolRoutes, type HelperToolContext, type HelperToolDeps } from "./helper-tools.ts";
-import { createUniNotificationRoutes, type LiveNotificationsDeps } from "./mausbot-notifications.ts";
+import { createUniNotificationRoutes, type LiveNotificationsDeps } from "./uni-notifications.ts";
 import { PASS } from "./table.ts";
 import { createXResearchInternalRoutes, type XResearchDeps } from "./x-research.ts";
 

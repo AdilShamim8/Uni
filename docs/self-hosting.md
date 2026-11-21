@@ -103,7 +103,7 @@ From a checkout of the repository:
 
 ```sh
 docker compose up -d --build                  # http://localhost:8080 on this machine
-docker compose exec omb openmausbot pair      # a code, and a sign-in link for this machine's browser
+docker compose exec omb uni pair      # a code, and a sign-in link for this machine's browser
 ```
 
 To pair from other devices on the same network, publish the port there and
@@ -111,7 +111,7 @@ name the address they use:
 
 ```sh
 OMB_BIND_ADDRESS=0.0.0.0 OMB_PUBLIC_URL=http://192.168.1.20:8080 docker compose up -d
-docker compose exec omb openmausbot pair      # Link http://192.168.1.20:8080/pair#code=…
+docker compose exec omb uni pair      # Link http://192.168.1.20:8080/pair#code=…
 ```
 
 Do this only on a machine behind your router. A machine with a public address
@@ -126,7 +126,7 @@ domain:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/install.sh | sudo sh -s -- --domain maus.example.com
-cd /opt/openmausbot && sudo docker compose exec omb openmausbot pair   # Link https://<DOMAIN>/pair#code=…
+cd /opt/uni && sudo docker compose exec omb uni pair   # Link https://<DOMAIN>/pair#code=…
 ```
 
 Add `--check` to only check the server. Running it again repairs;
@@ -141,7 +141,7 @@ By hand, on any system with Docker:
 git clone https://github.com/AdilShamim8/Uni && cd Uni/deploy
 cp .env.example .env                          # set DOMAIN (and ENGINES)
 docker compose pull omb && docker compose up -d
-docker compose exec omb openmausbot pair      # Link https://<DOMAIN>/pair#code=…
+docker compose exec omb uni pair      # Link https://<DOMAIN>/pair#code=…
 ```
 
 Caddy gets the certificate. See [Docker (with HTTPS on your own domain)](#docker-with-https-on-your-own-domain).
@@ -183,7 +183,7 @@ service:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/podman/install.sh | sh
-podman exec -it openmausbot openmausbot pair      # a code, and a sign-in link for this machine's browser
+podman exec -it uni uni pair      # a code, and a sign-in link for this machine's browser
 ```
 
 It writes a Quadlet unit, `~/.config/containers/systemd/uni.container`,
@@ -496,7 +496,7 @@ pairing code for your first device:
 
 ```sh
 docker compose exec omb claude                       # each CLI you listed in ENGINES
-docker compose exec omb openmausbot pair             # prints a code, a link and a QR
+docker compose exec omb uni pair             # prints a code, a link and a QR
 ```
 
 Paste the link (`https://<DOMAIN>/pair#code=…`) into MausBot under **＋ →
@@ -749,7 +749,7 @@ git clone https://github.com/AdilShamim8/Uni && cd Uni
 pnpm install
 
 # choose where data lives and start the server
-OMB_DATA_DIR="$HOME/.openmausbot" OMB_PORT=8799 \
+OMB_DATA_DIR="$HOME/.uni" OMB_PORT=8799 \
   node --experimental-strip-types server/index.ts
 ```
 
@@ -833,7 +833,7 @@ Once, as root, with the package installed permanently and a wildcard DNS
 record (`*.example.com`) pointing at the server:
 
 ```sh
-openmausbot fleet init --domain example.com
+uni fleet init --domain example.com
 ```
 
 That writes the template unit, the fence and its unit, the workspace folders,
@@ -841,14 +841,14 @@ and adds `import /etc/caddy/omb.d/*.caddy` to `/etc/caddy/Caddyfile`. Then per
 client:
 
 ```sh
-openmausbot fleet create acme --admin owner@acme.test --member @acme.test \
+uni fleet create acme --admin owner@acme.test --member @acme.test \
   --brand /root/acme-brand.json --anthropic-key-file /root/acme-anthropic.key \
   --cap 50 --memory 1G
-openmausbot fleet users acme add bob@acme.test --chat-only
-openmausbot fleet list
-openmausbot fleet suspend acme      # 503 page, service stopped; resume undoes it
-openmausbot fleet upgrade           # new release, then every running workspace restarted in turn
-openmausbot fleet delete acme --yes # add --keep-data to keep the home folder
+uni fleet users acme add bob@acme.test --chat-only
+uni fleet list
+uni fleet suspend acme      # 503 page, service stopped; resume undoes it
+uni fleet upgrade           # new release, then every running workspace restarted in turn
+uni fleet delete acme --yes # add --keep-data to keep the home folder
 ```
 
 Give `init` `--operator USER` (the Unix user your own workspace runs as; the
@@ -892,7 +892,7 @@ reach it. On the server:
 ```sh
 npx uni pair                         # npm install
 pnpm omb pair                                # from a checkout
-docker compose exec omb openmausbot pair     # Docker
+docker compose exec omb uni pair     # Docker
 ```
 
 It prints a 12-character pairing code (it works once, for 10 minutes, or up
@@ -1020,7 +1020,7 @@ address of its own:
 
 ```sh
 ssh -L 8799:localhost:8799 you@your-server
-# then run `openmausbot pair` on the server and open the "Browser on this machine" link it prints
+# then run `uni pair` on the server and open the "Browser on this machine" link it prints
 ```
 
 The browser signs in once through the tunnel, like any browser on the server
@@ -1710,8 +1710,8 @@ umask 077
 BOT_ID=your-bot-id
 THREAD_ID=your-existing-thread-id
 TOKEN=$(openssl rand -hex 32)
-printf '{ "%s": {"token":"%s","threadId":"%s"} }\n' "$BOT_ID" "$TOKEN" "$THREAD_ID" > ~/.openmausbot/external-runtimes.json
-chmod 600 ~/.openmausbot/external-runtimes.json
+printf '{ "%s": {"token":"%s","threadId":"%s"} }\n' "$BOT_ID" "$TOKEN" "$THREAD_ID" > ~/.uni/external-runtimes.json
+chmod 600 ~/.uni/external-runtimes.json
 ```
 
 Keep the file private (`600` on Unix; restrict its Windows file permissions).
@@ -1914,8 +1914,8 @@ a bot or department that was paused by itself paused.
 From a terminal, to stop spending at once:
 
 ```sh
-openmausbot bots pause --all      # openmausbot bots resume --all undoes it
-openmausbot stop --all            # or only stop the work running now, pausing nothing
+uni bots pause --all      # uni bots resume --all undoes it
+uni stop --all            # or only stop the work running now, pausing nothing
 ```
 
 Both are admin requests, so they need you signed in (`uni login`),
@@ -1952,7 +1952,7 @@ what it can and cannot do](deploy-vps.md#from-the-app-update-server).
 
 ```sh
 cd deploy && git pull && ./update.sh                                    # Docker: copy the data, update, roll back on failure
-git pull && pnpm install && sudo systemctl restart openmausbot          # from source
+git pull && pnpm install && sudo systemctl restart uni          # from source
 ```
 
 `deploy/update.sh` is the whole routine for a Docker Compose install: the
@@ -2002,10 +2002,10 @@ starts the new version once more; otherwise it rolls back as before.
 You can run it yourself, as the server's user:
 
 ```sh
-openmausbot doctor --data                 # check and report; changes nothing
-openmausbot doctor --data --fix           # also apply the safe repairs (stop the server first)
-openmausbot doctor --data --json          # the report as JSON
-docker compose exec omb openmausbot doctor --data   # Docker
+uni doctor --data                 # check and report; changes nothing
+uni doctor --data --fix           # also apply the safe repairs (stop the server first)
+uni doctor --data --json          # the report as JSON
+docker compose exec omb uni doctor --data   # Docker
 ```
 
 `--data-dir DIR` points it at another folder. It exits 0 when everything is

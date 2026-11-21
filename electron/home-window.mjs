@@ -75,7 +75,7 @@ function followedCloud(kept, state) {
 
 /**
  * Who the window opens. `journal`: one-home.json read back; `frozenCloud`: this computer's freeze marker when there is no
- * journal (its Cloud's origin, or true when it names none); `state`: the MausBot Cloud sign-in's state. An ended My Cloud
+ * journal (its Cloud's origin, or true when it names none); `state`: the Uni Cloud sign-in's state. An ended My Cloud
  * sends home only a computer that moved to that Cloud; a freeze that names another Cloud of the signed-in person's own list
  * is theirs, and opens that Cloud.
  * @returns {{ kind: "computer" } | { kind: "cloud", origin: string } | { kind: "signin", other?: true }}
@@ -401,7 +401,7 @@ export function createHomeWindow(deps) {
     clearRetry();
   }
   const signInNeeded = () => ["reauth-required", "signed-out"].includes(state()?.status);
-  /** This device has no MausBot Cloud sign-in to pair a team with (homeOf's rule for My Cloud). */
+  /** This device has no Uni Cloud sign-in to pair a team with (homeOf's rule for My Cloud). */
   const signedOut = () => { const current = state(); return !current?.account?.id || ["signed-out", "connecting"].includes(current.status); };
   /** The session's list's word for My Cloud (the account's primary Cloud), else null: an older Admin, or one it doesn't list. */
   const myListed = () => { const current = state(); return current?.status === "connected" && Array.isArray(current.clouds) ? current.clouds.find((cloud) => cloud.primary) ?? null : null; };
@@ -746,7 +746,7 @@ export function createHomeWindow(deps) {
     /** The screen asked again (as it opens, back online, or the window focused); `pressed`: the person pressed Try again, which
      * no wait holds except the Admin's own 429. */
     retry: ({ pressed = false } = {}) => { if (pressed) waits.pressed(); return show(); },
-    /** The screen's one button: this device's MausBot Cloud sign-in, again. A sign-in already open in the browser opens
+    /** The screen's one button: this device's Uni Cloud sign-in, again. A sign-in already open in the browser opens
      * again; one with an account My Cloud isn't (`other`) ends first, so the browser can sign in another; one that is still
      * good only looks again. */
     async signIn() {
@@ -763,7 +763,7 @@ export function createHomeWindow(deps) {
       await client.begin();
     },
     repair,
-    /** The MausBot Cloud sign-in changed: a window that waits on it, a home that changed, or a team shown that the
+    /** The Uni Cloud sign-in changed: a window that waits on it, a home that changed, or a team shown that the
      * session no longer lists (or lists at another address), shows again. */
     async changed() {
       const before = home;

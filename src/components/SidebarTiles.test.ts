@@ -74,7 +74,7 @@ describe("the sidebar tiles", () => {
     const failed = bot({ messages: [{ id: "e1", role: "bot", kind: "activity", at: 2, tool: { name: "error: The site did not answer.", ok: false } }] as Bot["messages"] });
     const html = renderToStaticMarkup(createElement(SidebarBotTile, props(failed)));
     expect(html).toMatch(/data-testid="failed-dot"[^>]*class="[^"]*\bbg-danger\b/);
-    expect(html).toContain('aria-label="MausBot · Ran into a problem"');
+    expect(html).toContain('aria-label="Uni · Ran into a problem"');
     expect(html).not.toContain('data-testid="waiting-dot"');
     const row = renderToStaticMarkup(createElement(BotListItem, props(failed)));
     expect(row).toMatch(/data-testid="failed-dot"[^>]*class="[^"]*\bbg-danger\b/);

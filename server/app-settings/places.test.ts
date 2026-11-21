@@ -79,7 +79,7 @@ describe("menu paths in our own text", () => {
     expect(inventedPaths('"open Settings → AI → API keys"')).toEqual(["Settings → AI → API keys\""]);
     expect(inventedPaths('"in System Settings → Privacy & Security"')).toEqual([]);
     expect(inventedPaths("// Settings → Computers, a comment only")).toEqual([]);
-    expect(inventedPaths('"turn it on in Settings > MausBot Cloud (Advanced mode)"')).toEqual(["Settings → MausBot Cloud (Advanced mode)\""]);
+    expect(inventedPaths('"turn it on in Settings > Uni Cloud (Advanced mode)"')).toEqual(["Settings → Uni Cloud (Advanced mode)\""]);
     expect(inventedPaths('"Settings › Desktops & browser › Built-in browser"')).toEqual([]);
     expect(inventedPaths('"open Settings → {section} and choose {open}"')).toEqual([]);
     expect(inventedPaths('  "call.live.needsKey": "Add it in Settings → API keys.",')).toEqual(["Settings → API keys.\","]);

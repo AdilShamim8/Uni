@@ -119,7 +119,7 @@ Decided: the server installer brings MausBot; the connector attaches to that ins
   it (`mausbot-connector job self-update`), and even then not with an older version or one that names none
   (`images.ts neverOlder`, on the image's version label).
 - **Updates only move forward.** An `update` to an image older than the one running, or without a version label, is
-  refused by the connector after it pulls the image and again by `mausbot-update-runner` on the host, which is the
+  refused by the connector after it pulls the image and again by `uni-update-runner` on the host, which is the
   check that cannot be bypassed from the connector's container. Going back is the owner's, with `update.sh` by hand.
   `SERVER_VERSION_FLOOR` (and `FLOOR` in the runner; a test holds them equal) is a second floor, to be set to the
   first release with the hardened profile; it is `0.0.0` until such a release exists.
@@ -135,7 +135,7 @@ Decided: the server installer brings MausBot; the connector attaches to that ins
   to and from Docker volumes on the same server with helpers run from the home's own image.
 - **Update: the server's own updater.** The connector never recreates the owner's containers and never writes the
   owner's `.env`. It leaves `id` and `image` in `/var/lib/mausbot/update/request`; a systemd path unit on the host runs
-  `mausbot-update-runner`, which checks the image again and runs `/opt/uni/update.sh --image <digest>`; the
+  `uni-update-runner`, which checks the image again and runs `/opt/uni/update.sh --image <digest>`; the
   connector reads the exit code. So a connected update and a hand-run update are the same code, with the same copy,
   health check, rollback and journal. Chosen over driving Compose from inside the connector (which would need the
   install folder writable in a container and a Compose binary in the image) and over recreating containers through
@@ -173,7 +173,7 @@ Read at the commit that adds the customer-run mode. "Built" means the code is in
   `agent.ts`, `jobs.ts`).
 - The customer-run mode described above: the job and request lists, the reduced report with a seat count, the mode in
   the enrolment handshake, pause, and attaching to an installer-made server (`customer-run.ts`,
-  `customer-run-requests.ts`, `adopted-home.ts`, `host/mausbot-update-runner.sh`, `server/routes/seats.ts`).
+  `customer-run-requests.ts`, `adopted-home.ts`, `host/uni-update-runner.sh`, `server/routes/seats.ts`).
 - A server the team's Owner has not accepted answers only `status` and `host-health` (`agent.ts`).
 - The audit log on the customer's server, `/var/log/mausbot/audit.jsonl`: one line per job, step, result and Admin
   request, each carrying the hash of the line before it. A job that changes something is refused when it cannot be

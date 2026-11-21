@@ -58,7 +58,7 @@ export function unencryptedPublic(where: { protocol: string; hostname: string })
   return where.protocol === "http:" && !isPrivateHost(where.hostname);
 }
 
-/** A team's Cloud: the person's team page on MausBot Cloud, as their signed-in session told this browser (never before
+/** A team's Cloud: the person's team page on Uni Cloud, as their signed-in session told this browser (never before
  * sign-in), where they open it again. Only an https page (or a loopback fixture's). */
 export function teamPage(environment: EnvironmentDescriptor | null, remembered: string | null = rememberedTeamSignIn()): string | null {
   if (!environment?.capabilities.cloudTeam || typeof remembered !== "string") return null;

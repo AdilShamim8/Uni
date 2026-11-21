@@ -73,7 +73,7 @@ sudo apt install ./Uni-amd64.deb
 Then open **Uni** from the GNOME application launcher. To remove it:
 
 ```sh
-sudo apt remove openmausbot
+sudo apt remove uni
 ```
 
 The portable AppImage does not install system files:
@@ -158,7 +158,7 @@ For a package-shaped build without creating `.deb` or AppImage artifacts:
 
 ```sh
 pnpm package:linux:dir
-./release/linux-unpacked/openmausbot
+./release/linux-unpacked/uni
 ```
 
 ## Agent CLI discovery

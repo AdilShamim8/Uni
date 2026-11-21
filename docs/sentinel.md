@@ -10,9 +10,9 @@ crashes. The code lives in [`server/sentinel/`](../server/sentinel/). Every
 input is explicit, so the same scan could later run inside the server.
 
 ```sh
-openmausbot sentinel [--data-dir DIR] [--out DIR] [--once] [--json]
+uni sentinel [--data-dir DIR] [--out DIR] [--once] [--json]
                      [--queue-wait SECONDS] [--cost USD]
-openmausbot sentinel --check-install [--json]
+uni sentinel --check-install [--json]
 ```
 
 Each run does one scan, prints a short summary (or JSON with `--json`) and
@@ -129,7 +129,7 @@ itself.
 ## Installing it
 
 ```sh
-openmausbot service install --sentinel [--data-dir DIR]
+uni service install --sentinel [--data-dir DIR]
 ```
 
 This writes the schedule into Sentinel's own folder (above) and prints the
@@ -170,7 +170,7 @@ after an nvm upgrade or a fresh checkout.
 ### After an update
 
 ```sh
-openmausbot sentinel --check-install
+uni sentinel --check-install
 ```
 
 This reads the installed plist or unit and checks that its Node and script

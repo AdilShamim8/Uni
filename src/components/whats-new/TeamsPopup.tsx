@@ -46,7 +46,7 @@ function TeamsPicture() {
 }
 
 /**
- * "MausBot is better with your team": once per person after this release (AppNotices), and again from Announcements.
+ * "Uni is better with your team": once per person after this release (AppNotices), and again from Announcements.
  * Focus starts at its main button and stays inside; Escape, ×, a click outside and every button end it.
  */
 export function TeamsPopup({ action, onStep, onStart, onDone }: {

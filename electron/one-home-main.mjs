@@ -3,7 +3,7 @@
 // Cloud ends (one-home-again.mjs). The Admin's word decides: a move starts only for an account it lets move, to a Cloud
 // that is ready, and a Cloud it holds after it ended brings everything home, as does its word that the Cloud this computer
 // moved to is gone while My Cloud is another (`gone`). The person's own
-// choice to keep this computer's bots here (Settings → MausBot Cloud, Advanced) is kept beside the journal.
+// choice to keep this computer's bots here (Settings → Uni Cloud, Advanced) is kept beside the journal.
 import { createHash } from "node:crypto";
 import { createReadStream, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -208,7 +208,7 @@ export function installOneHome({ localRequest: anyServer, clean = null, account,
   const again = createHomeAgain({
     async exportGrant() {
       const asked = await account()?.exportHome({ installation: (await installation()) ?? undefined });
-      if (!asked) throw new Error("Sign in to MausBot Cloud first.");
+      if (!asked) throw new Error("Sign in to Uni Cloud first.");
       // The code goes only to the Cloud this computer moved to.
       if ("grant" in asked && asked.grant.origin !== cloudOrigin()) throw new Error("This is not the Cloud this computer moved to.");
       return asked;
@@ -341,7 +341,7 @@ export function installOneHome({ localRequest: anyServer, clean = null, account,
     keep: { state: keepState, set: (on) => home.keep(on === true) },
     /** Why the account signed in can't be left now: its move, or a bot of its own moving into a team, is under way. */
     holding: () => { const bot = teamMove.view()?.phase; return home.moving() || (bot && !["done", "failed"].includes(bot)) || botMove.moving().length ? "moving" : null; },
-    /** Goes on with the move, and with any bot moving into a team: at launch, and whenever the MausBot Cloud sign-in changes. */
+    /** Goes on with the move, and with any bot moving into a team: at launch, and whenever the Uni Cloud sign-in changes. */
     kick: () => {
       void teamMove.kick();
       void botMove.kick();

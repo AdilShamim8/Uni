@@ -190,7 +190,7 @@ describe("Uni keeps an eye on the day, hidden from the sidebar", () => {
     delete apps.gmailError;
   });
 
-  it("a MausBot limited to some Gmail accounts names one of them in every read, also while the account lookup fails", async () => {
+  it("a Uni limited to some Gmail accounts names one of them in every read, also while the account lookup fails", async () => {
     apps.accounts = { gmail: [{ id: "ca_other", status: "ACTIVE" }, { id: "ca_mine", status: "ACTIVE" }] };
     await api("PATCH", `/api/bots/${chief.id}`, { connectorScopes: { apps: { gmail: "read", googlecalendar: "read" }, accounts: { gmail: ["ca_gone", "ca_mine"] } } });
     const gmailAccounts = () => apps.calls.filter((call) => call.tool.startsWith("GMAIL_")).map((call) => call.item.account);

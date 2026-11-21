@@ -25,7 +25,7 @@ describe("uni service", () => {
   });
 
   it("writes the unit next to the data and prints how to install it; under npx, runs a copy kept beside the data", () => {
-    const code = runServiceCommand({ action: "install", dataDir: dir, port: 8799, domain: "maus.example.com", script: "/usr/lib/node_modules/openmausbot/cli.js", node: "/usr/bin/node", platform: "linux", home: "/home/maus", user: "maus" }, io);
+    const code = runServiceCommand({ action: "install", dataDir: dir, port: 8799, domain: "maus.example.com", script: "/usr/lib/node_modules/uni/cli.js", node: "/usr/bin/node", platform: "linux", home: "/home/maus", user: "maus" }, io);
     expect(code).toBe(0);
     const unit = readFileSync(join(dir, "uni.service"), "utf8");
     expect(unit).toContain("--domain maus.example.com");
@@ -34,7 +34,7 @@ describe("uni service", () => {
     expect(out.join("\n")).toContain("no setcap is needed");
 
     out.length = 0;
-    const npx = { action: "install" as const, dataDir: join(dir, "x"), port: 8799, publicUrl: "https://maus.example.com", script: "/home/maus/.npm/_npx/deadbeef/node_modules/openmausbot/dist-server/openmausbot.js", node: "/usr/bin/node", platform: "linux" as const, home: "/home/maus", user: "maus" };
+    const npx = { action: "install" as const, dataDir: join(dir, "x"), port: 8799, publicUrl: "https://maus.example.com", script: "/home/maus/.npm/_npx/deadbeef/node_modules/uni/dist-server/uni.js", node: "/usr/bin/node", platform: "linux" as const, home: "/home/maus", user: "maus" };
     const installs: string[] = [];
     expect(runServiceCommand({ ...npx, installCopy: (prefix) => { installs.push(prefix); return false; } }, io)).toBe(1);
     expect(err.join("\n")).toContain(`npm install --prefix ${join(dir, "x", "app", "latest")} uni@latest`);

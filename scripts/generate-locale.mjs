@@ -398,10 +398,10 @@ export function recordSourceHashes(directory = LOCALES_DIR) {
   console.error(`${SOURCE_HASH_FILE}: recorded ${recorded} missing hashes (${stale} already stale), dropped ${dropped} for removed keys`);
 }
 
-const DEFAULT_TERMS = "Keep Uni, MausBot Cloud, CLI, and AI unchanged.";
+const DEFAULT_TERMS = "Keep Uni, Uni Cloud, CLI, and AI unchanged.";
 const LOCALE_TERMS = {
   "pt-br": [
-    "Keep Uni, MausBot Cloud, and CLI unchanged. Write AI as “IA”, skill as “habilidade”,",
+    "Keep Uni, Uni Cloud, and CLI unchanged. Write AI as “IA”, skill as “habilidade”,",
     "sign in as “Entrar” (the noun is “login”), app as “app” (never “aplicativo”), this app's Settings as",
     "“Configurações” (never “Ajustes”; macOS System Settings stays “Ajustes do Sistema”), and conversation or",
     "thread as “conversa”. Put no article before a bot's name: “de {name}”, not “do {name}”.",

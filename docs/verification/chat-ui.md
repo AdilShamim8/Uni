@@ -43,7 +43,7 @@ a browser it did not launch.
 ## Drive
 
 ```sh
-H=/tmp/openmausbot-verify-data-XXXXXX/ui.json
+H=/tmp/uni-verify-data-XXXXXX/ui.json
 pnpm control:omb ui flag --ui $H --set features.showToolCalls=true --dry-run
 pnpm control:omb ui flag --ui $H --set features.showToolCalls=true
 pnpm control:omb ui snapshot --ui $H --interactive

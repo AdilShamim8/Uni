@@ -328,8 +328,8 @@ asked are done, and export what they made. One JSON document with `--json`,
 and exit codes a script can branch on.
 
 ```sh
-openmausbot team apply team.yaml
-openmausbot run "Room Lead" "Rehearse the launch of https://example.com" --export ./out
+uni team apply team.yaml
+uni run "Room Lead" "Rehearse the launch of https://example.com" --export ./out
 ```
 
 See [Run Uni from scripts and CI](docs/headless-cli.md).
@@ -493,7 +493,7 @@ With Node 24 or newer, install once and run:
 
 ```sh
 npm install -g uni
-openmausbot
+uni
 ```
 
 Or use `npx uni` without a global install. First launch guides you with

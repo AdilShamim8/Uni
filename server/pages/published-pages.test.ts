@@ -176,8 +176,8 @@ describe("publishing a page", () => {
     await f.publish({ path: "one" });
     const refused = await f.publish({ path: "two", title: "Second" });
     expect(refused.status).toBe(402);
-    expect(refused.text).toBe("You’ve used your 1 free pages. MausBot Cloud gives you more, and pages without the badge. Tell the person this in your reply.");
-    expect(f.cards.at(-1)).toMatchObject({ text: "You’ve used your 1 free pages. MausBot Cloud gives you more, and pages without the badge.",
+    expect(refused.text).toBe("You’ve used your 1 free pages. Uni Cloud gives you more, and pages without the badge. Tell the person this in your reply.");
+    expect(f.cards.at(-1)).toMatchObject({ text: "You’ve used your 1 free pages. Uni Cloud gives you more, and pages without the badge.",
       card: { state: "limit", title: "Second", upgrade: true, plan: "free", usage: { pages: 1, limit: 1 } } });
   });
 

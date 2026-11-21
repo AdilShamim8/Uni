@@ -76,12 +76,12 @@ beforeEach(() => { vi.clearAllMocks(); setLocale("en"); });
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); setLocale("en"); });
 
 describe("each screen of the sheet says one thing and offers one next step", () => {
-  it("Choose: MausBot Cloud in a line, then one card per plan with only what sets it apart and its own button; Most popular on the Admin's recommended plan; the money and what every plan includes once", () => {
+  it("Choose: Uni Cloud in a line, then one card per plan with only what sets it apart and its own button; Most popular on the Admin's recommended plan; the money and what every plan includes once", () => {
     const { html, tree, handlers } = panel({ kind: "offer", offer: TRIAL, signedOut: true, notice: null });
     const card = (hours: number, max: number, voice: string, cpus: number, swap: number) => [`${hours} cloud desktop hours a month`, `10 GB storage, grows to ${max} GB`,
       `Voice replies: ${voice}`, "Always on, around the clock", "Cloud desktops: as many as your bots need", "Fair use: up to 15 at once", `${cpus} shared CPUs · ${cpus} GB memory`,
       `Plus ${swap} GB of swap`, "Daily backups, kept 14 days", "Start free trial"];
-    inOrder(text(html), ["MausBot Cloud", "Your bots, always on.", "Runs your bots 24/7 in the cloud, even when this computer is off.", "Compare plans", "Choose your plan",
+    inOrder(text(html), ["Uni Cloud", "Your bots, always on.", "Runs your bots 24/7 in the cloud, even when this computer is off.", "Compare plans", "Choose your plan",
       "Starter", "$15", "/month", "Your bots keep working with your laptop closed, at the lowest price.", ...card(100, 20, "about 30 minutes of speech a month", 2, 3),
       "Free for 7 days, then $15/month + tax",
       "Pro", "Most popular", "$49", "/month", "Your bots keep working 24/7, even when your laptop is closed.", ...card(300, 100, "about an hour of speech a month", 4, 4),
@@ -165,9 +165,9 @@ describe("each screen of the sheet says one thing and offers one next step", () 
   });
 
   it("checking, Cloud out of reach and a checkout that did not open each say so, with Try again", () => {
-    expect(text(panel({ kind: "checking" }).html)).toContain("Checking with MausBot Cloud…");
+    expect(text(panel({ kind: "checking" }).html)).toContain("Checking with Uni Cloud…");
     const unreachable = panel({ kind: "unreachable" });
-    expect(text(unreachable.html)).toContain("Can't reach MausBot Cloud right now. Check your connection and try again.");
+    expect(text(unreachable.html)).toContain("Can't reach Uni Cloud right now. Check your connection and try again.");
     button(unreachable.tree, "Try again")!.props.onClick(); expect(unreachable.handlers.retry).toHaveBeenCalledOnce();
     expect(text(panel({ kind: "error", reason: "failed" }).html)).toContain("Checkout couldn't open. Nothing was charged. Try again.");
     expect(text(panel({ kind: "error", reason: "rate-limited" }).html)).toContain("You've opened several checkouts in the last hour.");
@@ -184,7 +184,7 @@ describe("each screen of the sheet says one thing and offers one next step", () 
     button(tree, "Plans")!.props.onClick(); expect(handlers.back).toHaveBeenCalledOnce();
     button(tree, "Continue in browser")!.props.onClick(); expect(handlers.browser).toHaveBeenCalledOnce();
     expect(text(panel({ kind: "sign-in", phase: { step: "email", intent: false, problem: null } }, { email: "else@example.test" }).html))
-      .toMatch(/^Plans Sign in to MausBot Cloud(?!.*from your profile)/);
+      .toMatch(/^Plans Sign in to Uni Cloud(?!.*from your profile)/);
     expect(text(panel({ kind: "sign-in", phase: { step: "email", intent: true, problem: null } }, { profileEmail: null }).html)).not.toContain("from your profile");
   });
 
@@ -220,7 +220,7 @@ describe("each screen of the sheet says one thing and offers one next step", () 
   it("a sign-in that can't start says why truthfully, never 'couldn't reach', with its one way on", () => {
     const email = (problem: any): CloudAddView => ({ kind: "sign-in", phase: { step: "email", intent: false, problem } });
     const saved = panel(email("saved"));
-    expect(text(saved.html)).toContain("This computer has a saved MausBot Cloud sign-in that it can't read, so a new sign-in can't start.");
+    expect(text(saved.html)).toContain("This computer has a saved Uni Cloud sign-in that it can't read, so a new sign-in can't start.");
     expect(text(saved.html)).not.toContain("Couldn't reach");
     button(saved.tree, "Clear it and send the code")!.props.onClick(); expect(saved.handlers.resetSaved).toHaveBeenCalledOnce();
     const waiting = panel(email("saved-wait"));
@@ -239,7 +239,7 @@ describe("each screen of the sheet says one thing and offers one next step", () 
     expect(text(expired.html)).toContain("That code can't be used any more. Send a new one.");
     button(expired.tree, "Send a new code")!.props.onClick(); expect(expired.handlers.resend).toHaveBeenCalledOnce();
     for (const [problem, line] of [["signup-closed", "New Cloud accounts aren't available yet."], ["device-limit", "Sign one out on your Plan page"],
-      ["rate-limited", "Too many codes were asked for just now."], ["failed", "Couldn't reach MausBot Cloud."]] as const) expect(text(panel(code(problem)).html)).toContain(line);
+      ["rate-limited", "Too many codes were asked for just now."], ["failed", "Couldn't reach Uni Cloud."]] as const) expect(text(panel(code(problem)).html)).toContain(line);
     const sso = panel({ kind: "sign-in", phase: { step: "email", intent: true, problem: "sso" } });
     expect(text(sso.html)).toContain("Your organization uses single sign-on. Continue in browser");
     expect(text(sso.html)).not.toContain("Work account with single sign-on?");
@@ -316,7 +316,7 @@ describe("each screen of the sheet says one thing and offers one next step", () 
     button(tree, "Open Studio")!.props.onClick(); expect(handlers.openCloud).toHaveBeenCalledOnce();
     const sent = text(panel({ kind: "has-cloud" }, { interest: "sent" }).html);
     expect(sent).toContain("Thanks. We'll email you when you can add another Cloud."); expect(sent).not.toContain("Email me");
-    expect(text(panel({ kind: "has-cloud" }, { interest: "failed" }).html)).toContain("Couldn't reach MausBot Cloud, so nothing was saved.");
+    expect(text(panel({ kind: "has-cloud" }, { interest: "failed" }).html)).toContain("Couldn't reach Uni Cloud, so nothing was saved.");
     for (const word of ["error", "Error", "already have"]) expect(text(html)).not.toContain(word);
   });
 
@@ -342,7 +342,7 @@ describe("each screen of the sheet says one thing and offers one next step", () 
     expect(sheet("offer"), "over a night card the close button takes the card's light ink").toContain("group-has-[[data-night-card]]/sheet:text-(--cloud-night-ink-quiet)");
     expect(sheet("offer"), "above Settings and the welcome flow (z-50), which it opens over").toContain("fixed inset-0 z-[60]");
     expect(sheet("offer")).not.toContain("data-cloud-staging");
-    expect(text(sheet("offer", true))).toMatch(/Staging ?: This app uses the staging MausBot Cloud: test payments and test Clouds, not real ones\./);
+    expect(text(sheet("offer", true))).toMatch(/Staging ?: This app uses the staging Uni Cloud: test payments and test Clouds, not real ones\./);
   });
 
   it("a click beside the sheet closes it while choosing, never mid sign-in, checkout or setup", () => {
@@ -442,7 +442,7 @@ describe("the sheet", () => {
     bridge.resetSaved = vi.fn(async () => ({ status: "signed-out" }));
     tree().find(node => node.type === "form")!.props.onSubmit({ preventDefault() {} }); await flush();
     const html = await settle();
-    expect(html).toContain("saved MausBot Cloud sign-in that it can't read"); expect(html).not.toContain("Couldn't reach");
+    expect(html).toContain("saved Uni Cloud sign-in that it can't read"); expect(html).not.toContain("Couldn't reach");
     await press("Clear it and send the code");
     expect(bridge.resetSaved).toHaveBeenCalledOnce();
     expect(bridge.signInStart).toHaveBeenCalledTimes(2);
@@ -637,7 +637,7 @@ describe("the sheet", () => {
 
   it("opened at Sign in (the card, Settings): the sign-in first, without a plan; signed in, a ready Cloud is theirs to open", async () => {
     f.state = { cloudAdd: { source: "app_settings", signIn: true }, config: {} };
-    expect(await settle()).toContain("Sign in to MausBot Cloud");
+    expect(await settle()).toContain("Sign in to Uni Cloud");
     bridge.signInVerify.mockResolvedValueOnce({ outcome: "signed-in", state: paid({ machine: ready }) });
     tree().find(node => node.props.id === "cloud-add-email")!.props.onChange({ target: { value: "me@example.test" } });
     await settle();
@@ -651,7 +651,7 @@ describe("the sheet", () => {
 
   it("signed in here to a Team plan: the team's Cloud is ready to open, never a My Cloud being set up; Open opens the team and closes", async () => {
     f.state = { cloudAdd: { source: "app_settings", signIn: true }, config: {} };
-    expect(await settle()).toContain("Sign in to MausBot Cloud");
+    expect(await settle()).toContain("Sign in to Uni Cloud");
     bridge.signInVerify.mockResolvedValueOnce({ outcome: "signed-in", state: onTeam() });
     tree().find(node => node.props.id === "cloud-add-email")!.props.onChange({ target: { value: "me@example.test" } });
     await settle();
@@ -682,7 +682,7 @@ describe("the sheet", () => {
   it("Settings' Sign in after a saved sign-in was removed signs in here, instead of handing back to Settings at once", async () => {
     f.state = { cloudAdd: { source: "app_settings", signIn: true }, config: {} };
     account = { status: "signed-out", message: "restore-removed" }; offer = null;
-    expect(await settle()).toContain("Sign in to MausBot Cloud");
+    expect(await settle()).toContain("Sign in to Uni Cloud");
     expect(f.dispatch).not.toHaveBeenCalledWith({ type: "closeCloudAdd" });
     tree().find(node => node.props.id === "cloud-add-email")!.props.onChange({ target: { value: EMAIL } }); await settle();
     tree().find(node => node.type === "form")!.props.onSubmit({ preventDefault() {} }); await flush();

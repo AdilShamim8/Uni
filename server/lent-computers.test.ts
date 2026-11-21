@@ -59,14 +59,14 @@ describe("what a server remembers about computers lent to it", () => {
       offline: [{ name: "ASH-PC", device: "PC", lastOnline: "2026-10-07 14:02 UTC", lent: true }],
       say: "Their PC ASH-PC is shared with the Cloud but offline (last online 2026-10-07 14:02 UTC): Uni on it is closed, or the PC is asleep or off. Ask them to open Uni on that PC; it reconnects by itself.",
     });
-    expect(awayNotice([{ ...record, stoppedAt: at }], new Set()).say).toBe("Their PC ASH-PC no longer shares itself with the Cloud: Uni on it is paused, or signed out of MausBot Cloud. Ask them to choose Resume from Uni's icon in the taskbar on that PC, or sign in there again.");
+    expect(awayNotice([{ ...record, stoppedAt: at }], new Set()).say).toBe("Their PC ASH-PC no longer shares itself with the Cloud: Uni on it is paused, or signed out of Uni Cloud. Ask them to choose Resume from Uni's icon in the taskbar on that PC, or sign in there again.");
     expect(awayNotice([{ ...record, platform: "darwin", stoppedAt: at }], new Set()).say).toContain("choose Resume from Uni's icon in the menu bar on that Mac");
     expect(awayNotice([{ ...record, platform: "darwin" }], new Set()).say).toMatch(/^Their Mac ASH-PC is shared with the Cloud/u);
     expect(awayNotice([record], new Set([record.id]))).toEqual({});
     // One of two away: the bot is told about it, without the sentence meant for a person with nothing online.
     const other = { ...record, id: randomUUID(), name: "ASH-MBP", platform: "darwin" as const };
     expect(awayNotice([record, other], new Set([other.id]))).toEqual({ offline: [{ name: "ASH-PC", device: "PC", lastOnline: "2026-10-07 14:02 UTC", lent: true }] });
-    for (const sentence of [awayNotice([record], new Set()).say!, awayNotice([{ ...record, stoppedAt: at }], new Set()).say!]) expect(sentence).not.toMatch(/this Mac|OMB Cloud|Uni Cloud/u);
+    for (const sentence of [awayNotice([record], new Set()).say!, awayNotice([{ ...record, stoppedAt: at }], new Set()).say!]) expect(sentence).not.toMatch(/this Mac|OMB Cloud|MausBot Cloud|OpenMausBot Cloud/u);
   });
 });
 

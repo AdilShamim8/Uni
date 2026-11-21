@@ -127,7 +127,7 @@ describe("plans", () => {
     expect(steps.find((step) => step.kind === "append-once")).toEqual({ kind: "append-once", path: "/etc/caddy/Caddyfile", line: "import /etc/caddy/omb.d/*.caddy" });
     expect(argvOf(steps)).toEqual(["systemctl daemon-reload", "systemctl enable --now uni-fence.service", "systemctl reload caddy"]);
     expect(() => initPlan({ domain: "not a domain", node: "n", script: "s", layout })).toThrow("domain name");
-    const withAgent = initPlan({ domain: "agentada.cc", node: "/usr/bin/node", script: "/usr/lib/node_modules/openmausbot/cli.js", operator: "maus", layout });
+    const withAgent = initPlan({ domain: "agentada.cc", node: "/usr/bin/node", script: "/usr/lib/node_modules/uni/cli.js", operator: "maus", layout });
     expect(withAgent.registry.operator).toBe("maus");
     const agent = withAgent.steps.find((step) => step.kind === "write" && step.path === "/etc/systemd/system/uni-fleet.service");
     expect(agent).toMatchObject({ content: expect.stringContaining("fleet agent --socket /run/uni/fleet.sock --group maus") });

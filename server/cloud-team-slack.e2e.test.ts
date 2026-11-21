@@ -1,5 +1,5 @@
 // Slack for Team Clouds on a real Team Cloud (docs/team-slack.md). The Admin's part is played here: a session opened
-// for each member through the signed pairing (label "Slack (MausBot Cloud)"), the three routes called with it, and a
+// for each member through the signed pairing (label "Slack (Uni Cloud)"), the three routes called with it, and a
 // stand-in Admin that takes the Cloud's signed reports and checks them as the real one does. A channel message becomes
 // a shared conversation its writer asked in; a direct message their private chat; the app's own rules decide who may
 // ask, read and stop. Disposable homes and the synthetic Claude CLI; no Slack and no real Admin are reached.
@@ -22,7 +22,7 @@ const ARI = { email: "ari@acme.test", role: "admin" as const };
 const PRIYA = { email: "priya@acme.test", role: "member" as const };
 const TOM = { email: "tom@acme.test", role: "member" as const };
 const priyaKey = personKey({ id: "", email: PRIYA.email });
-const SLACK_LABEL = "Slack (MausBot Cloud)";
+const SLACK_LABEL = "Slack (Uni Cloud)";
 const ENGINE = `const { existsSync } = process.getBuiltinModule("node:fs");
 const dir = process.env.FAKE_CLAUDE_FIXTURE_DIR;
 process.env.FAKE_CLAUDE_DUMP = dir + "/dump.json";

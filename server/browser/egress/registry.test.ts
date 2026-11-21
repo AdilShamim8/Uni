@@ -145,7 +145,7 @@ describe("one gate per browser session", () => {
     socket.on("close", () => resolve(received[3] ?? -1));
   }));
 
-  it("on MausBot Cloud sends only the sites that turn away data centres through the person's computer, and every other site its own way", async () => {
+  it("on Uni Cloud sends only the sites that turn away data centres through the person's computer, and every other site its own way", async () => {
     const asked: string[] = [];
     const looked: string[] = [];
     const sessions: string[] = [];
@@ -172,7 +172,7 @@ describe("one gate per browser session", () => {
     }
   });
 
-  it("on MausBot Cloud says once, and only for those sites, when they load from the Cloud's own connection because the computer is away", async () => {
+  it("on Uni Cloud says once, and only for those sites, when they load from the Cloud's own connection because the computer is away", async () => {
     let device: { open(target: { host: string; port: number }): Promise<{ refused: string }> } | { away: string } | { unshared: true } | null = { away: "Mac" };
     const cloud = new BrowserEgress();
     cloud.configure({ host: "cloud", config: () => ({}), listeners: new OwnListeners("cloud", { env: {}, ...noScans }), ownership, resolve: async () => [], device: () => device });
@@ -198,7 +198,7 @@ describe("one gate per browser session", () => {
       expect(cloud.takeNotice("bot-1"), "a site that loads from My Cloud anyway: nothing to say").toBeNull();
       await socksCode(port, "www.instagram.com", 443);
       expect(cloud.takeNotice("bot-1")).toBe(UNSHARED_NOTICE);
-      expect(UNSHARED_NOTICE).toContain("these sites open through their own computer's internet connection while Uni is open on it, signed in to MausBot Cloud");
+      expect(UNSHARED_NOTICE).toContain("these sites open through their own computer's internet connection while Uni is open on it, signed in to Uni Cloud");
       expect(UNSHARED_NOTICE).not.toContain("use-my-computer");
       await socksCode(port, "www.instagram.com", 443);
       expect(cloud.takeNotice("bot-1"), "said once while none shares").toBeNull();
@@ -213,7 +213,7 @@ describe("one gate per browser session", () => {
     }
   });
 
-  it("only on MausBot Cloud: a desktop or a self-hosted server never sends its browsing anywhere else, nor says it is away", async () => {
+  it("only on Uni Cloud: a desktop or a self-hosted server never sends its browsing anywhere else, nor says it is away", async () => {
     for (const host of ["desktop", "server"] as const) {
       const offered: string[] = [];
       const other = new BrowserEgress();

@@ -2,9 +2,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { NotificationLogEntry, NotifyKind } from "../shared/notification.ts";
 import { readTeamRolesWith } from "./chief-level.ts";
-import { MAUSBOT_TOOL_DEFINITIONS, MAUSBOT_TOOL_NAMES } from "./drivers/agents-mausbot-tools.ts";
-import { listUnread, markRead, type NotificationsHost } from "./mausbot-notifications.ts";
-import { createUniNotificationRoutes } from "./routes/mausbot-notifications.ts";
+import { MAUSBOT_TOOL_DEFINITIONS, MAUSBOT_TOOL_NAMES } from "./drivers/agents-uni-tools.ts";
+import { listUnread, markRead, type NotificationsHost } from "./uni-notifications.ts";
+import { createUniNotificationRoutes } from "./routes/uni-notifications.ts";
 import { PASS } from "./routes/table.ts";
 import type { BotRecord } from "./store.ts";
 

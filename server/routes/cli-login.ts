@@ -99,7 +99,7 @@ export function createCliLogin(deps: CliLoginDeps) {
     const source = requestSource(req);
     const open = waiting();
     if (open.length >= MAX_WAITING || open.filter((request) => request.source === source).length >= MAX_WAITING_PER_SOURCE) {
-      return void json(res, 429, { error: "too many terminal sign-ins are waiting: allow or deny them in MausBot, or wait ten minutes" });
+      return void json(res, 429, { error: "too many terminal sign-ins are waiting: allow or deny them in Uni, or wait ten minutes" });
     }
     const at = now();
     const request: CliLoginRequest = {
@@ -133,7 +133,7 @@ export function createCliLogin(deps: CliLoginDeps) {
     if (request.state === "allowed") {
       return void json(res, 200, { state: "allowed", token: request.token, session: request.session, environment: deps.environment() });
     }
-    json(res, 403, { state: request.state, error: request.state === "denied" ? "the sign-in was denied in MausBot" : request.error ?? "the sign-in could not be completed" });
+    json(res, 403, { state: request.state, error: request.state === "denied" ? "the sign-in was denied in Uni" : request.error ?? "the sign-in could not be completed" });
   }
 
   /** Before the auth gate: asking and polling, which carry no session. Anything else under the path passes through. */

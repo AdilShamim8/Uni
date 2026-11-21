@@ -37,7 +37,7 @@ describe("the Teams popup", () => {
   it("each audience has its own buttons: invite for a team's admins, Got it for its members, Start a team and Not now for everyone else", async () => {
     let popup = await show({ kind: "start", inApp: true, url: "https://cloud.example/pro/buy" });
     expect(popup.getAttribute("role")).toBe("dialog");
-    expect(popup.textContent).toContain("MausBot is better with your team");
+    expect(popup.textContent).toContain("Uni is better with your team");
     expect(popup.textContent).toContain("$40 a month for 2 people, $20 for each extra person.");
     expect(buttons(popup)).toEqual(["Start a team", "See Team plans", "Not now", "Close"]);
     expect(document.activeElement?.textContent, "focus starts at its main button").toBe("Start a team");

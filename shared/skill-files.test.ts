@@ -13,7 +13,7 @@ function withFiles(files: Array<{ path: string; content: string }>) {
     format: "openmaus.package", version: 2,
     package: {
       id: "reporter", release: "1.0.0", name: "Reporter", tagline: "Writes reports.", summary: "Writes reports.", category: "Community",
-      author: { name: "MausBot user" }, license: "Unspecified", outcomes: ["Reports."], setupMinutes: 2,
+      author: { name: "Uni user" }, license: "Unspecified", outcomes: ["Reports."], setupMinutes: 2,
       requirements: { apps: [], capabilities: [] }, team: { name: "Reporter" },
       agents: [{ key: "reporter", name: "Reporter", appearance: { color: "blue" }, skills: ["report"] }],
       skills: { version: 1, entries: [{ name: "report", description: "report steps.", instructions: skillMd("report"), files }] },

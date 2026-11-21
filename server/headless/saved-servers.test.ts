@@ -65,7 +65,7 @@ describe("saved servers", () => {
   it.skipIf(process.platform === "win32")("falls back to a file only this user can read when there is no Keychain", () => {
     const saved = new SavedServers({ env: { HOME: join(home, "linux") }, platform: "linux", security: () => { throw new Error("no security on Linux"); } });
     expect(saved.save("box", { ...server, url: "https://maus.example.com" }, "omb_sess_file_value")).toBe("file");
-    const file = join(home, "linux", ".config", "openmausbot", "sessions", "box");
+    const file = join(home, "linux", ".config", "uni", "sessions", "box");
     expect(statSync(file).mode & 0o777).toBe(0o600);
     expect(saved.token("box")).toBe("omb_sess_file_value");
     expect(saved.at("https://maus.example.com")?.name).toBe("box");

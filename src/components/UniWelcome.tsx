@@ -8,7 +8,7 @@ import { t } from "@/lib/i18n";
 import { emailGateDone } from "@/lib/analytics";
 import { useAdvancedMode } from "@/lib/interface-mode";
 import { DEFAULT_BOT_NAME, myDefaultBot, setWelcomingBot, useViewerEmail } from "@/lib/default-bot";
-import { landInSidebar } from "@/lib/mausbot-landing";
+import { landInSidebar } from "@/lib/uni-landing";
 import { firstReplyPending } from "@/lib/corner-popup";
 import { launchDialogShown, markLaunchDialog } from "@/lib/launch-dialogs";
 import { welcomeDue, welcomeFinishedThisLaunch, type WelcomeViewer } from "@/lib/onboarding";

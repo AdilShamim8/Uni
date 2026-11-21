@@ -1,5 +1,5 @@
 // Slack on a personal Cloud (docs/team-slack.md): a My Cloud, with no team. The Admin's part is played here: a session
-// opened for the owner through the signed pairing (label "Slack (MausBot Cloud)"), the three routes called with it,
+// opened for the owner through the signed pairing (label "Slack (Uni Cloud)"), the three routes called with it,
 // and a stand-in Admin that takes the Cloud's signed reports and checks them as the real one does. A channel message
 // and a direct message each become an ordinary conversation of the owner's. Disposable homes and the synthetic Claude
 // CLI; no Slack and no real Admin are reached.
@@ -16,7 +16,7 @@ import { teamRosterSignature } from "./cloud-team-roster.ts";
 import { TEAM_SLACK_FILE, TEAM_SLACK_REPORT_PATH, teamSlackSignature } from "./team-slack.ts";
 import { hostTimeout } from "./testing/host-timeout.ts";
 
-const SLACK_LABEL = "Slack (MausBot Cloud)";
+const SLACK_LABEL = "Slack (Uni Cloud)";
 const ENGINE = `const { existsSync } = process.getBuiltinModule("node:fs");
 const dir = process.env.FAKE_CLAUDE_FIXTURE_DIR;
 process.env.FAKE_CLAUDE_DUMP = dir + "/dump.json";

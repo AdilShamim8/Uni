@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { UPDATE_FILES } from "../src/adopted-home.ts";
 import { CUSTOMER_HOME_IMAGE, SERVER_VERSION_FLOOR, VERSION_LABEL } from "../src/customer-run.ts";
 
-const SCRIPT = join(import.meta.dirname, "..", "host", "mausbot-update-runner.sh");
+const SCRIPT = join(import.meta.dirname, "..", "host", "uni-update-runner.sh");
 const IMAGE = `ghcr.io/adilshamim8/uni@sha256:${"b".repeat(64)}`;
 const posix = process.platform !== "win32";
 const dirs: string[] = [];
@@ -46,7 +46,7 @@ esac
   return { result, answer, calls: existsSync(called) ? readFileSync(called, "utf8").trim().split("\n") : [], install, pending: existsSync(join(update, UPDATE_FILES.request)) };
 }
 
-describe.skipIf(!posix)("mausbot-update-runner.sh", () => {
+describe.skipIf(!posix)("uni-update-runner.sh", () => {
   it("is plain POSIX sh and accepts the image the connector accepts", () => {
     expect(spawnSync("sh", ["-n", SCRIPT]).status).toBe(0);
     expect(readFileSync(SCRIPT, "utf8")).toContain("'ghcr\\.io/adilshamim8/uni@sha256:[0-9a-f]{64}'");

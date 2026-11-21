@@ -40,7 +40,7 @@ const listed = (state, teamId) => (state?.status === "connected" && Array.isArra
  *   reveal(): void,
  *   now?(): number,
  *   log?(line: string): void,
- * }} deps `account()`: the MausBot Cloud sign-in, null where this app can't have one (a build run from source, or connected
+ * }} deps `account()`: the Uni Cloud sign-in, null where this app can't have one (a build run from source, or connected
  * to another computer). `addAccount()`: Add another account's browser sign-in, which keeps the one in use waiting.
  * `open(team)`: the team's Cloud in the window, as the rail opens it. `ask`: main's own dialog, never a page's.
  */

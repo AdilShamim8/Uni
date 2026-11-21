@@ -123,7 +123,7 @@ describe.skipIf(!posix)("deploy/podman/install.sh", () => {
     expect(box.read(join(box.fake, "dryrun.container"))).toBe(unit);
     expect(box.read(join(box.fake, "dryrun.dir"))!.trim()).not.toBe(join(box.home, ".config", "containers", "systemd"));
     expect(box.read(join(box.dir, ".env"))).toBe(`OMB_IMAGE=${DIGEST}\n`);
-    expect(done.stdout).toContain("MausBot is running as your user's service (uni), on http://127.0.0.1:8811.");
+    expect(done.stdout).toContain("Uni is running as your user's service (uni), on http://127.0.0.1:8811.");
     expect(done.stdout).toContain("Warning: it shares this machine's network, which isolates less than the Docker install.");
     expect(done.stdout).toContain("Bots run unboxed, beside the data folder that holds the engines' logins.");
     expect(done.stdout).toContain("Bots reach every service on this machine's loopback: databases, other programs' admin ports.");
@@ -167,7 +167,7 @@ describe.skipIf(!posix)("deploy/podman/install.sh", () => {
     const box = machine();
     const unpinned = box.run([], { FAKE_DIGESTS: "" });
     expect(unpinned.status).toBe(1);
-    expect(unpinned.stderr).toContain(`MausBot ${REPO}:v0.1.151 was downloaded, but Podman did not say its digest, so it cannot be pinned`);
+    expect(unpinned.stderr).toContain(`Uni ${REPO}:v0.1.151 was downloaded, but Podman did not say its digest, so it cannot be pinned`);
     expect(box.unit()).toBeNull();
     expect(existsSync(join(box.dir, ".env"))).toBe(false);
 
@@ -249,7 +249,7 @@ describe.skipIf(!posix)("deploy/podman/install.sh", () => {
 
     const other = box.run(["--dir", join(box.root, "srv", "other")]);
     expect(other.status).toBe(1);
-    expect(other.stderr).toContain(`This user's MausBot service already uses ${elsewhere}, and --dir names ${join(box.root, "srv", "other")}. Nothing was changed.`);
+    expect(other.stderr).toContain(`This user's Uni service already uses ${elsewhere}, and --dir names ${join(box.root, "srv", "other")}. Nothing was changed.`);
     expect(existsSync(join(box.root, "srv", "other"))).toBe(false);
     expect(box.unit()).toBe(unit);
 

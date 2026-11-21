@@ -12,10 +12,10 @@ describe("uni-docs skill guide", () => {
     for (const text of [
       "Where does Uni keep its bots?",
       "how do I change the approval level for one bot",
-      "Open MausBot 的配置文件在哪",
+      "Open Uni 的配置文件在哪",
       "where are my bot's routines stored",
       "explain OMB settings for connected apps",
-      "MausBot 设置里记忆开关是什么意思",
+      "Uni 设置里记忆开关是什么意思",
     ]) {
       expect(ids(text), text).toContain("uni-docs");
     }

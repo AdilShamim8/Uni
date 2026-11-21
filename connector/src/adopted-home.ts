@@ -80,7 +80,7 @@ export interface AdoptedHomeOptions {
   log: Log;
   /** Free bytes where Docker keeps its volumes, so where a backup goes. */
   diskFree: () => number;
-  /** The folder shared with the server's updater (mausbot-update-runner.sh), as the connector sees it. */
+  /** The folder shared with the server's updater (uni-update-runner.sh), as the connector sees it. */
   updateDir: string;
   onStep?: (step: { id: string; type: Operation["type"]; step: string; detail?: Record<string, unknown> }) => void;
   now?: () => number;

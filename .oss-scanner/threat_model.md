@@ -308,7 +308,7 @@ pnpm exec vitest run server/browser/egress/
 pnpm exec vitest run companion/
 pnpm exec vitest run server/webhooks.test.ts server/webhook-ingress.test.ts
 pnpm broker:test                                             # composio-broker Worker
-pnpm --filter @openmausbot/control-plane test                # control-plane Worker
+pnpm --filter @uni/control-plane test                # control-plane Worker
 ```
 
 The whole suite runs one file at a time and takes over an hour, so run
@@ -322,7 +322,7 @@ directory. It prints a pairing code:
 
 ```sh
 D=$(mktemp -d)
-node --experimental-strip-types server/openmausbot.ts serve --data-dir "$D" --port 8799 --no-open &
+node --experimental-strip-types server/uni.ts serve --data-dir "$D" --port 8799 --no-open &
 curl -s http://127.0.0.1:8799/api/health
 ```
 

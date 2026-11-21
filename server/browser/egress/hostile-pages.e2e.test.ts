@@ -179,7 +179,7 @@ describe.skipIf(!chrome)("S6: a hostile page in a bot's browser", () => {
     expect(candidates.filter((candidate) => / typ (host|srflx|prflx) /.test(candidate)), "WebRTC gathers no candidates").toEqual([]);
   }, hostTimeout(240_000));
 
-  it("cannot reach the local network or cloud metadata on MausBot Cloud, while the bot's own dev server loads", async () => {
+  it("cannot reach the local network or cloud metadata on Uni Cloud, while the bot's own dev server loads", async () => {
     const targets = [`http://127.0.0.1:${ombPort}/`, "http://[fdaa::3]:4280/", "http://10.0.0.1/", "http://169.254.169.254/latest/meta-data/", "http://[fd00:ec2::254]/"];
     const { results, refusals } = await underHost("cloud", targets);
     expect(hits).toEqual([]);
@@ -192,7 +192,7 @@ describe.skipIf(!chrome)("S6: a hostile page in a bot's browser", () => {
     expect(reasons("fd00:ec2::254")).toEqual(new Set(["metadata"]));
   }, hostTimeout(240_000));
 
-  it("never opens Reddit on MausBot Cloud, by navigation, redirect, link, frame or request, and tells the bot why", async () => {
+  it("never opens Reddit on Uni Cloud, by navigation, redirect, link, frame or request, and tells the bot why", async () => {
     const targets = ["https://www.reddit.com/", "https://old.reddit.com/r/test/", "https://i.redd.it/", "https://www.redditstatic.com/", "https://reddit.app.link/"];
     // Only this machine's names resolve, so nothing here can reach Reddit, even if the block broke.
     const looked: string[] = [];

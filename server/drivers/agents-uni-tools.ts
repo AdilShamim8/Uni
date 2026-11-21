@@ -1,5 +1,5 @@
 // Uni's notification tools: read the unread notifications, then mark finished work read. The catalog shows them
-// only to a Uni; the internal route (server/routes/mausbot-notifications.ts) refuses every other bot regardless.
+// only to a Uni; the internal route (server/routes/uni-notifications.ts) refuses every other bot regardless.
 // The guidance lives in their results, so the descriptions that ride every Uni turn stay short.
 import type { ToolCallContext, ToolCallResult } from "./agents-call.ts";
 import type { Json } from "./agents-client.ts";

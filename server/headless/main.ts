@@ -35,7 +35,7 @@ uni doctor --data [--fix] [--data-dir DIR]
   copied to DIR/doctor-backups/<time>/ first. Anything else is reported with what to do.
   Exit 0 fine (after --fix: fine now), 8 a problem is left.`,
   login: `uni login [SERVER] [--scope chat] [--name NAME]
-  Sign this terminal in, once. On this computer MausBot shows a card with a short code: check it matches the one printed
+  Sign this terminal in, once. On this computer Uni shows a card with a short code: check it matches the one printed
   here and press Allow. For a Cloud or a server elsewhere (uni login https://maus.example.com) your browser opens
   the same card. The sign-in lasts 30 days and renews while you use it; it is kept in the macOS Keychain (elsewhere in a
   file only you can read) and never printed. --scope chat signs in for chat only. Every command then uses this server.
@@ -56,7 +56,7 @@ uni bots stop (BOT… | --team NAME | --all) [--dry-run] [--yes]
   the team itself, so bots added to it later are paused too. stop stops their work now and pauses nothing.`,
   "bots list": "uni bots list\n  Your bots and what each is doing (the same as uni bots).",
   "bots get": "uni bots get BOT\n  One bot: its team, state, computer, model, approvals and conversations.",
-  "bots delete": "uni bots delete (BOT… | --team NAME | --all) [--dry-run] [--yes]\n  Delete bots with their conversations. It prints the list and asks first; MausBot itself and a busy bot are refused.",
+  "bots delete": "uni bots delete (BOT… | --team NAME | --all) [--dry-run] [--yes]\n  Delete bots with their conversations. It prints the list and asks first; Uni itself and a busy bot are refused.",
   "bots pause": "uni bots pause (BOT… | --team NAME | --all) [--dry-run]\n  Pause bots: their work stops and nothing new starts, across restarts, until bots resume.",
   "bots resume": "uni bots resume (BOT… | --team NAME | --all) [--dry-run]\n  Resume paused bots.",
   "bots stop": "uni bots stop (BOT… | --team NAME | --all) [--dry-run] [--yes]\n  The same as uni stop.",
