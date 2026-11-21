@@ -156,6 +156,23 @@ export const CHAT_NOTICE = {
   "chat.notice.memoryReclaimedBrowserDetail": "Ran out of room, so I closed the browser to keep everything else running. ({detail})",
   "chat.notice.memoryReclaimedTaskDetail": "Ran out of room, so I stopped this task to keep everything else running. ({detail})",
   "chat.notice.outOfProcesses": "There is no room to start another program ({code}), so this task could not run. Nothing was sent to the AI. It starts again by itself when there is room.",
+  "chat.notice.quotaSwitchOff": "continuing with another AI is switched off — nothing switched.",
+  "chat.notice.quotaEngineGoneNoOthers": "{name} is no longer configured, and the card offered no other AI — nothing switched.",
+  "chat.notice.quotaEngineGone": "{name} is no longer configured — nothing switched.",
+  "chat.notice.quotaOwnGone": "this conversation's own AI is no longer configured here, so no other AI can be checked against it — nothing switched. Choose a model for this conversation instead.",
+  "chat.notice.quotaTimedOut": "{name} did not answer in time — nothing switched. Try again in a moment.",
+  "chat.notice.quotaUnavailable": "{name} is no longer available — nothing switched.",
+  "chat.notice.quotaCouldNotSwitch": "could not switch to {name} — {error}",
+  "chat.notice.quotaCouldNotSave": "could not switch to {name} — the model switch could not be saved.",
+  "chat.notice.quotaAlreadyCardWaiting": "{state} {name}. Your request waits on a card above and continues on {name} once you act on it.",
+  "chat.notice.quotaAlreadyRequestUnderWay": "{state} {name}. Your request is still under way here and continues on {name}.",
+  "chat.notice.quotaAlreadyConversationBusy": "{state} {name}. This conversation is working, so your message was not sent again.",
+  "chat.notice.quotaAlreadyQuestionWaiting": "{state} {name}. A teammate's question is waiting for your answer in this conversation, so your message was not sent again — answer it, then send your message again.",
+  "chat.notice.quotaAlreadyMessageMissing": "{state} {name}, but the message that hit quota could not be found to resend — send it again.",
+  "chat.notice.quotaAlreadyContinuing": "continuing on {name} after hitting quota",
+  "chat.notice.quotaAlreadyCouldNotContinue": "could not continue on {name} — {error}",
+  "chat.notice.part.alreadyOn": "already on",
+  "chat.notice.part.switchedTo": "switched to",
 } as const;
 
 export type ChatNoticeKey = keyof typeof CHAT_NOTICE;

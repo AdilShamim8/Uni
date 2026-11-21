@@ -261,8 +261,8 @@ export interface AcpSupport extends AcpDriverHooks {
     currentModelId?: string;
     /** session/new's or session/load's `configOptions`, verbatim. */
     configOptions: Array<{ id?: unknown; currentValue?: unknown }>;
-    /** Tell the person the session runs another model than the one picked. */
-    notice: (message: string) => void;
+    /** Tell the person the session runs another model than the one picked; `text` names the pack line. */
+    notice: (message: string, text?: ServerText) => void;
   }): Promise<void>;
 }
 
@@ -1336,10 +1336,10 @@ export function createAcpDriver(support: AcpSupport): ProviderDriver<AcpConfig> 
                   configOptions: Array.isArray(session.sessionConfigResult?.configOptions)
                     ? session.sessionConfigResult.configOptions
                     : [],
-                  notice: (message) => {
+                  notice: (message, text) => {
                     if (session.fallbackNotice === message) return;
                     session.fallbackNotice = message;
-                    emit({ ...base(threadId, turnId), type: "runtime.notice", message });
+                    emit({ ...base(threadId, turnId), type: "runtime.notice", message, ...(text ? { text } : {}) });
                   },
                 });
                 approvalUnconfirmed = false;

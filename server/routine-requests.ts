@@ -6,7 +6,7 @@ import { ROUTINE_RUN_LIMIT_MINUTES } from "../shared/routines.ts";
 import { formatInstant, routineCronText } from "./routine-cron-text.ts";
 import { byLanguage } from "./language.ts";
 import { conversationLanguage, serverLine } from "./server-lines.ts";
-import { plainClock, plainTimeZone, plainWeekdays } from "../shared/plain-time-zone.ts";
+import { plainClock, plainTimeZone } from "../shared/plain-time-zone.ts";
 import { normalizeCronSchedule, nextCronRuns } from "../shared/routine-schedule.ts";
 import { newId } from "./contracts.ts";
 import { UNDO_STALE, type DirectApply, type DirectApplyCheck } from "./direct-apply.ts";

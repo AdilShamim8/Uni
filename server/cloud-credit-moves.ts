@@ -10,6 +10,7 @@ import { join } from "node:path";
 import { writeFileAtomic } from "./atomic.ts";
 import type { ModelSelection } from "./contracts.ts";
 import { readyToRun, selectDefaultModelSelection, type DefaultSelectionContext, type SelectableInstance } from "./default-model-selection.ts";
+import { conversationLanguage, serverLine } from "./server-lines.ts";
 import type { Store } from "./store.ts";
 
 export interface CreditMovesOptions {
@@ -137,8 +138,14 @@ export function createCreditMoves(options: CreditMovesOptions) {
       const pinned = moving.filter(task => task.modelSelection !== undefined).map(task => task.threadId);
       if (pinned.length) store.followBotModel(bot.id, pinned);
       if (moved.delete(bot.id)) forgot = true;
-      const notice = `notice: ${options.engineName(next.instanceId)} is connected, so this conversation uses it now instead of the trial Claude credit.`;
-      for (const task of moving) store.appendMessage(task.threadId, { role: "bot", kind: "activity", tool: { name: notice, ok: true } });
+      for (const task of moving) {
+        const language = conversationLanguage(task.threadId);
+        const provider = options.engineName(next.instanceId);
+        store.appendMessage(task.threadId, { role: "bot", kind: "activity", tool: {
+          name: `notice: ${serverLine(language, "server.cloudCredit.connectedNotice", { provider, engine: serverLine(language, "server.cloudCredit.trialEngine") })}`,
+          ok: true, nameCode: "server.cloudCredit.connectedNotice", nameParams: { provider, engine: serverLine(language, "server.cloudCredit.trialEngine") },
+        } });
+      }
     }
     if (forgot) remember(moved!);
   }

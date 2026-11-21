@@ -2545,7 +2545,7 @@ async function moveOffComputerEngine(): Promise<void> {
   });
   writeComputerEngineMoveLines(moves, (move) => {
     const bot = store.bot(move.botId);
-    if (bot) store.appendMessage(move.threadId, { role: "bot", kind: "activity", tool: { name: computerEngineMoveText(move, bot.name, engine), ok: true } });
+    if (bot) store.appendMessage(move.threadId, { role: "bot", kind: "activity", tool: { name: computerEngineMoveText(move, bot.name, engine, conversationLanguage(move.threadId)), ok: true } });
   });
 }
 let computerEngineMoveRunning: Promise<void> | null = null;
@@ -2696,9 +2696,12 @@ function healThreadModel(botId: string, threadId: string): void {
   const own = threadModelGivingWay(botId, threadId);
   if (!bot || !own || bot.approvalGrant || threadBusy(botId, threadId)) return;
   if (!store.followBotModel(botId, [threadId], (from, to) => hostedModels?.resetTask(from, to) ?? {}).length) return;
+  const asked = modelName(own);
+  const model = `${bot.name}'s model (${modelName(bot.modelSelection)})`;
+  const language = conversationLanguage(threadId);
   store.appendMessage(threadId, { role: "bot", kind: "activity", tool: {
-    name: `notice: This thread's model (${modelName(own)}) isn't available, so it now uses ${bot.name}'s model (${modelName(bot.modelSelection)}).`,
-    ok: true,
+    name: `notice: ${serverLine(language, "server.thread.modelUnavailable", { asked, model })}`,
+    ok: true, nameCode: "server.thread.modelUnavailable", nameParams: { asked, model },
   } });
 }
 
@@ -11798,7 +11801,10 @@ async function stopCompanyInstances(ids: string[]) {
     watchdog.settle(threadId); closeOpenApprovals(threadId); directTurnBots.delete(threadId);
     routines?.failThread(threadId, "Company connection changed while this thread was running", { stopReason: "interrupted" });
     if (store.taskByThread(botId, threadId)) {
-      store.appendMessage(threadId, { role: "bot", kind: "activity", tool: { name: "Company connection changed — choose whether to reconnect or use a personal model", ok: false } });
+      store.appendMessage(threadId, { role: "bot", kind: "activity", tool: {
+        name: serverLine(conversationLanguage(threadId), "server.thread.companyConnectionChanged"),
+        ok: false, nameCode: "server.thread.companyConnectionChanged",
+      } });
       store.setTaskActivity(botId, threadId, "idle");
     }
   }

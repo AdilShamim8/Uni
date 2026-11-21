@@ -5,6 +5,7 @@ import type { ModelCatalog, ProviderErrorCode } from "../../contracts.ts";
 import { titleCaseModelId } from "../../contracts.ts";
 import { execCli } from "../../procs.ts";
 import { createAcpDriver, type AcpSupport } from "./core.ts";
+import { serverLine } from "../../server-lines.ts";
 import { CURSOR_STANDALONE } from "./cursor-release.ts";
 import type { DeviceSignIn, DeviceSignInState } from "../device-auth.ts";
 import { discoverAcpModels } from "./custom-model-catalog.ts";
@@ -536,9 +537,11 @@ const support = (run: typeof execCli): AcpSupport => ({
         if (err.code === -32602) {
           const current = sessionModels?.find((m) => m.modelId === currentModelId);
           const running = current?.name ?? currentModelId;
+          const asked = turn.model;
+          const offered = running ?? serverLine(undefined, "server.cursor.defaultModel");
           notice(
-            `Cursor did not accept ${turn.model} in this session, so it runs ${running ?? "its default model"}. ` +
-              "Choose another model for this bot to stop seeing this.",
+            serverLine(undefined, "server.cursor.didNotAccept", { asked, offered }),
+            { key: "server.cursor.didNotAccept", params: { asked, offered } },
           );
           return;
         }
@@ -550,7 +553,10 @@ const support = (run: typeof execCli): AcpSupport => ({
     }
     // The sentence is about the model this conversation uses, including a later turn that does not call the setter.
     if (match && !match.exact) {
-      notice(`Cursor offers ${modelId} rather than ${turn.model} in this session, so this conversation uses ${modelId}.`);
+      notice(
+        serverLine(undefined, "server.cursor.offersInstead", { offered: modelId, asked: turn.model }),
+        { key: "server.cursor.offersInstead", params: { offered: modelId, asked: turn.model } },
+      );
     }
     if (fastOption) await setCursorFast(request, sessionId, wantsFast);
   },
