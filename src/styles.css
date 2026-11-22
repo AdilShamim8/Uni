@@ -1097,7 +1097,7 @@
 
   --color-edge: #f2f4f80f;
 
-  --font-sans: "Inter", "Inter Variable", -apple-system, BlinkMacSystemFont,
+  --font-sans: "Geist Variable", -apple-system, BlinkMacSystemFont,
     "Segoe UI", system-ui, sans-serif;
   /* Stage rounds what the brief rounds: every pill full, cards and dialogs
      softer than Midnight, fields keep the working radius. */
@@ -1110,12 +1110,12 @@
   --radius-3xl: 22px;
   --radius-4xl: 9999px;
   --identity-green: #009957;
-  --identity-blue: #377FE6;
-  --identity-red: #D94B52;
+  --identity-blue: #3e83e7;
+  --identity-red: #dc585f;
   --identity-orange: #E78531;
-  --identity-purple: #8d69ce;
+  --identity-purple: #9572d1;
   --identity-cyan: #0EA5C6;
-  --identity-pink: #D84F8B;
+  --identity-pink: #d9548e;
   --identity-yellow: #D8A729;
   --identity-teal: #01A492;
   --identity-coral: #E5634E;

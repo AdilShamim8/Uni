@@ -26,7 +26,7 @@ export const SKINS: readonly Skin[] = [
   { id: "halloween", name: "Halloween", tagline: "Plum after dark, lit in pumpkin orange. Bats optional." },
   { id: "diwali", name: "Diwali", tagline: "Indigo night, lit in marigold and diya gold. Fireworks optional." },
   { id: "aurora", name: "Aurora", tagline: "Near-black, crossed by a band of green light. Glass on top." },
-  { id: "stage", name: "Stage", tagline: "Studio dark. Pill bars, blue light, Inter type." },
+  { id: "stage", name: "Stage", tagline: "Studio dark. Pill bars, blue light, Geist type." },
 ];
 
 /** "system" follows the OS between the light and dark skins below; anything else pins one skin. */
