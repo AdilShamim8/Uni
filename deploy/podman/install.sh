@@ -1,5 +1,5 @@
 #!/bin/sh
-# MausBot's server as your own user's service, with rootless Podman: no root, no Docker. One line, run as yourself:
+# Uni's server as your own user's service, with rootless Podman: no root, no Docker. One line, run as yourself:
 #
 #   curl -fsSL https://raw.githubusercontent.com/AdilShamim8/Uni/main/deploy/podman/install.sh | sh
 #   ... | sh -s -- --lan                 also answer other devices on this network (private addresses only)
@@ -117,7 +117,7 @@ choose_dir() {
   existing=$(installed_dir || true)
   if [ -n "$existing" ] && [ "$existing" != "$INSTALL_DIR" ]; then
     if [ "$DIR_GIVEN" = yes ]; then
-      fail "This user's MausBot service already uses $existing, and --dir names $INSTALL_DIR. Nothing was changed. Run this again with --dir $existing, or without --dir. To move it: --uninstall first, move the folder, then install with --dir and the new place."
+      fail "This user's Uni service already uses $existing, and --dir names $INSTALL_DIR. Nothing was changed. Run this again with --dir $existing, or without --dir. To move it: --uninstall first, move the folder, then install with --dir and the new place."
     fi
     INSTALL_DIR=$existing
     note "The service already uses $INSTALL_DIR, so this run does too (--dir names it)."
@@ -260,8 +260,8 @@ choose_image() {
   else
     stable_image
   fi
-  say "Downloading MausBot (the first time is about a gigabyte)..."
-  podman pull -q "$IMAGE" >/dev/null || fail "MausBot could not be downloaded ($IMAGE; Podman's message is above). Check this machine's outbound HTTPS, then run this again."
+  say "Downloading Uni (the first time is about a gigabyte)..."
+  podman pull -q "$IMAGE" >/dev/null || fail "Uni could not be downloaded ($IMAGE; Podman's message is above). Check this machine's outbound HTTPS, then run this again."
   # A tag moves; the digest does not, so a restart never brings a different version than update.sh chose.
   case "$IMAGE" in
     *@sha256:*) ;;
@@ -275,7 +275,7 @@ choose_image() {
           ;;
         esac
       done
-      [ -n "$digest" ] || fail "MausBot $IMAGE was downloaded, but Podman did not say its digest, so it cannot be pinned (a tag moves, a digest does not). Nothing was changed. Run this again, or name the image by its digest: OMB_INSTALL_IMAGE=$repo@sha256:..."
+      [ -n "$digest" ] || fail "Uni $IMAGE was downloaded, but Podman did not say its digest, so it cannot be pinned (a tag moves, a digest does not). Nothing was changed. Run this again, or name the image by its digest: OMB_INSTALL_IMAGE=$repo@sha256:..."
       IMAGE=$digest
       ;;
   esac
@@ -295,7 +295,7 @@ stable_image() {
       ;;
     404)
       release=$(curl -fsS --max-time 20 "$RELEASES_URL" 2>/dev/null | sed -n 's/.*"tag_name": *"\(v[0-9][0-9.]*\)".*/\1/p' | head -n 1)
-      [ -n "$release" ] || fail "The newest MausBot release could not be read from api.github.com. Check this machine's outbound HTTPS, then run this again."
+      [ -n "$release" ] || fail "The newest Uni release could not be read from api.github.com. Check this machine's outbound HTTPS, then run this again."
       IMAGE="$IMAGE_REPO:$release"
       ok "version: $release, the newest release (no version is stable yet)"
       ;;
@@ -309,7 +309,7 @@ image_user() {
   RUN_UID=$(podman run --rm --network none --entrypoint id "$IMAGE" -u 2>/dev/null || true)
   RUN_GID=$(podman run --rm --network none --entrypoint id "$IMAGE" -g 2>/dev/null || true)
   case "$RUN_UID:$RUN_GID" in
-    *[!0-9:]* | : | :* | *:) fail "The MausBot image did not say which user it runs as. Run this again; if it still fails, send us this line." ;;
+    *[!0-9:]* | : | :* | *:) fail "The Uni image did not say which user it runs as. Run this again; if it still fails, send us this line." ;;
   esac
 }
 
@@ -364,10 +364,10 @@ unit_text() {
   label=""
   if selinux_on; then label=":Z"; fi
   cat <<UNIT
-# Written by MausBot's Podman installer (deploy/podman/install.sh), and written again each time it runs. The server's
+# Written by Uni's Podman installer (deploy/podman/install.sh), and written again each time it runs. The server's
 # settings are in $INSTALL_DIR/server.env; update.sh changes Image= below.
 [Unit]
-Description=MausBot server (rootless Podman)
+Description=Uni server (rootless Podman)
 Documentation=https://github.com/AdilShamim8/Uni/blob/main/docs/self-hosting.md#podman-rootless-as-a-service
 
 [Container]
@@ -465,19 +465,19 @@ port_taken() { ss -ltnH "( sport = :$1 )" 2>/dev/null | grep -q .; }
 start_service() {
   update_busy
   if ! systemctl --user is-active --quiet "$NAME" && port_taken "$SERVER_PORT"; then
-    fail "Something else on this machine already listens on port $SERVER_PORT (another MausBot server?). Stop it, or run this again with --port and a free port, like --port 8811."
+    fail "Something else on this machine already listens on port $SERVER_PORT (another Uni server?). Stop it, or run this again with --port and a free port, like --port 8811."
   fi
   if [ "$CHANGED" = yes ] || ! systemctl --user is-active --quiet "$NAME"; then
-    say "Starting MausBot..."
+    say "Starting Uni..."
     systemctl --user restart "$NAME" ||
-      fail "MausBot could not be started. Its log: journalctl --user -u $NAME -n 50"
+      fail "Uni could not be started. Its log: journalctl --user -u $NAME -n 50"
   fi
-  wait_healthy || fail "MausBot started but did not answer within $HEALTH_WAIT_S seconds. Its log: journalctl --user -u $NAME -n 50"
+  wait_healthy || fail "Uni started but did not answer within $HEALTH_WAIT_S seconds. Its log: journalctl --user -u $NAME -n 50"
 }
 
 finish() {
   say ""
-  say "MausBot is running as your user's service ($NAME), on http://127.0.0.1:$SERVER_PORT."
+  say "Uni is running as your user's service ($NAME), on http://127.0.0.1:$SERVER_PORT."
   if [ "$(env_value "$INSTALL_DIR/server.env" OMB_LAN)" = 1 ]; then say "Its port $SERVER_PORT also answers other devices on this network, from private addresses only, over plain http; each device pairs."; fi
   say ""
   say "  Pair a device   podman exec -it $NAME uni pair"
@@ -525,7 +525,7 @@ run_uninstall() {
   rm -f "$UNIT"
   systemctl --user daemon-reload 2>/dev/null || true
   rm -f "$INSTALL_DIR/podman.unit"
-  say "MausBot's service is stopped and removed. Your data stays in $DATA_DIR."
+  say "Uni's service is stopped and removed. Your data stays in $DATA_DIR."
   say "To remove the data too (some files belong to the container's other ids, so through Podman):"
   say "  podman unshare rm -rf $INSTALL_DIR"
   say "The copies of the data update.sh kept: podman volume ls --filter label=com.mausbot.role=update-backup"
