@@ -13,7 +13,6 @@ function row(simple = false): string {
 afterEach(() => {
   setAnalyticsEnabled(false);
   setLocale("en");
-  localStorage.clear();
 });
 
 describe("the analytics row", () => {
