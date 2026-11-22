@@ -9,6 +9,7 @@ import { cloudSendManifest } from "./cloud-send-manifest.ts";
 import { attachmentNamesOf, linkedPath, threadLinks } from "./cloud-send-rows.ts";
 import { DATA_DIR } from "./config.ts";
 import { deleteThread, threadHeads } from "./message-db.ts";
+import { hostTimeout } from "./testing/host-timeout.ts";
 import { Store, type Message } from "./store.ts";
 
 const BOTS = 100, TASKS = 20, ROWS = 12;
@@ -52,7 +53,7 @@ function bigWorkspace() {
 
 describe("a move's check of a big workspace", () => {
   let base: Store, threads: string[];
-  beforeAll(() => { ({ store: base, threads } = bigWorkspace()); }, 120_000);
+  beforeAll(() => { ({ store: base, threads } = bigWorkspace()); }, hostTimeout(120_000));
 
   it("lists the attachments only from rows that name one, as reading every row does", () => {
     const full = new Set<string>();
