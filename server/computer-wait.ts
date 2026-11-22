@@ -3,18 +3,22 @@ export interface ComputerHolder {
   task?: string;
 }
 
-const minutes = (ms: number): string => {
+import { conversationLanguage, serverLine } from "./server-lines.ts";
+
+const minutes = (ms: number, language?: string): string => {
   const value = ms >= 60_000 ? Math.round(ms / 60_000) : Math.round(ms / 1000);
-  const unit = ms >= 60_000 ? "minute" : "second";
+  const unit = ms >= 60_000 ? serverLine(language, "server.computerWait.minute") : serverLine(language, "server.computerWait.second");
   return `${value} ${unit}${value === 1 ? "" : "s"}`;
 };
 
-export function computerWaitDuration(ms: number): string {
-  return ms < 1_000 ? "under a second" : minutes(ms);
+export function computerWaitDuration(ms: number, language?: string): string {
+  return ms < 1_000 ? serverLine(language, "server.computerWait.underASecond") : minutes(ms, language);
 }
 
-const holderPhrase = (holder: ComputerHolder): string =>
-  holder.task ? `${holder.name} is running ${holder.task}` : `${holder.name} is using it`;
+const holderPhrase = (holder: ComputerHolder, language?: string, still = false): string =>
+  holder.task
+    ? serverLine(language, still ? "server.computerWait.stillRunning" : "server.computerWait.running", { name: holder.name, task: holder.task })
+    : serverLine(language, still ? "server.computerWait.stillUsing" : "server.computerWait.using", { name: holder.name });
 
 export interface WaitQueueFact {
   position?: number;
@@ -28,36 +32,40 @@ const ordinal = (position: number): string => {
   return `${position}${suffix}`;
 };
 
-export function computerWaitingText(holder?: ComputerHolder | null, queue?: WaitQueueFact): string {
+export function computerWaitingText(holder?: ComputerHolder | null, queue?: WaitQueueFact, threadId?: string): string {
+  const language = threadId === undefined ? undefined : conversationLanguage(threadId);
   const position = queue?.position && queue.position > 0 ? queue.position : undefined;
-  const place = position ? ` — ${ordinal(position)} in queue` : "";
-  const estimate = queue?.estimateMs !== undefined ? `; recent waits here have taken ${computerWaitDuration(queue.estimateMs)}` : "";
+  const place = position ? serverLine(language, "server.computerWait.inQueue", { position: ordinal(position) }) : "";
+  const estimate = queue?.estimateMs !== undefined ? serverLine(language, "server.computerWait.recentWaits", { duration: computerWaitDuration(queue.estimateMs, language) }) : "";
   // Behind more than the holder: the freed seat goes to the front waiter first.
   const starts = position && position > 1
-    ? "Starts automatically when the turns ahead finish"
+    ? serverLine(language, "server.computerWait.startsTurns")
     : holder
-      ? "Starts automatically when that finishes"
-      : "Starts automatically when it is free";
-  if (!holder) return `Waiting for its turn on this computer${place}. ${starts}${estimate}.`;
-  return `Waiting for its turn on this computer${place} — ${holderPhrase(holder)}. ${starts}${estimate}.`;
+      ? serverLine(language, "server.computerWait.startsThat")
+      : serverLine(language, "server.computerWait.startsFree");
+  if (!holder) return serverLine(language, "server.computerWait.waiting", { place, starts, estimate });
+  return serverLine(language, "server.computerWait.waitingHolder", { place, holder: holderPhrase(holder, language), starts, estimate });
 }
 
-export function computerFreeAfterText(holder: ComputerHolder | null | undefined, waitedMs: number): string {
-  const who = holder ? ` (${holder.task ? `${holder.name} · ${holder.task}` : holder.name} held it)` : "";
-  return `Computer free — continuing after waiting ${computerWaitDuration(waitedMs)}${who}`;
+export function computerFreeAfterText(holder: ComputerHolder | null | undefined, waitedMs: number, threadId?: string): string {
+  const language = threadId === undefined ? undefined : conversationLanguage(threadId);
+  const who = holder ? serverLine(language, "server.computerWait.heldBy", { who: holder.task ? `${holder.name} · ${holder.task}` : holder.name }) : "";
+  return serverLine(language, "server.computerWait.free", { duration: computerWaitDuration(waitedMs, language), who });
 }
 
-export function computerStoppedWaitingText(holder: ComputerHolder | null | undefined, waitedMs: number): string {
-  const who = holder ? ` — ${holderPhrase(holder)}` : "";
-  return `Stopped waiting for the computer after ${computerWaitDuration(waitedMs)}${who}.`;
+export function computerStoppedWaitingText(holder: ComputerHolder | null | undefined, waitedMs: number, threadId?: string): string {
+  const language = threadId === undefined ? undefined : conversationLanguage(threadId);
+  const who = holder ? ` — ${holderPhrase(holder, language)}` : "";
+  return serverLine(language, "server.computerWait.stopped", { duration: computerWaitDuration(waitedMs, language), who });
 }
 
-export function computerParkedText(holder: ComputerHolder | null | undefined, ceilingMs: number): string {
-  const who = holder ? ` — ${holderPhrase(holder).replace(" is running ", " is still running ").replace(" is using it", " is still using it")}` : "";
-  return `Computer still busy after ${minutes(ceilingMs)}${who}. Parked — it continues automatically when the computer is free.`;
+export function computerParkedText(holder: ComputerHolder | null | undefined, ceilingMs: number, threadId?: string): string {
+  const language = threadId === undefined ? undefined : conversationLanguage(threadId);
+  const who = holder ? ` — ${holderPhrase(holder, language, true)}` : "";
+  return serverLine(language, "server.computerWait.parked", { ceiling: minutes(ceilingMs, language), who });
 }
 
-export function computerPersonAwayText(ceilingMs: number): string {
-  return `A person has had control of this computer for over ${minutes(ceilingMs)}, so this call was NOT performed and this turn stops waiting for them. ` +
-    "Pause this task: tell the person you are waiting for them to hand control back, and take a fresh screenshot before your next action once they have.";
+export function computerPersonAwayText(ceilingMs: number, threadId?: string): string {
+  const language = threadId === undefined ? undefined : conversationLanguage(threadId);
+  return serverLine(language, "server.computerWait.personAway", { ceiling: minutes(ceilingMs, language) });
 }

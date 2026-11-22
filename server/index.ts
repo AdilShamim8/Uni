@@ -2130,10 +2130,10 @@ async function bindTurnComputer(owner: TurnOwner, resource: string, exclusive = 
     const waitedMs = waitedSince === undefined ? 0 : Date.now() - waitedSince;
     if (outcome === "acquired") turnResources.noteWait(resource, waitedMs);
     const text = outcome === "acquired"
-      ? computerFreeAfterText(holder, waitedMs)
+      ? computerFreeAfterText(holder, waitedMs, owner.threadId)
       : outcome === "parked"
-        ? computerParkedText(holder, COMPUTER_WAIT_MAX_MS)
-        : computerStoppedWaitingText(holder, waitedMs);
+        ? computerParkedText(holder, COMPUTER_WAIT_MAX_MS, owner.threadId)
+        : computerStoppedWaitingText(holder, waitedMs, owner.threadId);
     store.appendMessage(owner.threadId, {
       role: "bot", kind: "activity",
       tool: { name: text, ok: true },
@@ -2159,7 +2159,7 @@ async function bindTurnComputer(owner: TurnOwner, resource: string, exclusive = 
         ({ holder, threadRef: holderThreadRef } = blocker ? holderOfTurn(blocker) : { holder: sharedVm.personHolds(resource) ? { name: "A person" } : undefined, threadRef: undefined });
         waitingMessage = store.appendMessage(owner.threadId, {
           role: "bot", kind: "activity",
-          tool: { name: computerWaitingText(holder, { position, estimateMs }) },
+          tool: { name: computerWaitingText(holder, { position, estimateMs }, owner.threadId) },
           ...(holderThreadRef ? { threadRef: holderThreadRef } : {}),
         });
         waitedSince = Date.now();
@@ -5655,7 +5655,7 @@ async function computerCallGate(internalCapability: InternalCapability, signal?:
     const lazyClaim = slot && slot.owner.generation === generation ? slot : undefined;
     let held: ControlState;
     if (snapshot.held && snapshot.heldSinceMs !== null && Date.now() - snapshot.heldSinceMs >= COMPUTER_WAIT_MAX_MS) {
-      return { held: true, helpOpen, blockedReason: computerPersonAwayText(COMPUTER_WAIT_MAX_MS) };
+      return { held: true, helpOpen, blockedReason: computerPersonAwayText(COMPUTER_WAIT_MAX_MS, threadId) };
     } else if (snapshot.held) {
       personHeld = true;
       held = { held: true, helpOpen, reason: "person" };

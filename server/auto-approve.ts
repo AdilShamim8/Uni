@@ -139,6 +139,7 @@ export function undeliveredApprovalTool(
     "explicit-approval-block": "server.approval.rejected.tool",
     "outbound-guard": "server.approval.rejected.tool",
     "safety-floor": "server.approval.rejected.tool",
+    "no-grant": "server.approval.rejected.full",
   } as const satisfies Record<AutoVerdictSource, "server.approval.rejected.command" | "server.approval.rejected.tool" | "server.approval.rejected.full">;
   return { name: serverLine(undefined, REJECTED[source]), ok: false };
 }

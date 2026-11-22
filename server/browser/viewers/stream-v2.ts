@@ -7,6 +7,7 @@
 // the browser service's (it follows the tab in front of the bot's one browser), the socket opens before the browser
 // has started, and Uni's own messages are added.
 import type { IncomingMessage } from "node:http";
+import { serverLine } from "../../server-lines.ts";
 import type { Socket } from "node:net";
 
 import { WebSocketServer, type RawData, type WebSocket } from "ws";
@@ -206,7 +207,7 @@ class StreamSession {
     try {
       await service.restart(this.request.target.session, this.viewer.options.person);
     } catch {
-      this.notice("The browser could not restart. Wait for active work to finish and try again.");
+      this.notice(serverLine(undefined, "server.browser.restartFailed"));
     } finally {
       this.#restarting = false;
     }
