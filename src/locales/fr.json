@@ -11393,6 +11393,7 @@
   "server.approval.approvalNeededTitle": "Approbation nécessaire",
   "server.skillRequest.enable": "Activer la compétence \"{name}\" ?",
   "server.skillRequest.update": "Mettre à jour la compétence \"{name}\" ?",
+  "server.skillRequest.keepsReference": "Il garde le fichier{plural} de référence {file} que le bot lit lorsque nécessaire.",
   "server.skillRequest.promptIndexLineBody": "Ajoute une ligne à l'index de prompts ; le corps est lu uniquement lors de l'utilisation",
   "server.approval.rejected.command": "Le fournisseur a rejeté cette action malgré l'autorisation de commande enregistrée.",
   "server.approval.rejected.tool": "Le fournisseur a rejeté cette action malgré l'autorisation d'outil enregistrée.",
