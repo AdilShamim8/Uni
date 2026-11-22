@@ -1081,13 +1081,15 @@
   --color-accent: #2f69fa;
   --color-accent-border: #4c80fb;
   --color-accent-text: #7ea6ff;
-  /* the blue fill is dark, so its ink is white at 4.7:1 */
+  /* the blue fill is dark, so its ink is white at 4.6:1 */
   --color-accent-ink: #ffffff;
-  --color-bubble-user: #4c80fb;
-  --color-bubble-user-ink: #ffffff;   /* 4.9:1 on the blue bubble */
+  /* the foundingdev blue deepened one step so white ink clears 5.0:1 on it */
+  --color-bubble-user: #2d64ef;
+  --color-bubble-user-ink: #ffffff;   /* 5.0:1 on the blue bubble */
   --color-success: #38d591;
   --color-danger: #ff5667;
-  --color-danger-ink: #ffffff;
+  /* dark red ink on the red, as Foundry and Dusk pair it: 5.9:1 */
+  --color-danger-ink: #241014;
   --color-success-ink: #072114;
   --color-warning: #ff9800;
   --color-scrollbar: #3f434a;
