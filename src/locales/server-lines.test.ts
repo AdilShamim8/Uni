@@ -350,6 +350,7 @@ const ALLOWED: ReadonlyArray<{ file: string; snippet: string; why: string }> = [
   { file: "server/default-bot.ts", snippet: "your helper for everything here.", why: "the helper intro card carries helperIntro, which clients say in the viewer's own language" },
   { file: "server/host/helper-suggestion.ts", snippet: "Want me to sort your email for free?", why: "the app draws this suggestion in its own words (setupSuggestion)" },
   { file: "shared/client-cancel.ts", snippet: "You stopped this.", why: "a stopped turn's marker: the app says it in the reader's language (chat.turnStopped)" },
+  { file: "packages/phone-protocol/src/live-call.ts", snippet: "Call with", why: "the English fallback for clients that print the plain row; the server says it in the conversation's language (server.call.with)" },
 ];
 
 /** Lines written before this guard, by area: a file and the line's words (" … " where a value goes). Only shrinks. */
@@ -357,9 +358,6 @@ const PENDING: Readonly<Record<string, ReadonlyArray<readonly [file: string, sni
   "runs and routines": [
   ],
   "rooms and teammates": [
-    ["server/host/delegated-level.ts", "…  — handed on by  … ,  … a Chief of Staff on  …"],
-    ["server/store.ts", "needs your input"],
-    ["server/store.ts", "reached its turn limit"],
   ],
   "AI engines and limits": [],
   "computers and the browser": [
@@ -367,17 +365,10 @@ const PENDING: Readonly<Record<string, ReadonlyArray<readonly [file: string, sni
   "questions, approvals and setup cards": [
   ],
   "restarts, stops and context": [
-    ["server/index.ts", "context compaction started ( … )"],
-    ["server/host/warm-summary-host.ts", "context compaction started (auto)"],
-    ["server/index.ts", "context compacted — re-sent the last  …  digest …"],
-    ["server/index.ts", "generated image could not be attached —  …"],
-    ["server/index.ts", "invalid image"],
-    ["packages/phone-protocol/src/first-reply-rescue.ts", "notice:  …  hasn't heard back from  …  yet."],
   ],
   "moves to the Cloud": [
   ],
   "calls": [
-    ["packages/phone-protocol/src/live-call.ts", "Call with  …  ·  …"],
   ],
 };
 

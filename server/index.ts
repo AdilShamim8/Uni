@@ -323,7 +323,8 @@ import { autoRoomDefault, roomTurnMembers } from "./room-routing-members.ts";
 import { liveHistoryFrom, LiveSessionError, type LiveBot, type LiveHistoryMessage } from "./live-call.ts";
 import { LiveCallController, LiveCallSignedOutError } from "./live-call-controller.ts"; import { liveSessionWiring } from "./live-session-wiring.ts";
 import { liveCallSettings, liveSettingsFor, liveSettingsForClient, saveLiveSettings } from "./live-settings.ts"; import { azureLiveCallRefusal, liveScopeRefusal } from "./live-access.ts";
-import { recordLiveCall, spokenLineFields, titleLiveCall } from "./live-call-record.ts"; import { finalTurnBlock, noteGroupTurn, roomRoundPasses, roomTurnsPerMember, turnsPerMemberPatch, turnsSince } from "./room-round-turns.ts";
+import { recordLiveCall, spokenLineFields, titleLiveCall } from "./live-call-record.ts";
+import { formatCallDuration } from "../shared/live-call.ts"; import { finalTurnBlock, noteGroupTurn, roomRoundPasses, roomTurnsPerMember, turnsPerMemberPatch, turnsSince } from "./room-round-turns.ts";
 import { narrateTool, toUtterances } from "./tts/speech-text.ts";
 import { createTtsRoutes } from "./routes/tts.ts";
 import { turnStartLogLine } from "./turn-log.ts";
@@ -5418,14 +5419,14 @@ function ingestEngineHook(capability: Pick<InternalCapability, "botId" | "thread
   if (name === "PreCompact" || (name === "SessionStart" && payload.source === "compact")) roomSessions.distrust(threadId, capability.botId);
   if (name === "PreCompact") {
     const trigger = payload.trigger === "manual" ? "manual" : "auto";
-    chip(`context compaction started (${trigger})`);
+    chip(serverLine(conversationLanguage(threadId), "server.context.compactionStarted", { detail: trigger }));
     return { ok: true };
   }
   if (name === "SessionStart") {
     if (payload.source !== "compact") return { ok: true, ignored: `SessionStart ${String(payload.source ?? "")}` };
     const bot = store.bot(capability.botId);
     const digests = sinceFreshStart(store.activePath(threadId)).filter((m) => m.kind === "digest" && m.digest).slice(-DIGESTS_AFTER_COMPACTION);
-    chip(`context compacted — re-sent the last ${digests.length} digest${digests.length === 1 ? "" : "s"}`);
+    chip(serverLine(conversationLanguage(threadId), "server.context.compacted", { digest: `${digests.length} digest${digests.length === 1 ? "" : "s"}`, rest: "" }));
     if (!digests.length) return { ok: true };
     const context = digests.map((m) => digestPromptLine(m.digest!, m.from?.name ?? store.bot(m.digest!.botId)?.name ?? bot?.name ?? "the bot")).join("\n");
     return { ok: true, context };
@@ -6404,7 +6405,7 @@ bus.subscribe((event: RuntimeEvent) => {
             role: "bot",
             kind: "activity",
             tool: {
-              name: `generated image could not be attached — ${error instanceof Error ? error.message : "invalid image"}`.slice(0, 160),
+              name: serverLine(threadLanguage(event.threadId), "server.context.imageNotAttached", { error: error instanceof Error ? error.message : serverLine(threadLanguage(event.threadId), "server.context.invalidImage") }).slice(0, 160),
               ok: false,
             },
           });
@@ -12398,6 +12399,7 @@ const liveCalls = new LiveCallController({
     const row = recordLiveCall({
       chatExists: (botId, threadId) => Boolean(store.taskByThread(botId, threadId)),
       appendMessage: (threadId, message) => store.appendMessage(threadId, message),
+      words: (threadId, botName, seconds) => serverLine(conversationLanguage(threadId), "server.call.with", { bot: botName, duration: formatCallDuration(seconds) }),
     }, input);
     if (row) {
       void titleLiveCall({

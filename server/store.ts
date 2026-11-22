@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, rmSync, unlinkSync } from "node:fs";
 import { join } from "node:path"; import { isDeepStrictEqual } from "node:util";
 
 import { writeFileAtomic } from "./atomic.ts"; import { BOTS_FILE, JsonRegistry, persistedPin, type RegistryDurability, type RegistryStore } from "./registry-store.ts"; import { discardNativeLog } from "./drivers/native.ts";
+import { conversationLanguage, serverLine } from "./server-lines.ts";
 import { commitRegistryChange, deferrablePatch, keptRevocation, saveRegistryFor, touchesPermissions } from "./registry-save.ts";
 import { parseToolScope, toolScopeWidens } from "../shared/tool-scope.ts"; import { grantScopedApps } from "../shared/connector-scopes.ts"; import { dropRetiredApps } from "./retired-apps.ts";
 import { reorderInPlace } from "../shared/bot-order.ts"; import { trimOutboundPolicy } from "../shared/outbound.ts";
@@ -917,10 +918,11 @@ export class Store {
         detail: fallbackDetail,
         finishedAt: fallbackFinishedAt,
       };
+      const language = conversationLanguage(hit.threadId);
       const state = resolution.status === "needs-input"
-        ? "needs your input"
+        ? serverLine(language, "server.goal.needsInput")
         : resolution.status === "limit-reached"
-          ? "reached its turn limit"
+          ? serverLine(language, "server.goal.limitReached")
           : resolution.status;
       this.patchMessage(hit.threadId, hit.message.id, {
         text: `Goal ${state}: ${resolution.detail}`,

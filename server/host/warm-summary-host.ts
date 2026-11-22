@@ -16,7 +16,7 @@ import { sinceFreshStart } from "../fresh-start.ts";
 import { backgroundTextSlots, type JobSlots } from "../job-slots.ts";
 import { wakeHoldOf } from "../routine-due.ts";
 import type { Routine, RoutineRun } from "../routines.ts";
-import { serverLine } from "../server-lines.ts";
+import { conversationLanguage, serverLine } from "../server-lines.ts";
 import type { Message, Store } from "../store.ts";
 import type { WaitRecord } from "../waits.ts";
 import { createWarmSummary, WARM_SUMMARY_MIN_TOKENS, WARM_SUMMARY_RETRY_MS, type WarmSummaryOutcome, type WarmSummaryPlan, type WarmSummaryTarget } from "../warm-summary.ts";
@@ -167,7 +167,7 @@ export function createWarmSummaryHost(deps: WarmSummaryHostDeps) {
         return await deps.fold(target, control.signal) ? { ok: true } : { ok: false, reason: "the conversation does not need a summary yet" };
       }, { signal: control.signal, urgent: control.awaited, onWait: () => { waited = true; } });
     },
-    waiting: ({ threadId }) => { store.appendMessage(threadId, { role: "bot", kind: "activity", tool: { name: COMPACTION_STARTED_LINE, ok: true } }); },
+    waiting: ({ threadId }) => { store.appendMessage(threadId, { role: "bot", kind: "activity", tool: { name: serverLine(deps.language?.(threadId) ?? conversationLanguage(threadId), "server.context.compactionAuto"), ok: true } }); },
     log: deps.log,
   });
 

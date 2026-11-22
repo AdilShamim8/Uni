@@ -15,6 +15,8 @@ export function spokenLineFields(
 export interface LiveCallRecordDeps {
   chatExists(botId: string, threadId: string): boolean;
   appendMessage(threadId: string, message: Omit<Message, "id" | "at">): Message;
+  /** The row's words, in the conversation's language; defaults to the shared English. */
+  words?(threadId: string, botName: string, seconds: number): string;
 }
 
 export function recordLiveCall(
@@ -23,10 +25,11 @@ export function recordLiveCall(
 ): Message | null {
   const { threadId, botName, record } = input;
   if (!deps.chatExists(record.botId, threadId)) return null;
+  const words = deps.words?.(threadId, botName, record.seconds) ?? liveCallRowText(botName, record.seconds);
   return deps.appendMessage(threadId, {
     role: "bot",
     kind: "call",
-    text: liveCallRowText(botName, record.seconds),
+    text: words,
     call: record,
   });
 }

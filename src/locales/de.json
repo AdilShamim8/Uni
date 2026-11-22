@@ -11418,5 +11418,15 @@
   "server.computerWait.minute": "Minute",
   "server.computerWait.second": "Sekunde",
   "server.computerWait.personAway": "Eine Person hat seit über {ceiling} die Kontrolle über diesen Computer, daher wurde dieser Aufruf NICHT ausgeführt und dieser Durchlauf wartet nicht länger auf sie. Pausiere diese Aufgabe: Sage der Person, dass du darauf wartest, dass sie die Kontrolle zurückgibt, und mache einen neuen Screenshot vor deiner nächsten Aktion, sobald sie es getan hat.",
-  "server.browser.restartFailed": "Der Browser ließ sich nicht neu starten. Warte, bis laufende Arbeiten fertig sind, und versuche es erneut."
+  "server.browser.restartFailed": "Der Browser ließ sich nicht neu starten. Warte, bis laufende Arbeiten fertig sind, und versuche es erneut.",
+  "server.teammates.handedOn": "{level} — übergeben von {from}, {via}ein Chief of Staff auf {name}",
+  "server.goal.needsInput": "braucht deine Eingabe",
+  "server.goal.limitReached": "hat sein Durchlauf-Limit erreicht",
+  "server.context.compactionStarted": "Zusammenfassung des Gesprächs gestartet ({detail})",
+  "server.context.compactionAuto": "Zusammenfassung des Gesprächs gestartet (automatisch)",
+  "server.context.compacted": "Gespräch zusammengefasst — die letzten {digest} Zusammenfassungen erneut gesendet{rest}",
+  "server.context.imageNotAttached": "Erzeugtes Bild ließ nicht anhängen — {error}",
+  "server.context.invalidImage": "ungültiges Bild",
+  "server.rescue.notHeardBack": "Hinweis: {bot} hat noch nichts von {person} gehört.",
+  "server.call.with": "Anruf mit {bot} · {duration}"
 }

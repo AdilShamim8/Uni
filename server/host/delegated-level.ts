@@ -1,6 +1,7 @@
 // A Chief of Staff's level flows down every hop of the work it hands out, a teammate's teammate too, in threads and in
 // rooms alike: each hand-off resolves the nearest Chief conversation up its chain (docs/approval-levels.md).
 import type { ApprovalMode } from "../../shared/approval-mode.ts";
+import { conversationLanguage, serverLine } from "../server-lines.ts";
 import { delegatedApprovalMode } from "../auto-approve.ts";
 import { chiefLevel } from "../chief-level.ts";
 import type { HandoffView, RoomAddress } from "../coordinator.ts";
@@ -64,7 +65,7 @@ export function createDelegatedLevel(deps: DelegatedLevelDeps) {
     store.appendMessage(threadId, {
       role: "bot",
       kind: "activity",
-      tool: { name: `${name} — handed on by ${from.name}, ${via}a Chief of Staff on ${name}`, ok: true },
+      tool: { name: serverLine(conversationLanguage(threadId), "server.teammates.handedOn", { level: name, from: from.name, via, name }), ok: true },
     });
   }
 

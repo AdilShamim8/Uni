@@ -3,7 +3,8 @@
 // and "Connect your subscription". The notice settles once the AI's first output arrives, and is over (history,
 // no live buttons) once its turn ends without one. Silence later in a turn stays the engine's own business (the ACP
 // quiet watch speaks at 60 s and 180 s).
-import { firstReplyOverName, firstReplySettledName, firstReplyWaitingName, type FirstReplyRescue } from "../shared/first-reply-rescue.ts";
+import { firstReplyOverName, firstReplySettledName, type FirstReplyRescue } from "../shared/first-reply-rescue.ts";
+import { conversationLanguage, serverLine } from "./server-lines.ts";
 import type { RuntimeEvent } from "./contracts.ts";
 import { openRescueMessages } from "./message-db.ts";
 import type { BotRecord, Message, Store } from "./store.ts";
@@ -88,7 +89,7 @@ export function createFirstReplyRescue(deps: FirstReplyRescueDeps): { onEvent(ev
       botId: bot.id, threadId, turnId: watch.turnId, ...(requestMessageId ? { requestMessageId } : {}), instanceId, ai,
       ...(group ? { groupId: group.id } : {}),
     };
-    const name = firstReplyWaitingName(bot.name, ai);
+    const name = serverLine(conversationLanguage(threadId), "server.rescue.notHeardBack", { bot: bot.name, person: ai });
     const row = deps.store.appendMessage(threadId, {
       role: "bot", kind: "activity", turnId: watch.turnId,
       ...(speaker && group ? { from: { botId: speaker.botId, name: speaker.name, color: speaker.color } } : {}),

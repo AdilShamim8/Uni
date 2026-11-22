@@ -11418,5 +11418,15 @@
   "server.computerWait.minute": "minute",
   "server.computerWait.second": "second",
   "server.computerWait.personAway": "A person has had control of this computer for over {ceiling}, so this call was NOT performed and this turn stops waiting for them. Pause this task: tell the person you are waiting for them to hand control back, and take a fresh screenshot before your next action once they have.",
-  "server.browser.restartFailed": "The browser could not restart. Wait for active work to finish and try again."
+  "server.browser.restartFailed": "The browser could not restart. Wait for active work to finish and try again.",
+  "server.teammates.handedOn": "{level} — handed on by {from}, {via}a Chief of Staff on {name}",
+  "server.goal.needsInput": "needs your input",
+  "server.goal.limitReached": "reached its turn limit",
+  "server.context.compactionStarted": "context compaction started ({detail})",
+  "server.context.compactionAuto": "context compaction started (auto)",
+  "server.context.compacted": "context compacted — re-sent the last {digest} digest{rest}",
+  "server.context.imageNotAttached": "generated image could not be attached — {error}",
+  "server.context.invalidImage": "invalid image",
+  "server.rescue.notHeardBack": "notice: {bot} hasn't heard back from {person} yet.",
+  "server.call.with": "Call with {bot} · {duration}"
 }
