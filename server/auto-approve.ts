@@ -130,10 +130,10 @@ export function undeliveredApprovalTool(
   if (outcome !== "rejected") return failedTurnTool("could not deliver approval to the provider; retry the task after reconnecting.");
   // Model-facing failure text; the grant words are pack lines so a person reading the chip reads them in their language.
   // As it was before the pack lines: the two allowlists are the person's saved permissions; every other grant reads as Full access.
-  const REJECTED = {
+  const REJECTED: Partial<Record<AutoVerdictSource, "server.approval.rejected.command" | "server.approval.rejected.tool">> = {
     "command-allowlist": "server.approval.rejected.command",
     "tool-allowlist": "server.approval.rejected.tool",
-  } as const satisfies Partial<Record<AutoVerdictSource, "server.approval.rejected.command" | "server.approval.rejected.tool">>;
+  };
   return { name: serverLine(undefined, REJECTED[source] ?? "server.approval.rejected.full"), ok: false };
 }
 
