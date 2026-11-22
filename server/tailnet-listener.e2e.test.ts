@@ -28,7 +28,7 @@ function dial(address: string, port: number, path: string, headers: Record<strin
 async function untilShared(port: number, host: string) {
   let descriptor = { status: 0, headers: {}, body: "" } as Awaited<ReturnType<typeof dial>>;
   for (let attempt = 0; attempt < 50 && descriptor.status !== 200; attempt++) {
-    descriptor = await dial(standIn!, port, "/.well-known/openmausbot/environment", { host }).catch(() => descriptor);
+    descriptor = await dial(standIn!, port, "/.well-known/uni/environment", { host }).catch(() => descriptor);
     if (descriptor.status !== 200) await new Promise((resolve) => setTimeout(resolve, 100));
   }
   return descriptor;

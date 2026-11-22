@@ -244,7 +244,7 @@ test("clicking the box opens its chat by a link with both ids escaped, or else j
   sink.transcript({ text: "what's on today" });
   sink.end({ code: 0, reason: "completed" });
   h.click("open");
-  assert.deepEqual(h.links, ["openmausbot://thread/t%201%2Fx?bot=b%3F1%26x"]);
+  assert.deepEqual(h.links, ["uni://thread/t%201%2Fx?bot=b%3F1%26x"]);
   h.talk.close();
 });
 

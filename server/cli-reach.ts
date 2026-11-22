@@ -5,7 +5,7 @@ import { reachableAddresses, type ReachableAddresses } from "./lan-address.ts";
 
 export type Route = "public-url" | "domain" | "tunnel" | "tailscale" | "lan";
 
-const DESCRIPTOR = "/.well-known/openmausbot/environment";
+const DESCRIPTOR = "/.well-known/uni/environment";
 
 /** `--public-url`: https anywhere, or http on a private network; never plain http on the open internet. */
 export function publicUrlProblem(url: string): string | null {

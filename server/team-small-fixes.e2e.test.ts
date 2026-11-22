@@ -154,7 +154,7 @@ it("a lent computer: a team's bot hears the team's one line, not a personal Clou
   expect(body.say).toBe(TEAM_LINE);
   expect(body.unavailable).toBe(TEAM_LINE);
 
-  const environment = await fetch(`${team.base}/.well-known/openmausbot/environment`, { headers: fx.edge });
+  const environment = await fetch(`${team.base}/.well-known/uni/environment`, { headers: fx.edge });
   const environmentId = ((await environment.json()) as { environmentId: string }).environmentId;
   const lent = await team.as(ada, "POST", "/api/shared-computers/connect",
     { id: randomUUID(), name: "Ada's Mac", environmentId, folders: [], terminal: true, computer: true, platform: "darwin" },

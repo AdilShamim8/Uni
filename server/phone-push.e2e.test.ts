@@ -204,7 +204,7 @@ describe("Live Activities by push", () => {
       token: ACTIVITY,
       event: "update",
       activity: {
-        botId: pip.id, botName: "Pip", kind: "working", headline: "Pip arbeitet", since: expect.any(Number), link: `openmausbot://chat/${pip.threadId}`, color: "#7C5CFF", gradient: ["#B9A9FF", "#7C5CFF"], body: "round",
+        botId: pip.id, botName: "Pip", kind: "working", headline: "Pip arbeitet", since: expect.any(Number), link: `uni://chat/${pip.threadId}`, color: "#7C5CFF", gradient: ["#B9A9FF", "#7C5CFF"], body: "round",
         version: 1, ask: "other", status: "Arbeitet", waiting: 0,
       },
     });

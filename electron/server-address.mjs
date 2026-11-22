@@ -123,7 +123,7 @@ function decoded(value) {
   }
 }
 
-/** `{ address, secret }` from an `openmausbot://pair` link; only one naming a server's own http(s) origin. */
+/** `{ address, secret }` from a `uni://pair` link; only one naming a server's own http(s) origin. */
 function appLink(url) {
   const address = url.searchParams.get("address") ?? "";
   if (!/^https?:\/\//i.test(address)) return null;

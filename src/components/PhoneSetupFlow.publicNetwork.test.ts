@@ -28,7 +28,7 @@ const controller = (over: Partial<PhoneSetupController>): PhoneSetupController =
   accountBusy: false,
   error: null,
   accountError: null,
-  pairingLink: "openmausbot://pair?address=192.168.1.34%3A8810",
+  pairingLink: "uni://pair?address=192.168.1.34%3A8810",
   address: "192.168.1.34",
   pairingPort: 8810,
   addressText: "192.168.1.34:8810",

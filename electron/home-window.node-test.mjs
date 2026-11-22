@@ -932,7 +932,7 @@ test("another Cloud of the person's own that the Admin says is asleep is never a
   w.url = `${CLIENT}/`;
   w.home.navigated(w.url);
   await w.tick();
-  const versions = () => w.fetched.filter(([route]) => route === "client:/.well-known/openmausbot/environment");
+  const versions = () => w.fetched.filter(([route]) => route === "client:/.well-known/uni/environment");
   const read = versions().length;
   assert.ok(read > 0, "the shown Cloud's version is read while it is awake");
   // The Clouds list says it sleeps (`power`, contract v1): any request reaching it would wake it.
@@ -944,7 +944,7 @@ test("another Cloud of the person's own that the Admin says is asleep is never a
   w.state = { ...w.state, clouds: [{ ...CLIENT_A, power: { state: "awake", since: 6, sleeps: true } }] };
   await w.tick();
   assert.equal(versions().length, read + 1, "awake again, it is asked");
-  assert.deepEqual(versions().at(-1), ["client:/.well-known/openmausbot/environment", "1"], "as a background read");
+  assert.deepEqual(versions().at(-1), ["client:/.well-known/uni/environment", "1"], "as a background read");
 });
 
 test("another Cloud the Admin says is no longer theirs is dropped at once and My Cloud opens, with no line; one being set up shows its setup with its name", async () => {

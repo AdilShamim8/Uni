@@ -11,7 +11,7 @@ import { removeTempDir } from "./testing/cleanup.ts";
 import { startControlPlaneStub } from "./testing/control-plane-stub.ts";
 
 const status = (over: Partial<PhoneRelayStatus> = {}): PhoneRelayStatus => ({ relay: "connected", node: "relay1.uni.com", grant: "ok", phones: 1, maxPhones: 20, ...over });
-const invite = "openmausbot://pair?address=relay-only.invalid%3A443&token=omb_pair_x&e2e=eyJ2IjoxfQ";
+const invite = "uni://pair?address=relay-only.invalid%3A443&token=omb_pair_x&e2e=eyJ2IjoxfQ";
 
 describe("uni serve --relay", () => {
   it("is off unless asked for, joins any way in but --tunnel, and never a local start", () => {
@@ -32,7 +32,7 @@ describe("uni serve --relay", () => {
     expect(block).toContain("Paired phones: 1 of 20. Remove one: uni devices revoke ID");
     expect(relayPairingBlock(body, false, "uni")).toBeNull();
     expect(relayPairingBlock({ ...body, relay: undefined }, true, "uni")).toBeNull();
-    expect(relayPairingBlock({ ...body, inviteUrl: "openmausbot://pair?address=https%3A%2F%2Fmaus.example.com&token=omb_pair_x" }, true, "openmausbot")).toBeNull();
+    expect(relayPairingBlock({ ...body, inviteUrl: "uni://pair?address=https%3A%2F%2Fmaus.example.com&token=omb_pair_x" }, true, "openmausbot")).toBeNull();
   });
 
   it("says why a phone cannot pair yet, in the person's terms", () => {

@@ -658,7 +658,7 @@ export function createHomeWindow(deps) {
 
   async function version(origin) {
     try {
-      const response = await cookieFetch(`${origin}/.well-known/openmausbot/environment`, { cache: "no-store", redirect: "error",
+      const response = await cookieFetch(`${origin}/.well-known/uni/environment`, { cache: "no-store", redirect: "error",
         signal: AbortSignal.timeout(LOOK_MS), headers: { accept: "application/json", ...BACKGROUND_HEADERS } });
       const body = response.ok ? await response.json() : null;
       return typeof body?.version === "string" ? body.version : null;

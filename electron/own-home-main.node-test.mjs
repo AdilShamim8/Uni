@@ -24,7 +24,7 @@ function servers(answers) {
     if (server?.down) throw new TypeError("fetch failed");
     if (!server) return new Response("", { status: 502 });
     if (pathname === "/api/auth/session") return Response.json(server.signedIn === false ? { error: "unauthorized" } : { kind: "session", scopes: ["admin"], ...(server.own ? { own: true } : {}) }, { status: server.signedIn === false ? 401 : 200 });
-    if (pathname === "/.well-known/openmausbot/environment") return Response.json({ environmentId: server.environmentId ?? ID, capabilities: server.move === false ? {} : { move: 1 } });
+    if (pathname === "/.well-known/uni/environment") return Response.json({ environmentId: server.environmentId ?? ID, capabilities: server.move === false ? {} : { move: 1 } });
     return new Response("", { status: 404 });
   };
   return { fetch, asked };
@@ -195,7 +195,7 @@ test("after an own-home move is done, an app update does not send the old worksp
     const method = init?.method ?? "GET";
     asked.push(`${method} ${pathname}${search}`);
     if (pathname === "/api/auth/session") return Response.json({ kind: "session", scopes: ["admin"], own: true });
-    if (pathname === "/.well-known/openmausbot/environment") return Response.json({ environmentId: ID, capabilities: { move: 1 } });
+    if (pathname === "/.well-known/uni/environment") return Response.json({ environmentId: ID, capabilities: { move: 1 } });
     if (pathname === "/api/cloud-connections") return Response.json({ computer: { environmentId: "env-srv", label: "Garage" }, connections: [], engines: [], commands: [] });
     if (pathname === "/api/cloud-send/files" && method === "POST") return Response.json({ stored: true }, { status: 201 });
     if (pathname === "/api/cloud-send/files") return Response.json({ v: 1, files: serverFiles, space: { freeBytes: 1e12, volumeBytes: 1e12 } });

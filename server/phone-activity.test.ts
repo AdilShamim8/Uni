@@ -111,8 +111,8 @@ describe("pushing a bot's activity while the app is closed", () => {
     await step({}, runtime("turn.started"));
     await step({ busy: false }, runtime("turn.completed"));
     expect(activityCalls()).toEqual([
-      { v: 1, token: ACT, event: "update", activity: { botId: "bot_1", botName: "Scout", kind: "working", headline: "Scout is working", since: 1_000_000, link: "openmausbot://chat/th_1", ...VISUAL } },
-      { v: 1, token: ACT, event: "end", activity: { botId: "bot_1", botName: "Scout", kind: "working", headline: "Scout is working", since: 1_000_000, link: "openmausbot://chat/th_1", ...VISUAL } },
+      { v: 1, token: ACT, event: "update", activity: { botId: "bot_1", botName: "Scout", kind: "working", headline: "Scout is working", since: 1_000_000, link: "uni://chat/th_1", ...VISUAL } },
+      { v: 1, token: ACT, event: "end", activity: { botId: "bot_1", botName: "Scout", kind: "working", headline: "Scout is working", since: 1_000_000, link: "uni://chat/th_1", ...VISUAL } },
     ]);
     expect(calls.at(-1)).toMatchObject({ path: "/v1/installations/self/push/unregister", body: { token: ACT } });
     expect(activity.registration(IPHONE)?.activities).toEqual([]);
@@ -125,7 +125,7 @@ describe("pushing a bot's activity while the app is closed", () => {
     await step({ ask: true }, notify("approval"));
     await step({}, notify("done"));
     expect(activityCalls()).toEqual([
-      { v: 1, token: START, event: "start", alert: true, activity: { botId: "bot_1", botName: "Scout", kind: "needsYou", headline: "Scout needs you", since: 1_000_000, link: "openmausbot://chat/th_ask", ...FALLBACK_VISUAL } },
+      { v: 1, token: START, event: "start", alert: true, activity: { botId: "bot_1", botName: "Scout", kind: "needsYou", headline: "Scout needs you", since: 1_000_000, link: "uni://chat/th_ask", ...FALLBACK_VISUAL } },
     ]);
     expect(JSON.stringify(activityCalls())).not.toContain("payroll");
   });

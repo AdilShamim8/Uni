@@ -180,7 +180,7 @@ afterAll(async () => {
 });
 
 it("offers lending on a Cloud home with the maintainer flag still off", async () => {
-  expect((await api("GET", "/.well-known/openmausbot/environment")).body.capabilities).toMatchObject({ sharedComputers: true });
+  expect((await api("GET", "/.well-known/uni/environment")).body.capabilities).toMatchObject({ sharedComputers: true });
   expect((await api("GET", "/api/config", { token: owner })).body.features.sharedComputers).toBe(false);
   expect(await api("GET", "/api/shared-computers", { token: owner })).toEqual({ status: 200, body: { computers: [], known: [] } });
 });

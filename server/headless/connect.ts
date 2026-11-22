@@ -69,7 +69,7 @@ export async function connectVerb(ctx: VerbContext): Promise<VerbOutcome> {
   let origin = candidates[0]!;
   let described: { status: number; body: Rec } | null = null;
   for (const candidate of candidates) {
-    described = await call(candidate, "/.well-known/openmausbot/environment").catch(() => null);
+    described = await call(candidate, "/.well-known/uni/environment").catch(() => null);
     origin = candidate;
     if (described?.status === 200 && typeof described.body.environmentId === "string") break;
   }

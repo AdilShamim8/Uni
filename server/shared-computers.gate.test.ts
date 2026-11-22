@@ -52,7 +52,7 @@ const internal = async (method: string, path: string, body?: unknown): Promise<A
 };
 
 const descriptorCapabilities = async (): Promise<Record<string, unknown>> =>
-  ((await api("GET", "/.well-known/openmausbot/environment")).body.capabilities ?? {}) as Record<string, unknown>;
+  ((await api("GET", "/.well-known/uni/environment")).body.capabilities ?? {}) as Record<string, unknown>;
 
 const PUBLIC_ROUTES = [
   "/api/shared-computers/connect",
@@ -111,7 +111,7 @@ async function paired(scopes: string[]): Promise<{ token: string; id: string }> 
   return { token: pair.token, id: pair.session.id };
 }
 const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
-const registration = async () => ({ id: randomUUID(), name: "Fixture Mac", environmentId: (await api("GET", "/.well-known/openmausbot/environment")).body.environmentId, folders: [], terminal: false, computer: true });
+const registration = async () => ({ id: randomUUID(), name: "Fixture Mac", environmentId: (await api("GET", "/.well-known/uni/environment")).body.environmentId, folders: [], terminal: false, computer: true });
 const connectAs = async (token: string) => api("POST", "/api/shared-computers/connect", await registration(), { ...bearer(token), "x-omb-computer-secret": "a".repeat(64) });
 
 /** The desktop's own lending, signed in to this server with `token` as its pairing. */

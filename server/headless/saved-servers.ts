@@ -181,7 +181,7 @@ export function savedSessionHeaders(origin: string, env: NodeJS.ProcessEnv = pro
     const saved = new SavedServers({ env });
     const server = saved.at(origin);
     if (!server) return {};
-    const live = await fetch(`${origin}/.well-known/openmausbot/environment`, { signal: AbortSignal.timeout(3_000) })
+    const live = await fetch(`${origin}/.well-known/uni/environment`, { signal: AbortSignal.timeout(3_000) })
       .then((response) => response.json() as Promise<{ environmentId?: unknown }>, () => null);
     const token = live?.environmentId === server.environmentId ? saved.token(server.name) : null;
     return token ? { authorization: `Bearer ${token}` } : {};

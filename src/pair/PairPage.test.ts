@@ -80,8 +80,8 @@ it("names a wrong kind of code instead of letting it be sent as a wrong one", ()
 });
 
 it("opens the phone app at this server with the code filled in", () => {
-  expect(openInAppLink("https://maus.example.com", "7kq2m9xdh4tp")).toBe("openmausbot://pair?address=https%3A%2F%2Fmaus.example.com&code=7KQ2-M9XD-H4TP");
-  expect(openInAppLink("http://192.168.1.20:8799", "")).toBe("openmausbot://pair?address=http%3A%2F%2F192.168.1.20%3A8799");
+  expect(openInAppLink("https://maus.example.com", "7kq2m9xdh4tp")).toBe("uni://pair?address=https%3A%2F%2Fmaus.example.com&code=7KQ2-M9XD-H4TP");
+  expect(openInAppLink("http://192.168.1.20:8799", "")).toBe("uni://pair?address=http%3A%2F%2F192.168.1.20%3A8799");
 });
 
 it("warns only on plain http across the open internet", () => {
@@ -97,7 +97,7 @@ it("asks for the code first, with email sign-in as a link below, and says how to
   const html = render(code);
   expect(html).toContain(en["pair.notEncrypted"].replace("'", "&#x27;"));
   expect(html).toContain(en["pair.fromLink"]);
-  expect(html).toContain("openmausbot://pair?address=http%3A%2F%2F203.0.113.9%3A8799&amp;code=ABCD-EFGH-JK23");
+  expect(html).toContain("uni://pair?address=http%3A%2F%2F203.0.113.9%3A8799&amp;code=ABCD-EFGH-JK23");
   expect(html).toContain("npx uni pair");
   expect(html.indexOf("<form")).toBeLessThan(html.indexOf(en["pair.code"]));
 });

@@ -113,7 +113,7 @@ export async function openClient(flags: Flags, deps: ClientDeps, mutating: boole
   const request = deps.request ?? mcp.request;
   if (signedIn && savedToken) {
     // Another server can take the same port later (the app closed, `serve` started): the sign-in is not for it.
-    const live = await request("/.well-known/openmausbot/environment", {}, baseUrl).catch(() => null) as { environmentId?: unknown } | null;
+    const live = await request("/.well-known/uni/environment", {}, baseUrl).catch(() => null) as { environmentId?: unknown } | null;
     if (typeof live?.environmentId === "string" && live.environmentId !== signedIn.environmentId) {
       throw new HeadlessError(`the server at ${baseUrl} is not "${signedIn.label}", the one you signed in to`, EXIT.needsLogin,
         "sign in to it with uni login, or name another server with --url");

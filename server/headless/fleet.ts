@@ -85,7 +85,7 @@ async function pausedBots(client: HeadlessClient): Promise<Set<string> | null> {
 }
 
 async function serverLabel(client: HeadlessClient): Promise<string> {
-  const environment = await client.json<Rec>("/.well-known/openmausbot/environment").catch(() => ({} as Rec));
+  const environment = await client.json<Rec>("/.well-known/uni/environment").catch(() => ({} as Rec));
   return `${environment.label ? `"${environment.label}" ` : ""}(${client.baseUrl})`;
 }
 
@@ -93,7 +93,7 @@ export async function statusVerb(ctx: VerbContext): Promise<VerbOutcome> {
   const client = await ctx.client();
   const [bots, held, environment, session] = await Promise.all([
     readBots(client), pausedBots(client),
-    client.json<Rec>("/.well-known/openmausbot/environment").catch(() => ({} as Rec)),
+    client.json<Rec>("/.well-known/uni/environment").catch(() => ({} as Rec)),
     client.json<Rec>("/api/auth/session").catch(() => null),
   ]);
   const rows = bots.map((bot) => ({ id: bot.id, name: bot.name, team: bot.section ?? null, state: botState(bot, held), computer: botComputer(bot),

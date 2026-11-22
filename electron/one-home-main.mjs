@@ -190,7 +190,7 @@ export function installOneHome({ localRequest: anyServer, clean = null, account,
   /** This computer's installation (`installationOf`), once its server has said who it is; null until then. */
   const installation = async () => {
     if (known) return known;
-    const id = (await local.json("/.well-known/openmausbot/environment").catch(() => null))?.environmentId;
+    const id = (await local.json("/.well-known/uni/environment").catch(() => null))?.environmentId;
     if (typeof id === "string" && id) known = installationOf(id);
     return known;
   };

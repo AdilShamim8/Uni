@@ -30,7 +30,7 @@ async function doctorOnce(ctx: VerbContext): Promise<VerbOutcome> {
   const availableCount = typeof models?.counted === "number" ? models.counted : availableEngines.length;
   const quietly = <T>(read: Promise<T>) => read.catch(() => null);
   const [server, session, config] = await Promise.all([
-    quietly(client.json<Rec>("/.well-known/openmausbot/environment")),
+    quietly(client.json<Rec>("/.well-known/uni/environment")),
     quietly(client.json<Rec>("/api/auth/session")),
     quietly(client.json<Rec>("/api/config")),
   ]);

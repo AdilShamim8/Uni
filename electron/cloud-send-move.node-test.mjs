@@ -29,7 +29,7 @@ function sides({ here = [], bots = {}, there = [], connections = [], secrets = {
       calls.push(`${method} ${route}`);
       const intercepted = await onCall(method, route, body, cloud);
       if (intercepted) return intercepted;
-      if (route === "/.well-known/openmausbot/environment") return reply(200, { capabilities: takesMove ? { cloudHome: true, move: 1 } : { cloudHome: true } });
+      if (route === "/.well-known/uni/environment") return reply(200, { capabilities: takesMove ? { cloudHome: true, move: 1 } : { cloudHome: true } });
       if (route.startsWith("/api/cloud-send?item=")) {
         const key = decodeURIComponent(route.slice("/api/cloud-send?item=".length).replace(/&move=1$/u, ""));
         return reply(200, summary([...cloud.values()].filter((item) => item.key === key || (item.kind === "skill" && key === itemKey.bot(item.bot)))));
@@ -254,7 +254,7 @@ test("a move's session counts as someone using My Cloud, so it stays awake; any 
     fetch: async (url, init) => {
       const route = String(url).replace(CLOUD, "");
       if (route === "/api/auth/pair") { paired.push([JSON.parse(init.body).label, init.headers["x-omb-background"] ?? null]); return json({ token: "omb_sess_fake" }); }
-      return json(route === "/api/cloud-send" || route === "/api/cloud-send?move=1" ? summary([]) : route === "/.well-known/openmausbot/environment" ? { capabilities: { move: 1 } } : route === "/api/cloud-connections" ? listing : {});
+      return json(route === "/api/cloud-send" || route === "/api/cloud-send?move=1" ? summary([]) : route === "/.well-known/uni/environment" ? { capabilities: { move: 1 } } : route === "/api/cloud-connections" ? listing : {});
     },
   });
   assert.equal((await main.move()).reason, "move");

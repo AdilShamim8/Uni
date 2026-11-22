@@ -7,7 +7,7 @@ import { networkInterfaces } from "node:os";
 
 const CHECK_TIMEOUT_MS = 8_000;
 const MAX_RESPONSE_BYTES = 16_384;
-const DESCRIPTOR_PATH = "/.well-known/openmausbot/environment";
+const DESCRIPTOR_PATH = "/.well-known/uni/environment";
 export const CUSTOM_DOMAIN_CHALLENGE_PATH = "/.well-known/openmausbot/domain-check/";
 
 export class CustomDomainError extends Error {

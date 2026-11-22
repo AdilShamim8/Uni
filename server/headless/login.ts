@@ -114,7 +114,7 @@ export async function loginVerb(ctx: VerbContext): Promise<VerbOutcome> {
   const saved = savedOnly(ctx);
   const scope = oneOf(flag(ctx.flags, "scope"), "--scope", ["all", "chat"] as const, "all") === "chat" ? "client" : "admin";
   const origin = await serverToSignInTo(ctx);
-  const described = await call(origin, "/.well-known/openmausbot/environment", {}, ctx.signal).catch(() => null);
+  const described = await call(origin, "/.well-known/uni/environment", {}, ctx.signal).catch(() => null);
   if (described?.status !== 200 || typeof described.body.environmentId !== "string") {
     throw new HeadlessError(`no Uni server answers at ${origin}`, EXIT.unreachable, "check the address, and that Uni is running there");
   }
@@ -166,7 +166,7 @@ export async function whoamiVerb(ctx: VerbContext): Promise<VerbOutcome> {
   const client = await ctx.client();
   const [session, environment] = await Promise.all([
     client.json<Rec>("/api/auth/session"),
-    client.json<Rec>("/.well-known/openmausbot/environment").catch(() => ({} as Rec)),
+    client.json<Rec>("/.well-known/uni/environment").catch(() => ({} as Rec)),
   ]);
   const where = `${environment.label ? `"${environment.label}" ` : ""}(${client.baseUrl})`;
   const who = session.kind === "session"

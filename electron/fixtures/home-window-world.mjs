@@ -101,7 +101,7 @@ export function world({ clean = null, journal = done(), marker = null, state = c
         w.redeemed.push([atClient ? "client" : atTeam ? "team" : "cloud", JSON.parse(init.body)]);
         return server.redeems === false ? json({ error: "invalid code" }, 400) : json({ kind: "session" });
       }
-      if (route === "/.well-known/openmausbot/environment") return json({ version: server.version });
+      if (route === "/.well-known/uni/environment") return json({ version: server.version });
       return json({}, 404);
     },
     power: { asleep: () => w.power?.state === "asleep", hold: () => { w.power = { state: "asleep", since: 1 }; }, woke: () => w.calls.push("woke") },

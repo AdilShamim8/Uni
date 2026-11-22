@@ -274,7 +274,7 @@ let gate = 0;
 const posixOnly = it.skipIf(process.platform === "win32");
 
 it("My Cloud offers the device link, and a fresh Mac signed in to it lends itself by itself: the internet connection and Chrome, no terminal, no click", async () => {
-  expect((await api("GET", "/.well-known/openmausbot/environment")).body.capabilities).toMatchObject({ sharedComputers: true, deviceLink: true });
+  expect((await api("GET", "/.well-known/uni/environment")).body.capabilities).toMatchObject({ sharedComputers: true, deviceLink: true });
   const file = join(home, "desktop-profile", "computer-sharing.json");
   expect(existsSync(file), "nothing was ever lent from this Mac").toBe(false);
   mac = lend(file);
