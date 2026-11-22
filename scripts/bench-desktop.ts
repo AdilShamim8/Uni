@@ -189,7 +189,7 @@ async function serveDist(dir: string, target: string): Promise<{ url: string; cl
   const upstream = new URL(target);
   const server: Server = createServer((req, res) => {
     const path = (req.url ?? "/").split("?")[0]!;
-    if (path.startsWith("/api") || path.startsWith("/.well-known/openmausbot")) {
+    if (path.startsWith("/api") || path.startsWith("/.well-known/uni")) {
       const forward = httpRequest({ host: upstream.hostname, port: upstream.port, path: req.url, method: req.method, headers: req.headers }, (answer) => {
         res.writeHead(answer.statusCode ?? 502, answer.headers);
         answer.pipe(res);

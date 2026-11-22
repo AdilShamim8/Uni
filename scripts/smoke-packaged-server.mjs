@@ -127,7 +127,7 @@ while (Date.now() < deadline) {
 let versionReport = null;
 if (listening) {
   try {
-    versionReport = (await (await fetch(`http://127.0.0.1:${port}/.well-known/openmausbot/environment`, { signal: AbortSignal.timeout(5_000) })).json()).version;
+    versionReport = (await (await fetch(`http://127.0.0.1:${port}/.well-known/uni/environment`, { signal: AbortSignal.timeout(5_000) })).json()).version;
   } catch (error) { versionReport = String(error); }
 }
 
