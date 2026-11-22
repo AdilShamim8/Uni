@@ -112,6 +112,13 @@
       "owner": "AdilShamim8",
       "reason": "browser identity (windows-latest) of 17359038a0: agent-browser 0.36.0-omb.1 raced its daemon start once ('started concurrently with different daemon configuration; retry the command'); its own message says retry. Green on ubuntu of the same commit.",
       "since": "2026-11-22"
+    },
+    {
+      "file": "server/one-home-session.e2e.test.ts",
+      "test": "a move killed twice and another computer's move that fails once stay within the Admin's codes: one session each time the app runs, signed out once done",
+      "owner": "AdilShamim8",
+      "reason": "beforeAll's fixture launch failed once in ubuntu shard 7/8 of 6a6de147fb (My Cloud gave no one-time code: HTTP 401 invalid_signature) and once in 10 local runs; the pairing-code mint races the cloud server's first signed request. Green in the other 9 local runs and on the same commit's other shards.",
+      "since": "2026-11-22"
     }
   ]
 }
