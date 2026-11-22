@@ -9522,6 +9522,7 @@
   "skins.tagline.halloween": "Pflaume nachts, in Kürbisorange beleuchtet. Fledermäuse optional.",
   "skins.tagline.diwali": "Indigo-Nacht, in Goldblüte und Diya-Gold beleuchtet. Feuerwerk optional.",
   "skins.tagline.aurora": "Fast-schwarz, kreuzt von einem Streifen grünem Licht. Glas oben drauf.",
+  "skins.tagline.stage": "Studio-dunkel. Pill-Bars, blaues Licht, Inter-Schrift.",
   "automations.calendar.cronMove": "Öffne diese Automatisierung, um sich wiederholenden Zeitplan zu ändern.",
   "automations.calendar.moveSeries": "Jedes Mal verschieben, wenn es sich wiederholt?",
   "automations.address.copyAddressFailed": "Adresse konnte nicht kopiert werden",

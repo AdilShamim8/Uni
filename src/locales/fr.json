@@ -902,7 +902,7 @@
   "cloudBuy.team.readyTitle": "Le Cloud de votre équipe est prêt",
   "cloudBuy.team.readySub": "{name} garde les bots de votre équipe en cours d'exécution 24h/24, même lorsque cet ordinateur est éteint.",
   "cloudBuy.staging": "Préparation",
-  "cloudBuy.stagingHint": "Cette application utilise le Cloud Uni de préparation : paiements de test et Clouds de test, pas de vrais.",
+  "cloudBuy.stagingHint": "Cette application utilise l'Uni Cloud de préparation : paiements de test et Clouds de test, pas de vrais.",
   "cloudNotice.signIn.title": "Reconnectez-vous pour accéder au Cloud",
   "cloudNotice.signIn.hint": "Votre forfait et vos bots là-bas ne sont pas concernés.",
   "cloudNotice.removed.title": "Cet ordinateur a été déconnecté de Uni Cloud",

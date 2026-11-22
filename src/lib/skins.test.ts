@@ -100,11 +100,20 @@ describe("skins", () => {
     },
   );
 
-  it("adds Aurora last, dark, with its light field kept off the picker miniature", () => {
-    expect(SKIN_IDS.at(-1)).toBe("aurora");
+  it("adds Aurora dark with its light field kept off the picker miniature", () => {
+    expect(SKIN_IDS).toContain("aurora");
     expect(SKINS.find((s) => s.id === "aurora")?.name).toBe("Aurora");
     expect(css).toMatch(/\[data-skin="aurora"\] \{[^}]*--code-color-scheme: dark;/);
     expect(css).toMatch(/@scope \(\[data-skin="aurora"\]:not\(\[data-skin-preview\]\)\) to \(\[data-skin\]\)\s*\{\s*main\.bg-app\s*\{/);
+  });
+
+  it("adds Stage last: studio dark, pill radii, Inter type, blue spotlight", () => {
+    expect(SKIN_IDS.at(-1)).toBe("stage");
+    expect(SKINS.find((s) => s.id === "stage")?.name).toBe("Stage");
+    expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--code-color-scheme: dark;/);
+    expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--radius-4xl: 9999px;/);
+    expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--font-sans: "Inter"/);
+    expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--color-accent: #2f69fa;/);
   });
 
   it("describes each skin exactly once", () => {
