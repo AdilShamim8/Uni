@@ -11323,6 +11323,8 @@
   "insights.reasoningTokens": "Reasoning-Tokens",
   "insights.unpricedTurns": "Durchläufe ohne Preis",
   "insights.when": "Wann Arbeit passiert",
+  "insights.busiest": "Am vollsten an {day}s gegen {hour}",
+  "insights.heatCell": "{day}, {hour}: {count} Durchläufe",
   "insights.less": "Weniger",
   "insights.more": "Mehr",
   "insights.mix": "Wohin die Tokens gingen",
