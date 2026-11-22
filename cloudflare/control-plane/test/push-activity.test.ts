@@ -82,7 +82,7 @@ const activity = {
   kind: "needsYou",
   headline: "Scout needs you",
   since: 1_794_700_000_000,
-  link: "openmausbot://chat/th_1",
+  link: "uni://chat/th_1",
   color: "#7C5CFF",
   gradient: ["#7C5CFF", "#4A2FE0"],
   body: "round",
@@ -115,7 +115,7 @@ describe("Live Activities and ongoing notifications by push", () => {
     expect(body.aps.alert).toBeUndefined();
     expect(JSON.parse(body.aps["content-state"].props)).toEqual({
       botId: "bot_1", name: "Scout", color: "#7C5CFF", gradient: ["#7C5CFF", "#4A2FE0"], body: "round",
-      mood: "working", kind: "working", headline: "Scout is working", line: "", since: 1_794_700_000_000, link: "openmausbot://chat/th_1", answers: [],
+      mood: "working", kind: "working", headline: "Scout is working", line: "", since: 1_794_700_000_000, link: "uni://chat/th_1", answers: [],
     });
   });
 
@@ -131,7 +131,7 @@ describe("Live Activities and ongoing notifications by push", () => {
 
     const [start, end] = providers.apns().map((one) => ({ headers: one.headers, aps: (JSON.parse(one.text) as { aps: Record<string, unknown> }).aps }));
     expect(start!.headers["apns-priority"]).toBe("10");
-    expect(start!.aps).toMatchObject({ event: "start", "attributes-type": "LiveActivityAttributes", attributes: { url: "openmausbot://chat/th_1" }, alert: { title: "Scout needs you", body: "Scout", sound: "default" } });
+    expect(start!.aps).toMatchObject({ event: "start", "attributes-type": "LiveActivityAttributes", attributes: { url: "uni://chat/th_1" }, alert: { title: "Scout needs you", body: "Scout", sound: "default" } });
     expect(end!.aps.event).toBe("end");
     expect(end!.aps["dismissal-date"]).toEqual(expect.any(Number));
     expect(end!.aps["stale-date"]).toBeUndefined();
@@ -167,7 +167,7 @@ describe("Live Activities and ongoing notifications by push", () => {
     expect((await push(worker, environment, credential, { token: FCM_TOKEN, event: "update" })).status).toBe(202);
     expect((await push(worker, environment, credential, { token: FCM_TOKEN, event: "update", activity: { ...activity, kind: "working", headline: "Scout is working" } })).status).toBe(202);
     const [needs, working] = providers.fcm().map((one) => (JSON.parse(one.text) as { message: { data: Record<string, string>; android: { priority: string } } }).message);
-    expect(needs!.data).toMatchObject({ omb_kind: "activity", event: "update", bot_id: "bot_1", bot_name: "Scout", kind: "needsYou", headline: "Scout needs you", since: "1794700000000", link: "openmausbot://chat/th_1" });
+    expect(needs!.data).toMatchObject({ omb_kind: "activity", event: "update", bot_id: "bot_1", bot_name: "Scout", kind: "needsYou", headline: "Scout needs you", since: "1794700000000", link: "uni://chat/th_1" });
     expect(needs!.data.title).toBeUndefined();
     expect(needs!.data.alert).toBeUndefined();
     expect(needs!.android.priority).toBe("HIGH");
@@ -182,7 +182,7 @@ describe("Live Activities and ongoing notifications by push", () => {
     await register(worker, environment, credential, { purpose: "activity", token: ACTIVITY_TOKEN });
     for (const body of [
       { activity: { ...activity, line: "the reply text" } },
-      { activity: { ...activity, answers: [{ label: "Allow", link: "openmausbot://answer?key=secret" }] } },
+      { activity: { ...activity, answers: [{ label: "Allow", link: "uni://answer?key=secret" }] } },
       { activity: { ...activity, headline: "Scout\nneeds you" } },
       { activity: { ...activity, link: "https://example.com/phish" } },
       { activity: { ...activity, color: "red" } },
@@ -224,7 +224,7 @@ describe("Live Activities and ongoing notifications by push", () => {
     const props = JSON.parse((JSON.parse(providers.apns()[0]!.text) as { aps: { "content-state": { props: string } } }).aps["content-state"].props);
     expect(props).toEqual({
       version: 1, botId: "bot_1", name: "Scout", color: "#7C5CFF", body: "round", mood: "needsYou", kind: "needsYou",
-      ask: "approval", status: "Needs your approval", waiting: 2, since: 1_794_700_000_000, link: "openmausbot://chat/th_1", answers: [],
+      ask: "approval", status: "Needs your approval", waiting: 2, since: 1_794_700_000_000, link: "uni://chat/th_1", answers: [],
     });
     for (const partial of [{ ...activity, version: 1 }, { ...activity, status: "Working" }, { ...v1, ask: "done" }, { ...v1, status: "two\nlines" }]) {
       expect((await push(worker, environment, credential, { token: ACTIVITY_TOKEN, event: "update", activity: partial })).status, JSON.stringify(partial)).toBe(400);

@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
-  "name": "openmausbot-control-plane",
+  "name": "uni-control-plane",
   "main": "src/index.ts",
   "account_id": "0c92969a82eb9e173b013a7e7a02333d",
   "compatibility_date": "2026-08-25",
@@ -8,17 +8,17 @@
   "workers_dev": false,
   "routes": [
     {
-      "pattern": "accounts.openmausbot.com",
+      "pattern": "accounts.uni.com",
       "custom_domain": true
     }
   ],
   "vars": {
-    "BETTER_AUTH_URL": "https://accounts.openmausbot.com",
-    "EMAIL_FROM": "noreply@openmausbot.com",
+    "BETTER_AUTH_URL": "https://accounts.uni.com",
+    "EMAIL_FROM": "noreply@uni.com",
     "ALLOWED_ORIGINS": "",
     "CLOUDFLARE_ACCOUNT_ID": "0c92969a82eb9e173b013a7e7a02333d",
     "CLOUDFLARE_ZONE_ID": "bae08399bb6f96eb7266c65ac0057eee",
-    "COMPANION_HOST_SUFFIX": "openmausbot.com",
+    "COMPANION_HOST_SUFFIX": "uni.com",
     // More Cloudflare accounts for managed endpoints (README "Several
     // Cloudflare accounts"). Unset: the account above is the only one. A new
     // endpoint goes to the account with the most room; an endpoint never
@@ -50,7 +50,7 @@
     // quota. They drive the 90% usage alert and /healthz, rank accounts for
     // new endpoints, and tell a tunnel-quota 429 from a rate limit, so keep
     // them equal to Cloudflare's real quotas. They never refuse an
-    // allocation on their own. The openmausbot.com zone is on Pro: 3,500
+    // allocation on their own. The uni.com zone is on Pro: 3,500
     // DNS records.
     "OMB_TUNNEL_LIMIT": "1000",
     "OMB_DNS_RECORD_LIMIT": "3500",
@@ -73,7 +73,7 @@
     // exist; add relay2 when its box and DNS are up.
     // RELAY_ROLLOUT_PERCENT (0-100) admits computers by a stable hash of their host id; RELAY_ALLOW_INSTALLATIONS
     // (comma-separated installation ids) admits a few by name; RELAY_DISABLED "1" turns every token off.
-    "RELAY_NODES": "relay1.openmausbot.com,relay2.openmausbot.com",
+    "RELAY_NODES": "relay1.uni.com,relay2.uni.com",
     "RELAY_NODES_AMERICAS": "",
     "RELAY_TOKEN_KID": "k1",
     "RELAY_ROLLOUT_PERCENT": "100",
@@ -110,7 +110,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "openmausbot-control-plane",
+      "database_name": "uni-control-plane",
       "database_id": "8a7c34ed-5428-4ae2-8722-fef2fe9bf160",
       "migrations_dir": "migrations"
     }
@@ -118,7 +118,7 @@
   "send_email": [
     {
       "name": "EMAIL",
-      "allowed_sender_addresses": ["noreply@openmausbot.com"]
+      "allowed_sender_addresses": ["noreply@uni.com"]
     }
   ],
   "triggers": {
