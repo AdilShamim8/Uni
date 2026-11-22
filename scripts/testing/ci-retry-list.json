@@ -98,6 +98,20 @@
       "owner": "AdilShamim8",
       "reason": "Windows shard 7/8 of cbc34a22fe: 'Matcher did not succeed in time' on one poll; 3/3 green locally and green on every other OS shard of the same commit.",
       "since": "2026-11-20"
+    },
+    {
+      "file": "server/index.test.ts",
+      "test": "harness HTTP API > shares one team computer across direct and room turns without overriding explicit destinations",
+      "owner": "AdilShamim8",
+      "reason": "Windows shard 1/8 of 17359038a0: turn.wait_ended event read as undefined once; passes locally on Linux (all 346) and on the ubuntu shards of the same commit.",
+      "since": "2026-11-22"
+    },
+    {
+      "file": "scripts/testing/browser-passkey.e2e.test.ts",
+      "test": "a passkey step in a bot's headless browser on agent-browser > ends the passkey request at once, so Try another way opens the other ways",
+      "owner": "AdilShamim8",
+      "reason": "browser identity (windows-latest) of 17359038a0: agent-browser 0.36.0-omb.1 raced its daemon start once ('started concurrently with different daemon configuration; retry the command'); its own message says retry. Green on ubuntu of the same commit.",
+      "since": "2026-11-22"
     }
   ]
 }

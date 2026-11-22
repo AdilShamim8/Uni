@@ -107,12 +107,12 @@ describe("skins", () => {
     expect(css).toMatch(/@scope \(\[data-skin="aurora"\]:not\(\[data-skin-preview\]\)\) to \(\[data-skin\]\)\s*\{\s*main\.bg-app\s*\{/);
   });
 
-  it("adds Stage last: studio dark, pill radii, Inter type, blue spotlight", () => {
+  it("adds Stage last: studio dark, pill radii, Geist type, blue spotlight", () => {
     expect(SKIN_IDS.at(-1)).toBe("stage");
     expect(SKINS.find((s) => s.id === "stage")?.name).toBe("Stage");
     expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--code-color-scheme: dark;/);
     expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--radius-4xl: 9999px;/);
-    expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--font-sans: "Inter"/);
+    expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--font-sans: "Geist Variable"/);
     expect(css).toMatch(/\[data-skin="stage"\] \{[^}]*--color-accent: #2f69fa;/);
   });
 
