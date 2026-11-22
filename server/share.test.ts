@@ -84,7 +84,8 @@ describe("making a template", () => {
     expect(lone.card.tagline).toBe("");
     const loneSummary = quiet.share.get(lone.card.id).details.summary ?? "";
     expect(loneSummary).toMatch(/^Shared from Uni\. The bot arrives as a new copy/);
-    expect(loneSummary).not.toMatch(/group chats|Uni/);
+    // A lone bot's line never mentions group chats, and never carries a stale brand name (the product is Uni).
+    expect(loneSummary).not.toMatch(/group chats|MausBot|OpenMausBot/);
     const titled = share.export({ scope: "bot", bot: bot() }, []);
     expect(titled.card.tagline).toBe("Inbox helper");
     expect(share.get(titled.card.id).details.summary).toBe("Keeps the inbox tidy.");

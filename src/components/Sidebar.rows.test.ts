@@ -81,7 +81,8 @@ function counted() {
   for (const name of renders.bots) bots[name] = (bots[name] ?? 0) + 1;
   const threads: Record<string, number> = {};
   for (const body of renders.threads) {
-    const title = threadTitles.find((candidate) => body.includes(`“${candidate}”`));
+    // The dialog's body quotes the thread's title; German wraps it in „…“ rather than “…”.
+    const title = threadTitles.find((candidate) => body.includes(`“${candidate}”`) || body.includes(`„${candidate}“`));
     if (title) threads[title] = (threads[title] ?? 0) + 1;
   }
   return { bots, threads };
