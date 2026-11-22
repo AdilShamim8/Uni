@@ -3,6 +3,7 @@ import { botOwner, chiefScope } from "../shared/bot-owner.ts";
 import { z } from "zod";
 import { soulDiffLines } from "../shared/line-diff.ts";
 import { newId, type ModelSelection } from "./contracts.ts";
+import { conversationLanguage, serverLine } from "./server-lines.ts";
 import { fitsOnOneLine, parseBotProfilePatch } from "./bot-profile.ts";
 import { profileSnapshot } from "./profile-revision.ts";
 import { recordProfileChange, type HistoryActor } from "./profile-versions.ts";
@@ -405,7 +406,7 @@ export class TeamSetupRequestService {
     const before = request.deletion ? undefined : this.undoBefore(request);
     let result = await this.apply(request, true, canCommit);
     const undo = before && result.state === "applied" && !result.error ? this.undoRecord(result, before) : undefined;
-    const title = result.state === "applied" ? (request.deletion ? `Deleted @${request.deletion.name}` : "Team setup applied") : "Team setup not applied";
+    const title = result.state === "applied" ? (request.deletion ? `Deleted @${request.deletion.name}` : serverLine(conversationLanguage(request.threadId), "server.teamSetup.appliedTitle")) : serverLine(conversationLanguage(request.threadId), "server.teamSetup.notAppliedTitle");
     let messageId: string | undefined;
     try {
       messageId = this.options.store.appendMessage(request.threadId, { role: "bot", kind: "options", ...(from ? { from } : {}), card: {

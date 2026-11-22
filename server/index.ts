@@ -4794,7 +4794,7 @@ async function answerRequest(
       commandAllowlist.add(remembered.botId, remembered.candidate);
     } catch {
       store.appendMessage(threadId, { role: "bot", kind: "activity", tool: {
-        name: "Command allowed once, but its allowlist rule could not be saved. Try again from the permissions menu.", ok: false,
+        name: serverLine(conversationLanguage(threadId), "server.approval.commandAllowlistSaveFailed"), ok: false,
       } });
     }
   }
@@ -4831,7 +4831,7 @@ async function answerRequest(
     if (!persistentQuestion && !existing?.card?.answered) store.appendMessage(threadId, {
       role: "bot",
       kind: "activity",
-      tool: { name: "Couldn't deliver that answer — the request is no longer open, so the action was not run", ok: false },
+      tool: { name: serverLine(conversationLanguage(threadId), "server.ask.answerNotOpen"), ok: false },
     });
   }
   return outcome;
@@ -6493,7 +6493,7 @@ bus.subscribe((event: RuntimeEvent) => {
           role: "bot",
           kind: "activity",
           tool: {
-            name: `Approve for me: ${providerLabel(event.provider)}'s automatic reviewer is not available${model ? ` for ${model}` : ""}, so this bot asks before each action. Choose a model it supports, or Full access, to stop the prompts.`,
+            name: serverLine(conversationLanguage(event.threadId), "server.approval.reviewerUnavailable", { name: providerLabel(event.provider), reason: model ? `for ${model}` : "" }),
             ok: true,
           },
         });
@@ -6550,12 +6550,12 @@ bus.subscribe((event: RuntimeEvent) => {
         role: "bot",
         kind: "options",
         card: {
-          title:
+          title: serverLine(conversationLanguage(event.threadId),
             permission && event.approvalScope === "local-computer"
-              ? "Local computer approval"
+              ? "server.approval.localComputerTitle"
               : permission
-                ? "Approval needed"
-                : "Your bot has a question",
+                ? "server.approval.approvalNeededTitle"
+                : "server.ask.botQuestionTitle"),
           ...runtimeRequestCardFields(event, {
             permission, guestDriven, commandAllowlist: command ?? undefined, allowKey: toolAllowKey ?? undefined,
             held: approvalHeldReason(heldContext) ?? (permission && guestDriven && routineRun ? confinedWhy(event.threadId) : undefined),

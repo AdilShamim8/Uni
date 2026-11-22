@@ -1,6 +1,7 @@
 import type { ModelRequestCardData } from "../shared/model-request.ts";
 import type { ModelSelection } from "../shared/wire.ts";
 import { harnessCapabilityLines, type DriverCapabilities } from "./harness-capabilities.ts";
+import { serverLine } from "./server-lines.ts";
 import { newId } from "./contracts.ts";
 import { UNDO_STALE, type DirectApply, type DirectApplyCheck } from "./direct-apply.ts";
 import { redactSecretsInText } from "./redact.ts";
@@ -116,11 +117,9 @@ export function modelCardCopy(args: {
   reason: string;
   capabilityLines: string[];
 }): { title: string; summary: string; detail: string } {
-  const title = args.crossBot
-    ? "Change @" + args.targetName + "'s default AI and model?"
-    : "Change " + args.targetName + "'s default AI and model?";
+  const title = serverLine(undefined, "server.modelRequests.changeDefault", { name: args.targetName });
   const lines: string[] = args.crossBot
-    ? ["Whose default model: @" + args.targetName, "Why: " + args.reason]
+    ? [serverLine(undefined, "server.modelRequests.whoseDefault") + args.targetName, "Why: " + args.reason]
     : ["Why: " + args.reason];
   lines.push("Default AI and model: " + JSON.stringify(args.before) + " → " + JSON.stringify(args.selection));
   lines.push(...args.capabilityLines);

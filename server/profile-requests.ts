@@ -1,5 +1,6 @@
 // propose_profile applies at once with an Undo. The owner's card (direct-apply.ts) is re-validated at confirm time, since it can sit open for days.
 import { soulDiffLines } from "../shared/line-diff.ts";
+import { serverLine } from "./server-lines.ts";
 import { BOT_PROFILE_LIMITS } from "../shared/bot-profile.ts";
 import { PROFILE_REQUEST_FIELDS, type ProfileRequestCardData, type ProfileRequestChanges } from "../shared/profile-request.ts";
 import {
@@ -191,10 +192,10 @@ export function profileCardCopy(
   const title = target.crossBot
     ? `Update @${target.name}'s profile?`
     : isSetup
-      ? `Set up ${target.name}?`
+      ? serverLine(undefined, "server.profile.setUp", { name: target.name })
       : `Update ${target.name}'s profile?`;
 
-  const lines: string[] = target.crossBot ? [`Whose profile: @${target.name}`, `Why: ${reason}`] : [`Why: ${reason}`];
+  const lines: string[] = target.crossBot ? [serverLine(undefined, "server.profile.whoseProfile") + target.name, `Why: ${reason}`] : [`Why: ${reason}`];
   for (const field of PROFILE_REQUEST_FIELDS) {
     if (field === "soul" || field === "cwd") continue;
     if (changes[field] === undefined) continue;

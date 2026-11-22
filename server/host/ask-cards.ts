@@ -16,6 +16,7 @@ import { isStopCommand } from "../room-holds.ts";
 import { needsInputQuestion } from "../runtime-coordinator.ts";
 import { withDefault } from "../runtime/questions.ts";
 import type { BotRecord, Message, Store } from "../store.ts";
+import { chatNotice } from "../chat-notices.ts";
 import { conversationLanguage, serverLine } from "../server-lines.ts";
 import { settledWaitingChip } from "../waiting-on-person.ts";
 
@@ -83,7 +84,7 @@ export function createAskCards(deps: AskCardsDeps) {
     if (!delegator || delegator.threadId === threadId || deps.copiedInto(delegator.threadId, asker.id, threadId)) return;
     const chip = store.appendMessage(delegator.threadId, { role: "bot", kind: "activity",
       from: { botId: asker.id, name: asker.name, color: asker.color },
-      tool: { name: `Waiting on your ${kind} in @${asker.name}`, nameCode: kind === "approval" ? "chat.notice.waitingApprovalElsewhere" : "chat.notice.waitingAnswerElsewhere", nameParams: { name: asker.name } },
+      tool: { name: chatNotice(kind === "approval" ? "chat.notice.waitingApprovalElsewhere" : "chat.notice.waitingAnswerElsewhere", { name: asker.name }), nameCode: kind === "approval" ? "chat.notice.waitingApprovalElsewhere" : "chat.notice.waitingAnswerElsewhere", nameParams: { name: asker.name } },
       threadRef: { botId: asker.id, threadId, title: store.taskByThread(asker.id, threadId)?.title ?? asker.name },
     });
     waitingOnPersonChips.set(`${threadId}:${requestId}`, { threadId: delegator.threadId, messageId: chip.id, name: asker.name, kind });
@@ -113,7 +114,7 @@ export function createAskCards(deps: AskCardsDeps) {
     const asked = withDefault(question);
     const bot = store.bot(node.botId);
     const options = asked.default && !card.answeredBy ? [asked.default] : [];
-    const full: OptionCardData = { title: "Your bot has a question", subtitle: asked.question, options, requestId, requestType: "question", ...card };
+    const full: OptionCardData = { title: serverLine(conversationLanguage(node.threadId), "server.ask.botQuestionTitle"), subtitle: asked.question, options, requestId, requestType: "question", ...card };
     const from = node.groupId && bot ? { from: { botId: bot.id, name: bot.name, color: bot.color } } : {};
     const since = node.startedAt ?? node.createdAt;
     const asking = askersLines(node).findLast((message) => message.role === "bot" && message.kind === "text" && message.at >= since
@@ -146,7 +147,7 @@ export function createAskCards(deps: AskCardsDeps) {
     }
     const parent = node.parentId ? deps.node(node.parentId) : undefined;
     const title = store.taskByThread(bot.id, node.threadId)?.title ?? "Teammate work";
-    const chip = `${bot.name} needs your input: ${withDefault(question).question.slice(0, 180)}`;
+    const chip = serverLine(conversationLanguage(node.threadId), "server.ask.needsInput", { name: bot.name, question: withDefault(question).question.slice(0, 180) });
     const group = parent?.groupId ? store.group(parent.groupId) : undefined;
     let liveParent: HandoffView | undefined;
     if (parent?.groupId) liveParent = group && store.groupTaskByThread(group.id, parent.threadId) ? parent : undefined;

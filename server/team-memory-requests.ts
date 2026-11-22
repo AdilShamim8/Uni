@@ -1,6 +1,7 @@
 // propose_team_memory: a bot's fact for its team applies at once, shown as a one-line notice with Undo. In a Cloud turn
 // its owner did not drive, the owner confirms it on a card instead (direct-apply.ts).
 import type { DecisionRow } from "./decision-log.ts";
+import { conversationLanguage, serverLine } from "./server-lines.ts";
 import { UNDO_STALE, type DirectApply } from "./direct-apply.ts";
 import { TeamMemoryConflict, type TeamMemory, type TeamMemoryInput } from "./team-memory.ts";
 import type { OptionCardData } from "../shared/wire.ts";
@@ -52,7 +53,7 @@ export function createTeamMemoryRequests(deps: TeamMemoryRequestDeps) {
         kind: "options",
         ...(inRoom ? { from: { botId: from.id, name: from.name, color: from.color } } : {}),
         card: {
-          title: direct ? "Remembered for the team" : "Remember this for the team?",
+          title: serverLine(conversationLanguage(threadId), direct ? "server.teamMemory.rememberedTitle" : "server.teamMemory.rememberQuestion"),
           subtitle: summary,
           options: direct ? [] : ["Remember", "Skip"],
           ...(direct ? { answered: "allow", autoApplied: true } : {}),

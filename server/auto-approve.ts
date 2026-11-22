@@ -5,6 +5,7 @@
 
 import { supportsApprovalMode, type ApprovalMode } from "../shared/approval-mode.ts";
 import { failedTurnTool, type FailedTurnTool } from "../shared/failed-turn.ts";
+import { serverLine } from "./server-lines.ts";
 import { isOutboundTool } from "../shared/outbound.ts";
 import type { ProviderAdapter, RequestOutcome } from "./contracts.ts";
 
@@ -127,9 +128,19 @@ export function undeliveredApprovalTool(
   source: AutoVerdictSource,
 ): FailedTurnTool | { name: string; ok: false } {
   if (outcome !== "rejected") return failedTurnTool("could not deliver approval to the provider; retry the task after reconnecting.");
-  const grant = source === "command-allowlist" ? "the saved command permission"
-    : source === "tool-allowlist" ? "the saved tool permission" : "Full access";
-  return { name: `The provider rejected this action despite ${grant}.`, ok: false };
+  // Model-facing failure text; the grant words are pack lines so a person reading the chip reads them in their language.
+  const REJECTED = {
+    "full-access": "server.approval.rejected.full",
+    "command-allowlist": "server.approval.rejected.command",
+    "tool-allowlist": "server.approval.rejected.tool",
+    "web-search": "server.approval.rejected.tool",
+    "own-files": "server.approval.rejected.tool",
+    "native-approval": "server.approval.rejected.full",
+    "explicit-approval-block": "server.approval.rejected.tool",
+    "outbound-guard": "server.approval.rejected.tool",
+    "safety-floor": "server.approval.rejected.tool",
+  } as const satisfies Record<AutoVerdictSource, "server.approval.rejected.command" | "server.approval.rejected.tool" | "server.approval.rejected.full">;
+  return { name: serverLine(undefined, REJECTED[source]), ok: false };
 }
 
 /** The client translates by key and falls back to this text, which the server keeps sending for older cards. */

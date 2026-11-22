@@ -2,6 +2,7 @@ import type { OutboundPolicy } from "../shared/outbound.ts";
 import { DEFAULT_OUTBOUND_POLICY } from "../shared/outbound.ts";
 import type { Notification } from "../shared/notification.ts";
 import { HELD_NOTE } from "./auto-approve.ts";
+import { conversationLanguage, serverLine } from "./server-lines.ts";
 import { appendDecision } from "./decision-log.ts";
 import { buildNotification } from "./notify.ts";
 import type { OutboundRequestService } from "./outbound-requests.ts";
@@ -60,7 +61,7 @@ export function createOutboundHold(deps: OutboundHoldDeps): OutboundHold {
           kind: "options",
           ...(owner?.group ? { from: { botId: currentSender.id, name: currentSender.name, color: currentSender.color } } : {}),
           card: {
-            title: "Send on your behalf?",
+            title: serverLine(conversationLanguage(threadId), "server.outbound.sendOnBehalf"),
             subtitle: summary,
             options: ["Allow", "Deny"],
             requestId: held.requestId,
