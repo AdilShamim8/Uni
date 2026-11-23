@@ -133,6 +133,20 @@
       "owner": "AdilShamim8",
       "reason": "Nightly (schedule) run of 9ab2baaf59, shard 7/8: the notification frame did not arrive inside the 30 s SSE window once under shard load. Green locally and on the push run of the same commit.",
       "since": "2026-11-23"
+    },
+    {
+      "file": "server/post-to-room.test.ts",
+      "test": "limits counted per turn on a bearer that outlives the turn > stops a turn at its third room post, and the next turn may post again",
+      "owner": "AdilShamim8",
+      "reason": "Ubuntu shard 2/8 of 1b406d0c9f (docs-only commit): makeBot's PATCH /api/bots came back 409 once while the bot's engine/computer change was still in flight, the API's documented wait state. Green on every other shard and locally.",
+      "since": "2026-11-23"
+    },
+    {
+      "file": "server/routine-failure-spacing.test.ts",
+      "test": "a routine every 5 minutes whose tool server is dead > starts 9 turns in its first day instead of one or two every 5 minutes, stays on, and leaves one row for what it skipped",
+      "owner": "AdilShamim8",
+      "reason": "Windows shard 5/8 of 1b406d0c9f (docs-only commit): timed out at its 40 s once under shard load; the test simulates a day of 5-minute failures. Green locally and on every other shard of the same commit.",
+      "since": "2026-11-23"
     }
   ]
 }
