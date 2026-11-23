@@ -814,7 +814,7 @@
 }
 
 /* ── Meadow ───────────────────────────────────────────────────────────────
-   The MausBot brand look: a white page, a sidebar washed in the faintest
+   Uni's brand look: a white page, a sidebar washed in the faintest
    green, mint for the selected row and a calm green accent. The brand
    green #1f8a52 carries white at only 4.3:1, so the filled accent is one
    step deeper; the brand green stays as the accent border.
@@ -2526,7 +2526,7 @@ html[data-cloud-intent-morph] [data-tour="composer"] { view-transition-name: clo
   transition: none !important;
 }
 
-/* SupaMaus vector motion. The fast horizontal compression is the edge-on
+/* The cursor mascot's vector motion. The fast horizontal compression is the edge-on
    moment of a turn; face parallax, surface lighting, and orbiting vector marks
    sell the 3D rotation without duplicate silhouettes, raster frames, or WebGL. */
 .maus-character,
@@ -3622,7 +3622,7 @@ button:disabled.bg-danger {
   color: var(--bubble-selection-ink, #ffffff);
 }
 
-/* MausBot Cloud's night: a deep night sky in the dark skins and an indigo dusk in the light ones. light-dark() picks by
+/* Uni Cloud's night: a deep night sky in the dark skins and an indigo dusk in the light ones. light-dark() picks by
    the color-scheme of the element that paints it. One star twinkles, the z's drift and now and then a star shoots, each
    slowly; the z's need transform-box to grow around their own centre. */
 :root {
