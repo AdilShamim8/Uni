@@ -55,11 +55,11 @@ describe("Uni's first-launch welcome", () => {
 
   it("opens on Uni's picture alone: the customise panel stays closed until the picture is clicked", () => {
     const html = renderToStaticMarkup(createElement(StoreProvider, null, createElement(UniWelcomeCard, { bot: maus, onClose: () => {} })));
-    expect(html).toContain(`aria-label="${t("mausbotWelcome.customize", { name: "Uni" })}"`);
+    expect(html).toContain(`aria-label="${t("helperWelcome.customize", { name: "Uni" })}"`);
     expect(html).toContain('aria-expanded="false"');
-    expect(html).toContain('data-mausbot-welcome-panel="closed"');
-    expect(html).toMatch(/data-mausbot-welcome-panel="closed"[^>]*|inert=""[^>]*data-mausbot-welcome-panel="closed"/);
-    expect(html).toContain(t("mausbotWelcome.title", { name: "Uni" }));
-    expect(html).toContain(t("mausbotWelcome.add", { name: "Uni" }));
+    expect(html).toContain('data-helper-welcome-panel="closed"');
+    expect(html).toMatch(/data-helper-welcome-panel="closed"[^>]*|inert=""[^>]*data-helper-welcome-panel="closed"/);
+    expect(html).toContain(t("helperWelcome.title", { name: "Uni" }));
+    expect(html).toContain(t("helperWelcome.add", { name: "Uni" }));
   });
 });

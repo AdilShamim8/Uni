@@ -94,11 +94,11 @@ export function UniWelcome({ viewer }: { viewer: WelcomeViewer | null }) {
   return createPortal(<UniWelcomeCard bot={shown} onClose={() => setClosed(true)} />, document.body);
 }
 
-const LINES = [[Sparkles, "mausbotWelcome.line.helper"], [BookOpen, "mausbotWelcome.line.knows"], [Wand2, "mausbotWelcome.line.setup"], [Crown, "mausbotWelcome.line.powers"]] as const;
+const LINES = [[Sparkles, "helperWelcome.line.helper"], [BookOpen, "helperWelcome.line.knows"], [Wand2, "helperWelcome.line.setup"], [Crown, "helperWelcome.line.powers"]] as const;
 
 export function UniWelcomeCard({ bot, onClose }: { bot: Bot; onClose: () => void }) {
   const { state, dispatch } = useStore();
-  const lines = state.config?.team ? LINES.filter(([, key]) => key !== "mausbotWelcome.line.powers") : LINES;
+  const lines = state.config?.team ? LINES.filter(([, key]) => key !== "helperWelcome.line.powers") : LINES;
   const advanced = useAdvancedMode();
   const reduced = usePrefersReducedMotion();
   const [draft, setDraft] = useState<WelcomeDraft>(() => draftOf(bot));
@@ -152,12 +152,12 @@ export function UniWelcomeCard({ bot, onClose }: { bot: Bot; onClose: () => void
   };
 
   return (
-    <div ref={overlayRef} className={cn("fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-6 pb-6 pt-[min(6vh,48px)]", advanced ? "bg-black/55" : "ui-scrim", leaving && "pointer-events-none")} data-mausbot-welcome="">
+    <div ref={overlayRef} className={cn("fixed inset-0 z-50 flex items-start justify-center overflow-y-auto px-6 pb-6 pt-[min(6vh,48px)]", advanced ? "bg-black/55" : "ui-scrim", leaving && "pointer-events-none")} data-helper-welcome="">
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="mausbot-welcome-title"
+        aria-labelledby="helper-welcome-title"
         tabIndex={-1}
         style={{ outline: "none" }}
         onKeyDown={(event) => {
@@ -171,24 +171,24 @@ export function UniWelcomeCard({ bot, onClose }: { bot: Bot; onClose: () => void
           <button
             ref={pictureRef}
             type="button"
-            aria-label={t("mausbotWelcome.customize", { name })}
+            aria-label={t("helperWelcome.customize", { name })}
             aria-expanded={editing}
-            aria-controls="mausbot-welcome-panel"
-            data-mausbot-welcome-picture=""
+            aria-controls="helper-welcome-panel"
+            data-helper-welcome-picture=""
             onClick={() => setEditing(!editing)}
             onDragOver={(event) => { if (event.dataTransfer.types.includes("Files")) event.preventDefault(); }}
             onDrop={drop}
             className="group relative rounded-full p-1 transition-transform duration-200 ease-out hover:-translate-y-0.5 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
           >
             <span className="pointer-events-none absolute inset-1 rounded-full ring-0 ring-accent/35 transition-[box-shadow] duration-200 group-hover:ring-2 group-focus-visible:ring-2" aria-hidden="true" />
-            <span ref={avatarRef} data-mausbot-welcome-avatar="" className="block drop-shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
+            <span ref={avatarRef} data-helper-welcome-avatar="" className="block drop-shadow-[0_10px_24px_rgba(0,0,0,0.22)]">
               <BotAvatar bot={preview} size={96} label={name} motion="arrive" />
             </span>
             <span aria-hidden="true" className="absolute bottom-2 right-2 flex size-7 items-center justify-center rounded-full border border-hairline/60 bg-panel text-ink-secondary shadow-sm transition-colors group-hover:text-ink">
               <Pencil size={13} />
             </span>
           </button>
-          <h2 id="mausbot-welcome-title" className={cn("mt-3 text-ink", advanced ? "text-[20px] font-semibold" : "text-[17px] font-medium leading-6 tracking-[-0.008em]")}>{t("mausbotWelcome.title", { name })}</h2>
+          <h2 id="helper-welcome-title" className={cn("mt-3 text-ink", advanced ? "text-[20px] font-semibold" : "text-[17px] font-medium leading-6 tracking-[-0.008em]")}>{t("helperWelcome.title", { name })}</h2>
           <ul className="mt-3 space-y-1.5 text-left text-[14px] leading-snug text-ink-secondary">
             {lines.map(([Icon, key]) => (
               <li key={key} className="flex items-start gap-2.5"><Icon size={15} className="mt-0.5 shrink-0 text-accent-text" aria-hidden="true" />{t(key)}</li>
@@ -197,11 +197,11 @@ export function UniWelcomeCard({ bot, onClose }: { bot: Bot; onClose: () => void
         </div>
 
         <div
-          id="mausbot-welcome-panel"
+          id="helper-welcome-panel"
           ref={panelRef}
           inert={!editing}
           aria-hidden={!editing}
-          data-mausbot-welcome-panel={editing ? "open" : "closed"}
+          data-helper-welcome-panel={editing ? "open" : "closed"}
           className={cn("grid transition-[grid-template-rows,opacity] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none",
             editing ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0")}
         >
@@ -213,13 +213,13 @@ export function UniWelcomeCard({ bot, onClose }: { bot: Bot; onClose: () => void
         </div>
 
         <div className={cn("mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:items-center", advanced ? "sm:justify-between" : "sm:justify-end")}>
-          <button type="button" data-mausbot-welcome-later="" onClick={() => choose(false)} title={t("mausbotWelcome.notNowHint", { name })}
+          <button type="button" data-helper-welcome-later="" onClick={() => choose(false)} title={t("helperWelcome.notNowHint", { name })}
             className={advanced ? "rounded-full px-3 py-2 text-[13px] text-ink-secondary hover:bg-raised-hover hover:text-ink" : "ui-button ui-button-pill"}>
-            {t("mausbotWelcome.notNow")}
+            {t("helperWelcome.notNow")}
           </button>
-          <button type="button" data-mausbot-welcome-add="" onClick={() => choose(true)}
+          <button type="button" data-helper-welcome-add="" onClick={() => choose(true)}
             className={advanced ? "rounded-full bg-accent px-5 py-2.5 text-[14px] font-medium text-accent-ink hover:brightness-110" : "ui-button ui-button-pill ui-button-primary"}>
-            {t("mausbotWelcome.add", { name })}
+            {t("helperWelcome.add", { name })}
           </button>
         </div>
       </div>

@@ -105,11 +105,11 @@ it("never opens in a launch where the Cloud Pro popup or the updates question al
 
 it("Escape keeps the card as seen, so it does not come back and claim every later launch", async () => {
   await show();
-  const dialog = document.querySelector<HTMLElement>("[data-mausbot-welcome] [role=dialog]");
+  const dialog = document.querySelector<HTMLElement>("[data-helper-welcome] [role=dialog]");
   expect(dialog).toBeTruthy();
   await act(async () => { dialog!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
   expect(f.dispatch).toHaveBeenCalledWith({ type: "updateBot", botId: "maus", patch: { welcomed: true } });
-  expect(document.querySelector("[data-mausbot-welcome]"), "closed").toBeNull();
+  expect(document.querySelector("[data-helper-welcome]"), "closed").toBeNull();
 });
 
 it("never comes after a first run that met the Chief, which already introduced Uni; an older install still gets it once", async () => {
