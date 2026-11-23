@@ -46,7 +46,9 @@ describe("lazy host claim and pin on use (issue #1650)", () => {
     return result.body;
   };
   async function until<T>(read: () => T | Promise<T>, accept: (value: T) => boolean): Promise<T> {
-    const end = Date.now() + 20_000;
+    // The file's other windows scale with hostTimeout; these waits (a spawned server's boot above all) need the same
+    // headroom on Windows and side-by-side Linux shards.
+    const end = Date.now() + hostTimeout(20_000);
     for (;;) {
       const value = await read();
       if (accept(value)) return value;

@@ -147,6 +147,13 @@
       "owner": "AdilShamim8",
       "reason": "Windows shard 5/8 of 1b406d0c9f (docs-only commit): timed out at its 40 s once under shard load; the test simulates a day of 5-minute failures. Green locally and on every other shard of the same commit.",
       "since": "2026-11-23"
+    },
+    {
+      "file": "server/doctor/checks/messages-db.test.ts",
+      "test": "messages-db check > reports what SQLite's own check finds damaged inside a database it can open",
+      "owner": "AdilShamim8",
+      "reason": "Windows shard 1/8 of a5f6bbed8e: timed out at the default 40 s once on a runner whose whole file ran ~2x slower than its siblings (500 rows and one integrity check are seconds of work); green on every other shard and locally.",
+      "since": "2026-11-23"
     }
   ]
 }
