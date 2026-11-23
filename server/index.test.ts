@@ -23,6 +23,7 @@ import { removeTempDir, waitForExit } from "./testing/cleanup.ts";
 import { startFakeHttpMcp } from "./testing/fake-http-mcp-server.ts";
 import { startFakeOAuth } from "./testing/fake-oauth-server.ts";
 import { freePortBlock, withFreeSignInPort } from "./testing/ports.ts";
+import { hostTimeout } from "./testing/host-timeout.ts";
 import { openSse } from "./testing/sse.ts";
 import { STARTER_COLORS } from "./bot-look.ts";
 import { createTeamManifest } from "./team-manifest.ts";
@@ -1747,8 +1748,9 @@ describe("harness HTTP API", () => {
     try {
       const result = await new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
         // On Windows without wmic the lease reads the other server's start time through Windows PowerShell, whose first
-        // start on a CI runner takes several seconds.
-        const timer = setTimeout(() => reject(new Error("competing server did not exit")), process.platform === "win32" ? 30_000 : 5_000);
+        // start on a CI runner takes several seconds. A Linux shard that shares its CPU between files boots the
+        // contender just as slowly, so that budget scales with hostTimeout like every other spawn here.
+        const timer = setTimeout(() => reject(new Error("competing server did not exit")), process.platform === "win32" ? 30_000 : hostTimeout(10_000));
         timer.unref?.();
         contender.once("close", (code, signal) => {
           clearTimeout(timer);
