@@ -1287,7 +1287,7 @@
   "cloudWelcome.bring.myCloudTitle": "Перенести бота сюда из My Cloud",
   "cloudWelcome.bring.myCloudHint": "Прежде чем что-то перенести, вы увидите, что перейдёт и что останется.",
   "cloudWelcome.bring.move": "Перенести",
-  "cloudWelcome.bring.mausBotStays": "Останется в My Cloud: в команде у каждого свой",
+  "cloudWelcome.bring.botStays": "Останется в My Cloud: в команде у каждого свой",
   "cloudWelcome.bring.moveFailed": "Не удалось перенести {bot}. Он по-прежнему в My Cloud, без изменений.",
   "cloudWelcome.engine.credit": "У вас есть {amount} кредита Claude, поэтому боты могут начать работу прямо сейчас. Войдите, когда будете готовы.",
   "cloudWelcome.engine.creditPlain": "В пробный доступ входит кредит Claude, поэтому боты могут начать работу прямо сейчас. Войдите, когда будете готовы.",

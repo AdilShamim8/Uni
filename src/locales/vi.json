@@ -878,7 +878,7 @@
   "cloudWelcome.bring.myCloudTitle": "Chuyển một bot từ My Cloud sang đây",
   "cloudWelcome.bring.myCloudHint": "Bạn sẽ thấy phần nào chuyển đi và phần nào ở lại trước khi chuyển.",
   "cloudWelcome.bring.move": "Chuyển",
-  "cloudWelcome.bring.mausBotStays": "Ở lại My Cloud: mỗi người trong nhóm đều có bản của riêng mình",
+  "cloudWelcome.bring.botStays": "Ở lại My Cloud: mỗi người trong nhóm đều có bản của riêng mình",
   "cloudWelcome.bring.moveFailed": "Không chuyển được {bot}. Bot vẫn ở My Cloud, không thay đổi.",
   "organization.additive": "Các mô hình của công ty được thêm song song với mô hình cá nhân và cục bộ hiện có của bạn. Bạn vẫn có thể sử dụng các mô hình và tài khoản đó bình thường.",
   "organization.privacy": "Việc kết nối không tải lên lịch sử cuộc trò chuyện của bạn. Các yêu cầu gửi tới mô hình Công ty sẽ đi qua cổng kết nối của tổ chức bạn.",

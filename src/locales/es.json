@@ -1145,7 +1145,7 @@
   "cloudWelcome.bring.myCloudTitle": "Mueve un bot aquí desde My Cloud",
   "cloudWelcome.bring.myCloudHint": "Antes de mover nada, verás qué se va y qué se queda.",
   "cloudWelcome.bring.move": "Mover",
-  "cloudWelcome.bring.mausBotStays": "Se queda en My Cloud: cada persona del equipo tiene el suyo",
+  "cloudWelcome.bring.botStays": "Se queda en My Cloud: cada persona del equipo tiene el suyo",
   "cloudWelcome.bring.moveFailed": "No se pudo mover {bot}. Sigue en My Cloud, sin cambios.",
   "cloudWelcome.engine.credit": "Tienes {amount} de crédito de Claude, así que tus bots pueden empezar ahora mismo. Inicia sesión cuando quieras.",
   "cloudWelcome.engine.creditPlain": "Tu prueba incluye crédito de Claude, así que tus bots pueden empezar ahora mismo. Inicia sesión cuando quieras.",

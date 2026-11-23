@@ -1744,7 +1744,7 @@
   "cloudWelcome.bring.myCloudTitle": "Déplacer un bot ici depuis My Cloud",
   "cloudWelcome.bring.myCloudHint": "Vous verrez ce qui part et ce qui reste avant tout déplacement.",
   "cloudWelcome.bring.move": "Déplacer",
-  "cloudWelcome.bring.mausBotStays": "Reste sur My Cloud : chaque membre de l'équipe a le sien",
+  "cloudWelcome.bring.botStays": "Reste sur My Cloud : chaque membre de l'équipe a le sien",
   "cloudWelcome.bring.moveFailed": "Impossible de déplacer {bot}. Il est toujours sur My Cloud, inchangé.",
   "cloudWelcome.engine.sub": "Vos bots réfléchissent avec votre propre plan Claude ou ChatGPT, ou avec OpenCode. Configurez une fois sur {name}.",
   "cloudWelcome.engine.credit": "Vous avez {amount} de crédit Claude, donc vos bots peuvent commencer maintenant. Connectez-vous lorsque vous êtes prêt.",

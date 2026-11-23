@@ -633,7 +633,7 @@
   "cloudWelcome.bring.myCloudTitle": "Перенести бота сюди з My Cloud",
   "cloudWelcome.bring.myCloudHint": "Перш ніж щось перенести, ви побачите, що перейде, а що залишиться.",
   "cloudWelcome.bring.move": "Перенести",
-  "cloudWelcome.bring.mausBotStays": "Лишається в My Cloud: у команді кожен має власного",
+  "cloudWelcome.bring.botStays": "Лишається в My Cloud: у команді кожен має власного",
   "cloudWelcome.bring.moveFailed": "Не вдалося перенести {bot}. Він і далі в My Cloud, без змін.",
   "settings.section.appearance": "Вигляд",
   "settings.section.connections": "API-ключі",

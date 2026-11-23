@@ -541,7 +541,7 @@
   "cloudWelcome.bring.myCloudTitle": "My Cloud से किसी बॉट को यहाँ लाएँ",
   "cloudWelcome.bring.myCloudHint": "कुछ भी ले जाने से पहले आप देखेंगे कि क्या जाएगा और क्या रहेगा।",
   "cloudWelcome.bring.move": "ले जाएँ",
-  "cloudWelcome.bring.mausBotStays": "My Cloud पर रहता है: टीम में हर किसी को अपना मिलता है",
+  "cloudWelcome.bring.botStays": "My Cloud पर रहता है: टीम में हर किसी को अपना मिलता है",
   "cloudWelcome.bring.moveFailed": "{bot} को नहीं ले जाया जा सका। वह My Cloud पर ही है, बिना बदलाव के।",
   "settings.section.connections": "API कुंजियाँ",
   "settings.profile.title": "प्रोफ़ाइल",

@@ -1744,7 +1744,7 @@
   "cloudWelcome.bring.myCloudTitle": "Move a bot here from My Cloud",
   "cloudWelcome.bring.myCloudHint": "You'll see what goes and what stays before anything moves.",
   "cloudWelcome.bring.move": "Move",
-  "cloudWelcome.bring.mausBotStays": "Stays on My Cloud: everyone on a team gets their own",
+  "cloudWelcome.bring.botStays": "Stays on My Cloud: everyone on a team gets their own",
   "cloudWelcome.bring.moveFailed": "Couldn't move {bot}. It's still on My Cloud, unchanged.",
   "cloudWelcome.engine.sub": "Your bots think with your own Claude or ChatGPT plan, or with OpenCode. Set one up once on {name}.",
   "cloudWelcome.engine.credit": "You have {amount} of Claude credit, so your bots can start right now. Sign in whenever you're ready.",

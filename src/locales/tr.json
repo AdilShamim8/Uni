@@ -878,7 +878,7 @@
   "cloudWelcome.bring.myCloudTitle": "My Cloud'dan buraya bir bot taşı",
   "cloudWelcome.bring.myCloudHint": "Bir şey taşınmadan önce neyin gideceğini ve neyin kalacağını göreceksin.",
   "cloudWelcome.bring.move": "Taşı",
-  "cloudWelcome.bring.mausBotStays": "My Cloud'da kalır: ekipte herkesin kendine ait olanı var",
+  "cloudWelcome.bring.botStays": "My Cloud'da kalır: ekipte herkesin kendine ait olanı var",
   "cloudWelcome.bring.moveFailed": "{bot} taşınamadı. Hâlâ My Cloud'da, değişmedi.",
   "organization.additive": "Şirket modelleri, mevcut kişisel ve yerel modellerinizin yanı sıra eklenir. Bu modeller ve hesaplar kullanılabilir kalır.",
   "organization.privacy": "Bağlanmak sohbet geçmişinizi yüklemez. Şirket modellerine gönderilen istekler organizasyonunuzun ağ geçidi üzerinden iletilir.",

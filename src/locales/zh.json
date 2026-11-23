@@ -1649,7 +1649,7 @@
   "cloudWelcome.bring.myCloudTitle": "把机器人从 My Cloud 移到这里",
   "cloudWelcome.bring.myCloudHint": "移动前，你会先看到哪些会移过来、哪些会留下。",
   "cloudWelcome.bring.move": "移动",
-  "cloudWelcome.bring.mausBotStays": "留在 My Cloud：团队中每个人都有自己的",
+  "cloudWelcome.bring.botStays": "留在 My Cloud：团队中每个人都有自己的",
   "cloudWelcome.bring.moveFailed": "无法移动 {bot}。它仍在 My Cloud，没有变更。",
   "cloudWelcome.engine.credit": "你有 {amount} Claude 额度，所以机器人可以立即开始工作。你准备好时登录即可。",
   "cloudWelcome.engine.creditPlain": "你的试用包含 Claude 额度，所以机器人可以立即开始工作。你准备好时登录即可。",

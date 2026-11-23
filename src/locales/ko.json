@@ -1344,7 +1344,7 @@
   "cloudWelcome.bring.myCloudTitle": "My Cloud에서 봇을 여기로 옮기기",
   "cloudWelcome.bring.myCloudHint": "옮기기 전에 무엇이 가고 무엇이 남는지 볼 수 있어요.",
   "cloudWelcome.bring.move": "옮기기",
-  "cloudWelcome.bring.mausBotStays": "My Cloud에 남아요. 팀에서는 각자 자기 것을 받아요",
+  "cloudWelcome.bring.botStays": "My Cloud에 남아요. 팀에서는 각자 자기 것을 받아요",
   "cloudWelcome.bring.moveFailed": "{bot}을(를) 옮기지 못했어요. My Cloud에 그대로 있어요.",
   "cloudWelcome.engine.credit": "Claude 크레딧이 {amount} 있어서 봇이 지금 바로 시작할 수 있어요. 준비되면 언제든 로그인하세요.",
   "cloudWelcome.engine.creditPlain": "체험에 Claude 크레딧이 포함되어 있어서 봇이 지금 바로 시작할 수 있어요. 준비되면 언제든 로그인하세요.",
