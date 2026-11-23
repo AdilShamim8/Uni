@@ -1,119 +1,68 @@
 <div align="center">
 
 # Uni
-**The open-source Grok Bot alternative: your own team of AI bots, in a chat app.**
+**A team of real AI agents, in a chat app.**
 
-[**uni.com**](https://www.uni.com) &nbsp;·&nbsp; [Download](https://www.uni.com/download) &nbsp;·&nbsp; [Open source Grok Bot alternative, compared](https://www.uni.com/blog/grok-bot-vs-uni)
+[Download](https://github.com/AdilShamim8/Uni/releases/latest) · [Docs](https://github.com/AdilShamim8/Uni/tree/main/docs) · [Contributing](CONTRIBUTING.md) · [Security](SECURITY.md)
 
-<sub>Uni is an open-source Grok Bot alternative: an independent project inspired by **Grok Bot**, and the open-source alternative to **Meta Muse**, **OpenAI dots** and **Cue by Manus** — bring-your-own-agent, local-first, on the models you already have. Also known as **MausBot**; formerly **OpenGrokBot**. Not affiliated with xAI, Meta, OpenAI or Manus.</sub>
-
-Every bot in the sidebar is a real agent — Claude or Codex running locally under the hood — with its own
+Every bot in the sidebar is a real agent — Claude, Codex or Grok running locally under the hood — with its own
 personality, its own model, its own cloud computer, and its own connected apps.
 Talk to them like contacts. Watch them work. Approve what matters.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
 ![Electron](https://img.shields.io/badge/Electron-macOS%20%C2%B7%20Windows%20%C2%B7%20Ubuntu-2B2E3A?logo=electron&logoColor=9FEAF9)
-![Agents](https://img.shields.io/badge/agents-Claude%20·%20Codex-d97757)
-[![Release](https://img.shields.io/github/v/release/milind-soni/Uni?label=release&color=1084fe&cacheSeconds=300)](https://github.com/AdilShamim8/Uni/releases/latest)
+![Agents](https://img.shields.io/badge/agents-Claude%20·%20Codex%20·%20Grok-d97757)
+[![Release](https://img.shields.io/github/v/release/AdilShamim8/Uni?label=release&color=1084fe&cacheSeconds=300)](https://github.com/AdilShamim8/Uni/releases/latest)
 ![PRs](https://img.shields.io/badge/PRs-welcome-38d591)
 
 <br>
 
 <a href="https://github.com/AdilShamim8/Uni/releases/latest/download/Uni.dmg">
-  <img src="https://img.shields.io/github/v/release/milind-soni/Uni?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20%20Download%20for%20Mac%20%28Apple%20silicon%29&labelColor=070707&color=1084fe&cacheSeconds=300" alt="Download the latest Uni for Mac with Apple silicon (.dmg)" height="40">
+  <img src="https://img.shields.io/github/v/release/AdilShamim8/Uni?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20%20Download%20for%20Mac%20%28Apple%20silicon%29&labelColor=070707&color=1084fe&cacheSeconds=300" alt="Download the latest Uni for Mac with Apple silicon (.dmg)" height="40">
 </a>
 &nbsp;
 <a href="https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-intel.dmg">
-  <img src="https://img.shields.io/github/v/release/milind-soni/Uni?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20%20Download%20for%20Mac%20%28Intel%29&labelColor=070707&color=2a9d8f&cacheSeconds=300" alt="Download the latest Uni for Intel Macs (.dmg)" height="40">
+  <img src="https://img.shields.io/github/v/release/AdilShamim8/Uni?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20%20Download%20for%20Mac%20%28Intel%29&labelColor=070707&color=2a9d8f&cacheSeconds=300" alt="Download the latest Uni for Intel Macs (.dmg)" height="40">
 </a>
 &nbsp;
 <a href="https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-setup.exe">
-  <img src="https://img.shields.io/github/v/release/milind-soni/Uni?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20%20Download%20for%20Windows&labelColor=070707&color=4cc2ff&cacheSeconds=300" alt="Download the latest Uni for Windows (.exe)" height="40">
+  <img src="https://img.shields.io/github/v/release/AdilShamim8/Uni?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20%20Download%20for%20Windows&labelColor=070707&color=4cc2ff&cacheSeconds=300" alt="Download the latest Uni for Windows (.exe)" height="40">
 </a>
 &nbsp;
 <a href="https://github.com/AdilShamim8/Uni/releases/latest/download/Uni-amd64.deb">
-  <img src="https://img.shields.io/github/v/release/milind-soni/Uni?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20%20Download%20for%20Ubuntu&labelColor=070707&color=e95420&cacheSeconds=300" alt="Download the latest Uni for Ubuntu (.deb)" height="40">
+  <img src="https://img.shields.io/github/v/release/AdilShamim8/Uni?style=for-the-badge&label=%E2%AC%87%EF%B8%8F%20%20Download%20for%20Ubuntu&labelColor=070707&color=e95420&cacheSeconds=300" alt="Download the latest Uni for Ubuntu (.deb)" height="40">
 </a>
 
 <sub>[latest release](https://github.com/AdilShamim8/Uni/releases/latest) &nbsp;·&nbsp; macOS: Apple silicon & Intel · signed & notarized .dmg &nbsp;·&nbsp; Windows: x64 installer &nbsp;·&nbsp; Ubuntu 24.04 x64: .deb or AppImage beta &nbsp;·&nbsp; [all releases](https://github.com/AdilShamim8/Uni/releases)</sub>
 
 <br>
 
-<a href="https://github.com/sponsors/AdilShamim8">
-  <img src="https://img.shields.io/badge/%E2%9D%A4%EF%B8%8F%20%20Support%20Uni-GitHub%20Sponsors-38d591?style=for-the-badge&labelColor=070707" alt="Support Uni via GitHub Sponsors" height="40">
-</a>
-
-<br>
-<br>
-
-<sub>Powered by <a href="https://boat.dev">boat.dev</a></sub>
-<br>
-<a href="https://boat.dev">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/sponsors/boat-logo-white.svg">
-    <img src="docs/assets/sponsors/boat-logo.svg" alt="Boat (boat.dev)" height="34">
-  </picture>
-</a>
-
-<br>
-<br>
-
-<sub>Inference provider sponsor</sub>
-<br>
-<a href="https://modelgo.ai/?utm_source=uni&utm_medium=sponsorship&utm_content=readme&campaign_id=uni&ad_group_id=readme">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/sponsors/modelgo-logo-white.svg">
-    <img src="docs/assets/sponsors/modelgo-logo.svg" alt="ModelGo (modelgo.ai)" height="22">
-  </picture>
-</a>
-
-<br>
-<br>
-
-<img src="docs/screenshots/hero.png" alt="Uni — a Telegram-style chat app where every chat is a real AI agent" width="900">
+<img src="docs/screenshots/hero.png" alt="Uni — a chat app where every chat is a real AI agent" width="900">
 
 </div>
 
 ---
 
-> ⚠️ **No affiliation with any cryptocurrency.** Uni has no token. Any coin using the Uni, Maus, or SupaMaus name is not created, endorsed, or affiliated with this project or its maintainer. I have received no tokens, payment, or allocation from anyone, and I will not be endorsing any token.
+> ⚠️ **No affiliation with any cryptocurrency.** Uni has no token. Any coin using the Uni name is not created,
+> endorsed by, or affiliated with this project. I have received no tokens, payment, or allocation from anyone,
+> and I will not be endorsing any token.
 
-## Why
+## Why Uni
 
-One assistant in one box is the wrong shape for agents. Uni is an independent, open-source project inspired by **Grok Bot** —
-it keeps the idea (AI as a *messaging app*: a roster of bots you chat with, each with its own personality,
-memory of its thread, model, computer, and apps) and rebuilds it open, local-first, and on the agents you
-already have:
+One assistant in one box is the wrong shape for agents. Real work is a team: a researcher, a builder, a
+reviewer — each with its own context, its own tools, and its own idea of done. Uni gives that team a home
+that looks like the messaging app you already live in, and keeps every part of it on your side of the line:
 
 - **Bring your own agents.** Bots run on the `claude`, `codex`, and `grok` CLIs installed on your own machine
   — your existing logins and subscriptions, no new accounts, no proxy in the middle. Point any engine at a
   custom CLI binary (a versioned build or wrapper) in **Settings → Engines**.
 - **Local first.** One small harness server on `127.0.0.1` owns every agent process. Transcripts, keys, and
   events live in `~/.uni`, not a cloud.
-- **Agents with hands.** Each bot can use a cloud Linux desktop, an isolated Local VM, or—where the platform
-  safety boundary is currently certified—your own computer, plus 500+ apps through Composio. Host control is
+- **Agents with hands.** Each bot can use a cloud Linux desktop, an isolated Local VM, or — where the platform
+  safety boundary is currently certified — your own computer, plus 500+ apps through Composio. Host control is
   available on macOS and Ubuntu Xorg after explicit opt-in. Ubuntu Wayland host control remains disabled while
-  issue #345 is resolved.
-
-## The open-source alternative to Grok Bot, Muse, dots and Cue
-
-Four closed personal-agent products shipped in seven weeks of 2026, and each one keeps the model, the
-computer and your data on its maker's side of the line. Uni is the open-source version of that
-shape: a team of agents in a chat app, each with its own model, its own computer and its own connected
-apps, running on your machine under Apache 2.0. If you searched for an *open Muse*, *open dots*, an
-*open-source Grok Bot*, an *open Instinct* or an *open Cue*, this is the repository.
-
-| Looking for | What it is | How Uni differs | Read more |
-| --- | --- | --- | --- |
-| **Open source Grok Bot** | xAI's roster of bots on one shared cloud computer, Grok only, from a SuperGrok or Cursor plan | Same roster shape; any model per bot; your own machine; approval cards | [Grok Bot vs Uni](https://www.uni.com/blog/grok-bot-vs-uni) |
-| **Open Muse** | Meta's single personal agent in a Meta cloud VM, US and Canada only | A team instead of one agent; runs anywhere; data in `~/.uni` | [Meta Muse alternative](https://www.uni.com/blog/open-source-alternative-to-meta-muse) |
-| **Open dots** | OpenAI's always-on agent inside ChatGPT, GPT only, Pro and Business Premium plans | Several agents; your Claude, ChatGPT or Grok login; no plan required | [OpenAI dots alternative](https://www.uni.com/blog/openai-dots-alternative) |
-| **Open Cue** | Manus's invite-only agents with their own phone, email and wallet | No invite; OAuth instead of passwords; open source | [Cue by Manus alternative](https://www.uni.com/blog/open-source-alternative-to-cue-by-manus) |
-| **Open Instinct** | Spear Street's invite-only agent that holds your passwords on a cloud computer | Ask for approval when you want it; signs in over OAuth; your machine | [Instinct AI alternative](https://www.uni.com/blog/instinct-ai-alternative) |
-
-All five side by side: [Muse vs Grok Bot vs Dots vs Cue](https://www.uni.com/blog/muse-vs-grok-bot-vs-dots-vs-cue),
-and a decision guide in five questions: [Which AI agent should I use?](https://www.uni.com/blog/which-ai-agent-should-i-use)
+  the real-seat safety gate is unresolved.
 
 ## Features
 
@@ -194,23 +143,19 @@ channel and its bots under a named context, then rename it or change its members
 
 ### ⚡ Fast decisions with Jev
 
-Add a Cloudflare Workers AI token with its account ID, a TypeSafe Jev key, or an OpenRouter key and model, in **Settings › AI › Routing and extraction** and rooms set to **Auto** pick the bot
-that fits each un-mentioned message in a few hundred milliseconds, falling back to the room's lead whenever the decision model is off or unsure.
-See [docs/decision-model.md](docs/decision-model.md).
+Add a Cloudflare Workers AI token with its account ID, a TypeSafe Jev key, or an OpenRouter key and model, in
+**Settings › AI › Routing and extraction** and rooms set to **Auto** pick the bot that fits each un-mentioned
+message in a few hundred milliseconds, falling back to the room's lead whenever the decision model is off or
+unsure. See [docs/decision-model.md](docs/decision-model.md).
 
 ### 📦 Install a complete team from one Markdown file
 
-Browse outcome-driven teams on [BotMRR](https://botmrr.io), then choose **Add to Uni**. The app
-opens a review screen before creating the bots, Chief of Staff, channels, playbooks, connector checklist,
-and suggested routines. You can also import the same `.md` file from disk or paste its public GitHub URL
-in **Teams → Import**.
-
-The format stays portable: Uni reads the structured YAML frontmatter for a reliable one-click
-install, while Grok, Claude, ChatGPT, and people can follow the ordinary Markdown playbook. Connections
-remain off until you approve them, routines arrive paused, and packages never carry credentials,
-conversations, permissions, memory, or computer access. Browse the
-[open-source playbook repository](https://github.com/milind-soni/uni-teams) or read its
-[portable format](https://github.com/milind-soni/uni-teams/blob/main/FORMAT.md).
+Teams are portable: one `.md` file with structured YAML frontmatter carries the bots, the Chief of Staff,
+channels, playbooks, a connector checklist, and suggested routines. Import it from disk or paste its public
+GitHub URL in **Teams → Import** — the app opens a review screen before creating anything. The format stays
+readable: Grok, Claude, ChatGPT, and people can follow the ordinary Markdown playbook. Connections remain off
+until you approve them, routines arrive paused, and packages never carry credentials, conversations,
+permissions, memory, or computer access.
 
 ### 🤝 Share a bot or a department
 
@@ -231,48 +176,11 @@ you what it's doing while it works, and asks for approvals out loud.
 Choose ElevenLabs, Fish Audio, Grok (xAI), built-in Mac voices, or a local Chatterbox server in an agent profile. Paste a
 cloud key once when needed, pick a voice, and every bot can talk.
 Give a bot its own voice and a channel stops sounding like one person.
-
-For Grok, save your xAI API key in **Settings → Connections**, then choose **Grok (xAI)**
-and a voice under the bot’s **Voice & alerts**. It reuses that host-side key and returns MP3
-audio for spoken replies and calls. Language is detected automatically from the reply text;
-quality varies outside xAI’s [officially supported languages](https://docs.x.ai/developers/model-capabilities/audio/text-to-speech).
-This adds speech synthesis to the existing call flow; microphone transcription remains unchanged.
+See [docs/voice-mode.md](docs/voice-mode.md) for the design and the known gaps.
 
 **Also in the box:** streaming replies with tool-run activity chips · dictation from the
-composer mic (on-device Apple speech recognition on macOS, Fish Audio speech-to-text on Windows and Linux, in the desktop app) · SupaMaus cursor mascots with role-aware
+composer mic (on-device Apple speech recognition on macOS, Fish Audio speech-to-text on Windows and Linux, in the desktop app) · Uni cursor mascots with role-aware
 expressions · screenshots of the bot's work folded into the transcript.
-
-## Powered By
-
-<div align="center">
-
-![Claude](https://img.shields.io/badge/Claude-d97757?logo=claude&logoColor=white)
-![Codex](https://img.shields.io/badge/Codex-000000)
-![Grok](https://img.shields.io/badge/Grok%20CLI-000000?logo=x&logoColor=white)
-![Electron](https://img.shields.io/badge/Electron-2B2E3A?logo=electron&logoColor=9FEAF9)
-![React](https://img.shields.io/badge/React-20232A?logo=react&logoColor=61DAFB)
-![Vite](https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-0F172A?logo=tailwindcss&logoColor=38BDF8)
-![Composio](https://img.shields.io/badge/Composio-e6493a)
-![Boat](https://img.shields.io/badge/Boat-sponsor-111111)
-![Cua](https://img.shields.io/badge/Cua%20Driver-1f2937)
-![ElevenLabs](https://img.shields.io/badge/ElevenLabs-000000?logo=elevenlabs&logoColor=white)
-![Fish Audio](https://img.shields.io/badge/Fish%20Audio-2563eb)
-![GitHub Sponsors](https://img.shields.io/badge/GitHub%20Sponsors-ea4aaa)
-
-</div>
-
-| Service | Purpose |
-|---|---|
-| **Claude · Codex · Grok** | The agents behind every bot, run through their local CLIs |
-| **Electron** | Desktop shells for macOS, Windows, and Ubuntu |
-| **React + Vite + Tailwind CSS** | The chat app UI and its build |
-| **Boat** ([boat.dev](https://boat.dev)) | Each bot's cloud computer · our sponsor |
-| **ModelGo** ([modelgo.ai](https://modelgo.ai/?utm_source=uni&utm_medium=sponsorship&utm_content=readme&campaign_id=uni&ad_group_id=readme)) | One API key for every model · our inference provider sponsor |
-| **Composio** | Connected apps — Gmail, Slack, GitHub, and more |
-| **Cua Driver** | Native computer use on your own machine |
-| **ElevenLabs · Fish Audio** | Hosted voices for bots that talk back |
-| **GitHub Sponsors** | One-time and monthly project support |
 
 ## How it works
 
@@ -348,7 +256,6 @@ See [Run Uni from scripts and CI](docs/headless-cli.md).
 See the [Ubuntu Desktop guide](docs/linux-desktop.md) for installation, capabilities, and troubleshooting.
 Any desktop build can also open the bots of another Windows, macOS, or Ubuntu computer over Tailscale; see [open one computer's bots from another computer](docs/desktop-companion.md).
 
-
 **From source:**
 
 ```sh
@@ -390,10 +297,7 @@ preview-only screen capture above is unavailable. See [Computer use & browser us
 The Linux preview is user-initiated and never enables local bot control or Auto routing. On Xorg, the reviewed Cua
 Driver 0.41.3 runtime starts only after explicit opt-in and without its full-screen cursor overlay. On Wayland the
 app never starts it and clears legacy opt-ins while that real-seat safety gate remains unresolved. Chat, preview,
-Cloud, and Local VM remain available on both sessions. See the [Ubuntu Desktop guide](docs/linux-desktop.md) and tracking
-issues [#29](https://github.com/AdilShamim8/Uni/issues/29),
-[#345](https://github.com/AdilShamim8/Uni/issues/345), and
-[#113](https://github.com/AdilShamim8/Uni/issues/113).
+Cloud, and Local VM remain available on both sessions. See the [Ubuntu Desktop guide](docs/linux-desktop.md).
 
 The Linux packager downloads only the tag-pinned upstream archive during the build, verifies its size, SHA-256,
 complete member allowlist, and inner executable hashes, then packages only the CLI and cursor-theme sidecar. The
@@ -414,16 +318,25 @@ in the sidebar footer) when you want to enable its integration:
 Composio and Boat are third-party services with their own accounts and terms. Boat is a paid service after
 its trial, and using a cloud computer may incur charges.
 
+## Development
+
 ```sh
-pnpm typecheck     # app + server
-pnpm test          # unit, driver, API, and desktop capability tests
-pnpm build         # typecheck + production build
+pnpm typecheck      # app + server
+pnpm test           # unit, driver, API, and desktop capability tests
+pnpm build          # typecheck + production build
 pnpm check:electron # syntax-check Electron main/preload files
-pnpm package:win   # Windows installer + zip → release/
-pnpm package:linux # Ubuntu x64 .deb + AppImage → release/
 ```
 
-### Triggers: schedules and webhooks
+Contributions welcome — the driver SPI in [`server/contracts.ts`](server/contracts.ts) is deliberately
+small; adding a provider is one file in [`server/drivers/`](server/drivers/) plus a one-line registration.
+No code needed at all for your own engines: any ACP-speaking CLI or OpenAI-compatible endpoint
+plugs in through config — see [`docs/custom-engines.md`](docs/custom-engines.md).
+Users can add their own MCP tool servers with zero code via [`docs/custom-mcp-servers.md`](docs/custom-mcp-servers.md).
+For configuration switches, defaults and model-call implications, see [Feature switches](docs/feature-flags.md).
+To run bots on OpenRouter, Fireworks AI, DeepSeek, Cline or your own OpenAI- or Anthropic-compatible provider,
+see [Other model providers](apps/docs/content/docs/providers/model-providers.mdx).
+
+## Triggers: schedules and webhooks
 
 A trigger is "when something happens, a bot does something". Tell a bot "every weekday at 9, send me a summary
 of my inbox" or "whenever our form calls, draft a reply" and it sets the trigger up in that turn with
@@ -437,8 +350,7 @@ model/computer or the Cloud VM runner. Interval schedules stay aligned to their 
 an occurrence when the previous run is still active, so slow work cannot build an unbounded queue. A
 separate optional Advanced run limit can safely stop stuck work; no timeout is imposed unless one is chosen.
 The existing duration field remains calendar/display metadata. Webhook triggers are independent from schedules
-but reuse the same queued task executor and calendar
-receipts.
+but reuse the same queued task executor and calendar receipts.
 
 **App events** start a bot when something happens in a connected app ("whenever I get an email from Acme, draft
 a reply"). The bot finds the app's events with `trigger_info` (`action: "events"`) and calls `trigger` with
@@ -463,16 +375,7 @@ Early but real — the loop works end to end: message → agent → streamed rep
 computer use. macOS, Windows, and Ubuntu 24.04 x64 have released builds; Ubuntu remains a beta with the
 capability limits above. Rough edges to expect: hosted/mobile connectivity is still being built, and webhook
 triggers currently use the local receiver rather than an always-on hosted relay.
-Hosted voice needs an ElevenLabs, Fish Audio, or xAI key; built-in Mac and local Chatterbox voices need no cloud key. Take-turns calls and the composer mic listen on-device on macOS and through Fish Audio speech-to-text on Windows and Linux (the same Fish Audio key as voices). See [`docs/voice-mode.md`](docs/voice-mode.md) for the design and the known gaps.
-
-Contributions welcome — the driver SPI in [`server/contracts.ts`](server/contracts.ts) is deliberately
-small; adding a provider is one file in [`server/drivers/`](server/drivers/) plus a one-line registration.
-No code needed at all for your own engines: any ACP-speaking CLI or OpenAI-compatible endpoint
-plugs in through config — see [`docs/custom-engines.md`](docs/custom-engines.md).
-Users can add their own MCP tool servers with zero code via [`docs/custom-mcp-servers.md`](docs/custom-mcp-servers.md).
-For configuration switches, defaults and model-call implications, see [Feature switches](docs/feature-flags.md).
-To run bots on OpenRouter, Fireworks AI, DeepSeek, Cline or your own OpenAI- or Anthropic-compatible provider,
-see [Other model providers](apps/docs/content/docs/providers/model-providers.mdx).
+Hosted voice needs an ElevenLabs, Fish Audio, or xAI key; built-in Mac and local Chatterbox voices need no cloud key. Take-turns calls and the composer mic listen on-device on macOS and through Fish Audio speech-to-text on Windows and Linux (the same Fish Audio key as voices).
 
 ## Privacy
 
@@ -505,15 +408,11 @@ the server, not your saved work. Use `--no-open` to skip opening the browser.
 Phone access is optional and defaults to skipping. Choose an explicitly
 approved managed public HTTPS endpoint protected by pairing, an existing
 Tailscale connection, or your own HTTPS reverse proxy. Both native apps pair from
-this flow: the QR is an app link when you are connecting an Android phone, and the
-iOS app takes either that or the web link. A browser works on either phone. A phone
+this flow: the QR is an app link when you are connecting an Android phone, and
+the iOS app takes either that or the web link. A browser works on either phone. A phone
 cannot use a localhost link. `--local` ignores saved remote access for one launch;
 `--no-pair` suppresses phone prompts and invitations but does not disable a saved
 remote connection.
-
-The web UI can also be installed from Safari or Chrome as a standalone phone
-app. See [Install the phone web app](docs/phone-web-app.md) for Home Screen
-installation and pairing.
 
 Run `uni setup` to reconfigure without resetting bots or conversations;
 the saved model default applies only to new bots. Native setup confirms provider
@@ -531,7 +430,7 @@ For a server on a VPS or an always-on computer, run `npx uni serve`
 with one way in: `--public-url` behind your own cloudflared, Caddy or nginx,
 `--domain` for a certificate on your own domain, `--tailscale` for your
 tailnet, `--lan` for this network only, or `--tunnel` (after
-`npx uni account login`) for a free MausBot web address. It prints one
+`npx uni account login`) for a free hosted web address. It prints one
 pairing link; paste it into the desktop app under **＋ → Connect to a
 server**. The short path for each install method (npx, Docker, a service) is
 at the top of [docs/self-hosting.md](docs/self-hosting.md); a server from
@@ -539,7 +438,7 @@ scratch is [docs/deploy-vps.md](docs/deploy-vps.md).
 
 ## License
 
-[Apache License 2.0](LICENSE) © 2026 Milind Soni and Uni contributors,
+[Apache License 2.0](LICENSE) © 2026 Adil Shamim and Uni contributors,
 except `enterprise/`, which is source-available under its
 [own license](enterprise/LICENSE); delete that folder and what remains is the
 open-source edition. Details, including how contributions are signed off, are
@@ -549,6 +448,8 @@ Packaged Cua Driver components retain their upstream MIT, SIL OFL 1.1, MPL-2.0, 
 the corresponding notices, license texts, source locations, and SBOM are in
 [`third_party/cua-driver/`](third_party/cua-driver/) and ship beside the native runtime.
 
-Uni is an independent, open-source project inspired by Grok Bot. It is
-not affiliated with, endorsed by, or associated with xAI; "Grok" is a trademark
-of its respective owner.
+<div align="center">
+
+<sub>Built with patience by [Adil Shamim](https://github.com/AdilShamim8) and contributors.</sub>
+
+</div>
