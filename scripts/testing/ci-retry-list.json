@@ -154,6 +154,20 @@
       "owner": "AdilShamim8",
       "reason": "Windows shard 1/8 of a5f6bbed8e: timed out at the default 40 s once on a runner whose whole file ran ~2x slower than its siblings (500 rows and one integrity check are seconds of work); green on every other shard and locally.",
       "since": "2026-11-23"
+    },
+    {
+      "file": "server/boat-recovery.test.ts",
+      "test": "a cloud computer that says it is ready but does not answer > restarts at most one computer of the installation by itself in ten minutes",
+      "owner": "AdilShamim8",
+      "reason": "Ubuntu shard 4/8 of 450e90eaed: the recovery loop restarted a second computer once before the first verdict landed, under shard load. Green locally and on every other shard of the same commit.",
+      "since": "2026-11-23"
+    },
+    {
+      "file": "server/checkpoints-perf.test.ts",
+      "test": "incremental shadow index > stops a running collection for a new turn's snapshot, and runs it again behind that turn",
+      "owner": "AdilShamim8",
+      "reason": "Ubuntu shard 7/8 of 450e90eaed: the rerun-behind-the-turn collection was still one when read, once under shard load. Green locally and on every other shard of the same commit.",
+      "since": "2026-11-23"
     }
   ]
 }
