@@ -9714,7 +9714,7 @@
   "settings.account.emails": "來自 {app} 的電子郵件",
   "settings.account.free": "免費",
   "settings.account.fromHere": "在 {place} 登出或切換帳號",
-  "settings.account.mausbot": "{app} 帳號",
+  "settings.account.app": "{app} 帳號",
   "settings.account.nameRow": "你的名字、照片和關於你",
   "settings.account.notSignedIn": "尚未登入",
   "settings.account.onThisDevice": "在這台裝置上",

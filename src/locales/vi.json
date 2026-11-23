@@ -5479,7 +5479,7 @@
   "settings.account.emails": "Email từ {app}",
   "settings.account.free": "Miễn phí",
   "settings.account.fromHere": "Đăng xuất hoặc đổi tài khoản từ {place}",
-  "settings.account.mausbot": "Tài khoản {app}",
+  "settings.account.app": "Tài khoản {app}",
   "settings.account.nameRow": "Tên, ảnh và thông tin về bạn",
   "settings.account.notSignedIn": "Chưa đăng nhập",
   "settings.account.onThisDevice": "Trên thiết bị này",

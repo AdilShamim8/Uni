@@ -3616,7 +3616,7 @@
   "settings.account.emails": "Листи від {app}",
   "settings.account.free": "Безкоштовно",
   "settings.account.fromHere": "Вийти або змінити обліковий запис на {place}",
-  "settings.account.mausbot": "Обліковий запис {app}",
+  "settings.account.app": "Обліковий запис {app}",
   "settings.account.nameRow": "Ваше ім'я, фото й про вас",
   "settings.account.notSignedIn": "Вхід не виконано",
   "settings.account.onThisDevice": "На цьому пристрої",

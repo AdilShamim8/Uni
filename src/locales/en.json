@@ -10811,7 +10811,7 @@
   "settings.account.emails": "Emails from {app}",
   "settings.account.free": "Free",
   "settings.account.fromHere": "Sign out or switch accounts from {place}",
-  "settings.account.mausbot": "{app} account",
+  "settings.account.app": "{app} account",
   "settings.account.nameRow": "Your name, photo and about you",
   "settings.account.notSignedIn": "Not signed in",
   "settings.account.onThisDevice": "On this device",

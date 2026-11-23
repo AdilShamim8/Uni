@@ -285,7 +285,7 @@ export function CloudAccountSettings({ linkRequest = 0, cloudHome = false, teamH
     // and Sign out as the card's last row. A Cloud's page draws the same card with "from This computer" in that place.
     const blank = <span aria-hidden="true" />;
     return <>
-      <SettingsGroup label={t("settings.account.mausbot", { app: productName() })} block="mausbot-account">
+      <SettingsGroup label={t("settings.account.app", { app: productName() })} block="app-account">
         <SettingsRows icons>
           {(!account || view.kind === "unknown") && <SettingRow title={t("cloudAccount.loading")} leading={avatar ?? blank}>{!account && <button type="button" disabled={busy} className="ui-button" onClick={() => void perform(() => bridge.state())}>{t("organization.refresh")}</button>}</SettingRow>}
           {signedOut && <SettingRow title={t("settings.account.signInTitle", { app: productName() })} subtitle={t("settings.account.signInBody")} message={message && <p role="status">{message}</p>} leading={avatar ?? blank}>

@@ -3180,7 +3180,7 @@
   "settings.account.emails": "{app} के ईमेल",
   "settings.account.free": "मुफ़्त",
   "settings.account.fromHere": "{place} से साइन आउट करें या खाता बदलें",
-  "settings.account.mausbot": "{app} खाता",
+  "settings.account.app": "{app} खाता",
   "settings.account.nameRow": "आपका नाम, फ़ोटो और आपके बारे में",
   "settings.account.notSignedIn": "साइन इन नहीं है",
   "settings.account.onThisDevice": "इस डिवाइस पर",

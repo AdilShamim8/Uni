@@ -5980,7 +5980,7 @@
   "settings.account.emails": "Correos de {app}",
   "settings.account.free": "Gratis",
   "settings.account.fromHere": "Cierra sesión o cambia de cuenta desde {place}",
-  "settings.account.mausbot": "Cuenta de {app}",
+  "settings.account.app": "Cuenta de {app}",
   "settings.account.nameRow": "Tu nombre, foto y sobre ti",
   "settings.account.notSignedIn": "Sin iniciar sesión",
   "settings.account.onThisDevice": "En este dispositivo",

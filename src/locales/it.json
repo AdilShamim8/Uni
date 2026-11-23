@@ -6550,7 +6550,7 @@
   "settings.account.emails": "Email da {app}",
   "settings.account.free": "Gratis",
   "settings.account.fromHere": "Esci o cambia account da {place}",
-  "settings.account.mausbot": "Account {app}",
+  "settings.account.app": "Account {app}",
   "settings.account.nameRow": "Il tuo nome, la foto e su di te",
   "settings.account.notSignedIn": "Accesso non effettuato",
   "settings.account.onThisDevice": "Su questo dispositivo",

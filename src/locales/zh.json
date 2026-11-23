@@ -8034,7 +8034,7 @@
   "settings.account.emails": "来自 {app} 的邮件",
   "settings.account.free": "免费",
   "settings.account.fromHere": "在 {place} 退出登录或切换账号",
-  "settings.account.mausbot": "{app} 账号",
+  "settings.account.app": "{app} 账号",
   "settings.account.nameRow": "你的名字、照片和关于你",
   "settings.account.notSignedIn": "未登录",
   "settings.account.onThisDevice": "在这台设备上",

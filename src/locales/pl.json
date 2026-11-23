@@ -6680,7 +6680,7 @@
   "settings.account.emails": "E-maile od {app}",
   "settings.account.free": "Bezpłatnie",
   "settings.account.fromHere": "Wyloguj się lub zmień konto z {place}",
-  "settings.account.mausbot": "Konto {app}",
+  "settings.account.app": "Konto {app}",
   "settings.account.nameRow": "Twoje imię, zdjęcie i o Tobie",
   "settings.account.notSignedIn": "Nie zalogowano",
   "settings.account.onThisDevice": "Na tym urządzeniu",

@@ -7580,7 +7580,7 @@
   "settings.account.emails": "{app} からのメール",
   "settings.account.free": "無料",
   "settings.account.fromHere": "{place} からサインアウトまたはアカウントを切り替え",
-  "settings.account.mausbot": "{app} アカウント",
+  "settings.account.app": "{app} アカウント",
   "settings.account.nameRow": "名前・写真・あなたについて",
   "settings.account.notSignedIn": "サインインしていません",
   "settings.account.onThisDevice": "このデバイス",

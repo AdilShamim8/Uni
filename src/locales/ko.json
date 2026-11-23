@@ -7259,7 +7259,7 @@
   "settings.account.emails": "{app} 이메일",
   "settings.account.free": "무료",
   "settings.account.fromHere": "{place}에서 로그아웃하거나 계정 전환",
-  "settings.account.mausbot": "{app} 계정",
+  "settings.account.app": "{app} 계정",
   "settings.account.nameRow": "이름, 사진, 나에 대해",
   "settings.account.notSignedIn": "로그인 안 됨",
   "settings.account.onThisDevice": "이 기기에서",
