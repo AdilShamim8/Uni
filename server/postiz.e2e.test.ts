@@ -52,12 +52,18 @@ async function turn(botId: string, calls: unknown[]): Promise<Dump> {
  * of the install, so a copy of it beside it holds nothing that config.json does not hold. */
 function filesHolding(secret: string): string[] {
   const found: string[] = [];
+  // The server saves atomically (write a .tmp, rename it over the target), so an entry readdirSync just saw can be
+  // gone by the next line: a file that vanished between the two holds nothing.
   const walk = (dir: string) => {
     for (const name of readdirSync(dir)) {
       const path = join(dir, name);
-      const stat = statSync(path);
+      let stat: ReturnType<typeof statSync>;
+      try { stat = statSync(path); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") continue; throw error; }
       if (stat.isDirectory()) walk(path);
-      else if (stat.isFile() && stat.size < 20_000_000 && path !== fixture.fixtureDumpPath && !name.startsWith(CONFIG_BACKUP_PREFIX) && readFileSync(path).includes(secret)) found.push(relative(fixture.info.dataDir, path));
+      else if (stat.isFile() && stat.size < 20_000_000 && path !== fixture.fixtureDumpPath && !name.startsWith(CONFIG_BACKUP_PREFIX)) {
+        try { if (readFileSync(path).includes(secret)) found.push(relative(fixture.info.dataDir, path)); }
+        catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+      }
     }
   };
   walk(fixture.info.dataDir);

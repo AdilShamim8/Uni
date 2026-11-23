@@ -44,7 +44,12 @@ describe("a cloud computer goes to sleep after use and wakes on the next", () =>
     return { status: response.status, body: await response.json().catch(() => null) as any };
   };
   const apiOk = async (method: string, path: string, body?: unknown) => {
-    const result = await api(method, path, body);
+    let result = await api(method, path, body);
+    // A 409 whose body says a computer change is still in flight is the API's own "wait for it to finish": the
+    // mutation was refused, not applied, so a client that follows the contract asks again after a pause.
+    const changing = () => result.status === 409 && typeof result.body?.error === "string" && result.body.error.includes("is being changed");
+    const end = Date.now() + 30_000;
+    while (changing() && Date.now() < end) { await pause(250); result = await api(method, path, body); }
     expect(result.status, `${method} ${path}: ${JSON.stringify(result.body)}`).toBeLessThan(400);
     return result.body;
   };

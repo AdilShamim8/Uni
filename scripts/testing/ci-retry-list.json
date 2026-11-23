@@ -119,6 +119,20 @@
       "owner": "AdilShamim8",
       "reason": "beforeAll's fixture launch failed once in ubuntu shard 7/8 of 6a6de147fb (My Cloud gave no one-time code: HTTP 401 invalid_signature) and once in 10 local runs; the pairing-code mint races the cloud server's first signed request. Green in the other 9 local runs and on the same commit's other shards.",
       "since": "2026-11-22"
+    },
+    {
+      "file": "server/cloud-computer-auto-sleep.e2e.test.ts",
+      "test": "a cloud computer goes to sleep after use and wakes on the next > a teammate's routine keeps the team's shared computer on; one for a teammate whose computer is off does not",
+      "owner": "AdilShamim8",
+      "reason": "Nightly (schedule) run of 9ab2baaf59, shard 3/8: the team computer's row was still 'archived' when the turn had gone idle, once. 9/9 green locally and on the push run of the same commit; the sibling 409 race in the same file is now settled by apiOk itself.",
+      "since": "2026-11-23"
+    },
+    {
+      "file": "server/notification-wiring.test.ts",
+      "test": "routine failure notification wiring > emits one routine-failed notification linking the chat that says the run failed, and no generic done notification",
+      "owner": "AdilShamim8",
+      "reason": "Nightly (schedule) run of 9ab2baaf59, shard 7/8: the notification frame did not arrive inside the 30 s SSE window once under shard load. Green locally and on the push run of the same commit.",
+      "since": "2026-11-23"
     }
   ]
 }
