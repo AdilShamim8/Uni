@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { setLocale } from "@/lib/i18n";
 
 vi.mock("@/components/Avatar", () => ({
-  MausAvatar: ({ color, animated, trackPointer }: { color: string; animated: boolean; trackPointer?: boolean }) =>
+  MascotAvatar: ({ color, animated, trackPointer }: { color: string; animated: boolean; trackPointer?: boolean }) =>
     createElement("i", { "data-maus": color, "data-animated": String(animated), "data-pointer": String(trackPointer) }),
 }));
 const { TeamPicture } = await import("./TeamPicture");

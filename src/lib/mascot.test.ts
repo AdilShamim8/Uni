@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { t } from "./i18n";
-import { CHROME_GRADIENT, colorSwatch, MAUS_COLOR_LABEL, BOT_COLOR_NAMES, MAUS_COLORS, stateForBot } from "./mascot";
+import { CHROME_GRADIENT, colorSwatch, MAUS_COLOR_LABEL, BOT_COLOR_NAMES, BOT_COLORS, stateForBot } from "./mascot";
 
 describe("stateForBot", () => {
   it("still alerts on a failed tool call when a digest receipt follows it", () => {
@@ -45,7 +45,7 @@ describe("stateForBot", () => {
 describe("silver", () => {
   it("is a colour every picker offers, drawn at #A8ADB4 and named Silver", () => {
     expect(BOT_COLOR_NAMES).toContain("silver");
-    expect(MAUS_COLORS.silver).toBe("#A8ADB4");
+    expect(BOT_COLORS.silver).toBe("#A8ADB4");
     expect(t(MAUS_COLOR_LABEL.silver)).toBe("Silver");
   });
 });
@@ -58,13 +58,13 @@ describe("chrome", () => {
     expect(swatch.startsWith("radial-gradient(")).toBe(true);
     expect(swatch).not.toContain("repeating");
     for (const tone of CHROME_GRADIENT) expect(swatch).toContain(tone);
-    expect(colorSwatch("blue")).toBe(MAUS_COLORS.blue);
+    expect(colorSwatch("blue")).toBe(BOT_COLORS.blue);
   });
 });
 
 describe("the lent computer's menu dots", () => {
   it("use the mascot colours, so a bot's dot there matches its mascot", () => {
     const table = /BOT_COLOR_HEX = Object\.freeze\(\{([^}]+)\}\)/.exec(readFileSync(new URL("../../electron/color-dot.mjs", import.meta.url), "utf8"))?.[1] ?? "";
-    expect(Object.fromEntries([...table.matchAll(/(\w+): "(#[0-9A-F]{6})"/gi)].map(([, name, hex]) => [name, hex]))).toEqual(MAUS_COLORS);
+    expect(Object.fromEntries([...table.matchAll(/(\w+): "(#[0-9A-F]{6})"/gi)].map(([, name, hex]) => [name, hex]))).toEqual(BOT_COLORS);
   });
 });

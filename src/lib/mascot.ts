@@ -6,7 +6,7 @@ import type { LocaleKey } from "@/locales";
 
 export { BOT_COLOR_NAMES, type BotColor } from "../../shared/wire";
 
-export type MausState = CursorState;
+export type BotState = CursorState;
 export const MAUS_STATES = CURSOR_STATES;
 
 /** CursorAvatar ships French group labels; these mirror its STATE_GROUPS memberships exactly. */
@@ -46,9 +46,9 @@ export const STATE_GROUPS = {
     "bouncing",
     "powering-down",
   ],
-} satisfies Record<string, MausState[]>;
+} satisfies Record<string, BotState[]>;
 
-export const MAUS_COLORS = {
+export const BOT_COLORS = {
   green: "#009957",
   blue: "#377FE6",
   red: "#D94B52",
@@ -74,12 +74,12 @@ export const CHROME_GRADIENT: [string, string, string] = ["#F1F4F7", "#AEB8C3", 
 export const CHROME_EYES = "#1E2833";
 
 export function colorSwatch(color: BotColor): string {
-  if (color !== "chrome") return MAUS_COLORS[color];
+  if (color !== "chrome") return BOT_COLORS[color];
   const [light, mid, edge] = CHROME_GRADIENT;
   return `radial-gradient(circle at 34% 26%, #ffffff 0%, ${light} 20%, ${mid} 55%, ${edge} 100%)`;
 }
 
-export const MAUS_MOTIONS = [
+export const BOT_MOTIONS = [
   "arrive",
   "switch",
   "customize",
@@ -94,10 +94,10 @@ export const MAUS_MOTIONS = [
   "failure",
 ] as const;
 
-export type MausMotion = "none" | (typeof MAUS_MOTIONS)[number];
+export type BotMotion = "none" | (typeof BOT_MOTIONS)[number];
 
 interface LegacyStates {
-  [state: string]: MausState;
+  [state: string]: BotState;
 }
 
 const LEGACY_STATES: LegacyStates = {
@@ -115,13 +115,13 @@ const LEGACY_STATES: LegacyStates = {
 
 const KNOWN_STATES = new Set<string>(MAUS_STATES);
 
-export function normalizeState(value: string | null | undefined): MausState | null {
+export function normalizeState(value: string | null | undefined): BotState | null {
   if (!value) return null;
-  if (KNOWN_STATES.has(value)) return value as MausState;
+  if (KNOWN_STATES.has(value)) return value as BotState;
   return LEGACY_STATES[value] ?? null;
 }
 
-export const PICKABLE_STATES: MausState[] = [
+export const PICKABLE_STATES: BotState[] = [
   "idle",
   "happy",
   "curious",
@@ -157,7 +157,7 @@ export function endedOnFailure(messages: readonly MascotMessage[] | undefined): 
   return isFailedStep(lastNonReceipt(messages));
 }
 
-export function stateForBot(bot: MascotBotProfile): MausState {
+export function stateForBot(bot: MascotBotProfile): BotState {
   const pinned = normalizeState(bot.mascotExpression);
   if (pinned) return pinned;
 

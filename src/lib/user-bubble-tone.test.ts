@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { contrastRatio, relativeLuminance, toOklch } from "./color-contrast";
-import { MAUS_COLORS, BOT_COLOR_NAMES } from "./mascot";
+import { BOT_COLORS, BOT_COLOR_NAMES } from "./mascot";
 import { SKIN_IDS } from "./skins";
 import {
   BUBBLE_TEXT_MIN,
@@ -38,10 +38,10 @@ describe("user bubble tone", () => {
     expect(tone.gradient).toBe(`linear-gradient(to bottom left, ${tone.background}, ${tone.deep})`);
     expect(tone.deep).not.toBe(tone.background);
     expect(relativeLuminance(tone.deep)).toBeLessThan(relativeLuminance(tone.background));
-    expect(hueDistance(toOklch(tone.background).h, toOklch(MAUS_COLORS[color]).h)).toBeLessThanOrEqual(8);
-    expect(hueDistance(toOklch(tone.deep).h, toOklch(MAUS_COLORS[color]).h)).toBeLessThanOrEqual(20);
-    if (tone.ink === "#ffffff" && contrastRatio("#ffffff", MAUS_COLORS[color]) >= BUBBLE_TEXT_MIN) {
-      expect(tone.background).toBe(MAUS_COLORS[color]);
+    expect(hueDistance(toOklch(tone.background).h, toOklch(BOT_COLORS[color]).h)).toBeLessThanOrEqual(8);
+    expect(hueDistance(toOklch(tone.deep).h, toOklch(BOT_COLORS[color]).h)).toBeLessThanOrEqual(20);
+    if (tone.ink === "#ffffff" && contrastRatio("#ffffff", BOT_COLORS[color]) >= BUBBLE_TEXT_MIN) {
+      expect(tone.background).toBe(BOT_COLORS[color]);
     }
   });
 
@@ -56,7 +56,7 @@ describe("user bubble tone", () => {
 
   it("keeps yellow bright with dark text instead of darkening it to olive", () => {
     const tone = userBubbleTone("yellow");
-    expect(toOklch(tone.background).l).toBeGreaterThan(toOklch(MAUS_COLORS.yellow).l);
+    expect(toOklch(tone.background).l).toBeGreaterThan(toOklch(BOT_COLORS.yellow).l);
     expect(contrastRatio(tone.ink, tone.deep)).toBeGreaterThanOrEqual(BUBBLE_TEXT_MIN);
   });
 
@@ -91,7 +91,7 @@ describe("user bubble tone", () => {
       expect(contrastRatio(tone.selectionInk, tone.selection), "selection").toBeGreaterThanOrEqual(BUBBLE_TEXT_MIN);
       if (tone.ink === "#ffffff") expect(tone.selection).toBe(selectionBackground(tone.background));
       for (const mention of BOT_COLOR_NAMES) {
-        const chip = mentionChipBackground(MAUS_COLORS[mention], tone.inset);
+        const chip = mentionChipBackground(BOT_COLORS[mention], tone.inset);
         expect(contrastRatio(tone.ink, chip), `mention ${mention}`).toBeGreaterThanOrEqual(BUBBLE_TEXT_MIN);
       }
     },

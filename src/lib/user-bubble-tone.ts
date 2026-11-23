@@ -2,7 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { contrastRatio, fromOklch, mixSrgb, toOklch } from "./color-contrast";
-import { MAUS_COLORS, type BotColor } from "./mascot";
+import { BOT_COLORS, type BotColor } from "./mascot";
 
 const WHITE = "#ffffff";
 const INK = "#101410";
@@ -187,7 +187,7 @@ function darkInkTone(palette: string): UserBubbleTone {
 }
 
 export function userBubbleTone(color: BotColor): UserBubbleTone {
-  const palette = MAUS_COLORS[color];
+  const palette = BOT_COLORS[color];
   const { h } = toOklch(palette);
   return h >= YELLOW_HUES.from && h <= YELLOW_HUES.to ? darkInkTone(palette) : whiteInkTone(palette);
 }

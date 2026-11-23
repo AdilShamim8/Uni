@@ -8,7 +8,7 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { MAUS_COLORS, type BotColor, type MausMotion, type MausState } from "@/lib/mascot";
+import { BOT_COLORS, type BotColor, type BotMotion, type BotState } from "@/lib/mascot";
 import { avatarMarks, type AvatarKind } from "@/lib/avatar-marks";
 import { CARVED_BODIES, type CarvedBody, type CarvedBodyId } from "../../shared/carved-bodies";
 import type { CursorAvatarHandle } from "./CursorAvatar";
@@ -86,7 +86,7 @@ export function carvedGeometry(body: CarvedBody, p: CarvedPose): CarvedGeometry 
 }
 
 
-function moodFor(state: MausState): Partial<CarvedPose> & { glance?: number } {
+function moodFor(state: BotState): Partial<CarvedPose> & { glance?: number } {
   switch (state) {
     case "surprised": case "alerting": case "scared": case "excited": case "celebrate": case "spawning": case "waking":
       return { wide: 1 };
@@ -109,7 +109,7 @@ function moodFor(state: MausState): Partial<CarvedPose> & { glance?: number } {
   }
 }
 
-const STARTLE: ReadonlySet<MausMotion> = new Set(["arrive", "switch", "customize", "alert", "launch", "success", "celebrate", "surprise"]);
+const STARTLE: ReadonlySet<BotMotion> = new Set(["arrive", "switch", "customize", "alert", "launch", "success", "celebrate", "surprise"]);
 const GLANCES: ReadonlyArray<[number, number]> = [[0, 0], [0, 0], [-1, 0.25], [1, 0.25], [-0.8, 0.55], [0.8, 0.55], [-0.7, -0.4], [0.7, -0.4], [0, 0.5]];
 
 function mix(hex: string, toward: string, t: number): string {
@@ -137,9 +137,9 @@ export function vivid(hex: string): string {
 }
 
 export function carvedFills(body: CarvedBody, color: BotColor): { body: string; accent: string } {
-  const accent = vivid(MAUS_COLORS[color] ?? MAUS_COLORS.green);
+  const accent = vivid(BOT_COLORS[color] ?? BOT_COLORS.green);
   if (body.paint === "bone") return { body: body.bone ?? "#f1ede6", accent };
-  if (body.paint === "pale") return { body: mix(MAUS_COLORS[color] ?? MAUS_COLORS.green, "#ffffff", 0.86), accent };
+  if (body.paint === "pale") return { body: mix(BOT_COLORS[color] ?? BOT_COLORS.green, "#ffffff", 0.86), accent };
   return { body: accent, accent };
 }
 
@@ -148,8 +148,8 @@ export type CarvedAvatarProps = {
   color: BotColor;
   faceColor?: MascotFaceColor | null;
   size?: number;
-  state?: MausState;
-  motion?: MausMotion;
+  state?: BotState;
+  motion?: BotMotion;
   motionKey?: number;
   gaze?: { x?: number; y?: number };
   trackPointer?: boolean;
@@ -323,7 +323,7 @@ function CarvedAvatarComponent(
   );
 }
 
-function moodPose(state: MausState): CarvedPose {
+function moodPose(state: BotState): CarvedPose {
   const m = moodFor(state);
   return { gx: m.gx ?? 0, gy: m.gy ?? 0, wide: m.wide ?? 0, shut: m.shut ?? 0, smile: m.smile ?? 1 };
 }

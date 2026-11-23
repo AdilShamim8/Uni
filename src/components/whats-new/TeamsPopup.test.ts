@@ -8,7 +8,7 @@ import { setLocale } from "@/lib/i18n";
 import type { TeamsAction } from "@/lib/teams-whats-new";
 
 const avatars = vi.hoisted(() => [] as Array<{ animated?: boolean }>);
-vi.mock("@/components/Avatar", () => ({ MausAvatar: (props: { animated?: boolean }) => { avatars.push(props); return null; } }));
+vi.mock("@/components/Avatar", () => ({ MascotAvatar: (props: { animated?: boolean }) => { avatars.push(props); return null; } }));
 const opened = vi.hoisted(() => [] as string[]);
 vi.mock("@/lib/app-links", async (original) => ({ ...(await original<typeof import("@/lib/app-links")>()), openExternalLink: async (url: string) => { opened.push(url); } }));
 const { TeamsPopup, TEAMS_POPUP } = await import("./TeamsPopup");

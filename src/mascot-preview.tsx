@@ -2,25 +2,25 @@ import { StrictMode, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   EYE_SCALE,
-  MausAvatar,
+  MascotAvatar,
   MOUTH_WEIGHT,
-  type MausAvatarHandle,
+  type MascotAvatarHandle,
 } from "@/components/Avatar";
 import {
   BOT_COLOR_NAMES,
-  MAUS_COLORS,
-  MAUS_MOTIONS,
+  BOT_COLORS,
+  BOT_MOTIONS,
   PICKABLE_STATES,
   STATE_GROUPS,
   type BotColor,
-  type MausMotion,
-  type MausState,
+  type BotMotion,
+  type BotState,
 } from "@/lib/mascot";
 import { EXPRESSION_COUNT } from "@/components/CursorAvatar";
 import "./styles.css";
 import "./mascot-preview.css";
 
-interface ScenarioLabels extends Partial<Record<MausState, string>> {}
+interface ScenarioLabels extends Partial<Record<BotState, string>> {}
 
 const SCENARIOS: ScenarioLabels = {
   idle: "General / admin",
@@ -48,7 +48,7 @@ const MOTION_SCENARIOS = {
   blink: "New reply",
   surprise: "Unread update",
   failure: "Action failed",
-} satisfies Record<Exclude<MausMotion, "none">, string>;
+} satisfies Record<Exclude<BotMotion, "none">, string>;
 
 const MOTION_COLORS: BotColor[] = [
   "green", "blue", "purple", "red", "cyan", "orange",
@@ -96,8 +96,8 @@ function Tuner({
 }: {
   tuning: Tuning;
   setTuning: (t: Tuning) => void;
-  state: MausState;
-  setState: (s: MausState) => void;
+  state: BotState;
+  setState: (s: BotState) => void;
   expression: number | undefined;
   setExpression: (e: number | undefined) => void;
   color: BotColor;
@@ -105,7 +105,7 @@ function Tuner({
   forward: boolean;
   setForward: (v: boolean) => void;
 }) {
-  const handle = useRef<MausAvatarHandle>(null);
+  const handle = useRef<MascotAvatarHandle>(null);
   const changed = (Object.keys(DEFAULTS) as (keyof Tuning)[]).filter(
     (k) => tuning[k] !== DEFAULTS[k],
   );
@@ -113,7 +113,7 @@ function Tuner({
   return (
     <section className="tuner">
       <div className="tuner-stage">
-        <MausAvatar
+        <MascotAvatar
           ref={handle}
           color={color}
           state={state}
@@ -184,7 +184,7 @@ function Tuner({
                 className={c === color ? "on" : ""}
                 onClick={() => setColor(c)}
               >
-                <span className="swatch" style={{ background: MAUS_COLORS[c] }} />
+                <span className="swatch" style={{ background: BOT_COLORS[c] }} />
                 {c}
               </button>
             ))}
@@ -243,7 +243,7 @@ function MotionCard({
   replayAll,
   color,
 }: {
-  motion: Exclude<MausMotion, "none">;
+  motion: Exclude<BotMotion, "none">;
   index: number;
   replayAll: number;
   color: BotColor;
@@ -253,7 +253,7 @@ function MotionCard({
   return (
     <article className="motion-card">
       <div className="motion-stage">
-        <MausAvatar
+        <MascotAvatar
           color={color ?? MOTION_COLORS[index]}
           state="idle"
           size={172}
@@ -279,7 +279,7 @@ function MotionCard({
 function Preview() {
   const [replayAll, setReplayAll] = useState(0);
   const [tuning, setTuning] = useState<Tuning>(DEFAULTS);
-  const [state, setState] = useState<MausState>("idle");
+  const [state, setState] = useState<BotState>("idle");
   const [expression, setExpression] = useState<number | undefined>(undefined);
   const [color, setColor] = useState<BotColor>("green");
   const [forward, setForward] = useState(true);
@@ -321,7 +321,7 @@ function Preview() {
       />
 
       <section className="motion-grid" aria-label="Mascot motion library">
-        {MAUS_MOTIONS.map((motion, index) => (
+        {BOT_MOTIONS.map((motion, index) => (
           <MotionCard
             key={motion}
             motion={motion}
@@ -354,13 +354,13 @@ function Preview() {
             {BOT_COLOR_NAMES.map((c) => (
               <div className="matrix-row" key={c}>
                 <div className="row-label">
-                  <span className="swatch" style={{ background: MAUS_COLORS[c] }} />
+                  <span className="swatch" style={{ background: BOT_COLORS[c] }} />
                   <strong>{c}</strong>
-                  <code>{MAUS_COLORS[c]}</code>
+                  <code>{BOT_COLORS[c]}</code>
                 </div>
                 {PICKABLE_STATES.map((s) => (
                   <div className="mascot-cell" key={`${c}-${s}`}>
-                    <MausAvatar color={c} state={s} size={86} label={`${c} ${s} maus`} />
+                    <MascotAvatar color={c} state={s} size={86} label={`${c} ${s} maus`} />
                   </div>
                 ))}
               </div>

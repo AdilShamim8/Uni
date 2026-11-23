@@ -7,7 +7,7 @@ import { BOT_COLOR_NAMES } from "@/lib/mascot";
 
 type Seen = { color: string; state: string; animated: boolean; trackPointer?: boolean; size: number };
 vi.mock("@/components/Avatar", () => ({
-  MausAvatar: ({ color, state, animated, trackPointer, size: _size, ...choreography }: Seen) => createElement("i", {
+  MascotAvatar: ({ color, state, animated, trackPointer, size: _size, ...choreography }: Seen) => createElement("i", {
     "data-maus": color, "data-state": state, "data-animated": String(animated), "data-pointer": String(trackPointer),
     "data-extra": Object.keys(choreography).join(",") }),
 }));

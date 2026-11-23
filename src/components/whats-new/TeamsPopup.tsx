@@ -1,6 +1,6 @@
 import { useEffect, type CSSProperties } from "react";
 import { Bot, FolderOpen, Lock, X } from "lucide-react";
-import { MausAvatar } from "@/components/Avatar";
+import { MascotAvatar } from "@/components/Avatar";
 import { cn } from "@/lib/cn";
 import { t } from "@/lib/i18n";
 import type { BotColor } from "@/lib/mascot";
@@ -36,7 +36,7 @@ function TeamsPicture() {
   return <div aria-hidden="true" data-teams-picture="" className="relative h-[132px] shrink-0 overflow-hidden bg-ink/[0.035] [@media(max-height:560px)]:hidden">
     <div className="absolute left-1/2 top-1/2 size-0">
       <span className="absolute -left-[60px] -top-[60px] size-[120px] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--color-accent)_16%,transparent),transparent_70%)]" />
-      <span className="absolute -left-7 -top-7"><MausAvatar color="chrome" size={56} state="idle" animated={animated} trackPointer={false} /></span>
+      <span className="absolute -left-7 -top-7"><MascotAvatar color="chrome" size={56} state="idle" animated={animated} trackPointer={false} /></span>
       {FACES.map((face, index) => <span key={face.name} data-teams-face={face.name}
         className="teams-face-in absolute flex size-9 items-center justify-center rounded-full text-[14px] font-semibold ring-2 ring-app"
         style={{ left: face.x - 18, top: face.y - 18, color: `var(--identity-${face.color})`, background: `color-mix(in srgb, var(--identity-${face.color}) 22%, var(--color-card))`,

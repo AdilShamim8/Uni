@@ -15,7 +15,7 @@ const f = vi.hoisted(() => ({ state: {} as Record<string, unknown>, dispatch: vi
   checks: [] as string[] }));
 vi.mock("@/state/store", () => ({ useStore: () => ({ state: f.state, dispatch: f.dispatch }), api: f.api }));
 vi.mock("@/lib/analytics", () => ({ track: vi.fn(), setEmailGateDone: vi.fn() }));
-vi.mock("@/components/Avatar", () => ({ BotAvatar: () => null, MausAvatar: () => null }));
+vi.mock("@/components/Avatar", () => ({ BotAvatar: () => null, MascotAvatar: () => null }));
 vi.mock("@/components/mascot-clock", () => ({ usePrefersReducedMotion: () => true }));
 vi.mock("@/components/EngineSetup", async (original) => {
   const { createElement: h } = await import("react");
